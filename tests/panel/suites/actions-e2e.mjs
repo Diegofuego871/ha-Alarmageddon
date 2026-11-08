@@ -124,14 +124,20 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="ins"][data-token="{mode}"]');
     check(`${tag}: Platzhalter eingefügt, Vorschau folgt`, await s.waitFor("const v=r.querySelector('#ag-step [data-key=\"ntTitle\"]').value; const p=r.querySelector('#ag-ntprev').innerText; return v === 'ALARM im {name}{mode}' && p.includes('ALARM im Haus')"));
     await (await s.el('#ag-step [data-key="ntMessage"]')).fill("Achtung: {sensor} um {time}");
+    check(`${tag}: Zustellung im Schritt: kritisch an mit Lautstärke, Öffnen an, die anderen Knöpfe aus`, await s.ev("const d=r.getElementById('ag-step'); const on=(sel) => d.querySelector(sel).getAttribute('aria-checked'); return on('[data-wf=\"nt-crit\"]') === 'true' && !!d.querySelector('[data-wf=\"nt-vol\"]') && on('[data-wf=\"nt-btn\"][data-key=\"open\"]') === 'true' && on('[data-wf=\"nt-btn\"][data-key=\"silence\"]') === 'false' && on('[data-wf=\"nt-btn\"][data-key=\"disarm\"]') === 'false'"));
+    await s.tap('#ag-step [data-wf="nt-btn"][data-key="silence"]');
+    await s.ev("const i=r.querySelector('#ag-step [data-wf=\"nt-vol\"]'); i.value='40'; i.dispatchEvent(new Event('input', { bubbles: true }));");
+    await s.tap('#ag-step [data-wf="nt-crit"]');
+    check(`${tag}: nicht kritisch blendet die Lautstärke aus`, await s.waitFor("return !r.querySelector('#ag-step [data-wf=\"nt-vol\"]')"));
+    await s.tap('#ag-step [data-wf="nt-crit"]');
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Karte zeigt den eigenen Text`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[0].innerText.includes('ALARM im {name}{mode}')"));
-    check(`${tag}: Titel und Text im Schritt`, await s.ev("const st=r.host.actions.draft.wf.away[0]; return st.type === 'notify' && st.title === 'ALARM im {name}{mode}' && st.message === 'Achtung: {sensor} um {time}'"));
+    check(`${tag}: Titel, Text und Zustellung im Schritt`, await s.ev("const st=r.host.actions.draft.wf.away[0]; return st.type === 'notify' && st.title === 'ALARM im {name}{mode}' && st.message === 'Achtung: {sensor} um {time}' && st.critical === true && st.volume === 0.4 && st.buttons.silence === true && st.buttons.open === undefined"));
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open");
     await s.tap('#ag-step [data-wf="nt-default"]');
     await s.tap('#ag-step [data-wf="apply"]');
-    check(`${tag}: Standardtext wiederhergestellt, nichts gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && st.type === 'notify' && !('title' in st) && !('message' in st)"));
+    check(`${tag}: Standardtext wiederhergestellt, nichts gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && st.type === 'notify' && !('title' in st) && !('message' in st) && st.critical === true && st.buttons.silence === true"));
 
     // Nicht abwarten: Schalter im Editor eines Alarmtons, nicht bei "Warten"
     await s.tap('.ag-wf-step[data-index="4"] [data-wf="edit"]');
@@ -218,16 +224,16 @@ for (const lang of ["de", "en"]) {
     // ----- Benachrichtigungen -----
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
     check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-rpill').length === 1 && r.querySelector('.ag-rpill').innerText.includes('diego')"));
-    check(`${tag}: Kapitel mit Titel`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 4"));
-    check(`${tag}: Knöpfe der Meldung: Öffnen an, Sirene stumm und Deaktivieren aus`, await s.ev("const v=(k) => r.querySelector('[data-nt=\"button\"][data-key=\"' + k + '\"]').getAttribute('aria-checked'); return r.querySelectorAll('[data-nt=\"button\"]').length === 3 && v('open_action') === 'true' && v('silence_action') === 'false' && v('disarm_action') === 'false'"));
+    check(`${tag}: Kapitel mit Titel (Empfänger, Alarmmeldung, Alarm-Arten, Wartung)`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 4"));
+    check(`${tag}: Alarmmeldung hier nicht einstellbar: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !!r.querySelector('[data-nt=\"to-actions\"]')"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
     await (await s.el('select[data-nt="target-add"][data-key="maintenance_targets"]')).selectOption("notify.mobile_app_partnerin");
     check(`${tag}: Pille nach der Wahl`, await s.waitFor("return [...r.querySelectorAll('.ag-rpill')].some((p) => p.innerText.includes('partnerin'))"));
     check(`${tag}: gewählter Dienst nicht mehr im Dropdown`, await s.ev("return ![...r.querySelector('select[data-nt=\"target-add\"][data-key=\"maintenance_targets\"]').options].some((o) => o.value === 'notify.mobile_app_partnerin')"));
     check(`${tag}: Testknöpfe gesperrt bei Änderung`, await s.waitFor("return [...r.querySelectorAll('[data-nt=\"test\"]')].length > 0 && [...r.querySelectorAll('[data-nt=\"test\"]')].every((b) => b.disabled)"));
     // Je Art: Alarm leiser, "Eingangsverzögerung" einschalten und kritisch, Batterie kritisch
-    await s.ev("const i=r.querySelector('[data-nt=\"volume\"][data-kind=\"triggered\"]'); i.value='50'; i.dispatchEvent(new Event('input', { bubbles: true }));");
-    check(`${tag}: Lautstärke der Art angezeigt`, await s.waitFor("return r.querySelector('.ag-vol[data-kind=\"triggered\"]').textContent.trim() === '50 %'"));
+    await s.ev("const i=r.querySelector('[data-nt=\"volume\"][data-kind=\"sensor_report\"]'); i.value='50'; i.dispatchEvent(new Event('input', { bubbles: true }));");
+    check(`${tag}: Lautstärke der Art angezeigt`, await s.waitFor("return r.querySelector('.ag-vol[data-kind=\"sensor_report\"]').textContent.trim() === '50 %'"));
     check(`${tag}: Regler nur bei kritischen Arten`, await s.ev("return !r.querySelector('[data-nt=\"volume\"][data-kind=\"armed\"]') && !r.querySelector('[data-nt=\"volume\"][data-kind=\"battery_low\"]')"));
     await s.tap('[data-nt="enabled"][data-kind="pending"]');
     check(`${tag}: Art eingeschaltet zeigt Einstellungen`, await s.waitFor("return !!r.querySelector('[data-nt=\"critical\"][data-kind=\"pending\"]')"));
@@ -237,13 +243,11 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-nt="enabled"][data-kind="disarmed"]');
     await s.tap('[data-nt="enabled"][data-kind="disarmed"]');
     await s.page.screenshot({ path: `${outDir}notify-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
-    await s.tap('[data-nt="button"][data-key="silence_action"]');
-    await s.tap('[data-nt="button"][data-key="open_action"]');
     await s.tap('[data-nt="save"]');
     check(`${tag}: Meldungen gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const nt = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)?.notify");
-    check(`${tag}: Werte je Art gesendet`, nt && JSON.stringify(nt.maintenance_targets) === JSON.stringify(["notify.mobile_app_partnerin"]) && nt.types.triggered.volume === 0.5 && nt.types.triggered.critical === true
-      && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false && nt.disarm_action === false && nt.silence_action === true && nt.open_action === false, JSON.stringify(nt));
+    check(`${tag}: Werte je Art gesendet`, nt && JSON.stringify(nt.maintenance_targets) === JSON.stringify(["notify.mobile_app_partnerin"]) && nt.types.sensor_report.volume === 0.5 && nt.types.sensor_report.critical === true
+      && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false, JSON.stringify(nt));
     // Pille entfernen mit x
     await s.tap('[data-nt="target-del"][data-key="alarm_targets"][data-target="notify.mobile_app_diego"]');
     check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));

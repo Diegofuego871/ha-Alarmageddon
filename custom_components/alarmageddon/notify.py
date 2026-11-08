@@ -143,7 +143,7 @@ def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any])
 
 
 def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, tag: str | None = None,
-                  actions: list | None = None, critical: bool | None = None) -> dict[str, Any]:
+                  actions: list | None = None, critical: bool | None = None, volume: float | None = None) -> dict[str, Any]:
     """
     Inhalt einer Meldung der Art `kind`. Kritisch und Lautstärke kommen aus den Einstellungen der Art; `critical` überschreibt
     nur das "kritisch" (der Abschluss "Alarm beendet" ersetzt die kritische Meldung durch eine normale mit demselben tag).
@@ -157,7 +157,7 @@ def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, t
     if tag:
         data["tag"] = tag
     if is_critical:
-        data["push"] = {"sound": {"name": "default", "critical": 1, "volume": setting["volume"]}, "interruption-level": "critical"}
+        data["push"] = {"sound": {"name": "default", "critical": 1, "volume": setting["volume"] if volume is None else volume}, "interruption-level": "critical"}
         data.update({"ttl": 0, "priority": "high", "channel": "alarm_stream"})
     if actions:
         data["actions"] = actions
@@ -216,6 +216,9 @@ class Notifier:
     # ----- Auslöser -----
 
     def _on(self, kind: str) -> bool:
+        # Die Alarmmeldung lässt sich nicht abschalten (Sicherheitsregel: im Zweifel alarmieren); ihre Einstellungen stehen im Push-Schritt
+        if kind == "triggered":
+            return True
         return bool(self.cfg["types"][kind]["enabled"])
 
     @callback
@@ -272,10 +275,28 @@ class Notifier:
         "Sirene stumm" lässt die Anlage im Alarm und stoppt nur die Schritte (Geräte kehren zurück).
         """
         action = event.data.get("action")
-        if action == f"{PUSH_ACTION_DISARM}{self.entry.entry_id}" and self.cfg["disarm_action"]:
+        if action == f"{PUSH_ACTION_DISARM}{self.entry.entry_id}" and self._button_allowed("disarm"):
             self.hass.async_create_task(self._ctl.async_disarm(None, self._t("by_push"), skip_code=True))
-        elif action == f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}" and self.cfg["silence_action"] and self.silence:
+        elif action == f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}" and self._button_allowed("silence") and self.silence:
             self.hass.async_create_task(self._silence())
+
+    def _alarm_steps(self) -> list[dict[str, Any]]:
+        """Push-Schritte des Ablaufs für den laufenden Alarm (leer: es geht die Standardmeldung raus)."""
+        steps = (self.entry.options.get("workflows") or {}).get(self._ctl.mode or "always", [])
+        return [s for s in steps if s.get("type") == "notify"]
+
+    def _buttons(self, step: dict[str, Any] | None) -> dict[str, bool]:
+        """Welche Knöpfe eine Alarmmeldung hat: Wert aus dem Push-Schritt, sonst der frühere globale Wert."""
+        own = (step or {}).get("buttons") or {}
+        return {key: bool(own.get(key, self.cfg[f"{key}_action"])) for key in ("open", "silence", "disarm")}
+
+    def _button_allowed(self, key: str) -> bool:
+        """
+        Ein Knopf wirkt nur, wenn die Alarmmeldung ihn anbietet. Aus der Konfiguration abgeleitet (nicht aus dem Gedächtnis),
+        damit er auch nach einem Neustart von Home Assistant noch wirkt: Meldungen auf dem Handy bleiben ja stehen.
+        """
+        steps = self._alarm_steps() or [None]
+        return any(self._buttons(step)[key] for step in steps)
 
     async def _silence(self) -> None:
         if self._ctl.state == AlarmControlPanelState.TRIGGERED and await self.silence():
@@ -294,12 +315,14 @@ class Notifier:
         return template.strip()
 
     @callback
-    def send_alarm(self, test: bool = False, title: str | None = None, message: str | None = None) -> None:
+    def send_alarm(self, test: bool = False, step: dict[str, Any] | None = None) -> None:
         """Alarmmeldung mit Aktionen (auch als Schritt im Ablauf); kritisch und Lautstärke nach den Einstellungen der Art "Alarm"."""
         name = self.entry.title
         sensor = self._ctl.triggered_by
         time = dt_util.as_local(dt_util.utcnow()).strftime("%H:%M")
         default_message = self._t("triggered", sensor=self._name(sensor), time=time) if sensor else self._t("triggered_manual", time=time)
+        step = step or {}
+        title, message = step.get("title"), step.get("message")
         # Eigener Text aus dem Schritt der Alarmaktionen ersetzt den Standardtext
         if custom_title := (title or "").strip():
             title = self._fill(custom_title, sensor, time) or self._t("triggered_title", name=name)
@@ -311,16 +334,17 @@ class Notifier:
             message = default_message
         if test:
             title = self._t("test_title", name=title)
+        buttons = self._buttons(step)
         actions = []
-        if self.cfg["open_action"]:
+        if buttons["open"]:
             actions.append({"action": PUSH_ACTION_OPEN, "title": self._t("action_open"), "uri": "/alarmageddon"})
-        if self.cfg["silence_action"]:
+        if buttons["silence"]:
             actions.insert(0, {"action": f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}", "title": self._t("action_silence")})
-        if self.cfg["disarm_action"]:
+        if buttons["disarm"]:
             # iOS verlangt dafür Face ID/Code (authenticationRequired); Android kennt das nicht
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),
                                "authenticationRequired": True, "destructive": True})
-        self._send("triggered", title, message, tag=self._tag(), actions=actions)
+        self._send("triggered", title, message, tag=self._tag(), actions=actions, critical=step.get("critical"), volume=step.get("volume"))
 
     @callback
     def send_test(self, kind: str) -> list[str]:
@@ -334,6 +358,6 @@ class Notifier:
 
     @callback
     def _send(self, kind: str, title: str, message: str, *, tag: str | None = None, actions: list | None = None,
-              critical: bool | None = None) -> None:
+              critical: bool | None = None, volume: float | None = None) -> None:
         self._ctl.record("notified", type=kind)
-        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical))
+        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume))

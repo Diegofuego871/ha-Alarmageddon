@@ -39,7 +39,7 @@ const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["p
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
   return { ...fromStepBase(step), detach: !!step.detach };
@@ -47,7 +47,7 @@ export function fromStep(step) {
 
 function fromStepBase(step) {
   const f = blank();
-  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "" };
+  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) } };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
@@ -89,6 +89,9 @@ function toStepBase(f) {
     const message = String(f.ntMessage || "").trim();
     if (title) out.title = title;
     if (message) out.message = message;
+    if (f.ntCritical !== null && f.ntCritical !== undefined) out.critical = !!f.ntCritical;
+    if (f.ntVolume !== null && f.ntVolume !== undefined) out.volume = Math.min(1, Math.max(0, Number(f.ntVolume)));
+    if (Object.keys(f.ntButtons || {}).length) out.buttons = { ...f.ntButtons };
     return out;
   }
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
@@ -525,8 +528,30 @@ export class ActionsUi {
       ${this._field("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
       ${this._field("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
       <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtTokens"))}</div><div class="ag-ef-h">${esc(this._t("fldNtTokensHint"))}</div><div class="ag-zline">${chips}</div></div>
+      ${this._ntDelivery(f)}
       <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtPreview"))}</div><div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
         <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div></div>`;
+  }
+
+  // Wirksame Werte der Alarmmeldung: aus dem Schritt, sonst der frühere globale Wert (so ändert sich bei bestehenden Schritten nichts)
+  _ntGlobal() {
+    const g = this.host._data?.notify || {};
+    return { critical: g.types?.triggered?.critical ?? true, volume: g.types?.triggered?.volume ?? 0.8, open: g.open_action ?? true, silence: g.silence_action ?? false, disarm: g.disarm_action ?? false };
+  }
+
+  _ntDelivery(f) {
+    const g = this._ntGlobal();
+    const critical = f.ntCritical ?? g.critical;
+    const volume = Math.round((f.ntVolume ?? g.volume) * 100);
+    const btn = (key, label, hint, warn) => {
+      const on = f.ntButtons?.[key] ?? g[key];
+      return `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t(label))}</b><small class="${warn ? "ag-warntext" : ""}">${warn ? `${ic("alert", 14)} ` : ""}${esc(this._t(hint))}</small></div>${this._toggle(`data-wf="nt-btn" data-key="${key}"`, on, label)}</div>`;
+    };
+    return `<div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtDelivery"))}</div>
+        <div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("ntCriticalShort"))}</b><small>${esc(this._t("fldNtCriticalHint"))}</small></div>${this._toggle('data-wf="nt-crit"', critical, "ntCriticalShort")}</div>
+        ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}</div>
+      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtButtons"))}</div>
+        ${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}</div>`;
   }
 
   // Vorschau mit echten Namen der Anlage und eines Sensors, so wie die Meldung aussähe
@@ -886,6 +911,13 @@ export class ActionsUi {
       field.dispatchEvent(new Event("input", { bubbles: true }));
       field.focus();
       field.setSelectionRange(pos + el.dataset.token.length, pos + el.dataset.token.length);
+    } else if (act === "nt-crit") {
+      form.ntCritical = !(form.ntCritical ?? this._ntGlobal().critical);
+      this.renderEditor();
+    } else if (act === "nt-btn") {
+      const key = el.dataset.key;
+      form.ntButtons = { ...(form.ntButtons || {}), [key]: !(form.ntButtons?.[key] ?? this._ntGlobal()[key]) };
+      this.renderEditor();
     } else if (act === "nt-default") {
       form.ntTitle = "";
       form.ntMessage = "";
@@ -984,6 +1016,11 @@ export class ActionsUi {
     }
     if (act === "scene") {
       f.targets = el.value ? [el.value] : [];
+      return true;
+    }
+    if (act === "nt-vol") {
+      f.ntVolume = Number(el.value) / 100;
+      el.closest(".ag-ef-range").querySelector(".ag-ef-val").textContent = `${el.value} %`;
       return true;
     }
     if (act === "volume") {

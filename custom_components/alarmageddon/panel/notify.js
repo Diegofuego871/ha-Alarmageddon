@@ -7,16 +7,9 @@ const { ic, esc, errText, chapter } = await import(`./common.js${V}`);
 
 // Arten je Gruppe in der Reihenfolge der Anzeige, mit Symbol
 const GROUPS = {
-  alarm: [["triggered", "alert"], ["sensor_report", "bell"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
+  alarm: [["sensor_report", "bell"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
   maintenance: [["battery_low", "battery"], ["sensor_offline", "offline"], ["sensor_unavailable", "offline"], ["update_available", "verUp"]],
 };
-// Knöpfe der Alarmmeldung: Schlüssel, Beschriftung, Hinweis, Warnung (Sicherheit)
-const BUTTONS = [
-  ["open_action", "ntOpenAction", "ntOpenActionHint", false],
-  ["silence_action", "ntSilenceAction", "ntSilenceActionHint", true],
-  ["disarm_action", "ntDisarmAction", "ntDisarmActionHint", true],
-];
-const BUTTON_DEFAULT = { open_action: true, silence_action: false, disarm_action: false };
 const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" };
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
 // Arten mit einem Zahlenfeld: Schlüssel, Beschriftung, Einheit
@@ -39,7 +32,7 @@ export class NotifyUi {
 
   get base() {
     const types = Object.fromEntries(KINDS.map((k) => [k, { enabled: true, critical: false, volume: 0.8 }]));
-    return { ...BUTTON_DEFAULT, ...(this.host._data?.notify || { alarm_targets: [], maintenance_targets: [], types, battery_threshold: 20, offline_minutes: 60 }) };
+    return (this.host._data?.notify || { alarm_targets: [], maintenance_targets: [], types, battery_threshold: 20, offline_minutes: 60 });
   }
 
   ensureDraft() {
@@ -63,7 +56,6 @@ export class NotifyUi {
       const y = d.types[kind];
       if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100)) n += 1;
     }
-    for (const [k] of BUTTONS) if (!!a[k] !== !!d[k]) n += 1;
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
     return n;
   }
@@ -136,11 +128,10 @@ export class NotifyUi {
         <div class="ag-mt-subs">${this._type("sensor_offline", "alert", dirty, true)}${this._type("sensor_unavailable", "timer", dirty, true)}</div></div>`;
     const list = (group) => GROUPS[group].map(([kind, icon]) => (kind === "sensor_offline" ? offline() : kind === "sensor_unavailable" ? "" : this._type(kind, icon, dirty))).join("");
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
+      + chapter(this._t("ntChapAlarmMsg"), card(`<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("ntAlarmMsgTitle"))}</b><small>${esc(this._t("ntAlarmMsgHint"))}</small></div>
+          <button class="ag-btn" data-nt="to-actions">${ic("chevRight", 16)}${esc(this._t("ntAlarmMsgGo"))}</button></div>`))
       + chapter(this._t("ntChapAlarm"), `<div class="ag-card ag-mtlist">${list("alarm")}</div>`, this._t("ntChapAlarmHint"))
-      + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"))
-      + chapter(this._t("ntChapButtons"), card(BUTTONS.map(([key, label, hint, warn]) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(label))}</b>
-          <small class="${warn ? "ag-warntext" : ""}">${warn ? ic("alert", 14) + " " : ""}${esc(this._t(hint))}</small></div>
-          <button class="ag-toggle ${d[key] ? "on" : ""}" data-nt="button" data-key="${key}" role="switch" aria-checked="${!!d[key]}" aria-label="${esc(this._t(label))}"></button></div>`).join("")), this._t("ntChapButtonsHint"));
+      + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"));
     h._setHtml(box, html);
     this.renderFoot();
   }
@@ -200,7 +191,13 @@ export class NotifyUi {
       d[el.dataset.key] = d[el.dataset.key].filter((x) => x !== el.dataset.target);
     } else if (act === "enabled") d.types[el.dataset.kind].enabled = !d.types[el.dataset.kind].enabled;
     else if (act === "critical") d.types[el.dataset.kind].critical = !d.types[el.dataset.kind].critical;
-    else if (act === "button") d[el.dataset.key] = !d[el.dataset.key];
+    else if (act === "to-actions") {
+      this.host._slide = "from-right";
+      this.host._sub = "actions";
+      this.host._savePref("sub", "actions");
+      this.host._renderView(true);
+      return true;
+    }
     else if (act === "cancel") this.draft = null;
     else if (act === "save") return this.save(), true;
     else if (act === "test") return this.test(el.dataset.kind), true;

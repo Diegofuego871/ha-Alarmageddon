@@ -5,6 +5,11 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.20.0, Einstellungen der Alarmmeldung nur im Push-Schritt)
+
+- Push-Schritt: `critical`, `volume`, `buttons {open, silence, disarm}` (alle optional, fehlt eine Angabe gilt der frühere globale Wert: `types.triggered`, `open_action`, `silence_action`, `disarm_action`; diese sind im Panel nicht mehr einstellbar, bleiben aber als Rückfall in `settings.notify`). `Notifier.send_alarm(test, step)`; `_buttons(step)`, `_button_allowed(key)` leitet die Berechtigung der Push-Aktionen aus den Push-Schritten des aktuellen Modus ab (restart-fest). `_on("triggered")` ist immer wahr (Alarmmeldung nicht abschaltbar).
+- Panel: Kapitel "Alarmmeldung" in Benachrichtigungen mit Hinweis und Knopf zu den Aktionen (`to-actions`); Art "Alarm" und Kapitel Knöpfe entfernt. Editor: `_ntDelivery` (kritisch, Lautstärke, Knöpfe), Werte `null` = erbt.
+
 ## Stand (0.19.0, eigener Text der Push-Meldung)
 
 - Schritt `notify` mit optionalen `title` (100) und `message` (300). `Notifier.send_alarm(test, title, message)` füllt nur `{name} {sensor} {time} {mode}` (`_fill`, kein `str.format`, Unbekanntes bleibt stehen); leer = Standardtext des Servers. Panel: `_notifyFields` mit Standardtext in den Feldern (Standard wird nicht gespeichert: `ntTitle`/`ntMessage` bleiben leer), Platzhalterknöpfe, Vorschau (`_ntPreview`). Die automatische Alarmmeldung (ohne Push-Schritt) bleibt beim Standardtext.

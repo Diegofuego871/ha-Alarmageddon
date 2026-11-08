@@ -71,10 +71,20 @@ async def test_each_type_has_own_critical_and_volume(hass: HomeAssistant, hass_w
 async def test_type_switched_off_sends_nothing(hass: HomeAssistant, hass_ws_client) -> None:
     pushes = async_mock_service(hass, "notify", "handy")
     await setup_alarm(hass)
+    await _types(hass, hass_ws_client, armed={"enabled": False})
+    await call(hass, "alarm_arm_home")
+    await hass.async_block_till_done()
+    assert pushes == []
+
+
+async def test_alarm_message_cannot_be_switched_off(hass: HomeAssistant, hass_ws_client) -> None:
+    """Sicherheitsregel: die Alarmmeldung geht immer raus, auch mit einem alten "aus" in den Einstellungen (0.20.0)."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass)
     await _types(hass, hass_ws_client, triggered={"enabled": False})
     await call(hass, "alarm_trigger")
     await hass.async_block_till_done()
-    assert pushes == []
+    assert len(pushes) == 1
 
 
 async def test_partial_save_keeps_other_types(hass: HomeAssistant, hass_ws_client) -> None:

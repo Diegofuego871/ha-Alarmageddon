@@ -449,3 +449,50 @@ async def test_custom_alarm_message_text(hass: HomeAssistant, hass_ws_client) ->
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     assert pushes[-1].data["title"] == "Nur Titel" and pushes[-1].data["message"].startswith(f"{hass.states.get(WINDOW).name} at ")
+
+
+async def test_alarm_message_settings_in_the_push_step(hass: HomeAssistant, hass_ws_client) -> None:
+    """Kritisch, Lautstärke und Knöpfe stehen im Push-Schritt (0.20.0) und gelten vor den globalen Werten."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    entry = await setup_alarm(hass, workflows={"home": [{"type": "notify", "critical": False, "volume": 0.3, "buttons": {"open": False, "silence": True, "disarm": False}}]})
+    await _notify_settings(hass, hass_ws_client)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    data = pushes[-1].data["data"]
+    assert "push" not in data  # nicht kritisch, obwohl global kritisch
+    assert [a["action"] for a in data["actions"]] == [f"ALARMAGEDDON_SILENCE_{entry.entry_id}"]
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    # Mit Lautstärke und kritisch im Schritt
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "workflows": {"home": [{"type": "notify", "critical": True, "volume": 0.3}]}})
+    await hass.async_block_till_done()
+    hass.states.async_set(WINDOW, "off")
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert pushes[-1].data["data"]["push"]["sound"]["volume"] == 0.3
+    assert [a["action"] for a in pushes[-1].data["data"]["actions"]] == ["ALARMAGEDDON_OPEN"]  # Knöpfe ohne Angabe: globale Werte
+
+
+async def test_buttons_only_work_when_the_message_offers_them(hass: HomeAssistant, hass_ws_client) -> None:
+    """Knopf "Deaktivieren" wirkt nur, wenn der Push-Schritt ihn anbietet; abgeleitet aus der Konfiguration (auch nach Neustart)."""
+    async_mock_service(hass, "notify", "handy")
+    entry = await setup_alarm(hass, workflows={"home": [{"type": "notify", "buttons": {"disarm": True}}]})
+    await _notify_settings(hass, hass_ws_client)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"})
+    await hass.async_block_till_done()
+    assert state(hass) == AlarmControlPanelState.DISARMED
+    # Schritt ohne Knopf: die Aktion wird ignoriert
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "workflows": {"home": [{"type": "notify", "buttons": {"disarm": False}}]}})
+    await hass.async_block_till_done()
+    hass.states.async_set(WINDOW, "off")
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"})
+    await hass.async_block_till_done()
+    assert state(hass) == AlarmControlPanelState.TRIGGERED

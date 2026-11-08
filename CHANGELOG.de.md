@@ -7,11 +7,22 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.20.0] - 2026-11-08
+
+Die Einstellungen der Alarmmeldung sind an einer Stelle: im Push-Schritt der Alarmaktionen.
+
+Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0, 0.18.0 und 0.19.0.
+
+### Geändert
+
+- **Alarmmeldung nur im Push-Schritt** (Konfiguration › Aktionen, "Push-Meldung"): Kritisch, Lautstärke und die Knöpfe "Öffnen", "Sirene stumm" und "Deaktivieren" stellst du dort ein, zusammen mit Titel und Text, für jeden Modus und Push-Schritt getrennt. In Konfiguration › Benachrichtigungen gibt es die Art "Alarm" und das Kapitel "Knöpfe in der Meldung" nicht mehr; ein Hinweis mit Knopf führt zu den Aktionen.
+- **Bestehende Alarmanlagen verhalten sich wie bisher:** Ein Push-Schritt ohne eigene Werte nutzt die früheren globalen Werte (Kritisch, Lautstärke, Knöpfe), bis du sie im Schritt änderst.
+- **Ein Knopf wirkt nur, wenn die Meldung ihn anbietet.** Das wird aus der Konfiguration abgeleitet und wirkt darum auch nach einem Neustart von Home Assistant bei einer Meldung, die noch auf dem Handy steht.
+- **Die Alarmmeldung lässt sich nicht mehr abschalten:** Sie geht immer raus (ein früheres "aus" bei der Art "Alarm" zählt nicht mehr). Ohne Push-Schritt in den Aktionen geht eine Standardmeldung raus (kritisch, Knopf "Öffnen").
+
 ## [0.19.0] - 2026-11-08
 
-Titel und Text der Push-Meldung lassen sich ändern.
-
-Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0 und 0.18.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Hinzugefügt
 
@@ -19,7 +30,7 @@ Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0 und 0.18.0.
 
 ## [0.18.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.19.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Geändert
 
@@ -28,7 +39,7 @@ Nicht veröffentlicht; enthalten in 0.19.0.
 
 ## [0.17.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.19.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Hinzugefügt
 
@@ -41,7 +52,7 @@ Nicht veröffentlicht; enthalten in 0.19.0.
 
 ## [0.16.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.19.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Hinzugefügt
 
@@ -55,7 +66,7 @@ Nicht veröffentlicht; enthalten in 0.19.0.
 
 ## [0.15.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.19.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Geändert
 
@@ -64,7 +75,7 @@ Nicht veröffentlicht; enthalten in 0.19.0.
 
 ## [0.14.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.19.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Geändert
 
@@ -75,7 +86,7 @@ Nicht veröffentlicht; enthalten in 0.19.0.
 
 ## [0.13.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.19.0.
+Nicht veröffentlicht; enthalten in 0.20.0.
 
 ### Hinzugefügt
 
@@ -284,7 +295,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.19.0
+[0.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.20.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

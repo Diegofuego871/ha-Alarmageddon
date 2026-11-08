@@ -44,6 +44,10 @@ STEP_SCHEMAS = {
         vol.Required("type"): "notify",
         vol.Optional("title"): vol.All(str, vol.Length(max=100)),
         vol.Optional("message"): vol.All(str, vol.Length(max=300)),
+        # Einstellungen der Alarmmeldung nur hier (0.20.0); fehlt eine Angabe, gilt der frühere globale Wert
+        vol.Optional("critical"): bool,
+        vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+        vol.Optional("buttons"): {vol.Optional(vol.In(("open", "silence", "disarm"))): bool},
     }),
     "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
     "action": vol.Schema({

@@ -217,7 +217,7 @@ class WorkflowRunner:
         if kind == "wait":
             await self._sleep(max(0, int(step.get("seconds", 0))))
         elif kind == "notify":
-            self._notifier.send_alarm(test=test, title=step.get("title"), message=step.get("message"))
+            self._notifier.send_alarm(test=test, step=step)
         elif kind == "action":
             domain, _, service = str(step.get("action", "")).partition(".")
             data = dict(step.get("data") or {})
