@@ -143,7 +143,8 @@ def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any])
 
 
 def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, tag: str | None = None,
-                  actions: list | None = None, critical: bool | None = None, volume: float | None = None) -> dict[str, Any]:
+                  actions: list | None = None, critical: bool | None = None, volume: float | None = None,
+                  url: str | None = None) -> dict[str, Any]:
     """
     Inhalt einer Meldung der Art `kind`. Kritisch und Lautstärke kommen aus den Einstellungen der Art; `critical` überschreibt
     nur das "kritisch" (der Abschluss "Alarm beendet" ersetzt die kritische Meldung durch eine normale mit demselben tag).
@@ -154,7 +155,7 @@ def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, t
     is_critical = setting["critical"] if critical is None else critical
     group = "alarmageddon" if NOTIFY_TYPES[kind] == "alarm" else "alarmageddon_maintenance"
     # icon_url: Symbol der Integration (Android); iOS zeigt immer das Symbol der App, das lässt sich nicht ersetzen
-    data: dict[str, Any] = {"group": group, "url": "/alarmageddon", "clickAction": "/alarmageddon", "icon_url": ICON_URL_PATH}
+    data: dict[str, Any] = {"group": group, "url": url or "/alarmageddon", "clickAction": url or "/alarmageddon", "icon_url": ICON_URL_PATH}
     if tag:
         data["tag"] = tag
     if is_critical:
@@ -308,6 +309,17 @@ class Notifier:
     def _tag(self) -> str:
         return f"alarmageddon_{self.entry.entry_id}"
 
+    @staticmethod
+    def _click_target(step: dict[str, Any] | None) -> str:
+        """Wohin ein Tipp auf die Alarmmeldung führt: Standard das Protokoll mit dem laufenden Alarm (Zeitachse seit dem Auslösen)."""
+        step = step or {}
+        mode = step.get("click", "log")
+        if mode == "custom" and step.get("click_path"):
+            return step["click_path"]
+        if mode == "overview":
+            return "/alarmageddon"
+        return "/alarmageddon?view=log"
+
     def _fill(self, template: str, sensor: str | None, time: str) -> str:
         """Platzhalter eines eigenen Texts füllen; nur diese vier, alles andere bleibt wie geschrieben (kein str.format)."""
         values = {"{name}": self.entry.title, "{sensor}": self._name(sensor) if sensor else "", "{time}": time, "{mode}": self._mode(self._ctl.mode)}
@@ -336,16 +348,17 @@ class Notifier:
         if test:
             title = self._t("test_title", name=title)
         buttons = self._buttons(step)
+        target = self._click_target(step)
         actions = []
         if buttons["open"]:
-            actions.append({"action": PUSH_ACTION_OPEN, "title": self._t("action_open"), "uri": "/alarmageddon"})
+            actions.append({"action": PUSH_ACTION_OPEN, "title": self._t("action_open"), "uri": target})
         if buttons["silence"]:
             actions.insert(0, {"action": f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}", "title": self._t("action_silence")})
         if buttons["disarm"]:
             # iOS verlangt dafür Face ID/Code (authenticationRequired); Android kennt das nicht
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),
                                "authenticationRequired": True, "destructive": True})
-        self._send("triggered", title, message, tag=self._tag(), actions=actions, critical=step.get("critical"), volume=step.get("volume"))
+        self._send("triggered", title, message, tag=self._tag(), actions=actions, critical=step.get("critical"), volume=step.get("volume"), url=target)
 
     @callback
     def send_test(self, kind: str) -> list[str]:
@@ -359,6 +372,6 @@ class Notifier:
 
     @callback
     def _send(self, kind: str, title: str, message: str, *, tag: str | None = None, actions: list | None = None,
-              critical: bool | None = None, volume: float | None = None) -> None:
+              critical: bool | None = None, volume: float | None = None, url: str | None = None) -> None:
         self._ctl.record("notified", type=kind)
-        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume))
+        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url))

@@ -112,9 +112,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry
     others = [
         e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id and e.state is ConfigEntryState.LOADED
     ]
-    # Das Panel bleibt, solange noch eine Anlage geladen ist (auch während eines Neuladens wird es kurz entfernt)
+    # Das Panel bleibt auch beim Neuladen einer Anlage stehen (Sensoren speichern lädt sie neu): würde es kurz entfernt, vergässe die
+    # Oberfläche die Anlage und hinge. Es verschwindet erst, wenn die letzte Anlage entfernt wird (async_remove_entry).
     if not others:
-        async_remove_panel(hass)
         await async_stop_maintenance(hass)
         async_stop_daily(hass)
     return True
@@ -124,3 +124,5 @@ async def async_remove_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry
     await async_remove_events(hass, entry.entry_id)
     await async_remove_recordings(hass, entry.entry_id)
     await async_remove_workflow_store(hass, entry.entry_id)
+    if not any(e.entry_id != entry.entry_id for e in hass.config_entries.async_entries(DOMAIN)):
+        async_remove_panel(hass)

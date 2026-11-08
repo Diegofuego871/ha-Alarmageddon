@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.22.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.23.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -17,7 +17,7 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Code:** optional, 4 to 8 digits, stored only as a hash. Locked for one minute after five wrong codes.
 - **Any radio technology:** Alarmageddon only uses Home Assistant entities. Wi-Fi, Thread/Matter, Zigbee, Z-Wave and Bluetooth all work.
 
-- **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change.
+- **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change, as a list or as cards (switch next to "View"; on the phone always cards).
 - **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (modes, delays, behaviour for open sensors, schedule, codes, backup). On the phone as cards and sheets from the bottom.
 - **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, report only. Defaults per sensor type, own values per sensor.
 - **Ready to arm:** one entity per mode with the blocking sensors.
@@ -55,7 +55,7 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 
 | Step | Does |
 | --- | --- |
-| Push notification | Alarm notification to the alarm recipients (see Notifications). Title and text can be changed with the pencil, with the placeholders `{name}`, `{sensor}`, `{time}`, `{mode}` |
+| Push notification | Alarm notification to the alarm recipients (see Notifications). Title and text can be changed with the pencil, with the placeholders `{name}`, `{sensor}`, `{time}`, `{mode}`; the tap target is by default the log with the running alarm (or the overview or an own path) |
 | Switch device | Lights, sockets, covers, locks, fans, sirens and more. You choose the devices and see only what they can do (on, off, toggle, open, close, lock) and, when turning on, the settings they support (brightness, colour temperature, position, speed, temperature) |
 | Play alarm sound | One of five sounds on media players: tone as a dropdown with a preview on this phone or computer (not on the real system), volume, duration in seconds or until disarmed |
 | Wait | Pauses the following steps |

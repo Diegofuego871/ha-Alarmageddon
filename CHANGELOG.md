@@ -7,11 +7,33 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.23.0] - 2026-11-08
+
+Loading indicator and no more forgotten alarm system when saving, card layout for the sensor list, searchable action choices, tap target of the alarm message.
+
+Includes the changes from 0.22.0.
+
+### Added
+
+- **Card layout for the sensor list** (Overview): a switch "List / Cards" next to "View". Cards show one small card per sensor with all information of the chosen columns (state, battery, forecast, signal, firmware, model, integration, last change, zones), as a grid and grouped like the list. On the phone the cards are always used and follow the width.
+- **Tap target of the alarm message** (Configuration › Actions, step "Push notification"): by default a tap opens the log with the running alarm (what happened when since it went off, the view refreshes every 5 seconds). Alternatively the overview or an own path in Home Assistant (for example `/lovelace/alarm`). The "Open" button uses the same target.
+- **"Waits for the end" / "Runs alongside" on every step** of the action flow: a switch on the card changes it with one tap, and after a step that runs alongside the connection to the next step is dashed, so the flow is visible at a glance.
+- **Searchable choices** for "Type" and "Action" of an own action: typing filters the list.
+- **Sensors to add** (Configuration › Sensors › "Add sensors"): the same filter pills as the sensor list (All, Doors & windows, Motion, More), and a taller search field.
+- The log refreshes every 5 seconds while it is open (before only during a running alarm).
+
+### Changed
+
+- **Filter pills are spaced** (also between the rows when they wrap).
+- **The chapter "Alarm message" in Configuration › Notifications is gone** (the settings are in the push step, no further hint is needed).
+
+### Fixed
+
+- **The alarm system was forgotten after adding sensors** ("No alarm system yet", and the panel hung): Home Assistant reloads the alarm system when you save, and the side panel was removed and added again meanwhile. The panel now stays in place; the screen keeps the last data and shows the loading indicator (the same as Device Panel: dimmed content, three turning dots) until the reload is done. The side panel only disappears when the last alarm system is removed.
+
 ## [0.22.0] - 2026-11-08
 
-The log can be filtered by period and exported.
-
-Includes the changes from 0.13.0 to 0.21.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -24,7 +46,7 @@ Includes the changes from 0.13.0 to 0.21.0.
 
 ## [0.21.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -32,7 +54,7 @@ Not released; included in 0.22.0.
 
 ## [0.20.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -43,7 +65,7 @@ Not released; included in 0.22.0.
 
 ## [0.19.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -51,7 +73,7 @@ Not released; included in 0.22.0.
 
 ## [0.18.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -60,7 +82,7 @@ Not released; included in 0.22.0.
 
 ## [0.17.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -73,7 +95,7 @@ Not released; included in 0.22.0.
 
 ## [0.16.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -87,7 +109,7 @@ Not released; included in 0.22.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -96,7 +118,7 @@ Not released; included in 0.22.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -107,7 +129,7 @@ Not released; included in 0.22.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.22.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -316,7 +338,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.22.0
+[0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

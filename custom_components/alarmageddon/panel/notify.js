@@ -128,8 +128,6 @@ export class NotifyUi {
         <div class="ag-mt-subs">${this._type("sensor_offline", "alert", dirty, true)}${this._type("sensor_unavailable", "timer", dirty, true)}</div></div>`;
     const list = (group) => GROUPS[group].map(([kind, icon]) => (kind === "sensor_offline" ? offline() : kind === "sensor_unavailable" ? "" : this._type(kind, icon, dirty))).join("");
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
-      + chapter(this._t("ntChapAlarmMsg"), card(`<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("ntAlarmMsgTitle"))}</b><small>${esc(this._t("ntAlarmMsgHint"))}</small></div>
-          <button class="ag-btn" data-nt="to-actions">${ic("chevRight", 16)}${esc(this._t("ntAlarmMsgGo"))}</button></div>`))
       + chapter(this._t("ntChapAlarm"), `<div class="ag-card ag-mtlist">${list("alarm")}</div>`, this._t("ntChapAlarmHint"))
       + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"));
     h._setHtml(box, html);
@@ -191,13 +189,6 @@ export class NotifyUi {
       d[el.dataset.key] = d[el.dataset.key].filter((x) => x !== el.dataset.target);
     } else if (act === "enabled") d.types[el.dataset.kind].enabled = !d.types[el.dataset.kind].enabled;
     else if (act === "critical") d.types[el.dataset.kind].critical = !d.types[el.dataset.kind].critical;
-    else if (act === "to-actions") {
-      this.host._slide = "from-right";
-      this.host._sub = "actions";
-      this.host._savePref("sub", "actions");
-      this.host._renderView(true);
-      return true;
-    }
     else if (act === "cancel") this.draft = null;
     else if (act === "save") return this.save(), true;
     else if (act === "test") return this.test(el.dataset.kind), true;

@@ -96,8 +96,17 @@ for (const lang of ["de", "en"]) {
     // Eigene Aktion aus den Diensten von HA, mit Feldern
     await s.tap('[data-wf="add"][data-at="7"]');
     await s.tap('#ag-step [data-wf="kind"][data-kind="custom"]');
-    await (await s.el('#ag-step [data-key="domain"]')).selectOption("persistent_notification");
-    await (await s.el('#ag-step [data-key="service"]')).selectOption("create");
+    // Art und Aktion sind durchsuchbar: tippen filtert die Liste, ein Eintrag wählt
+    await s.tap('#ag-step [data-wf="cb"][data-key="domain"]');
+    check(`${tag}: Art: Liste mit allen Arten, Aktion noch gesperrt`, await s.waitFor("const d=r.getElementById('ag-step'); return d.querySelectorAll('[data-wf=\"cb-pick\"][data-key=\"domain\"]').length >= 4 && d.querySelector('[data-wf=\"cb\"][data-key=\"service\"]').disabled"));
+    await s.page.keyboard.type("persist");
+    check(`${tag}: Tippen filtert die Arten, Fokus bleibt`, await s.waitFor("const d=r.getElementById('ag-step'); const l=d.querySelectorAll('[data-wf=\"cb-pick\"][data-key=\"domain\"]'); return l.length === 1 && l[0].dataset.value === 'persistent_notification' && r.activeElement === d.querySelector('[data-wf=\"cb\"][data-key=\"domain\"]')"));
+    await s.tap('#ag-step [data-wf="cb-pick"][data-key="domain"][data-value="persistent_notification"]');
+    check(`${tag}: Art gewählt, Name im Feld`, await s.waitFor("const i=r.querySelector('#ag-step [data-wf=\"cb\"][data-key=\"domain\"]'); return i.value.length > 0 && !i.value.includes('persistent_notification') && !r.querySelector('#ag-step [data-wf=\"cb\"][data-key=\"service\"]').disabled"));
+    await s.tap('#ag-step [data-wf="cb"][data-key="service"]');
+    await s.page.keyboard.type("erst");
+    check(`${tag}: Aktion durchsuchbar`, await s.waitFor("const l=r.querySelectorAll('#ag-step [data-wf=\"cb-pick\"][data-key=\"service\"]'); return l.length === 1 && l[0].dataset.value === 'create'"));
+    await s.tap('#ag-step [data-wf="cb-pick"][data-key="service"][data-value="create"]');
     check(`${tag}: Felder des Dienstes`, await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"df\"][data-key=\"message\"]') && !!r.querySelector('#ag-step .ag-req')"));
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Pflichtfeld verlangt`, await s.waitFor("return r.querySelector('#ag-step .ag-dlg-err').textContent.includes('Nachricht') || r.querySelector('#ag-step .ag-dlg-err').textContent.includes('Message') || r.querySelector('#ag-step .ag-dlg-err').textContent.length > 0"));
@@ -108,10 +117,12 @@ for (const lang of ["de", "en"]) {
     // Eigene Aktion mit übersetzten Namen (Dienst, Beschreibung, Feld), nicht mit den Kennungen von HA
     await s.tap('[data-wf="add"][data-at="8"]');
     await s.tap('#ag-step [data-wf="kind"][data-kind="custom"]');
-    check(`${tag}: Art mit übersetztem Namen`, await s.waitFor(`return [...r.querySelectorAll('#ag-step [data-key="domain"] option')].some((o) => o.value === 'cover' && o.textContent === '${t.coverDomain}')`));
-    await (await s.el('#ag-step [data-key="domain"]')).selectOption("cover");
-    check(`${tag}: Aktion mit übersetztem Namen statt cover.set_cover_position`, await s.ev(`const o=[...r.querySelectorAll('#ag-step [data-key="service"] option')].map((x) => x.textContent); return o.includes('${t.coverService}') && !o.some((x) => x.includes('set_cover_position'))`));
-    await (await s.el('#ag-step [data-key="service"]')).selectOption("set_cover_position");
+    await s.tap('#ag-step [data-wf="cb"][data-key="domain"]');
+    check(`${tag}: Art mit übersetztem Namen`, await s.waitFor(`return [...r.querySelectorAll('#ag-step [data-wf="cb-pick"][data-key="domain"]')].some((o) => o.dataset.value === 'cover' && o.querySelector('span').textContent === '${t.coverDomain}')`));
+    await s.tap('#ag-step [data-wf="cb-pick"][data-key="domain"][data-value="cover"]');
+    await s.tap('#ag-step [data-wf="cb"][data-key="service"]');
+    check(`${tag}: Aktion mit übersetztem Namen statt cover.set_cover_position`, await s.ev(`const o=[...r.querySelectorAll('#ag-step [data-wf="cb-pick"][data-key="service"] span')].map((x) => x.textContent); return o.includes('${t.coverService}') && !o.some((x) => x.includes('set_cover_position'))`));
+    await s.tap('#ag-step [data-wf="cb-pick"][data-key="service"][data-value="set_cover_position"]');
     check(`${tag}: Beschreibung und Feldname übersetzt, unbekanntes Feld lesbar`, await s.waitFor(`const d=r.getElementById('ag-step').textContent; return d.includes('${t.coverDesc}') && d.includes('Position') && d.includes('Speed') && !d.includes('speed')`));
     await s.tap('#ag-step [data-wf="close"]');
 
@@ -125,6 +136,15 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Platzhalter eingefügt, Vorschau folgt`, await s.waitFor("const v=r.querySelector('#ag-step [data-key=\"ntTitle\"]').value; const p=r.querySelector('#ag-ntprev').innerText; return v === 'ALARM im {name}{mode}' && p.includes('ALARM im Haus')"));
     await (await s.el('#ag-step [data-key="ntMessage"]')).fill("Achtung: {sensor} um {time}");
     check(`${tag}: Zustellung im Schritt: kritisch an mit Lautstärke, Öffnen an, die anderen Knöpfe aus`, await s.ev("const d=r.getElementById('ag-step'); const on=(sel) => d.querySelector(sel).getAttribute('aria-checked'); return on('[data-wf=\"nt-crit\"]') === 'true' && !!d.querySelector('[data-wf=\"nt-vol\"]') && on('[data-wf=\"nt-btn\"][data-key=\"open\"]') === 'true' && on('[data-wf=\"nt-btn\"][data-key=\"silence\"]') === 'false' && on('[data-wf=\"nt-btn\"][data-key=\"disarm\"]') === 'false'"));
+    check(`${tag}: Klickziel: Standard Protokoll, drei Möglichkeiten`, await s.ev("const sel=r.querySelector('#ag-step [data-wf=\"nt-click\"]'); return !!sel && sel.value === 'log' && sel.options.length === 3 && !r.querySelector('#ag-step [data-key=\"ntClickPath\"]')"));
+    await (await s.el('#ag-step [data-wf="nt-click"]')).selectOption("custom");
+    check(`${tag}: eigener Pfad zeigt ein Feld`, await s.waitFor("return !!r.querySelector('#ag-step [data-key=\"ntClickPath\"]')"));
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: eigener Pfad ohne Angabe abgelehnt`, await s.waitFor("return r.getElementById('ag-step').open && r.querySelector('#ag-step .ag-dlg-err').textContent.includes('/')"));
+    await (await s.el('#ag-step [data-key="ntClickPath"]')).fill("/lovelace/alarm");
+    await (await s.el('#ag-step [data-wf="nt-click"]')).selectOption("overview");
+    await (await s.el('#ag-step [data-wf="nt-click"]')).selectOption("custom");
+    await (await s.el('#ag-step [data-key="ntClickPath"]')).fill("/lovelace/alarm");
     await s.tap('#ag-step [data-wf="nt-btn"][data-key="silence"]');
     await s.ev("const i=r.querySelector('#ag-step [data-wf=\"nt-vol\"]'); i.value='40'; i.dispatchEvent(new Event('input', { bubbles: true }));");
     await s.tap('#ag-step [data-wf="nt-crit"]');
@@ -132,7 +152,7 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="nt-crit"]');
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Karte zeigt den eigenen Text`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[0].innerText.includes('ALARM im {name}{mode}')"));
-    check(`${tag}: Titel, Text und Zustellung im Schritt`, await s.ev("const st=r.host.actions.draft.wf.away[0]; return st.type === 'notify' && st.title === 'ALARM im {name}{mode}' && st.message === 'Achtung: {sensor} um {time}' && st.critical === true && st.volume === 0.4 && st.buttons.silence === true && st.buttons.open === undefined"));
+    check(`${tag}: Titel, Text und Zustellung im Schritt`, await s.ev("const st=r.host.actions.draft.wf.away[0]; return st.type === 'notify' && st.title === 'ALARM im {name}{mode}' && st.message === 'Achtung: {sensor} um {time}' && st.critical === true && st.volume === 0.4 && st.buttons.silence === true && st.buttons.open === undefined && st.click === 'custom' && st.click_path === '/lovelace/alarm'"));
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open");
     await s.tap('#ag-step [data-wf="nt-default"]');
@@ -146,6 +166,13 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="detach"]');
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Karte zeigt "läuft nebenher"`, await s.waitFor(`return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[4].innerText.includes('${t.detached}')`));
+    // Ablauf grafisch: Schalter an der Karte und gestrichelte Verbindung nach einem Schritt, der nebenher läuft
+    check(`${tag}: Karte mit Schalter "Läuft nebenher", gestrichelte Verbindung danach`, await s.ev("const c=r.querySelectorAll('.ag-wf-step')[4]; const f=c.querySelector('.ag-flow'); const plus=[...r.querySelectorAll('.ag-wf-plus')][5]; return f.classList.contains('par') && f.getAttribute('aria-checked') === 'true' && plus.classList.contains('par') && getComputedStyle(plus, '::before').borderLeftStyle === 'dashed'"));
+    check(`${tag}: Schritte, die warten, zeigen "Wartet auf das Ende"; Warten und Meldung haben keinen Schalter`, await s.ev("const cs=[...r.querySelectorAll('.ag-wf-step')]; const seq=cs[1].querySelector('.ag-flow'); return seq.classList.contains('seq') && !cs[2].querySelector('.ag-flow') && !cs[0].querySelector('.ag-flow')"));
+    await s.tap('.ag-wf-step[data-index="4"] .ag-flow');
+    check(`${tag}: Tipp auf den Schalter schaltet um`, await s.waitFor("const c=r.querySelectorAll('.ag-wf-step')[4].querySelector('.ag-flow'); return c.classList.contains('seq') && !r.querySelector('.ag-wf-plus.par') && !('detach' in r.host.actions.draft.wf.away[4])"));
+    await s.tap('.ag-wf-step[data-index="4"] .ag-flow');
+    check(`${tag}: wieder nebenher`, await s.waitFor("return r.host.actions.draft.wf.away[4].detach === true && !!r.querySelector('.ag-wf-plus.par')"));
     await s.tap('.ag-wf-step[data-index="2"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open");
     check(`${tag}: keine Option bei "Warten"`, await s.ev("return !r.querySelector('#ag-step [data-wf=\"detach\"]')"));
@@ -224,8 +251,8 @@ for (const lang of ["de", "en"]) {
     // ----- Benachrichtigungen -----
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
     check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-rpill').length === 1 && r.querySelector('.ag-rpill').innerText.includes('diego')"));
-    check(`${tag}: Kapitel mit Titel (Empfänger, Alarmmeldung, Alarm-Arten, Wartung)`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 4"));
-    check(`${tag}: Alarmmeldung hier nicht einstellbar: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !!r.querySelector('[data-nt=\"to-actions\"]')"));
+    check(`${tag}: Kapitel mit Titel (Empfänger, Alarm-Arten, Wartung)`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 3"));
+    check(`${tag}: Alarmmeldung hier nicht einstellbar und kein Hinweiskapitel: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !r.querySelector('[data-nt=\"to-actions\"]')"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
     await (await s.el('select[data-nt="target-add"][data-key="maintenance_targets"]')).selectOption("notify.mobile_app_partnerin");
     check(`${tag}: Pille nach der Wahl`, await s.waitFor("return [...r.querySelectorAll('.ag-rpill')].some((p) => p.innerText.includes('partnerin'))"));

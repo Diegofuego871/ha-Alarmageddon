@@ -510,3 +510,45 @@ async def test_notifications_carry_the_integration_icon(hass: HomeAssistant, has
     resp = await client.get("/alarmageddon_icon.png")
     assert resp.status == 200
     assert (await resp.read())[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+async def test_click_target_of_the_alarm_message(hass: HomeAssistant, hass_ws_client) -> None:
+    """Klickziel (0.23.0): Standard ist das Protokoll mit dem laufenden Alarm, sonst Übersicht oder ein eigener Pfad."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    entry = await setup_alarm(hass)
+    await _notify_settings(hass, hass_ws_client)
+
+    async def fire(steps):
+        hass.config_entries.async_update_entry(entry, options={**entry.options, "workflows": {"home": steps} if steps else {}})
+        await hass.async_block_till_done()
+        hass.states.async_set(WINDOW, "off")
+        await hass.async_block_till_done()
+        await call(hass, "alarm_arm_home")
+        await open_sensor(hass, WINDOW)
+        await hass.async_block_till_done()
+        data = pushes[-1].data["data"]
+        await call(hass, "alarm_disarm")
+        await hass.async_block_till_done()
+        return data
+
+    data = await fire(None)  # automatische Meldung ohne Push-Schritt
+    assert data["url"] == data["clickAction"] == "/alarmageddon?view=log"
+    assert data["actions"][0]["uri"] == "/alarmageddon?view=log"
+    assert (await fire([{"type": "notify"}]))["url"] == "/alarmageddon?view=log"
+    assert (await fire([{"type": "notify", "click": "overview"}]))["clickAction"] == "/alarmageddon"
+    assert (await fire([{"type": "notify", "click": "custom", "click_path": "/lovelace/alarm"}]))["url"] == "/lovelace/alarm"
+    # Eigener Pfad ohne Angabe: Rückfall auf das Protokoll
+    assert (await fire([{"type": "notify", "click": "custom"}]))["url"] == "/alarmageddon?view=log"
+
+
+async def test_click_path_is_validated(hass: HomeAssistant, hass_ws_client) -> None:
+    from custom_components.alarmageddon.schemas import valid_step
+    import voluptuous as vol
+    import pytest
+
+    assert valid_step({"type": "notify", "click": "custom", "click_path": "/lovelace/0"})["click_path"] == "/lovelace/0"
+    for bad in ("https://example.org", "lovelace", "/mit leer", "x" * 300):
+        with pytest.raises(vol.Invalid):
+            valid_step({"type": "notify", "click": "custom", "click_path": bad})
+    with pytest.raises(vol.Invalid):
+        valid_step({"type": "notify", "click": "elsewhere"})

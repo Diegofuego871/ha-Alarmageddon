@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.22.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.23.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -17,7 +17,7 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Code:** optional, 4 bis 8 Ziffern, nur als Hash gespeichert. Nach fünf falschen Codes eine Minute gesperrt.
 - **Jede Funktechnik:** Alarmageddon nutzt nur Entitäten von Home Assistant. WLAN, Thread/Matter, Zigbee, Z-Wave und Bluetooth funktionieren gleichermassen.
 
-- **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung.
+- **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung, als Liste oder als Karten (Umschalter neben "Ansicht"; auf dem Handy immer Karten).
 - **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan, Codes, Sicherung). Auf dem Handy als Karten und Blätter von unten.
 - **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht einen zweiten Sensor, nur melden. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
@@ -55,7 +55,7 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 
 | Schritt | Macht |
 | --- | --- |
-| Push-Meldung | Alarmmeldung an die Empfänger für Alarme (siehe Benachrichtigungen). Titel und Text lassen sich mit dem Stift ändern, mit den Platzhaltern `{name}`, `{sensor}`, `{time}`, `{mode}` |
+| Push-Meldung | Alarmmeldung an die Empfänger für Alarme (siehe Benachrichtigungen). Titel und Text lassen sich mit dem Stift ändern, mit den Platzhaltern `{name}`, `{sensor}`, `{time}`, `{mode}`; das Klickziel ist standardmässig das Protokoll mit dem laufenden Alarm (oder die Übersicht oder ein eigener Pfad) |
 | Gerät schalten | Lichter, Steckdosen, Rollläden, Schlösser, Ventilatoren, Sirenen und mehr. Man wählt die Geräte und sieht nur, was sie können (ein, aus, umschalten, öffnen, schliessen, verriegeln) und beim Einschalten die Einstellungen, die sie unterstützen (Helligkeit, Farbtemperatur, Position, Stufe, Temperatur) |
 | Alarmton abspielen | Einer von fünf Tönen auf Medienplayern: Ton als Dropdown mit Vorschau auf diesem Handy oder Computer (nicht auf der echten Anlage), Lautstärke, Dauer in Sekunden oder bis zum Deaktivieren |
 | Warten | Hält die folgenden Schritte an |

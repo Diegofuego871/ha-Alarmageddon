@@ -191,8 +191,9 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
     dass eine Version offiziell wird. Versionsnummern ohne a/b/rc-Suffix;
     der Unterschied liegt nur am Haken "Pre-release". Grund: HACS zeigt
     Vorabversionen nur Nutzern, die sie einschalten.
-  - Release Notes auf Englisch und Deutsch, je als Markdown-Codeblock,
-    beginnend mit `## X.Y.Z (JJJJ-MM-TT)`. Grundlage:
+  - Release Notes im Chat **nur auf Englisch** (Entscheid des Nutzers,
+    2026-11-08; CHANGELOG und README bleiben zweisprachig), als
+    Markdown-Codeblock, beginnend mit `## X.Y.Z (JJJJ-MM-TT)`. Grundlage:
     `python3 .github/scripts/changelog_section.py X.Y.Z` (Englisch) und
     `python3 .github/scripts/changelog_section.py X.Y.Z de` (Deutsch).
   - **Offizielles Release nach Vorabversionen:** Die Notes fassen alles seit
@@ -202,7 +203,7 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
     Release zusammen (Abschnitte zusammengeführt), mit demselben Satz.
 - **Vorgabe des Nutzers (2026-11-08):** Immer wenn ein Release fertig ist und
   Claude auf den Nutzer wartet, gibt Claude die kompletten Release Notes
-  (Englisch und Deutsch) seit dem letzten vom Nutzer veröffentlichten Tag
+  (nur Englisch) seit dem letzten vom Nutzer veröffentlichten Tag
   aus, nicht nur die der letzten Version. Vorher auf GitHub prüfen, welches
   der letzte veröffentlichte Tag ist. Aktuell sind alle Releases
   Vorabversionen ("Vorabversion: ja").

@@ -5,7 +5,7 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, DC, GONE } = await import(`./common.js${V}`);
 
 const COLUMNS = ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "model", "integration", "changed"];
-const DEFAULT_VIEW = { cols: ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "changed"], group: "area", sort: "name" };
+const DEFAULT_VIEW = { cols: ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "changed"], group: "area", sort: "name", layout: "list" };
 const COL_LABEL = { area: "colArea", systems: "colSystems", state: "colState", battery: "colBattery", forecast: "colForecast", signal: "colSignal", firmware: "colFirmware", model: "colModel", integration: "colIntegration", changed: "colChanged" };
 const MOTION_CLASSES = new Set(["motion", "occupancy", "presence", "moving"]);
 const ZONE_SHORT = { home: "modeHome", away: "modeAway", night: "modeNight" };
@@ -114,6 +114,7 @@ export class ListUi {
         <label class="list-search">${ic("search", 18)}<input type="search" data-list="search" placeholder="${esc(this._t("search"))}" value="${esc(this.q)}" aria-label="${esc(this._t("search"))}">
           <button class="ag-clear" data-list="clear" aria-label="${esc(this._t("clearSearch"))}" ${this.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
         <span class="ag-lchips"></span>${sysSel}${areaSel}<span class="ag-grow"></span>
+        ${this.host.hasAttribute("narrow") ? "" : this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
         <button class="ag-btn" data-list="view">${ic("columns", 18)}${esc(this._t("view"))}</button></div>`;
   }
 
@@ -137,7 +138,7 @@ export class ListUi {
     const shown = this._sorted(rows.filter((r) => this._matches(r)));
     if (!shown.length) return `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t("noSensors"))}</span></div>`;
     const groups = this._groups(shown);
-    return narrow ? this._cards(groups) : this._table(groups);
+    return narrow || this.view.layout === "cards" ? this._cards(groups, narrow) : this._table(groups);
   }
 
   _groups(rows) {
@@ -216,12 +217,21 @@ export class ListUi {
     return `<div class="ag-card ag-table-wrap"><table class="ag-table ag-ltable">${head}${body}</table></div>`;
   }
 
-  _cards(groups) {
-    return `<div class="ag-mcards">${groups.map(([g, rows]) => `${g !== null ? `<div class="ag-group-label">${esc(g)}</div>` : ""}${rows.map((r) => {
+  // Karten: eine je Sensor mit allen Angaben der gewählten Spalten; auf dem Desktop als Raster, auf dem Handy untereinander
+  _cards(groups, narrow = false) {
+    const on = (c) => this.view.cols.includes(c);
+    return `<div class="ag-mcards ${narrow ? "" : "grid"}">${groups.map(([g, rows]) => `${g !== null ? `<div class="ag-group-label">${esc(g)}</div>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
-      const meta = [this._batteryHtml(r), this.view.cols.includes("forecast") ? this._forecastHtml(r) : "", this.view.cols.includes("signal") ? this._signalHtml(r) : "", r.info.sw_version && this.view.cols.includes("firmware") ? `<span class="ag-t2">${ic("chip", 14)} ${esc(r.info.sw_version)}</span>` : ""].filter(Boolean).join("");
+      const meta = [this._batteryHtml(r), on("forecast") ? this._forecastHtml(r) : "", on("signal") ? this._signalHtml(r) : "",
+        r.info.sw_version && on("firmware") ? `<span class="ag-t2">${ic("chip", 14)} ${esc(r.info.sw_version)}</span>` : ""].filter(Boolean).join("");
+      const facts = [
+        on("model") && (r.info.manufacturer || r.info.model) ? [this._t("colModel"), [r.info.manufacturer, r.info.model].filter(Boolean).join(" ")] : null,
+        on("integration") && r.info.integration ? [this._t("colIntegration"), r.info.integration] : null,
+        on("changed") && r.changed ? [this._t("colChanged"), this.host._fmtAgo(r.changed)] : null,
+      ].filter(Boolean).map(([k, v]) => `<div><span class="ag-t2">${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
       return `<div class="ag-card ag-mcard ag-lcard" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
-        <div style="flex:1;min-width:0">${esc(r.name)}<div class="ag-t2 ag-small">${esc(r.area)} · ${this._cell("systems", r)}</div></div>${this._stateHtml(r)}</div><div class="ag-lmeta">${meta}</div></div>`;
+        <div style="flex:1;min-width:0">${esc(r.name)}<div class="ag-t2 ag-small">${esc(this._typeLabel(r))} · ${esc(r.area)}</div></div>${this._stateHtml(r)}</div>
+        ${on("systems") ? `<div class="ag-lz">${this._cell("systems", r)}</div>` : ""}<div class="ag-lmeta">${meta}</div>${facts ? `<div class="ag-lfacts">${facts}</div>` : ""}</div>`;
     }).join("")}`).join("")}</div>`;
   }
 
@@ -243,6 +253,14 @@ export class ListUi {
   // ----- Ereignisse; true = erledigt -----
 
   onClick(el) {
+    if (el.dataset.listLayout) {
+      this.view.layout = el.dataset.listLayout;
+      this._saveView();
+      el.closest(".ag-seg")?.querySelectorAll(":scope > button").forEach((b) => b.classList.toggle("on", b === el));
+      this.host._placePills();
+      this.host._renderList();
+      return true;
+    }
     const act = el.dataset.list;
     if (!act) return false;
     if (act === "filter") {

@@ -12,6 +12,8 @@ Alarm und nicht zu "scharf".
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from functools import partial
@@ -94,6 +96,8 @@ class AlarmController:
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, settings: Any = None) -> None:
         self.hass = hass
         self.entry = entry
+        # Kennung dieses Laufs: ändert sich beim Neuladen der Anlage; das Panel erkennt daran, dass das Neuladen fertig ist
+        self.instance = uuid4().hex
         # Globale Einstellungen (Voreinstellungen je Sensorart); ohne sie gelten die Grundeinstellungen
         self.settings = settings
         self.state: AlarmControlPanelState = AlarmControlPanelState.DISARMED

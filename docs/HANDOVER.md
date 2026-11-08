@@ -5,6 +5,14 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.23.0, Neuladen, Karten, Klickziel)
+
+- Neuladen nach dem Speichern: `async_unload_entry` entfernt das Panel nicht mehr (nur `async_remove_entry` der letzten Anlage); `controller.instance` (uuid je Lauf) steht in `data`; das Panel wartet in `_reloadWait` auf die neue Kennung, behält die letzten Daten (`_fetch` ergänzt eine fehlende Anlage aus den alten Daten, bei leerer Antwort bis zu 30 Wiederholungen) und zeigt die Ladeanzeige (`loader.js`, 1:1 aus Device Panel `_loaderHtml/_loaderStart`, CSS `.ag-ld`, Klasse `ag-ldwrap` auf `.ag-root`). Der Nachbau simuliert das Neuladen (`window.__reloadMs`).
+- Sensorliste: `view.layout` (list|cards), Umschalter als Reiterleiste mit Kapsel (`data-list-layout`), Karten als Raster (`.ag-mcards.grid`). Filterpillen `.ag-lchips` mit Abstand.
+- Push-Schritt: `click` (log|overview|custom) und `click_path` (Pfad mit führendem /); `Notifier._click_target` liefert `/alarmageddon?view=log` (Standard), `url`, `clickAction` und die Aktion "Öffnen" nutzen es. Panel `_applyDeepLink` liest `?view=log` aus der Adresse des übergeordneten Fensters (beim Laden, `visibilitychange`), schaltet auf das Protokoll und entfernt den Parameter. Nicht geprüft in echtem HA: ob die Companion App `/alarmageddon?view=log` bei einer laufenden App ohne Neuladen weiterreicht.
+- Eigene Aktion: Art und Aktion als durchsuchbares Feld (`_cbox`, `data-wf="cb"`); Workflow-Karte mit Schalter `_flowChip` und gestrichelter Verbindung (`.ag-wf-plus.par`).
+- Release Notes im Chat nur noch Englisch (CLAUDE.md).
+
 ## Stand (0.22.0, Protokoll mit Zeitraum und Export)
 
 - `log.js`: Zeitraum (`all, 3h, 24h, today, yesterday, 7d, 30d, day, span`, Pref `logRange/logFrom/logTo`) und Anlage filtern `events()` und `incidents()` (Alarm zählt bei Überschneidung); `window()` liefert [von, bis). Export `exportFile('csv'|'json')`: CSV mit Semikolon und BOM, eine Zeile je Ereignis und je Alarm-Eintrag; JSON mit `filter` und Rohdaten. Werkzeugleiste (`.ag-log-tools`) wird nur bei Änderung der Anlagen neu gebaut, damit offene Auswahlfelder beim 5-s-Nachladen nicht zurückspringen. Liste zeigt höchstens 300 Ereignisse, der Export alle.

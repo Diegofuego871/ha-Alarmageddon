@@ -37,7 +37,7 @@ export async function open(browser, { mobile = false, lang = "de", theme = "ligh
   }, tab);
   await page.goto(`http://127.0.0.1:${PORT}/ha-sim.html?lang=${lang}&theme=${theme}${query}`);
   const frame = await (await page.waitForSelector("#panel-frame")).contentFrame();
-  await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view") && (r.querySelector(".ag-sys, .ag-gbody .ag-card, .ag-empty"))`), null, { timeout: 10000 });
+  await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view") && (r.querySelector(".ag-sys, .ag-gbody .ag-card, .ag-empty, .ag-inc"))`), null, { timeout: 10000 });
   const ev = (code, arg) => frame.evaluate(new Function("arg", `const r=${R};` + code), arg);
   const sim = (code, arg) => page.evaluate(new Function("arg", code), arg);
   const el = (sel) => frame.evaluateHandle(new Function(`return ${R}.querySelector(${JSON.stringify(sel)})`)).then((h) => h.asElement());

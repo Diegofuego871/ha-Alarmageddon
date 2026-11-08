@@ -15,6 +15,7 @@ const { ActionsUi } = await import(`./actions.js${V}`);
 const { NotifyUi } = await import(`./notify.js${V}`);
 const { UpdatesUi } = await import(`./updates.js${V}`);
 const { LogUi } = await import(`./log.js${V}`);
+const { loaderHtml, loaderStart } = await import(`./loader.js${V}`);
 const SUBS = ["sensors", "actions", "notify", "system", "updates"];
 
 class AlarmageddonPanel extends HTMLElement {
@@ -117,7 +118,10 @@ class AlarmageddonPanel extends HTMLElement {
     win.addEventListener("pointerup", end);
     win.addEventListener("pointercancel", end);
     this.ownerDocument.addEventListener("visibilitychange", () => {
-      if (this.ownerDocument.visibilityState === "visible") this._fetch();
+      if (this.ownerDocument.visibilityState === "visible") {
+        this._fetch();
+        this._applyDeepLink();
+      }
     });
     new ResizeObserver(() => {
       this._checkNarrow();
@@ -184,6 +188,18 @@ class AlarmageddonPanel extends HTMLElement {
       ]);
       // Nie eine ältere Antwort über eine neuere legen (LEARNINGS)
       if (seq !== this._fetchSeq) return;
+      // Während HA eine Anlage neu lädt (nach dem Speichern), fehlt sie kurz in der Antwort: die letzten Daten behalten, Ladeanzeige,
+      // nicht "Noch keine Alarmanlage" zeigen
+      const old = this._data?.systems || [];
+      const missing = this._wait ? old.filter((o) => o.entry_id === this._wait.entryId && !data.systems.some((s) => s.entry_id === o.entry_id)) : [];
+      if (missing.length) data.systems = [...data.systems, ...missing].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
+      if (!data.systems.length && old.length && (this._emptyTries = (this._emptyTries || 0) + 1) <= 30) {
+        this._busy(true);
+        setTimeout(() => this._fetch(), 1000);
+        return;
+      }
+      this._emptyTries = 0;
+      if (!this._wait) this._busy(false);
       this._data = data;
       this._connError = false;
       if (!this._systems().some((s) => s.entry_id === this._sel)) this._sel = this._systems()[0]?.entry_id || null;
@@ -199,6 +215,7 @@ class AlarmageddonPanel extends HTMLElement {
       if (!this._loaded || !this._view) {
         this._loaded = true;
         this._render();
+        this._applyDeepLink();
       } else if (!this.sensors.paint) {
         this._renderView(false);
       }
@@ -211,6 +228,55 @@ class AlarmageddonPanel extends HTMLElement {
       } else {
         this._toast(this._t("errGeneric", { message: errText(err) }));
       }
+    }
+  }
+
+  // Tipp auf eine Alarmmeldung führt auf /alarmageddon?view=log: das Protokoll mit dem laufenden Alarm. Der Parameter wird danach
+  // entfernt, damit die nächste Meldung wieder neu auslöst.
+  _applyDeepLink() {
+    try {
+      const w = window.parent;
+      const view = new URLSearchParams(w.location.search).get("view");
+      if (!view) return;
+      w.history.replaceState(w.history.state, "", w.location.pathname);
+      if (view === "log" && this._systems().length) {
+        this.log.touched = false; // der neueste Alarm ist aufgeklappt
+        this._tab = "log";
+        this._savePref("tab", "log");
+        this._render();
+      }
+    } catch {
+      /* ausserhalb von HA */
+    }
+  }
+
+  // Ladeanzeige über dem gedimmten Inhalt (Device Panel): beim Neuladen einer Anlage nach dem Speichern
+  _busy(on) {
+    const root = this._root.querySelector(".ag-root");
+    if (!root || root.classList.contains("ag-ldwrap") === on) return;
+    root.classList.toggle("ag-ldwrap", on);
+    root.querySelector(":scope > .ag-ld")?.remove();
+    if (on) {
+      root.insertAdjacentHTML("beforeend", loaderHtml(esc(this._t("loading"))));
+      loaderStart(this._root, this);
+    }
+  }
+
+  // Nach dem Speichern lädt HA die Anlage neu. Bis die neue Kennung (instance) da ist, zeigt das Panel die Ladeanzeige und die alten Daten.
+  async _reloadWait(entryId = this._sel) {
+    const mine = { entryId, before: this._system(entryId)?.instance, until: Date.now() + 25000 };
+    this._wait = mine;
+    this._busy(true);
+    while (this._wait === mine && Date.now() < mine.until) {
+      await new Promise((ok) => setTimeout(ok, 700));
+      if (this._wait !== mine) return;
+      await this._fetch();
+      const now = this._system(entryId)?.instance;
+      if (now && now !== mine.before) break;
+    }
+    if (this._wait === mine) {
+      this._wait = null;
+      this._busy(false);
     }
   }
 
@@ -706,7 +772,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._tab === "config" && this._sub === "notify" && this.notify.onClick(ev.target.closest("[data-nt]"))) return;
     if (this.updates.onClick(ev.target.closest("[data-upd]"))) return;
     if (this._tab === "log" && this.log.onClick(ev.target.closest("[data-log]"))) return;
-    const listEl = ev.target.closest("[data-list]");
+    const listEl = ev.target.closest("[data-list], [data-list-layout]");
     if (listEl && this.list.onClick(listEl)) return;
     const tab = ev.target.closest("[data-tab]");
     // Reiterwechsel verwirft nie etwas: jeder Reiter behält seinen Entwurf, ein gelber Punkt zeigt, wo noch etwas offen ist.

@@ -338,7 +338,7 @@ export class SystemUi {
       Object.assign(s, { mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
-      h._fetch();
+      h._reloadWait();
     } catch (err) {
       const known = { no_mode: "errNoMode", mode_active: "errModeActive" }[err?.code];
       this.saveState = known ? this._t(known) : this._t("saveFailed", { message: errText(err) });

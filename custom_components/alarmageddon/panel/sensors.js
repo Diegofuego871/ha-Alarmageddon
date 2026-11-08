@@ -348,7 +348,7 @@ export class SensorsUi {
       s.sensors = [...d.sensors].sort();
       this.draft = null;
       this.saveState = "saved";
-      h._fetch();
+      h._reloadWait(s.entry_id);
     } catch (err) {
       this.saveState = this._t("saveFailed", { message: errText(err) });
     } finally {
@@ -374,8 +374,11 @@ export class SensorsUi {
   pickCandidates() {
     const h = this.host;
     const q = (this.pick?.q || "").trim().toLowerCase();
+    const f = this.pick?.filter || "all";
+    const kind = (dc) => (OPENINGS.has(dc) ? "openings" : MOTION.has(dc) ? "motion" : "other");
     return Object.entries(h._data?.sensors || {})
       .filter(([id, info]) => !info.missing && !this.draft.sensors.has(id)
+        && (f === "all" || kind(info.device_class) === f)
         && (!q || [h._name(id), id, info.area, info.integration].some((v) => String(v || "").toLowerCase().includes(q))))
       .map(([id, info]) => ({ id, info, name: h._name(id), area: info.area || this._t("noArea") }))
       .sort((a, b) => Number(!a.info.area) - Number(!b.info.area) || a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
@@ -383,7 +386,7 @@ export class SensorsUi {
 
   openPick() {
     if (!this.ensureDraft()) return;
-    this.pick = { q: "", sel: new Set() };
+    this.pick = { q: "", filter: "all", sel: new Set() };
     this.renderPick();
     const dlg = this.host._root.getElementById("ag-pick");
     if (!dlg.open) dlg.showModal();
@@ -421,6 +424,7 @@ export class SensorsUi {
     this.host._setHtml(dlg, `<div class="ag-dlg-body"><h3>${esc(this._t("pickTitle"))}</h3><div class="ag-t2">${esc(this._t("pickHint"))}</div>
       <label class="list-search" style="margin-top:12px">${ic("search", 18)}<input type="search" data-sen="pick-q" placeholder="${esc(this._t("search"))}" value="${esc(this.pick.q)}" aria-label="${esc(this._t("search"))}">
         <button class="ag-clear" data-sen="pick-clear" aria-label="${esc(this._t("clearSearch"))}" ${this.pick.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
+      <div class="ag-tools ag-pick-chips">${[["all", "filterAll"], ["openings", "filterOpenings"], ["motion", "filterMotion"], ["other", "filterOther"]].map(([k, label]) => `<button class="ag-chip ${this.pick.filter === k ? "on" : ""}" data-sen="pick-filter" data-filter="${k}">${esc(this._t(label))}</button>`).join("")}</div>
       <div class="ag-elist" style="margin-top:10px;max-height:min(46vh,380px)">${this._pickListHtml()}</div>
       <div class="ag-dlg-btns"><button class="ag-btn" data-sen="pick-close">${esc(this._t("cancel"))}</button>
         <button class="ag-btn primary" data-sen="pick-add" ${this.pick.sel.size ? "" : "disabled"}>${ic("plus", 18)}${esc(this._t("pickAdd", { count: this.pick.sel.size }))}</button></div></div>`);
@@ -542,6 +546,10 @@ export class SensorsUi {
       if (this.pick.sel.has(id)) this.pick.sel.delete(id);
       else this.pick.sel.add(id);
       this.renderPick();
+    } else if (act === "pick-filter") {
+      this.pick.filter = el.dataset.filter;
+      this.host._root.querySelectorAll('#ag-pick [data-sen="pick-filter"]').forEach((b) => b.classList.toggle("on", b === el));
+      this.renderPickList();
     } else if (act === "pick-clear") {
       const input = this.host._root.querySelector('[data-sen="pick-q"]');
       input.value = "";

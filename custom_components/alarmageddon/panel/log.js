@@ -68,10 +68,10 @@ export class LogUi {
     this._poll();
   }
 
-  // Läuft ein Alarm, wächst die Zeitachse: alle 5 Sekunden nachladen, solange der Reiter offen ist
+  // Alle 5 Sekunden nachladen, solange der Reiter offen ist: ein laufender Alarm wächst, neue Ereignisse erscheinen von selbst
   _poll() {
     clearTimeout(this._timer);
-    if (this.host._tab !== "log" || !this.systems?.some((s) => s.recording)) return;
+    if (this.host._tab !== "log") return;
     this._timer = setTimeout(() => this.host._tab === "log" && this.load(), 5000);
   }
 

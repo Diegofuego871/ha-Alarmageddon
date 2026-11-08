@@ -7,11 +7,33 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.23.0] - 2026-11-08
+
+Ladeanzeige und keine vergessene Alarmanlage mehr beim Speichern, Kartenlayout für die Sensorliste, durchsuchbare Auswahl bei den Aktionen, Klickziel der Alarmmeldung.
+
+Enthält die Änderungen aus 0.22.0.
+
+### Hinzugefügt
+
+- **Kartenlayout für die Sensorliste** (Übersicht): ein Umschalter "Liste / Karten" neben "Ansicht". Die Karten zeigen je Sensor eine kleine Karte mit allen Angaben der gewählten Spalten (Zustand, Batterie, Prognose, Empfang, Firmware, Modell, Integration, letzte Änderung, Zonen), als Raster und wie die Liste gruppiert. Auf dem Handy gelten immer die Karten, sie folgen der Breite.
+- **Klickziel der Alarmmeldung** (Konfiguration › Aktionen, Schritt "Push-Meldung"): Standardmässig öffnet ein Tipp das Protokoll mit dem laufenden Alarm (was seit dem Auslösen wann passiert ist, die Ansicht aktualisiert sich alle 5 Sekunden). Alternativ die Übersicht oder ein eigener Pfad in Home Assistant (zum Beispiel `/lovelace/alarm`). Der Knopf "Öffnen" nutzt dasselbe Ziel.
+- **"Wartet auf das Ende" / "Läuft nebenher" an jedem Schritt** des Ablaufs: Ein Schalter an der Karte stellt es mit einem Tipp um, und nach einem Schritt, der nebenher läuft, ist die Verbindung zum nächsten gestrichelt, so sieht man den Ablauf auf einen Blick.
+- **Durchsuchbare Auswahl** bei "Art" und "Aktion" einer eigenen Aktion: Tippen filtert die Liste.
+- **Sensoren hinzufügen** (Konfiguration › Sensoren › "Sensoren hinzufügen"): dieselben Filterpillen wie die Sensorliste (Alle, Türen & Fenster, Bewegung, Weitere) und ein höheres Suchfeld.
+- Das Protokoll aktualisiert sich alle 5 Sekunden, solange es offen ist (vorher nur bei laufendem Alarm).
+
+### Geändert
+
+- **Filterpillen haben Abstand** (auch zwischen den Zeilen, wenn sie umbrechen).
+- **Das Kapitel "Alarmmeldung" in Konfiguration › Benachrichtigungen entfällt** (die Einstellungen stehen im Push-Schritt, ein weiterer Hinweis braucht es nicht).
+
+### Behoben
+
+- **Die Alarmanlage wurde nach dem Hinzufügen von Sensoren vergessen** ("Noch keine Alarmanlage", und das Panel hing): Home Assistant lädt die Alarmanlage beim Speichern neu, und das Seitenpanel wurde dabei entfernt und neu angelegt. Das Panel bleibt jetzt stehen; die Oberfläche behält die letzten Daten und zeigt die Ladeanzeige (dieselbe wie Device Panel: gedimmter Inhalt, drei drehende Punkte), bis das Neuladen fertig ist. Das Seitenpanel verschwindet erst, wenn die letzte Alarmanlage entfernt wird.
+
 ## [0.22.0] - 2026-11-08
 
-Das Protokoll lässt sich nach Zeitraum filtern und exportieren.
-
-Enthält die Änderungen aus 0.13.0 bis 0.21.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -24,7 +46,7 @@ Enthält die Änderungen aus 0.13.0 bis 0.21.0.
 
 ## [0.21.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -32,7 +54,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.20.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -43,7 +65,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.19.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -51,7 +73,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.18.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -60,7 +82,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.17.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -73,7 +95,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.16.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -87,7 +109,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.15.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -96,7 +118,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.14.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -107,7 +129,7 @@ Nicht veröffentlicht; enthalten in 0.22.0.
 
 ## [0.13.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.22.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -316,7 +338,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.22.0
+[0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

@@ -48,6 +48,9 @@ STEP_SCHEMAS = {
         vol.Optional("critical"): bool,
         vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
         vol.Optional("buttons"): {vol.Optional(vol.In(("open", "silence", "disarm"))): bool},
+        # Klickziel der Meldung (0.23.0): "log" (Standard, Protokoll mit dem laufenden Alarm), "overview" oder "custom" mit eigenem Pfad
+        vol.Optional("click"): vol.In(("log", "overview", "custom")),
+        vol.Optional("click_path"): vol.All(str, vol.Length(max=200), vol.Match(r"^/[^\s]*$")),
     }),
     "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
     "action": vol.Schema({

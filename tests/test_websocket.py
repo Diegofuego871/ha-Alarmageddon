@@ -29,10 +29,15 @@ async def test_one_panel_for_several_systems(hass: HomeAssistant) -> None:
     await hass.config_entries.async_unload(haus.entry_id)
     assert _panel_registered(hass)
     await hass.config_entries.async_unload(garage.entry_id)
-    assert not _panel_registered(hass)
-    # Wieder laden: Panel wieder da, statische Pfade werden nicht doppelt angemeldet
+    # Beim Neuladen bleibt das Panel stehen: sonst vergässe die Oberfläche die Anlage (Sensoren speichern lädt neu)
+    assert _panel_registered(hass)
     assert await hass.config_entries.async_setup(garage.entry_id)
     assert _panel_registered(hass)
+    # Erst mit der letzten entfernten Anlage verschwindet es
+    await hass.config_entries.async_remove(haus.entry_id)
+    assert _panel_registered(hass)
+    await hass.config_entries.async_remove(garage.entry_id)
+    assert not _panel_registered(hass)
 
 
 async def test_panel_page_served(hass: HomeAssistant, hass_client) -> None:

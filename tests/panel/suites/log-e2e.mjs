@@ -71,12 +71,24 @@ for (const lang of ["de", "en"]) {
       && data.systems.reduce((n, x) => n + x.events.length, 0) === 1 && data.systems.reduce((n, x) => n + x.recordings.length, 0) === 1, JSON.stringify(data.filter));
     await pick("all");
 
+    // Das Protokoll lädt alle 5 Sekunden nach, solange der Reiter offen ist
+    const calls = () => s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/log').length");
+    const before = await calls();
+    await s.page.waitForTimeout(5600);
+    check(`${tag}: Protokoll lädt alle 5 Sekunden nach`, (await calls()) > before, `${before} -> ${await calls()}`);
+
     // Zuklappen
     await s.tap('.ag-inc-head');
     check(`${tag}: zugeklappt`, await s.waitFor("return !r.querySelector('.ag-inc-body') && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'false'"));
     check(`${tag}: Reiter gemerkt`, await s.ev("return localStorage.getItem('alarmageddon.tab') === 'log'"));
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();
+
+    // Tipp auf die Alarmmeldung: /alarmageddon?view=log öffnet das Protokoll mit dem laufenden Alarm
+    const d = await open(browser, { mobile, lang, query: "&view=log&alarm=open" });
+    check(`${tag}: Deep Link öffnet das Protokoll mit dem neuesten Alarm aufgeklappt`, await d.waitFor("return !!r.querySelector('.ag-inc') && r.querySelector('[data-tab=\"log\"]').classList.contains('on') && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'true'"));
+    check(`${tag}: Parameter danach entfernt`, !new URL(d.page.url()).searchParams.get("view"));
+    await d.ctx.close();
 
     // Laufender Alarm: neuester oben und aufgeklappt, der ältere zu
     const r = await open(browser, { mobile, lang, query: "&alarm=open" });

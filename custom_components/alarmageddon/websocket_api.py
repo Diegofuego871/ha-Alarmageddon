@@ -173,6 +173,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "entry_id": entry.entry_id,
                 "title": entry.title,
                 "entity_id": _alarm_entity(hass, entry),
+                "instance": ctl.instance,
                 "modes": list(ctl.modes),
                 "zones": zones,
                 "entry_sensors": sorted(ctl.entry_sensors),

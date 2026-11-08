@@ -128,6 +128,13 @@ button { font: inherit; color: inherit; }
 .ag-foot .ag-saved { color: var(--ag-success); font-weight: 500; }
 .ag-foot .ag-err, .ag-settx .ag-err { color: var(--ag-error); }
 .ag-mcards { display: flex; flex-direction: column; gap: 8px; }
+.ag-mcards.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+.ag-mcards.grid > .ag-group-label { grid-column: 1 / -1; margin-top: 8px; }
+.ag-lz { display: flex; flex-wrap: wrap; gap: 8px; }
+.ag-lfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 14px; padding-top: 10px; border-top: 1px solid var(--ag-divider); font-size: 12.5px; }
+.ag-lfacts > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ag-lfacts b { font-weight: 500; overflow-wrap: anywhere; }
+.ag-lchips { display: flex; flex-wrap: wrap; gap: 10px; }
 .ag-mcard { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .ag-mcard-top { display: flex; gap: 10px; align-items: center; }
 .ag-zbtns { display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
@@ -243,6 +250,10 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-plus { display: flex; padding: 6px 0 6px 20px; position: relative; z-index: 1; }
 .ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; }
 .ag-wf-add:hover { background: var(--ag-primary-soft); }
+.ag-flow { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ag-divider); background: transparent; color: var(--ag-text2); font: inherit; font-size: 12px; cursor: pointer; }
+.ag-flow.par { border-color: transparent; background: var(--ag-primary-soft); color: var(--ag-primary); }
+.ag-flow:hover { border-color: var(--ag-primary); }
+.ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: -14px; bottom: 0; width: 0; border-left: 2px dashed var(--ag-primary); z-index: 0; }
 .ag-wf-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; z-index: 1; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }
@@ -287,6 +298,10 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-combo-item:last-child { border-bottom: 0; }
 .ag-combo-item:hover { background: var(--ag-hover); }
 .ag-combo-item small { color: var(--ag-text2); font-size: 11.5px; }
+.ag-combo-item.cur { background: var(--ag-primary-soft); }
+.ag-search.off { opacity: .5; }
+.ag-cbox .ag-search { cursor: text; }
+.ag-cbox .ag-search .ag-ic:last-child { transform: rotate(90deg); margin-left: auto; opacity: .7; }
 .ag-combo-more { padding: 8px 12px; }
 .ag-tone { display: flex; gap: 8px; align-items: center; }
 .ag-tone select { flex: 1; min-width: 0; }
@@ -343,6 +358,14 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 :host([narrow]) .ag-lg-axisrow .ag-lg-name { display: none; }
 .ag-ntprev { padding: 12px 14px; border-radius: 12px; background: var(--ag-subtle); display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; font-size: 13.5px; }
 .ag-chip small { margin-left: 6px; color: var(--ag-text2); font-size: 11.5px; }
+/* Ladeanzeige wie in Device Panel (loader.js): der Inhalt bleibt gedimmt, drei Punkte in der Farbe --ld liegen darüber */
+.ag-ldwrap > .ag-content { opacity: .28; pointer-events: none; user-select: none; }
+.ag-ld { position: absolute; left: 50%; top: 40%; width: 72px; height: 72px; margin: -36px 0 0 -36px; pointer-events: none; z-index: 20; }
+.ag-ld s { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--ld, var(--ag-primary)); box-shadow: 0 0 12px color-mix(in srgb, var(--ld, var(--ag-primary)) 55%, transparent); }
+.ag-ld s:nth-child(1) { left: 55px; top: 29px; }
+.ag-ld s:nth-child(2) { left: 17px; top: 51px; }
+.ag-ld s:nth-child(3) { left: 17px; top: 7px; }
+@media (prefers-reduced-motion: reduce) { .ag-ld s { animation: ag-ld-pulse 1.4s ease-in-out infinite; } @keyframes ag-ld-pulse { 50% { opacity: .35; } } }
 .ag-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .ag-kind { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: left; padding: 12px; border: 1px solid var(--ag-divider); border-radius: 14px; background: var(--ag-card); cursor: pointer; font: inherit; color: inherit; }
 .ag-kind:hover { border-color: var(--ag-primary); }
@@ -350,7 +373,9 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-kind b { font-weight: 500; }
 .ag-kind small { color: var(--ag-text2); font-size: 12px; line-height: 1.3; }
 .ag-step-ed { max-height: 80vh; overflow: auto; }
-.ag-dlg-body .list-search { flex: none; height: 40px; min-width: 0; }
+.ag-dlg-body .list-search { flex: none; height: 48px; min-height: 48px; min-width: 0; padding: 0 8px 0 14px; }
+.ag-dlg-body .list-search input { font-size: 15px; }
+.ag-pick-chips { gap: 10px; margin-top: 12px; }
 .ag-step-ed .ag-sys-top h3 { margin: 0; }
 .ag-elist { display: flex; flex-direction: column; max-height: 260px; overflow: auto; border: 1px solid var(--ag-divider); border-radius: 12px; }
 .ag-erow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--ag-divider); background: var(--ag-card); text-align: left; cursor: pointer; font: inherit; color: inherit; min-height: 44px; }

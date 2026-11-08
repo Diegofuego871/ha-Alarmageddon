@@ -20,6 +20,11 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Fenster mit allen erkannten, noch nicht gewählten`, await s.waitFor("const d=r.getElementById('ag-pick'); return d.open && !!d.querySelector('[data-sen=\"pick-toggle\"][data-ent=\"binary_sensor.bewegung_garage\"]') && !!d.querySelector('[data-sen=\"pick-toggle\"][data-ent=\"binary_sensor.wasser_keller\"]')"));
     check(`${tag}: schon gewählte nicht angeboten`, await s.ev(`return !r.querySelector('#ag-pick [data-ent="${zoned[0]}"]')`));
     check(`${tag}: Hinzufügen gesperrt ohne Auswahl`, await s.ev("return r.querySelector('#ag-pick [data-sen=\"pick-add\"]').disabled"));
+    check(`${tag}: gleiche Filterpillen wie die Liste`, await s.ev("const c=[...r.querySelectorAll('#ag-pick [data-sen=\"pick-filter\"]')].map((b) => b.dataset.filter); return c.join() === 'all,openings,motion,other'"));
+    await s.tap('#ag-pick [data-sen="pick-filter"][data-filter="motion"]');
+    check(`${tag}: Filter Bewegung zeigt nur Bewegungsmelder`, await s.waitFor("const l=[...r.querySelectorAll('#ag-pick [data-sen=\"pick-toggle\"]')]; return l.length === 1 && l[0].dataset.ent === 'binary_sensor.bewegung_garage'"));
+    await s.tap('#ag-pick [data-sen="pick-filter"][data-filter="all"]');
+    check(`${tag}: Suchfeld hoch genug`, await s.ev("return r.querySelector('#ag-pick .list-search').getBoundingClientRect().height >= 44"));
     await s.tap('#ag-pick [data-sen="pick-q"]');
     await s.page.keyboard.type("wasser");
     check(`${tag}: Suche filtert, Fokus bleibt`, await s.waitFor("const l=r.querySelectorAll('#ag-pick [data-sen=\"pick-toggle\"]'); return l.length === 1 && l[0].dataset.ent === 'binary_sensor.wasser_keller' && r.activeElement === r.querySelector('#ag-pick [data-sen=\"pick-q\"]')"));
@@ -36,7 +41,17 @@ for (const lang of ["de", "en"]) {
     // Entfernen: Fenster Bad (in Zonen) verschwindet samt Zonen
     await s.tap('[data-sen="remove"][data-ent="binary_sensor.fenster_bad"]');
     check(`${tag}: entfernt`, await s.waitFor(`return !r.querySelector('${ent("binary_sensor.fenster_bad")}') && r.querySelectorAll('[data-sen="detail"]').length === ${zoned.length + 1}`));
+    await s.sim("window.__reloadMs = 1600");
     await s.tap('[data-sen="save"]');
+    // HA lädt die Anlage neu: sie fehlt kurz. Das Panel zeigt die Ladeanzeige über den gedimmten Daten und vergisst die Anlage nicht
+    check(`${tag}: Ladeanzeige beim Neuladen`, await s.waitFor("return !!r.querySelector('.ag-root.ag-ldwrap .ag-ld') && r.querySelectorAll('.ag-ld s').length === 3", 2000));
+    let forgot = false;
+    for (let i = 0; i < 10; i += 1) {
+      if (await s.ev("return !!r.querySelector('.ag-empty h2')")) forgot = true;
+      await s.page.waitForTimeout(160);
+    }
+    check(`${tag}: Anlage wird beim Neuladen nicht vergessen`, !forgot);
+    check(`${tag}: Ladeanzeige verschwindet nach dem Neuladen`, await s.waitFor("return !r.querySelector('.ag-ld') && !r.querySelector('.ag-root.ag-ldwrap')", 8000));
     check(`${tag}: gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const msg = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");
     const all = Object.values(msg?.zones || {}).flat();

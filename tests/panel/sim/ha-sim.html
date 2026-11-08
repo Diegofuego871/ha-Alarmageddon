@@ -159,7 +159,8 @@
       const sensors = {};
       for (const [id, info] of Object.entries(SENSORS)) sensors[id] = { ...info };
       return JSON.parse(JSON.stringify({
-        systems: window.__systems.map(({ code, pcodes, ...s }) => s), sensors,
+        // Nach dem Speichern lädt HA die Anlage neu: sie fehlt kurz in der Antwort und hat danach eine neue Kennung (instance)
+        systems: window.__systems.filter((s) => !(window.__reload && window.__reload.id === s.entry_id && Date.now() < window.__reload.until)).map(({ code, pcodes, instance, ...s }) => ({ ...s, instance: instance || "i0" })), sensors,
         users: [{ id: "u_anna", name: "Anna" }, { id: "u_diego", name: "Diego" }, { id: "u_gast", name: "Gast" }], presets: window.__presets, notify: window.__notify,
         notify_services: ["notify.mobile_app_diego", "notify.mobile_app_partnerin", "notify.mobile_app_tablet"],
         sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["warning", 2], ["chime", 2]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
@@ -261,6 +262,10 @@
     }
     const sys = window.__systems.find((s) => s.entry_id === msg.entry_id);
     if (!sys) throw err("not_found");
+    if (["alarmageddon/save_zones", "alarmageddon/save_workflows", "alarmageddon/save_system"].includes(msg.type)) {
+      window.__reload = { id: sys.entry_id, until: Date.now() + (window.__reloadMs ?? 900) };
+      sys.instance = `i${Date.now()}`;
+    }
     if (msg.type === "alarmageddon/save_zones") {
       const active = new Set(sys.modes.flatMap((m) => msg.zones[m] || []));
       if (msg.entry_sensors.some((e) => !active.has(e))) throw err("entry_not_in_zone");

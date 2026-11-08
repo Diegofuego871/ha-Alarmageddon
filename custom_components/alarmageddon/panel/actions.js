@@ -39,7 +39,7 @@ const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["p
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
   return { ...fromStepBase(step), detach: !!step.detach };
@@ -47,7 +47,7 @@ export function fromStep(step) {
 
 function fromStepBase(step) {
   const f = blank();
-  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) } };
+  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) }, ntClick: step.click ?? null, ntClickPath: step.click_path || "" };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
@@ -92,6 +92,10 @@ function toStepBase(f) {
     if (f.ntCritical !== null && f.ntCritical !== undefined) out.critical = !!f.ntCritical;
     if (f.ntVolume !== null && f.ntVolume !== undefined) out.volume = Math.min(1, Math.max(0, Number(f.ntVolume)));
     if (Object.keys(f.ntButtons || {}).length) out.buttons = { ...f.ntButtons };
+    if (f.ntClick) {
+      out.click = f.ntClick;
+      if (f.ntClick === "custom") out.click_path = String(f.ntClickPath || "").trim();
+    }
     return out;
   }
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
@@ -242,7 +246,8 @@ export class ActionsUi {
     h._setHtml(head, `<div class="ag-tools"><span class="ag-t2">${esc(this._t("wfFor"))}</span>${h._segHtml("wf-trigger", triggers, this.trigger, "data-trigger", "small")}<span class="ag-grow"></span>${status}${testBtn}</div>
       ${this.trigger === "always" ? `<div class="ag-t2 ag-small" style="margin:-6px 4px 0">${esc(this._t("wfAlwaysHint"))}</div>` : ""}`);
     const steps = this.steps();
-    const plus = (i) => `<div class="ag-wf-plus"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
+    // Nach einem Schritt, der nebenher läuft, ist die Verbindung gestrichelt: der nächste Schritt startet sofort
+    const plus = (i) => `<div class="ag-wf-plus ${steps[i - 1]?.detach && ["action", "sound"].includes(steps[i - 1].type) ? "par" : ""}"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
     const cards = steps.map((step, i) => this._card(step, i, running)).map((c, i) => c + plus(i + 1)).join("");
     h._setHtml(body, `<div class="ag-wf-line">
         <div class="ag-wf-start"><span class="ag-mini err">${ic("alert", 16)}</span>${esc(this._t("wfStart"))}</div>${plus(0)}
@@ -289,10 +294,17 @@ export class ActionsUi {
     return `<div class="ag-card ag-wf-step" data-index="${i}">
       <button class="ag-handle" data-wf="grab" data-index="${i}" aria-label="${esc(this._t("stepGrab"))}" title="${esc(this._t("stepGrab"))}">${ic("grip", 20)}</button>
       <span class="ag-wf-icon k-${f.kind}">${ic(k.icon, 20)}</span>
-      <div class="ag-wf-text"><b>${esc(title)}</b> ${restore}<div class="ag-t2 ag-small">${esc(this._summary(f))}</div></div>
+      <div class="ag-wf-text"><b>${esc(title)}</b> ${restore}<div class="ag-t2 ag-small">${esc(this._summary(f))}</div>${this._flowChip(f, i)}</div>
       <div class="ag-wf-btns"><button class="ag-iconbtn" data-wf="test-step" data-index="${i}" ${running ? "disabled" : ""} aria-label="${esc(this._t("stepTest"))}" title="${esc(running ? this._t("stepTestBusy") : this._t("stepTest"))}">${ic("play", 18)}</button>
         <button class="ag-iconbtn" data-wf="edit" data-index="${i}" aria-label="${esc(this._t("stepEdit"))}">${ic("pencil", 18)}</button>
         <button class="ag-iconbtn" data-wf="delete" data-index="${i}" aria-label="${esc(this._t("stepDelete"))}">${ic("trash", 18)}</button></div></div>`;
+  }
+
+  // Ablauf auf einen Blick: wartet der Ablauf auf das Ende dieses Schritts oder läuft er nebenher? Ein Tipp schaltet um.
+  _flowChip(f, i) {
+    if (!["device", "sound", "scene", "custom"].includes(f.kind)) return "";
+    const par = !!f.detach;
+    return `<button type="button" class="ag-flow ${par ? "par" : "seq"}" data-wf="flow" data-index="${i}" role="switch" aria-checked="${par}" title="${esc(this._t("fldDetachHint"))}">${ic(par ? "fork" : "arrowDown", 14)}<span>${esc(this._t(par ? "wfFlowPar" : "wfFlowSeq"))}</span></button>`;
   }
 
   renderFoot() {
@@ -550,6 +562,9 @@ export class ActionsUi {
     return `<div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtDelivery"))}</div>
         <div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("ntCriticalShort"))}</b><small>${esc(this._t("fldNtCriticalHint"))}</small></div>${this._toggle('data-wf="nt-crit"', critical, "ntCriticalShort")}</div>
         ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}</div>
+      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtClick"))}</div><div class="ag-ef-h">${esc(this._t("fldNtClickHint"))}</div>
+        <select class="ag-input" data-wf="nt-click" aria-label="${esc(this._t("fldNtClick"))}">${["log", "overview", "custom"].map((k) => `<option value="${k}" ${(f.ntClick || "log") === k ? "selected" : ""}>${esc(this._t(`ntClick_${k}`))}</option>`).join("")}</select>
+        ${f.ntClick === "custom" ? `<input class="ag-input ag-mono" data-wf="f" data-key="ntClickPath" value="${esc(f.ntClickPath || "")}" placeholder="/lovelace/alarm" aria-label="${esc(this._t("ntClick_custom"))}" autocapitalize="off" autocomplete="off" spellcheck="false">` : ""}</div>
       <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtButtons"))}</div>
         ${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}</div>`;
   }
@@ -581,14 +596,34 @@ export class ActionsUi {
       : `<div class="ag-t2 ag-small">${esc(this._t("fldNoEntities"))}</div>`);
   }
 
+  // Durchsuchbares Auswahlfeld (tippen filtert): Art und Aktion bei "Eigene Aktion"; die Listen sind lang
+  _cbItems(key, f) {
+    const services = this._services();
+    const q = (this.edit?.cb?.key === key ? this.edit.cb.q : "").trim().toLowerCase();
+    const items = key === "domain"
+      ? Object.keys(services).filter((d) => Object.keys(services[d] || {}).length).map((d) => ({ value: d, label: this._domainName(d) }))
+      : Object.keys(services[f.domain] || {}).map((s) => ({ value: s, label: this._serviceName(f.domain, s) }));
+    items.sort((x, y) => x.label.localeCompare(y.label));
+    const shown = items.filter((it) => !q || it.label.toLowerCase().includes(q) || it.value.toLowerCase().includes(q));
+    if (!shown.length) return `<div class="ag-t2 ag-small ag-combo-more">${esc(this._t("fldNoMatch"))}</div>`;
+    const cur = key === "domain" ? f.domain : f.service;
+    return shown.map((it) => `<button type="button" class="ag-combo-item ${it.value === cur ? "cur" : ""}" role="option" data-wf="cb-pick" data-key="${key}" data-value="${esc(it.value)}"><span>${esc(it.label)}</span><small>${esc(key === "domain" ? it.value : `${f.domain}.${it.value}`)}</small></button>`).join("");
+  }
+
+  _cbox(key, f, label) {
+    const cur = key === "domain" ? f.domain : f.service;
+    const text = !cur ? "" : key === "domain" ? this._domainName(cur) : this._serviceName(f.domain, cur);
+    const disabled = key === "service" && !f.domain;
+    return `<div class="ag-combo ag-cbox"><label class="ag-search ${disabled ? "off" : ""}">${ic("search", 18)}<input type="search" data-wf="cb" data-key="${key}" value="${esc(text)}" placeholder="${esc(this._t("fldChoose"))}" autocomplete="off" aria-label="${esc(label)}" ${disabled ? "disabled" : ""}>${ic("chevRight", 16)}</label>
+      <div class="ag-combo-list" role="listbox">${this._cbItems(key, f)}</div></div>`;
+  }
+
   _customFields(f) {
     const services = this._services();
     const domains = Object.keys(services).filter((d) => Object.keys(services[d] || {}).length).sort();
     if (!domains.length) return `<div class="ag-t2">${esc(this._t("fldNoServices"))}</div>`;
-    const label = (d) => this._domainName(d);
-    const dom = `<select class="ag-input" data-wf="f" data-key="domain" aria-label="${esc(this._t("fldKind"))}"><option value="">${esc(this._t("fldChoose"))}</option>${domains.map((d) => `<option value="${esc(d)}" ${d === f.domain ? "selected" : ""}>${esc(label(d))}</option>`).join("")}</select>`;
-    const list = f.domain ? Object.keys(services[f.domain] || {}).sort((a, b) => this._serviceName(f.domain, a).localeCompare(this._serviceName(f.domain, b))) : [];
-    const srv = `<select class="ag-input" data-wf="f" data-key="service" aria-label="${esc(this._t("fldAction"))}" ${list.length ? "" : "disabled"}><option value="">${esc(this._t("fldChoose"))}</option>${list.map((s) => `<option value="${esc(s)}" ${s === f.service ? "selected" : ""}>${esc(this._serviceName(f.domain, s))}</option>`).join("")}</select>`;
+    const dom = this._cbox("domain", f, this._t("fldKind"));
+    const srv = this._cbox("service", f, this._t("fldAction"));
     const meta = services[f.domain]?.[f.service];
     let html = this._field("fldKind", dom) + this._field("fldAction", srv + (this._serviceDesc(f.domain, f.service) ? `<div class="ag-ef-h" style="margin-top:6px">${esc(this._serviceDesc(f.domain, f.service))}</div>` : ""));
     if (!meta) return html + this._restoreRow(f);
@@ -656,6 +691,7 @@ export class ActionsUi {
   apply() {
     const f = this.edit.form;
     if (["device", "sound", "scene"].includes(f.kind) && !f.targets.length) return this._editError("stepNoTargets");
+    if (f.kind === "notify" && f.ntClick === "custom" && !/^\/[^\s]*$/.test(String(f.ntClickPath || "").trim())) return this._editError("fldNtPathBad");
     if (f.kind === "custom") {
       if (!f.domain || !f.service) return this._editError("stepNoService");
       const meta = this._services()[f.domain]?.[f.service];
@@ -734,7 +770,7 @@ export class ActionsUi {
       s.workflows = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(wf).filter(([, v]) => v.length))));
       this.draft = null;
       this.saveState = "saved";
-      h._fetch();
+      h._reloadWait(s.entry_id);
     } catch (err) {
       this.saveState = this._t("saveFailed", { message: errText(err) });
     } finally {
@@ -853,8 +889,31 @@ export class ActionsUi {
       this.ntField = el;
       return true;
     }
+    if (el?.dataset?.wf === "cb" && this.edit) {
+      const combo = el.closest(".ag-combo");
+      if (inside) {
+        this.edit.cb = { key: el.dataset.key, q: "" };
+        el.select(); // der Text wird beim Tippen ersetzt; die Liste zeigt zuerst alles
+        const list = combo.querySelector(".ag-combo-list");
+        list.innerHTML = this._cbItems(el.dataset.key, this.edit.form);
+        combo.classList.add("open");
+        list.querySelector(".cur")?.scrollIntoView({ block: "nearest" });
+      } else {
+        setTimeout(() => {
+          if (this._comboPointer) return;
+          combo.classList.remove("open");
+          if (this.edit?.cb?.key === el.dataset.key) this.edit.cb = null;
+          const f = this.edit?.form;
+          if (f && el.isConnected) {
+            const cur = el.dataset.key === "domain" ? f.domain : f.service;
+            el.value = !cur ? "" : el.dataset.key === "domain" ? this._domainName(cur) : this._serviceName(f.domain, cur);
+          }
+        }, 120);
+      }
+      return true;
+    }
     if (el?.dataset?.wf !== "eq" || !this.edit) return false;
-    const combo = this._dlg().querySelector(".ag-combo");
+    const combo = el.closest(".ag-combo");
     this.edit.open = inside;
     if (inside) combo?.classList.add("open");
     else setTimeout(() => !this._comboPointer && combo?.classList.remove("open"), 120);
@@ -886,6 +945,13 @@ export class ActionsUi {
       this.edit = { index: i, insert: null, form: fromStep(list[i]), q: "", error: "", open: false };
       this.renderEditor();
       this._dlg().showModal();
+    } else if (act === "flow") {
+      const step = list[i];
+      if (step?.detach) delete step.detach;
+      else if (step) step.detach = true;
+      d.wf[this.trigger] = list;
+      this.saveState = null;
+      this.render();
     } else if (act === "delete") {
       list.splice(i, 1);
       d.wf[this.trigger] = list;
@@ -911,6 +977,16 @@ export class ActionsUi {
       field.dispatchEvent(new Event("input", { bubbles: true }));
       field.focus();
       field.setSelectionRange(pos + el.dataset.token.length, pos + el.dataset.token.length);
+    } else if (act === "cb-pick") {
+      const key = el.dataset.key;
+      if (form[key] !== el.dataset.value) {
+        form[key] = el.dataset.value;
+        if (key === "domain") form.service = "";
+        form.data = {};
+        form.extra = {};
+      }
+      this.edit.cb = null;
+      this.renderEditor();
     } else if (act === "nt-crit") {
       form.ntCritical = !(form.ntCritical ?? this._ntGlobal().critical);
       this.renderEditor();
@@ -993,6 +1069,13 @@ export class ActionsUi {
       this._dlg().querySelector(".ag-combo")?.classList.add("open");
       return true;
     }
+    if (act === "cb") {
+      this.edit.cb = { key: el.dataset.key, q: el.value };
+      // Nur die Liste neu, das Feld behält Fokus und Schreibmarke
+      el.closest(".ag-combo").querySelector(".ag-combo-list").innerHTML = this._cbItems(el.dataset.key, f);
+      el.closest(".ag-combo").classList.add("open");
+      return true;
+    }
     if (act === "f") {
       const key = el.dataset.key;
       if (key === "domain" || key === "service") {
@@ -1016,6 +1099,11 @@ export class ActionsUi {
     }
     if (act === "scene") {
       f.targets = el.value ? [el.value] : [];
+      return true;
+    }
+    if (act === "nt-click") {
+      f.ntClick = el.value === "log" ? null : el.value;
+      this.renderEditor();
       return true;
     }
     if (act === "nt-vol") {
