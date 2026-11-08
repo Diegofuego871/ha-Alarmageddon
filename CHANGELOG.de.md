@@ -27,8 +27,6 @@ Neue Startseite mit einer Liste der Sensoren wie in Device Panel, ein Bereich Ko
 
 ## [0.2.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.3.0.
-
 Seitenpanel mit einer Übersicht aller Alarmanlagen und grafischen Sensorgruppen.
 
 Enthält die Änderungen aus 0.1.0.
@@ -60,3 +58,4 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Sprachen:** Englisch und Deutsch.
 
 [0.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.3.0
+[0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

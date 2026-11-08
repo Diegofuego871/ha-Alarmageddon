@@ -27,8 +27,6 @@ New start page with a sensor list like Device Panel, a configuration area with o
 
 ## [0.2.0] - 2026-11-08
 
-Not released; included in 0.3.0.
-
 Side panel with an overview of all alarm systems and graphical sensor groups.
 
 Includes the changes from 0.1.0.
@@ -60,3 +58,4 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Languages:** English and German.
 
 [0.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.3.0
+[0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0
