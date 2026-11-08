@@ -7,11 +7,29 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.11.0] - 2026-11-08
+
+Der Aktionen-Editor kommt ohne JSON aus; jeder Schritt lässt sich testen, Schritte verschiebt man per Ziehen.
+
+Enthält die Änderungen aus 0.7.0, 0.8.0, 0.9.0 und 0.10.0.
+
+### Geändert
+
+- **Aktionen-Editor neu gebaut** (Konfiguration › Aktionen): Die Bausteine sind "Push-Meldung", "Gerät schalten", "Alarmton abspielen", "Warten", "Szene oder Skript" und "Eigene Aktion". Nirgends mehr JSON.
+  - **Gerät schalten** liest bei Home Assistant, was das Gerät kann: Man wählt Geräte (Suche, Gewählte als Pille mit x) und sieht dann nur passende Aktionen (ein/aus/umschalten, Rollläden öffnen/schliessen, Schlösser ver-/entriegeln) und beim Einschalten die Einstellungen, die das Gerät wirklich unterstützt (Helligkeit, Farbtemperatur, Position des Rollladens, Ventilatorstufe, Temperatur und Modus eines Thermostats), je mit Regler oder Dropdown. Nicht eingeschaltete Einstellungen bleiben, wie sie sind.
+  - **Eigene Aktion** listet jede Aktion von Home Assistant mit ihren Feldern (Text, Zahl mit Regler, Auswahl, Entitäten-Dropdown, Schalter). Pflichtfelder sind markiert und werden geprüft. Werte von Feldern, die der Editor nicht zeigen kann, bleiben erhalten.
+  - **Alarmton abspielen:** Medienplayer über ein Suchfeld mit Pillen, der Ton als Dropdown, daneben Abspielen und Pause (klar als Vorschau auf diesem Handy oder Computer gekennzeichnet, nicht auf der echten Anlage), Lautstärke und Wiederholungen mit Regler und Feld.
+  - Bestehende Schritte erscheinen in den neuen Bausteinen, ohne dass sich die gespeicherten Daten ändern.
+- Suchfelder im Editor behalten beim Tippen den Fokus; die Liste ist nur offen, solange das Feld benutzt wird.
+
+### Hinzugefügt
+
+- **Testknopf je Schritt:** führt nur diesen Schritt auf den echten Geräten aus, nach einer Rückfrage. Der Test des ganzen Ablaufs bleibt wie bisher.
+- **Umordnen per Ziehen:** Jeder Schritt hat einen Griff; nach oben oder unten ziehen (Finger oder Maus), die Pfeiltasten gehen auch. Das Verschieben gehört wie jede Änderung zum Entwurf.
+
 ## [0.10.0] - 2026-11-08
 
-Zeiten und Verhalten gelten je Modus, nicht für die ganze Alarmanlage.
-
-Enthält die Änderungen aus 0.7.0, 0.8.0 und 0.9.0.
+Nicht veröffentlicht; enthalten in 0.11.0.
 
 ### Geändert
 
@@ -22,7 +40,7 @@ Enthält die Änderungen aus 0.7.0, 0.8.0 und 0.9.0.
 
 ## [0.9.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.10.0.
+Nicht veröffentlicht; enthalten in 0.11.0.
 
 
 Meldungen neu aufgebaut: jede Meldungsart hat eigene Einstellungen, und ein Sensor kann melden statt auszulösen.
@@ -43,7 +61,7 @@ Enthält die Änderungen aus 0.7.0 und 0.8.0.
 
 ## [0.8.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.10.0.
+Nicht veröffentlicht; enthalten in 0.11.0.
 
 
 Neues Aussehen der Einstellungen wie in Device Panel, und beim Reiterwechsel geht nichts verloren.
@@ -58,7 +76,7 @@ Enthält die Änderungen aus 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.10.0.
+Nicht veröffentlicht; enthalten in 0.11.0.
 
 
 Updates aus dem Panel, wie in Device Panel.
@@ -179,6 +197,6 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.10.0
+[0.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.11.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

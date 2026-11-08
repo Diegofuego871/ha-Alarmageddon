@@ -120,14 +120,19 @@ class WorkflowRunner:
 
     # ----- Ablauf -----
 
-    async def async_run(self, trigger: str, test: bool = False) -> bool:
+    async def async_run(self, trigger: str, test: bool = False, steps: list[dict[str, Any]] | None = None) -> bool:
+        """
+        Ablauf starten. Mit `steps` (nur im Test) läuft genau diese Liste statt des gespeicherten Ablaufs: so lässt sich ein
+        einzelner Schritt testen, auch einer, der noch nicht gespeichert ist. Test und Stopp wie beim ganzen Ablauf.
+        """
         if self._run is not None:
             return False  # läuft schon (kein doppelter Ablauf bei mehreren Auslösungen)
-        steps = self.steps(trigger)
+        override = steps if test and steps else None
+        steps = override or self.steps(trigger)
         if not steps:
             return False
         entities = sorted({e for s in steps for e in step_entities(s)})
-        self._run = {"trigger": trigger, "index": 0, "test": test, "snapshot": self._snapshot(entities), "sonos": []}
+        self._run = {"trigger": trigger, "index": 0, "test": test, "snapshot": self._snapshot(entities), "sonos": [], "steps": override}
         self._run["sonos"] = await self._sonos_snapshot(entities)
         await self._store.async_save(self._run)
         self._task = self._background(self._execute(trigger, 0))
@@ -161,7 +166,7 @@ class WorkflowRunner:
             self.hass.async_create_task(self.async_stop())
 
     async def _execute(self, trigger: str, start: int) -> None:
-        steps = self.steps(trigger)
+        steps = (self._run or {}).get("steps") or self.steps(trigger)
         test = bool(self._run and self._run.get("test"))
         for index in range(start, len(steps)):
             if self._run is None:

@@ -70,7 +70,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
       <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
-      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg ag-wide" id="ag-notes"></dialog></div>`;
+      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-notes"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
     // Wie auch immer der Code-Dialog schliesst (Abbrechen, Escape, Erfolg): Auswahl wieder nach dem echten Zustand
     this._root.getElementById("ag-code").addEventListener("close", () => this._renderTop(true));
@@ -92,13 +92,28 @@ class AlarmageddonPanel extends HTMLElement {
     this._root.addEventListener("click", (ev) => this._onClick(ev));
     this._root.addEventListener("input", (ev) => this._onInput(ev));
     this._root.addEventListener("change", (ev) => this._onChange(ev));
-    this._root.addEventListener("pointerdown", (ev) => this.sensors.onPointerDown(ev));
+    this._root.addEventListener("pointerdown", (ev) => {
+      this.sensors.onPointerDown(ev);
+      if (this._tab === "config" && this._sub === "actions") this.actions.onPointerDown(ev);
+    });
+    this._root.addEventListener("keydown", (ev) => {
+      if (this._tab === "config" && this._sub === "actions") this.actions.onKeyDown(ev);
+    });
+    this._root.addEventListener("focusin", (ev) => this.actions.onFocus(ev.target, true));
+    this._root.addEventListener("focusout", (ev) => this.actions.onFocus(ev.target, false));
     this._root.addEventListener("submit", (ev) => this._onSubmit(ev));
     const win = this.ownerDocument.defaultView;
     // Ziehen über mehrere Felder: Zuhörer am Fenster, nicht am Element (LEARNINGS)
-    win.addEventListener("pointermove", (ev) => this.sensors.onPointerMove(ev));
-    win.addEventListener("pointerup", () => this.sensors.endPaint());
-    win.addEventListener("pointercancel", () => this.sensors.endPaint());
+    win.addEventListener("pointermove", (ev) => {
+      this.sensors.onPointerMove(ev);
+      this.actions.onPointerMove(ev);
+    });
+    const end = () => {
+      this.sensors.endPaint();
+      this.actions.onPointerEnd();
+    };
+    win.addEventListener("pointerup", end);
+    win.addEventListener("pointercancel", end);
     this.ownerDocument.addEventListener("visibilitychange", () => {
       if (this.ownerDocument.visibilityState === "visible") this._fetch();
     });
@@ -602,6 +617,25 @@ class AlarmageddonPanel extends HTMLElement {
       <div class="ag-dlg-btns"><button class="ag-btn" data-act="discard">${esc(this._t("discard"))}</button><button class="ag-btn primary" data-act="keep">${esc(this._t("keepEditing"))}</button></div></div>`;
     dlg.showModal();
     dlg.querySelector('[data-act="keep"]').focus();
+  }
+
+  // Einfache Rückfrage; löst mit true oder false auf
+  _confirm(title, text, okLabel) {
+    const dlg = this._root.getElementById("ag-confirm");
+    return new Promise((resolve) => {
+      dlg.innerHTML = `<div class="ag-dlg-body"><h3>${esc(title)}</h3><div class="ag-t2">${esc(text)}</div>
+        <div class="ag-dlg-btns"><button class="ag-btn" data-c="no">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-c="yes">${esc(okLabel)}</button></div></div>`;
+      let answer = false;
+      dlg.onclick = (ev) => {
+        const b = ev.target.closest("[data-c]");
+        if (!b) return;
+        answer = b.dataset.c === "yes";
+        dlg.close();
+      };
+      dlg.onclose = () => resolve(answer);
+      dlg.showModal();
+      dlg.querySelector('[data-c="yes"]').focus();
+    });
   }
 
   // ----- Scharfschalten -----

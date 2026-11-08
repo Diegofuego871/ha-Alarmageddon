@@ -7,11 +7,29 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] - 2026-11-08
+
+The action editor needs no JSON any more; every step can be tested and steps are moved by dragging.
+
+Includes the changes from 0.7.0, 0.8.0, 0.9.0 and 0.10.0.
+
+### Changed
+
+- **Action editor rebuilt** (Configuration › Actions): the building blocks are "Push notification", "Switch device", "Play alarm sound", "Wait", "Scene or script" and "Own action". No JSON anywhere.
+  - **Switch device** reads what the device can do from Home Assistant: you choose devices (search, chosen ones as tags with an x) and then only see fitting actions (turn on/off/toggle, covers open/close, locks lock/unlock) and, when turning on, the settings the device really supports (brightness, colour temperature, cover position, fan speed, temperature and mode of a thermostat), each with a slider or dropdown. Settings left off stay as they are.
+  - **Own action** lists every action of Home Assistant with its fields (text, number with slider, selection, entity dropdown, switch). Required fields are marked and checked. Values of fields the editor cannot show are kept.
+  - **Play alarm sound:** media players via search field with tags, the tone as a dropdown, play and pause buttons next to it (clearly marked as a preview on this phone or computer, not on the real system), volume and repetitions as a slider and field.
+  - Existing steps are shown in the new blocks without changes to the saved data.
+- Search fields in the editor keep the focus while typing; the list opens only while the field is in use.
+
+### Added
+
+- **Test button per step:** runs only this step on the real devices, after a confirmation. The test of the whole workflow stays as before.
+- **Reorder by dragging:** every step has a handle; drag it up or down (finger or mouse), arrow keys work too. Dragging is part of the draft like every other change.
+
 ## [0.10.0] - 2026-11-08
 
-Times and behaviour are set per mode, not for the whole alarm system.
-
-Includes the changes from 0.7.0, 0.8.0 and 0.9.0.
+Not released; included in 0.11.0.
 
 ### Changed
 
@@ -22,7 +40,7 @@ Includes the changes from 0.7.0, 0.8.0 and 0.9.0.
 
 ## [0.9.0] - 2026-11-08
 
-Not released; included in 0.10.0.
+Not released; included in 0.11.0.
 
 
 Notifications rebuilt: every kind of message has its own settings, and a sensor can report instead of triggering.
@@ -43,7 +61,7 @@ Includes the changes from 0.7.0 and 0.8.0.
 
 ## [0.8.0] - 2026-11-08
 
-Not released; included in 0.10.0.
+Not released; included in 0.11.0.
 
 
 New look of the settings like in Device Panel, and nothing gets lost when you switch tabs.
@@ -58,7 +76,7 @@ Includes the changes from 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Not released; included in 0.10.0.
+Not released; included in 0.11.0.
 
 
 Updates from the panel, like in Device Panel.
@@ -179,6 +197,6 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.10.0
+[0.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.11.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

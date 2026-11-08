@@ -604,3 +604,12 @@ auftritt (HA-Frontend, nicht das Panel).
 - Beim Anlegen eines Release auf GitHub ist das Ziel standardmässig `main`.
   Liegt der Stand auf einem anderen Branch, zeigt der Tag auf den falschen
   Commit (so geschehen bei `v0.1.0b1`). Deshalb nur auf `main` arbeiten.
+
+## Ziehen testen: erst messen, wenn die Seite steht
+
+Die Konfigurationsseiten gleiten beim Reiterwechsel herein. Misst ein Test den Griff
+währenddessen, liegt die Maus daneben und das Ziehen tut nichts (kein Fehler, nur
+"nicht verschoben"). Im Test nach dem Reiterwechsel kurz warten und den Schritt mit
+`scrollIntoView` ins Bild holen: ausserhalb des Fensters trifft `page.mouse` nichts.
+Pfeiltasten-Test: Reihenfolge so wählen, dass sie nicht zufällig den Ausgangszustand
+herstellt (dann ist der Entwurf sauber und "Abbrechen" gesperrt).

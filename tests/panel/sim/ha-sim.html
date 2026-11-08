@@ -90,12 +90,13 @@
   // Geräte für die Aktionen (erfundene Namen)
   set("siren.flur", "off", { friendly_name: "Sirene Flur" });
   set("switch.steckdose_flur", "off", { friendly_name: "Steckdose Flur" });
-  set("light.flur", "off", { friendly_name: "Licht Flur" });
+  set("light.flur", "off", { friendly_name: "Licht Flur", supported_color_modes: ["color_temp"], min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500 });
   set("cover.rollladen_wohnzimmer", "closed", { friendly_name: "Rollladen Wohnzimmer", current_position: 0 });
   set("cover.rollladen_kueche", "closed", { friendly_name: "Rollladen Küche", current_position: 0 });
   set("media_player.sonos_wohnzimmer", "playing", { friendly_name: "Sonos Wohnzimmer", volume_level: 0.2 });
   set("media_player.sonos_kueche", "idle", { friendly_name: "Sonos Küche", volume_level: 0.3 });
   set("script.alles_licht_an", "off", { friendly_name: "Alles Licht an" });
+  set("scene.film", "unknown", { friendly_name: "Szene Film" });
   set("alarm_control_panel.haus", "armed_away", { friendly_name: "Haus", arm_mode: "away", changed_by: "Diego", code_format: "number" }, now - 3 * 3600e3);
   set("alarm_control_panel.garage", "disarmed", { friendly_name: "Garage", arm_mode: null, changed_by: "Automation", code_format: null }, now - 20 * 60e3);
 
@@ -116,6 +117,12 @@
       sensor_report: T(true, true), battery_low: T(true, false), sensor_unavailable: T(true, false), update_available: T(true, false) } };
   window.__calls = [];
   window.__services = [];
+  // Dienste von HA mit Feldern (Auswahl wie in echt, erfundene Beschreibung)
+  const SERVICES = {
+    light: { turn_on: { name: "Einschalten", target: { entity: [{ domain: "light" }] }, fields: { brightness_pct: { name: "Helligkeit", selector: { number: { min: 0, max: 100, unit_of_measurement: "%" } } } } } },
+    persistent_notification: { create: { name: "Mitteilung erstellen", fields: { message: { name: "Nachricht", required: true, selector: { text: {} } }, title: { name: "Titel", selector: { text: {} } } } } },
+    homeassistant: { turn_on: { name: "Einschalten" }, turn_off: { name: "Ausschalten" } },
+  };
   window.__updateSettings = { check: true, prerelease: null, auto_update: false };
   window.__callsVersion = () => callWS({ type: "alarmageddon/version" });
   window.__wsDelay = 0;
@@ -229,7 +236,7 @@
       return { ok: true };
     }
     if (msg.type === "alarmageddon/test_workflow") {
-      if (!(sys.workflows[msg.trigger] || []).length) throw err("empty");
+      if (!msg.step && !(sys.workflows[msg.trigger] || []).length) throw err("empty");
       sys.workflow_running = msg.trigger;
       sys.workflow_test = true;
       return { ok: true };
@@ -294,7 +301,7 @@
   }
 
   function makeHass() {
-    return { states: { ...states }, entities: { ...entities }, language: lang, locale: { language: lang }, user: { name: "Diego", is_admin: true }, themes: { darkMode: params.get("theme") === "dark" }, callWS };
+    return { states: { ...states }, services: SERVICES, entities: { ...entities }, language: lang, locale: { language: lang }, user: { name: "Diego", is_admin: true }, themes: { darkMode: params.get("theme") === "dark" }, callWS };
   }
   window.hass = makeHass();
   document.querySelector("home-assistant").hass = window.hass;

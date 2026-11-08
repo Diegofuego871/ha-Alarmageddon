@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.10.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.11.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -55,13 +55,13 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 | Step | Does |
 | --- | --- |
 | Push notification | Alarm notification to the alarm recipients (see Notifications) |
-| Turn on / Turn off | Sirens, switches, lights, fans, helpers |
-| Open / close covers | Covers |
-| Alarm sound | Plays one of five sounds on media players with volume and repetitions |
+| Switch device | Lights, sockets, covers, locks, fans, sirens and more. You choose the devices and see only what they can do (on, off, toggle, open, close, lock) and, when turning on, the settings they support (brightness, colour temperature, position, speed, temperature) |
+| Play alarm sound | One of five sounds on media players: tone as a dropdown with a preview on this phone or computer (not on the real system), volume, repetitions |
 | Wait | Pauses the following steps |
-| Script | Runs a script |
-| Own action | Any Home Assistant action with target and data (JSON) |
+| Scene or script | Starts a scene or script |
+| Own action | Any Home Assistant action with its fields (no JSON) |
 
+- **Test per step:** the play button on a step runs only this step on the real devices, after a confirmation. Move steps with the handle on the left (drag with finger or mouse, or arrow keys on the handle).
 - **Back to the previous state:** devices with the arrow symbol return to their state before the alarm when you disarm or the alarm duration ends (on/off, brightness, position, volume, source; Sonos with its own snapshot including groups). On by default for alarm sounds.
 - **Disarming stops everything,** also after a restart of Home Assistant in the middle of an alarm. A failing step does not stop the other steps.
 - **Test** runs the saved workflow without alarm and stops after 60 seconds at the latest.

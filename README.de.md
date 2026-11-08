@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.10.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.11.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -55,13 +55,13 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 | Schritt | Macht |
 | --- | --- |
 | Push-Meldung | Alarmmeldung an die Empfänger für Alarme (siehe Benachrichtigungen) |
-| Einschalten / Ausschalten | Sirenen, Schalter, Lichter, Ventilatoren, Helfer |
-| Rollläden öffnen / schliessen | Rollläden |
-| Alarmton | Spielt einen von fünf Tönen auf Medienplayern mit Lautstärke und Wiederholungen |
+| Gerät schalten | Lichter, Steckdosen, Rollläden, Schlösser, Ventilatoren, Sirenen und mehr. Man wählt die Geräte und sieht nur, was sie können (ein, aus, umschalten, öffnen, schliessen, verriegeln) und beim Einschalten die Einstellungen, die sie unterstützen (Helligkeit, Farbtemperatur, Position, Stufe, Temperatur) |
+| Alarmton abspielen | Einer von fünf Tönen auf Medienplayern: Ton als Dropdown mit Vorschau auf diesem Handy oder Computer (nicht auf der echten Anlage), Lautstärke, Wiederholungen |
 | Warten | Hält die folgenden Schritte an |
-| Skript | Startet ein Skript |
-| Eigene Aktion | Jede Aktion von Home Assistant mit Ziel und Daten (JSON) |
+| Szene oder Skript | Startet eine Szene oder ein Skript |
+| Eigene Aktion | Jede Aktion von Home Assistant mit ihren Feldern (kein JSON) |
 
+- **Test pro Schritt:** Der Abspielknopf an einem Schritt führt nur diesen Schritt auf den echten Geräten aus, nach einer Rückfrage. Schritte verschiebt man am Griff links (mit Finger oder Maus ziehen, oder Pfeiltasten am Griff).
 - **Zurück in den Zustand davor:** Geräte mit dem Pfeil-Symbol kehren beim Deaktivieren oder am Ende der Alarmdauer in den Zustand vor dem Alarm zurück (ein/aus, Helligkeit, Position, Lautstärke, Quelle; Sonos mit eigenem Schnappschuss samt Gruppen). Bei Alarmtönen standardmässig an.
 - **Deaktivieren stoppt alles,** auch nach einem Neustart von Home Assistant mitten im Alarm. Ein fehlerhafter Schritt hält die übrigen nicht auf.
 - **Test** führt den gespeicherten Ablauf ohne Alarm aus und endet spätestens nach 60 Sekunden.

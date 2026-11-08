@@ -17,77 +17,138 @@ for (const lang of ["de", "en"]) {
     // ----- Aktionen -----
     await s.tap('[data-sub="actions"]');
     check(`${tag}: Ablauf "Abwesend" mit 5 Schritten`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 5"));
-    check(`${tag}: Reihenfolge der Bausteine`, JSON.stringify(await types()) === JSON.stringify(["notify", "open", "wait", "on", "sound"]), JSON.stringify(await types()));
+    check(`${tag}: Reihenfolge der Bausteine`, JSON.stringify(await types()) === JSON.stringify(["notify", "device", "wait", "device", "sound"]), JSON.stringify(await types()));
     check(`${tag}: Alarmton zeigt Player, Lautstärke, Wiederholung`, await s.ev("const x=r.querySelectorAll('.ag-wf-step')[4].innerText; return x.includes('Sonos Wohnzimmer') && x.includes('70 %') && x.includes('5×')"));
+    check(`${tag}: Greifer und Testknopf je Schritt`, await s.ev("return r.querySelectorAll('.ag-wf-step [data-wf=\"grab\"]').length === 5 && r.querySelectorAll('.ag-wf-step [data-wf=\"test-step\"]').length === 5"));
     check(`${tag}: Kapsel am gewählten Auslöser`, await s.ev("const p=r.querySelector('.ag-wf-head .ag-seg .ag-pill'); const b=r.querySelector('.ag-wf-head [data-trigger=\"away\"]'); return !!p && Math.abs(p.getBoundingClientRect().left - b.getBoundingClientRect().left) < 2"));
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
 
-    // Schritt verschieben: "Warten" nach oben
-    await s.tap('.ag-wf-step[data-index="2"] [data-wf="up"]');
-    check(`${tag}: nach oben verschoben`, JSON.stringify(await types()) === JSON.stringify(["notify", "wait", "open", "on", "sound"]), JSON.stringify(await types()));
+    // Ziehen am Griff: "Warten" (Index 2) über den Rollladen-Schritt (Index 1)
+    await s.page.waitForTimeout(600); // die Seite gleitet beim Reiterwechsel herein: erst nach der Bewegung messen
+    await s.ev("r.querySelector('.ag-wf-step[data-index=\\\"1\\\"]').scrollIntoView({ block: 'start' })");
+    await s.page.waitForTimeout(200);
+    const box = async (sel) => (await s.el(sel)).boundingBox();
+    const from = await box('.ag-wf-step[data-index="2"] [data-wf="grab"]');
+    const target = await box('.ag-wf-step[data-index="1"]');
+    await s.page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await s.page.mouse.down();
+    await s.page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 - 20, { steps: 4 });
+    await s.page.mouse.move(from.x + from.width / 2, target.y + 6, { steps: 8 });
+    await s.page.mouse.up();
+    check(`${tag}: per Ziehen verschoben`, await s.waitFor("return [...r.querySelectorAll('.ag-wf-step .ag-wf-icon')].map((e) => [...e.classList].find((c) => c.startsWith('k-')).slice(2)).join() === 'notify,wait,device,device,sound'"), JSON.stringify(await types()));
     check(`${tag}: 1 Änderung`, await s.ev(`return r.querySelector('.ag-foot').innerText.includes('${t.oneChange}')`));
-    check(`${tag}: Test gesperrt bis gespeichert`, await s.ev("return r.querySelector('[data-wf=\"test\"]').disabled"));
-    // Abbrechen verwirft
+    check(`${tag}: Test der ganzen Kette gesperrt bis gespeichert`, await s.ev("return r.querySelector('[data-wf=\"test\"]').disabled"));
+    // Tastatur-Ersatz: Pfeil nach unten am Griff
+    await s.ev("r.querySelector('.ag-wf-step[data-index=\"0\"] [data-wf=\"grab\"]').focus()");
+    await s.page.keyboard.press("ArrowDown");
+    check(`${tag}: per Pfeiltaste verschoben, Fokus folgt`, await s.waitFor("return [...r.querySelectorAll('.ag-wf-step .ag-wf-icon')].map((e) => [...e.classList].find((c) => c.startsWith('k-')).slice(2)).join() === 'wait,notify,device,device,sound' && r.activeElement?.dataset.index === '1'"));
     await s.tap('[data-wf="cancel"]');
-    check(`${tag}: Abbrechen verwirft`, JSON.stringify(await types()) === JSON.stringify(["notify", "open", "wait", "on", "sound"]));
+    check(`${tag}: Abbrechen verwirft`, JSON.stringify(await types()) === JSON.stringify(["notify", "device", "wait", "device", "sound"]));
+
+    // Test eines einzelnen Schritts: Rückfrage, Abbrechen sendet nichts
+    await s.tap('.ag-wf-step[data-index="2"] [data-wf="test-step"]');
+    check(`${tag}: Rückfrage vor dem Schritt-Test`, await s.waitFor("return r.getElementById('ag-confirm').open"));
+    await s.tap('#ag-confirm [data-c="no"]');
+    check(`${tag}: Abbrechen sendet nichts`, await s.waitFor("return !r.getElementById('ag-confirm').open") && await s.sim("return !window.__calls.some((c) => c.type === 'alarmageddon/test_workflow')"));
+    await s.tap('.ag-wf-step[data-index="2"] [data-wf="test-step"]');
+    await s.waitFor("return r.getElementById('ag-confirm').open");
+    await s.tap('#ag-confirm [data-c="yes"]');
+    check(`${tag}: nur dieser Schritt gesendet`, await s.waitFor("return !!r.querySelector('[data-wf=\"test-stop\"]')") && await s.sim("const c=window.__calls.filter((x) => x.type === 'alarmageddon/test_workflow').at(-1); return c?.step?.type === 'wait' && c.trigger === 'away'"));
+    await s.tap('[data-wf="test-stop"]');
+    await s.waitFor("return !!r.querySelector('[data-wf=\"test\"]')");
 
     // Warten bearbeiten: 30 -> 45 s
     await s.tap('.ag-wf-step[data-index="2"] [data-wf="edit"]');
     check(`${tag}: Editor offen`, await s.waitFor("return r.getElementById('ag-step').open && !!r.querySelector('#ag-step [data-key=\"seconds\"]')"));
-    const sec = await s.el('#ag-step [data-key="seconds"]');
-    await sec.fill("45");
+    await (await s.el('#ag-step [data-key="seconds"]')).fill("45");
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Warten 45 s`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[2].innerText.includes('45')"));
 
-    // Neuer Schritt am Ende: Einschalten ohne Gerät -> Fehler, dann Steckdose wählen
-    await s.tap('.ag-wf-plus:last-of-type [data-wf="add"]');
-    check(`${tag}: Auswahl der Bausteine`, await s.waitFor("return r.querySelectorAll('#ag-step [data-wf=\"kind\"]').length === 9"));
-    await s.tap('#ag-step [data-wf="kind"][data-kind="on"]');
-    check(`${tag}: Editor Einschalten`, await s.waitFor(`return r.querySelector('#ag-step h3')?.textContent === '${t.on}'`));
+    // Gerät schalten: ohne Gerät Fehler, Suche, Aktionen aus dem Gerät
+    await s.tap('[data-wf="add"][data-at="5"]');
+    check(`${tag}: Auswahl der Bausteine`, await s.waitFor("return r.querySelectorAll('#ag-step [data-wf=\"kind\"]').length === 6"));
+    await s.tap('#ag-step [data-wf="kind"][data-kind="device"]');
+    check(`${tag}: Editor Gerät schalten`, await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"eq\"]')"));
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: ohne Gerät abgelehnt`, await s.waitFor("return r.querySelector('#ag-step .ag-dlg-err').textContent.trim().length > 0"));
-    // Suche mit X; Fokus bleibt
     await s.tap('#ag-step [data-wf="eq"]');
     await s.page.keyboard.type("steck");
-    check(`${tag}: Suche filtert`, await s.waitFor("const rows=r.querySelectorAll('#ag-step [data-wf=\"ent\"]'); return rows.length === 1 && rows[0].dataset.ent === 'switch.steckdose_flur'"));
+    check(`${tag}: Suche filtert`, await s.waitFor("const rows=r.querySelectorAll('#ag-step [data-wf=\"pick\"]'); return rows.length === 1 && rows[0].dataset.ent === 'switch.steckdose_flur'"));
     check(`${tag}: Fokus im Suchfeld`, await s.ev("return r.activeElement === r.querySelector('#ag-step [data-wf=\"eq\"]')"));
-    await s.tap('#ag-step [data-wf="ent"][data-ent="switch.steckdose_flur"]');
-    check(`${tag}: Gerät gewählt`, await s.waitFor("return r.querySelector('#ag-step [data-ent=\"switch.steckdose_flur\"]').getAttribute('aria-checked') === 'true'"));
-    await s.tap('#ag-step [data-wf="eq-clear"]');
-    check(`${tag}: X leert, Gewähltes bleibt`, await s.waitFor("const i=r.querySelector('#ag-step [data-wf=\"eq\"]'); return i.value === '' && r.activeElement === i && r.querySelectorAll('#ag-step [data-wf=\"ent\"]').length > 1 && r.querySelector('#ag-step [data-ent=\"switch.steckdose_flur\"]').getAttribute('aria-checked') === 'true'"));
+    await s.tap('#ag-step [data-wf="pick"][data-ent="switch.steckdose_flur"]');
+    check(`${tag}: Gerät als Pille, Aktionen sichtbar`, await s.waitFor("return r.querySelectorAll('#ag-step .ag-rpill').length === 1 && r.querySelectorAll('#ag-step [data-wf=\"action\"]').length === 3"));
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Schritt angehängt`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 6 && r.querySelectorAll('.ag-wf-step')[5].innerText.includes('Steckdose Flur')"));
 
-    // Alarmton bearbeiten: Ton und zweiter Player
+    // Licht: das Gerät bietet Farbtemperatur an, kein JSON
+    await s.tap('[data-wf="add"][data-at="6"]');
+    await s.tap('#ag-step [data-wf="kind"][data-kind="device"]');
+    await s.tap('#ag-step [data-wf="eq"]');
+    await s.page.keyboard.type("licht");
+    await s.tap('#ag-step [data-wf="pick"][data-ent="light.flur"]');
+    check(`${tag}: Licht bietet Einstellungen an`, await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"opt-on\"][data-key=\"color_temp_kelvin\"]') && !!r.querySelector('#ag-step [data-wf=\"opt-on\"][data-key=\"brightness_pct\"]')"));
+    check(`${tag}: kein JSON-Feld`, await s.ev("return !r.querySelector('#ag-step textarea') && !r.querySelector('#ag-step').innerText.includes('{')"));
+    await s.tap('#ag-step [data-wf="opt-on"][data-key="color_temp_kelvin"]');
+    check(`${tag}: Regler nach dem Einschalten`, await s.waitFor("return !!r.querySelector('#ag-step input[type=\"range\"][data-key=\"color_temp_kelvin\"]')"));
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Licht mit Kelvin in der Karte`, await s.waitFor("return r.querySelectorAll('.ag-wf-step')[6]?.innerText.includes('K')"));
+
+    // Eigene Aktion aus den Diensten von HA, mit Feldern
+    await s.tap('[data-wf="add"][data-at="7"]');
+    await s.tap('#ag-step [data-wf="kind"][data-kind="custom"]');
+    await (await s.el('#ag-step [data-key="domain"]')).selectOption("persistent_notification");
+    await (await s.el('#ag-step [data-key="service"]')).selectOption("create");
+    check(`${tag}: Felder des Dienstes`, await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"df\"][data-key=\"message\"]') && !!r.querySelector('#ag-step .ag-req')"));
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Pflichtfeld verlangt`, await s.waitFor("return r.querySelector('#ag-step .ag-dlg-err').textContent.includes('Nachricht') || r.querySelector('#ag-step .ag-dlg-err').textContent.includes('Message') || r.querySelector('#ag-step .ag-dlg-err').textContent.length > 0"));
+    await (await s.el('#ag-step [data-wf="df"][data-key="message"]')).fill("Alarm im Haus");
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: eigene Aktion angehängt`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step').length === 8"));
+
+    // Szene
+    await s.tap('[data-wf="add"][data-at="8"]');
+    await s.tap('#ag-step [data-wf="kind"][data-kind="scene"]');
+    await (await s.el('#ag-step [data-wf="scene"]')).selectOption("scene.film");
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Szene angehängt`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 9"));
+
+    // Alarmton: Ton als Dropdown, Vorhören mit Hinweis, zweiter Player
     await s.tap('.ag-wf-step[data-index="4"] [data-wf="edit"]');
-    await s.waitFor("return r.getElementById('ag-step').open && !!r.querySelector('#ag-step .ag-sounds')");
-    check(`${tag}: fünf Töne mit Vorhören`, await s.ev("return r.querySelectorAll('#ag-step [data-wf=\"sound\"]').length === 5 && r.querySelectorAll('#ag-step [data-wf=\"preview\"]').length === 5"));
+    await s.waitFor("return r.getElementById('ag-step').open && !!r.querySelector('#ag-step .ag-tone')");
+    check(`${tag}: Ton als Dropdown mit fünf Tönen`, await s.ev("return r.querySelectorAll('#ag-step select[data-key=\"sound\"] option').length === 5"));
+    check(`${tag}: Abspielen und Pause neben dem Ton`, await s.ev("const t=r.querySelector('#ag-step .ag-tone'); return !!t.querySelector('[data-wf=\"pv-play\"]') && !!t.querySelector('[data-wf=\"pv-pause\"]')"));
+    check(`${tag}: Hinweis, dass nicht auf der Anlage gespielt wird`, await s.ev("return /Handy|phone/.test(r.querySelector('#ag-step .ag-pv-note').innerText)"));
     check(`${tag}: Zurückstellen an`, await s.ev("return r.querySelector('#ag-step [data-wf=\"restore\"]').getAttribute('aria-checked') === 'true'"));
-    check(`${tag}: nur Medienplayer`, await s.ev("return [...r.querySelectorAll('#ag-step [data-wf=\"ent\"]')].every((b) => b.dataset.ent.startsWith('media_player.'))"));
-    await s.tap('#ag-step [data-wf="sound"][data-sound="klaxon"]');
-    await s.tap('#ag-step [data-wf="ent"][data-ent="media_player.sonos_kueche"]');
+    await (await s.el('#ag-step select[data-key="sound"]')).selectOption("klaxon");
+    await s.tap('#ag-step [data-wf="eq"]');
+    check(`${tag}: nur Medienplayer in der Liste`, await s.ev("const l=[...r.querySelectorAll('#ag-step [data-wf=\"pick\"]')]; return l.length > 0 && l.every((b) => b.dataset.ent.startsWith('media_player.'))"));
+    await s.tap('#ag-step [data-wf="pick"][data-ent="media_player.sonos_kueche"]');
+    await s.page.screenshot({ path: `${outDir}actions-editor-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: false });
     await s.tap('#ag-step [data-wf="apply"]');
     await s.waitFor("return !r.getElementById('ag-step').open");
 
     // Löschen des ersten Schritts (Push) und speichern
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="delete"]');
-    check(`${tag}: gelöscht`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 5"));
+    check(`${tag}: gelöscht`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 8"));
     await s.page.screenshot({ path: `${outDir}actions-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     await s.tap('[data-wf="save"]');
     check(`${tag}: gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const saved = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_workflows').at(-1)");
     const away = saved?.workflows?.away || [];
     check(`${tag}: alle Auslöser gesendet`, JSON.stringify(Object.keys(saved?.workflows || {}).sort()) === JSON.stringify(["always", "away", "home", "night"]), JSON.stringify(Object.keys(saved?.workflows || {})));
-    check(`${tag}: Schritte im Serverformat`, away.length === 5 && away[1].type === "wait" && away[1].seconds === 45
+    check(`${tag}: Schritte im Serverformat`, away.length === 8 && away[1].type === "wait" && away[1].seconds === 45
       && away[3].type === "sound" && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
-      && away[4].type === "action" && away[4].action === "switch.turn_on" && JSON.stringify(away[4].target) === JSON.stringify(["switch.steckdose_flur"]) && away[4].restore === true, JSON.stringify(away));
+      && away[4].type === "action" && away[4].action === "switch.turn_on" && JSON.stringify(away[4].target) === JSON.stringify(["switch.steckdose_flur"])
+      && away[5].action === "light.turn_on" && typeof away[5].data.color_temp_kelvin === "number"
+      && away[6].action === "persistent_notification.create" && away[6].data.message === "Alarm im Haus"
+      && away[7].action === "scene.turn_on" && JSON.stringify(away[7].target) === JSON.stringify(["scene.film"]), JSON.stringify(away));
 
     // Test starten und stoppen
     check(`${tag}: Test frei nach Speichern`, await s.waitFor("return !r.querySelector('[data-wf=\"test\"]').disabled"));
     await s.tap('[data-wf="test"]');
     check(`${tag}: Test läuft`, await s.waitFor("return !!r.querySelector('[data-wf=\"test-stop\"]') && !!r.querySelector('.ag-wf-head .ag-tag.warn')"));
     const test = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/test_workflow').at(-1)");
-    check(`${tag}: Test für "Abwesend"`, test?.trigger === "away" && test?.entry_id === "e_haus", JSON.stringify(test));
+    check(`${tag}: Test für "Abwesend"`, test?.trigger === "away" && test?.entry_id === "e_haus" && !test?.step, JSON.stringify(test));
     await s.tap('[data-wf="test-stop"]');
     check(`${tag}: Test gestoppt`, await s.waitFor("return !!r.querySelector('[data-wf=\"test\"]') && !r.querySelector('.ag-wf-head .ag-tag')"));
 

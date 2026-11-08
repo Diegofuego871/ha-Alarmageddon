@@ -3,6 +3,15 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.11.0, Aktionen-Editor)
+
+- `panel/actions.js` komplett neu: Bausteine `notify`, `device`, `sound`, `wait`, `scene`, `custom` (Formular, `fromStep/toStep` zum Serverformat von `workflow.py`, gespeichert wird nichts Neues). Gerätefähigkeiten aus `hass.states` (`deviceOptions`: Helligkeit, Farbtemperatur, Position, Stufe, Temperatur, Modus), Felder eigener Aktionen aus `hass.services` (`flatFields/selectorType`, Selektoren text, number, select, entity, boolean; anderes bleibt in `extra` erhalten).
+- Schritt-Test: `test_workflow` mit `step` (workflow.py `async_run(..., steps)`), Rückfrage über `host._confirm` (Dialog `ag-confirm`). Ziehen am Griff: Pointer-Ereignisse am Fenster (`onPointerDown/Move/End`), Pfeiltasten am Griff; Klasse `.ag-handle` (nicht `.ag-grab`, das ist der Balken des Blatts in sensors.js).
+- Vorschau des Tons: `pv-play/pv-pause` spielen im Browser, mit Hinweis `pvNote`.
+- Tests: `tests/test_actions.py` (Schritt-Test), actions-e2e (264 Prüfungen: Ziehen mit Maus, Pfeiltasten, Test mit Rückfrage, Licht, eigene Aktion, Szene, Alarmton). Der Nachbau liefert `hass.services` und `light.flur` mit Farbtemperatur.
+- Offen in echtem HA: Dienste mit exotischen Selektoren (zeigen den Hinweis "nicht einstellbar"), Ziehen auf einem echten Handy (Companion App).
+- Geplant: 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse (je Alarm bis zur Quittierung).
+
 ## Stand (0.10.0, Einstellungen je Modus)
 
 - Werte je Modus in den Optionen als `<feld>_<modus>` (`entry_delay_away`, `trigger_time_always`, `open_sensors_home`, `confirm_window_night`; `exit_delay_<modus>` gab es schon). Rückfall: gemeinsamer Schlüssel ohne Modus, dann Grundeinstellung (`controller.mode_value`). Kein Umschreiben bestehender Daten nötig. Bereich `always` (Alarm durch immer aktiven Sensor bei deaktivierter Anlage) kennt nur `trigger_time`.
@@ -10,7 +19,6 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - Panel: Modusleiste (`data-scope`, Ansicht, nicht Teil des Entwurfs) in `system.js`; `d.per[modus]`.
 - Nicht je Modus (bewusst): Eingangssensoren (`entry_sensors`, eine Liste je Anlage), Code zum Scharfschalten.
 - Tests: `tests/test_mode_settings.py` (12) inkl. Pflichtfällen; Panel-Suite list-e2e angepasst.
-- Geplant, in dieser Reihenfolge: 0.11.0 Aktionen-Editor ohne JSON (Fähigkeiten aus HA), Testknopf je Aktion, Greifer, Medienplayer mit Dropdown und Test auf dem Handy; 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
 
 ## Stand (0.9.0, Meldungen)
 

@@ -278,3 +278,28 @@ async def test_sounds_served_without_login(hass: HomeAssistant, hass_client_no_a
     resp = await client.get("/alarmageddon_sounds/siren.wav")
     assert resp.status == 200
     assert (await resp.read())[:4] == b"RIFF"
+
+
+async def test_single_step_test_runs_only_that_step(hass: HomeAssistant, hass_ws_client) -> None:
+    """Testknopf je Schritt (0.11.0): genau dieser Schritt, auch ungespeichert, mit Zurückstellen am Ende des Tests."""
+    entry, s = await _setup_workflow(hass)
+    client = await hass_ws_client(hass)
+    hass.states.async_set("switch.lampe", "off")
+    on = async_mock_service(hass, "switch", "turn_on")
+    step = {"type": "action", "action": "switch.turn_on", "target": ["switch.lampe"], "data": {}, "restore": True}
+    await client.send_json({"id": 1, "type": "alarmageddon/test_workflow", "entry_id": entry.entry_id, "trigger": "away", "step": step})
+    assert (await client.receive_json())["success"]  # "away" hat keinen gespeicherten Ablauf: der Schritt zählt
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in on] == [["switch.lampe"]] and not s["switch.turn_on"]
+    assert state(hass) == AlarmControlPanelState.DISARMED
+    # Stoppen stellt zurück (Lampe war aus)
+    off = async_mock_service(hass, "switch", "turn_off")
+    await client.send_json({"id": 2, "type": "alarmageddon/stop_workflow", "entry_id": entry.entry_id})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in off] == [["switch.lampe"]] or [c.data["entity_id"] for c in off] == ["switch.lampe"]
+    # Ungültiger Schritt wird abgelehnt
+    await client.send_json({"id": 3, "type": "alarmageddon/test_workflow", "entry_id": entry.entry_id, "trigger": "away", "step": {"type": "explode"}})
+    assert not (await client.receive_json())["success"]
+    # Der gespeicherte Ablauf bleibt unberührt
+    assert entry.options["workflows"] == {"home": WORKFLOW}

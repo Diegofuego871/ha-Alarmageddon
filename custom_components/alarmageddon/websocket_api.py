@@ -439,7 +439,13 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): f"{DOMAIN}/test_workflow", vol.Required("entry_id"): str, vol.Required("trigger"): vol.In(WORKFLOW_TRIGGERS)}
+    {
+        vol.Required("type"): f"{DOMAIN}/test_workflow",
+        vol.Required("entry_id"): str,
+        vol.Required("trigger"): vol.In(WORKFLOW_TRIGGERS),
+        # Nur diesen einen Schritt testen (auch ungespeichert); ohne: den gespeicherten Ablauf
+        vol.Optional("step"): vol.All(dict, valid_step),
+    }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -451,7 +457,7 @@ async def ws_test_workflow(hass: HomeAssistant, connection, msg: dict[str, Any])
     if runner.running:
         connection.send_error(msg["id"], "busy", "Alarm actions are already running")
         return
-    if not await runner.async_run(msg["trigger"], test=True):
+    if not await runner.async_run(msg["trigger"], test=True, steps=[msg["step"]] if "step" in msg else None):
         connection.send_error(msg["id"], "empty", "No steps for this alarm")
         return
     connection.send_result(msg["id"], {"ok": True})
