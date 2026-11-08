@@ -18,7 +18,7 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-sub="actions"]');
     check(`${tag}: Ablauf "Abwesend" mit 5 Schritten`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 5"));
     check(`${tag}: Reihenfolge der Bausteine`, JSON.stringify(await types()) === JSON.stringify(["notify", "device", "wait", "device", "sound"]), JSON.stringify(await types()));
-    check(`${tag}: Alarmton zeigt Player, Lautstärke, Wiederholung`, await s.ev("const x=r.querySelectorAll('.ag-wf-step')[4].innerText; return x.includes('Sonos Wohnzimmer') && x.includes('70 %') && x.includes('5×')"));
+    check(`${tag}: Alarmton zeigt Player, Lautstärke, Dauer`, await s.ev("const x=r.querySelectorAll('.ag-wf-step')[4].innerText; return x.includes('Sonos Wohnzimmer') && x.includes('70 %') && x.includes('20 s')"));
     check(`${tag}: Greifer und Testknopf je Schritt`, await s.ev("return r.querySelectorAll('.ag-wf-step [data-wf=\"grab\"]').length === 5 && r.querySelectorAll('.ag-wf-step [data-wf=\"test-step\"]').length === 5"));
     check(`${tag}: Kapsel am gewählten Auslöser`, await s.ev("const p=r.querySelector('.ag-wf-head .ag-seg .ag-pill'); const b=r.querySelector('.ag-wf-head [data-trigger=\"away\"]'); return !!p && Math.abs(p.getBoundingClientRect().left - b.getBoundingClientRect().left) < 2"));
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
@@ -145,6 +145,12 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="eq"]');
     check(`${tag}: nur Medienplayer in der Liste`, await s.ev("const l=[...r.querySelectorAll('#ag-step [data-wf=\"pick\"]')]; return l.length > 0 && l.every((b) => b.dataset.ent.startsWith('media_player.'))"));
     await s.tap('#ag-step [data-wf="pick"][data-ent="media_player.sonos_kueche"]');
+    check(`${tag}: Dauer in Sekunden statt Wiederholungen`, await s.ev("const i=r.querySelector('#ag-step [data-key=\"playSeconds\"]'); return !!i && i.value === '20' && !r.querySelector('#ag-step [data-key=\"repeat\"]') && r.querySelectorAll('#ag-step [data-wf=\"playsecs\"]').length === 4"));
+    await s.tap('#ag-step [data-wf="until"]');
+    check(`${tag}: "Bis deaktiviert" blendet die Sekunden aus`, await s.waitFor("return !r.querySelector('#ag-step [data-key=\"playSeconds\"]') && r.querySelector('#ag-step [data-wf=\"until\"]').getAttribute('aria-checked') === 'true'"));
+    await s.tap('#ag-step [data-wf="until"]');
+    await s.tap('#ag-step [data-wf="playsecs"][data-value="60"]');
+    check(`${tag}: Schnellwahl setzt 60 s`, await s.waitFor("return r.querySelector('#ag-step [data-key=\"playSeconds\"]').value === '60'"));
     await s.page.screenshot({ path: `${outDir}actions-editor-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: false });
     await s.tap('#ag-step [data-wf="apply"]');
     await s.waitFor("return !r.getElementById('ag-step').open");
@@ -159,7 +165,7 @@ for (const lang of ["de", "en"]) {
     const away = saved?.workflows?.away || [];
     check(`${tag}: alle Auslöser gesendet`, JSON.stringify(Object.keys(saved?.workflows || {}).sort()) === JSON.stringify(["always", "away", "home", "night"]), JSON.stringify(Object.keys(saved?.workflows || {})));
     check(`${tag}: Schritte im Serverformat`, away.length === 8 && away[1].type === "wait" && away[1].seconds === 45
-      && away[3].type === "sound" && away[3].detach === true && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
+      && away[3].type === "sound" && away[3].detach === true && away[3].duration === 60 && !("repeat" in away[3] && away[3].repeat > 1) && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
       && away[4].type === "action" && away[4].action === "switch.turn_on" && JSON.stringify(away[4].target) === JSON.stringify(["switch.steckdose_flur"])
       && away[5].action === "light.turn_on" && typeof away[5].data.color_temp_kelvin === "number"
       && away[6].action === "persistent_notification.create" && away[6].data.message === "Alarm im Haus"

@@ -14,6 +14,7 @@ Sicherheitsregeln (CLAUDE.md):
 from __future__ import annotations
 
 import asyncio
+from datetime import timedelta
 from functools import partial
 import logging
 from typing import Any
@@ -24,6 +25,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import CONF_WORKFLOWS, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, TEST_SECONDS, WORKFLOW_STORE_KEY
 from .controller import AlarmController
@@ -241,9 +243,28 @@ class WorkflowRunner:
         url = f"{base}{SOUNDS_URL_PATH}/{sound}.wav"
         if step.get("volume") is not None:
             await self._call("media_player", "volume_set", {"entity_id": players, "volume_level": float(step["volume"])})
-        for _ in range(max(1, int(step.get("repeat", 1)))):
-            await self._call("media_player", "play_media", {"entity_id": players, "media_content_id": url, "media_content_type": "music"})
-            await self._sleep(SOUNDS[sound])
+        play = {"entity_id": players, "media_content_id": url, "media_content_type": "music"}
+        duration = step.get("duration")
+        if duration is None:  # ältere Form: so oft wiederholen
+            for _ in range(max(1, int(step.get("repeat", 1)))):
+                await self._call("media_player", "play_media", play)
+                await self._sleep(SOUNDS[sound])
+            return
+        # Dauer in Sekunden; 0 = so lange, bis deaktiviert wird (oder die Alarmdauer endet): der Ablauf bricht den Schritt dann ab
+        end = dt_util.utcnow() + timedelta(seconds=duration)
+        try:
+            while True:
+                await self._call("media_player", "play_media", play)
+                if duration == 0:
+                    await self._sleep(SOUNDS[sound])
+                    continue
+                left = (end - dt_util.utcnow()).total_seconds()
+                await self._sleep(min(SOUNDS[sound], max(left, 0)))
+                if dt_util.utcnow() >= end:
+                    break
+        finally:
+            # Zeit um, deaktiviert oder "Sirene stumm": der Ton darf nicht ausklingen oder weiterlaufen
+            await self._call("media_player", "media_stop", {"entity_id": players})
 
     async def _call(self, domain: str, service: str, data: dict[str, Any]) -> None:
         try:
@@ -273,10 +294,16 @@ class WorkflowRunner:
         Sirene stumm (Knopf in der Meldung): alle Schritte stoppen und die Geräte zurückstellen, die Anlage bleibt im Alarm
         (Deaktivieren bleibt Sache des Nutzers). Nur bei einem echten, laufenden Ablauf; ein Test endet mit "Test stoppen".
         """
-        if not self._run or self._run.get("test"):
-            return False
-        await self.async_stop()
-        return True
+        if self._run and not self._run.get("test"):
+            await self.async_stop()
+            return True
+        # Ablauf schon zu Ende (alle Schritte durch), der Ton klingt aber vielleicht noch: auf jeden Fall stoppen
+        if self._run is None and self._ctl.state == AlarmControlPanelState.TRIGGERED:
+            players = sorted({p for st in self.steps(self._ctl.mode or "always") if st.get("type") == "sound" for p in st.get("players", [])})
+            if players:
+                await self._call("media_player", "media_stop", {"entity_id": players})
+                return True
+        return False
 
     async def async_stop(self) -> None:
         """Alle Schritte abbrechen und den Zustand vor dem Alarm wiederherstellen."""

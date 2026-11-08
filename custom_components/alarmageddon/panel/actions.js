@@ -22,6 +22,7 @@ const ACTION_LABEL = {
 };
 const ACTION_ICON = { on: "power", off: "powerOff", toggle: "restore" };
 const cap = (domain, action) => ACTION_LABEL[domain]?.[action] || { on: "actOn", off: "actOff", toggle: "actToggle" }[action];
+const SOUND_LEN = { siren: 4, beep: 3, klaxon: 3, warning: 2, chime: 2 }; // Länge der Töne in Sekunden (wie der Server)
 const SOUND_KEY = { siren: "sndSiren", beep: "sndBeep", klaxon: "sndKlaxon", warning: "sndWarning", chime: "sndChime" };
 const SCENE_DOMAINS = ["scene", "script"];
 
@@ -38,7 +39,7 @@ const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["p
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
   return { ...fromStepBase(step), detach: !!step.detach };
@@ -49,7 +50,7 @@ function fromStepBase(step) {
   if (step.type === "notify") return { ...f, kind: "notify" };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
   if (step.type === "sound") {
-    return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, restore: step.restore !== false };
+    return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
   }
   const action = String(step.action || "");
   const [domain, service] = action.split(".");
@@ -82,7 +83,7 @@ function toStepBase(f) {
   if (f.kind === "notify") return { type: "notify" };
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
   if (f.kind === "sound") {
-    return { type: "sound", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, repeat: Math.max(1, Math.round(Number(f.repeat) || 1)), restore: !!f.restore };
+    return { type: "sound", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: f.until ? 0 : Math.min(3600, Math.max(1, Math.round(Number(f.playSeconds) || 1))), restore: !!f.restore };
   }
   if (f.kind === "scene") return { type: "action", action: `${f.targets[0].split(".")[0]}.turn_on`, target: [f.targets[0]], data: {}, restore: false };
   if (f.kind === "device") {
@@ -248,7 +249,7 @@ export class ActionsUi {
     const names = f.targets.map((id) => this.host._name(id)).join(", ") || this._t("stepNoTargets");
     if (f.kind === "notify") return this._t("stepNotifyHint");
     if (f.kind === "wait") return this._t("stepWaitSummary", { seconds: f.seconds });
-    if (f.kind === "sound") return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${Math.round(f.volume * 100)} %` : ""}${f.repeat > 1 ? ` · ${f.repeat}×` : ""}`;
+    if (f.kind === "sound") return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${Math.round(f.volume * 100)} %` : ""}· ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`;
     if (f.kind === "scene") return names;
     if (f.kind === "device") {
       const domains = new Set(f.targets.map((e) => e.split(".")[0]));
@@ -492,8 +493,17 @@ export class ActionsUi {
     return this._field("fldPlayers", this._combo(["media_player"], f, "fldSearchPlayer"))
       + this._field("fldTone", tone)
       + this._field("fldVolume", volume)
-      + this._field("fldRepeat", `<span class="ag-num"><input type="number" min="1" max="50" data-wf="f" data-key="repeat" value="${esc(f.repeat)}" aria-label="${esc(this._t("fldRepeat"))}"><span class="ag-t2">×</span></span>`)
+      + this._field("fldPlayFor", this._playFor(f))
       + this._restoreRow(f);
+  }
+
+  // Dauer des Alarmtons: Sekunden oder "bis zum Deaktivieren"
+  _playFor(f) {
+    const until = `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldPlayUntil"))}</b><small>${esc(this._t("fldPlayUntilHint"))}</small></div>${this._toggle('data-wf="until"', f.until, "fldPlayUntil")}</div>`;
+    if (f.until) return until;
+    const quick = [10, 30, 60, 300].map((s) => `<button class="ag-chip ${Number(f.playSeconds) === s ? "on" : ""}" data-wf="playsecs" data-value="${s}">${esc(s >= 60 ? this._t("durMin", { n: s / 60 }) : this._t("durS", { n: s }))}</button>`).join("");
+    return `<span class="ag-num"><input type="number" min="1" max="3600" data-wf="f" data-key="playSeconds" value="${esc(f.playSeconds)}" aria-label="${esc(this._t("fldPlayFor"))}"><span class="ag-t2">s</span></span>
+      <div class="ag-zline">${quick}</div><div class="ag-ef-h">${esc(this._t("fldPlayForHint"))}</div>${until}`;
   }
 
   _waitFields(f) {
@@ -826,6 +836,12 @@ export class ActionsUi {
       this.renderEditor();
     } else if (act === "action") {
       form.action = el.dataset.value;
+      this.renderEditor();
+    } else if (act === "until") {
+      form.until = !form.until;
+      this.renderEditor();
+    } else if (act === "playsecs") {
+      form.playSeconds = Number(el.dataset.value);
       this.renderEditor();
     } else if (act === "secs") {
       form.seconds = Number(el.dataset.value);

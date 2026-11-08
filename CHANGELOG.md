@@ -7,11 +7,20 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.18.0] - 2026-11-08
+
+The alarm sound has a duration in seconds, or sounds until disarmed.
+
+Includes the changes from 0.13.0, 0.14.0, 0.15.0, 0.16.0 and 0.17.0.
+
+### Changed
+
+- **Alarm sound: duration instead of repetitions** (Configuration › Actions): "How long it may sound" in seconds (with quick choices 10 s, 30 s, 1 min, 5 min), or "Until the alarm system is disarmed", where the tone repeats without end until someone disarms, silences the siren or the alarm duration ends. When the time is up, the media players are stopped so the tone does not trail off. Existing steps with repetitions keep working (shown as the matching number of seconds, saved as before until you edit them).
+- **"Silence siren" always works:** the push button now also stops the media players when all steps of the actions have already ended but a tone may still be playing, and works for a sound without end.
+
 ## [0.17.0] - 2026-11-08
 
-A step of the alarm actions can run alongside.
-
-Includes the changes from 0.13.0, 0.14.0, 0.15.0 and 0.16.0.
+Not released; included in 0.18.0.
 
 ### Added
 
@@ -24,7 +33,7 @@ Includes the changes from 0.13.0, 0.14.0, 0.15.0 and 0.16.0.
 
 ## [0.16.0] - 2026-11-08
 
-Not released; included in 0.17.0.
+Not released; included in 0.18.0.
 
 ### Added
 
@@ -38,7 +47,7 @@ Not released; included in 0.17.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.17.0.
+Not released; included in 0.18.0.
 
 ### Changed
 
@@ -47,7 +56,7 @@ Not released; included in 0.17.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.17.0.
+Not released; included in 0.18.0.
 
 ### Changed
 
@@ -58,7 +67,7 @@ Not released; included in 0.17.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.17.0.
+Not released; included in 0.18.0.
 
 ### Added
 
@@ -267,7 +276,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.17.0
+[0.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.18.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

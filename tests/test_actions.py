@@ -378,3 +378,48 @@ async def test_without_detach_next_step_waits(hass: HomeAssistant, freezer) -> N
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     assert not s["switch.turn_on"]
+
+
+async def test_sound_for_seconds_then_stops(hass: HomeAssistant, freezer) -> None:
+    """Alarmton mit Dauer (0.18.0): spielt so lange wie eingestellt, danach media_stop; der nächste Schritt wartet bis dahin."""
+    _entry, s = await _setup_workflow(hass, [
+        {"type": "sound", "players": [PLAYER], "sound": "siren", "duration": 10},
+        {"type": "action", "action": "switch.turn_on", "target": [SIREN]},
+    ])
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert len(s["media_player.play_media"]) == 1 and not s["switch.turn_on"]
+    await advance(hass, freezer, 4)
+    assert len(s["media_player.play_media"]) == 2  # Ton dauert 4 s: nochmals
+    await advance(hass, freezer, 4)
+    assert len(s["media_player.play_media"]) == 3 and not s["switch.turn_on"]
+    await advance(hass, freezer, 2)  # 10 s um
+    assert s["media_player.media_stop"] and len(s["switch.turn_on"]) == 1  # nach 10 s gestoppt, der nächste Schritt läuft
+
+
+async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_client, freezer) -> None:
+    """Dauer 0: der Ton läuft, bis deaktiviert wird; "Sirene stumm" stoppt ihn jederzeit, auch ohne laufenden Ablauf."""
+    async_mock_service(hass, "notify", "handy")
+    entry, s = await _setup_workflow(hass, [{"type": "sound", "players": [PLAYER], "sound": "siren", "duration": 0}])
+    await _notify_settings(hass, hass_ws_client, silence_action=True)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    for _ in range(15):  # der Ton dauert 4 s: schrittweise, wie die Zeit wirklich vergeht
+        await advance(hass, freezer, 4)
+    assert len(s["media_player.play_media"]) > 10  # läuft weiter, ohne Ende
+    stops = len(s["media_player.media_stop"])
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"})
+    await hass.async_block_till_done()
+    assert len(s["media_player.media_stop"]) > stops and entry.runtime_data.workflow.running is None
+    count = len(s["media_player.play_media"])
+    for _ in range(5):
+        await advance(hass, freezer, 4)
+    assert len(s["media_player.play_media"]) == count
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+    # Zweiter Druck, obwohl nichts mehr läuft: stoppt die Player trotzdem (der Ton könnte noch klingen)
+    stops = len(s["media_player.media_stop"])
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"})
+    await hass.async_block_till_done()
+    assert len(s["media_player.media_stop"]) == stops + 1

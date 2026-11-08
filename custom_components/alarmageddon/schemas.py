@@ -56,6 +56,8 @@ STEP_SCHEMAS = {
         vol.Required("sound"): vol.In(list(SOUNDS)),
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
         vol.Optional("repeat", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=50)),
+        # Dauer in Sekunden (0 = bis zum Deaktivieren); ohne Angabe gilt die ältere Form mit Wiederholungen (0.18.0)
+        vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY)),
         vol.Optional("restore", default=True): bool,
         vol.Optional("detach"): bool,
     }),
