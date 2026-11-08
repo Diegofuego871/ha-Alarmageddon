@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.11.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.12.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -21,6 +21,7 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (modes, delays, behaviour for open sensors, schedule, codes, backup). On the phone as cards and sheets from the bottom.
 - **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, report only. Defaults per sensor type, own values per sensor.
 - **Ready to arm:** one entity per mode with the blocking sensors.
+- **Log and alarm recording:** every alarm as a graphical timeline (which sensor responded when, until acknowledged) and all events in their own tab.
 - **Alarm actions:** a graphical workflow per alarm: push notification, switch devices, covers, alarm sound on media players (Sonos and others), wait, script, any action. Devices return to their previous state after the alarm.
 - **Notifications:** critical push notifications with volume, recipients separately for alarms and maintenance, selectable events.
 - **Maintenance:** notifications for low battery and unreachable sensors (once per problem), battery forecast in the list.
@@ -76,6 +77,15 @@ Side panel › Configuration › Notifications, for all alarm systems:
 - **Report only** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Sensor reports" while armed instead of triggering the alarm. At most one message per sensor and minute.
 - **"Disarm" button in the notification:** off by default. iOS asks for Face ID or the passcode, Android does not: anyone holding the unlocked phone can disarm.
 - **Maintenance:** low battery (threshold, default 20 %) and sensors unreachable for longer than a set time (default 60 minutes) go to the maintenance recipients. Each problem once, several in one notification; again after the battery was replaced or the sensor responded.
+
+## Log and alarm recording
+
+Side panel › Log. Every alarm is recorded from the first trigger (entry delay or alarm) until it is acknowledged by disarming:
+
+- **Timeline per alarm:** one lane per sensor with a bar for the time it responded, lines for the state changes (entry delay, alarm, acknowledged) and the time axis. Below, the order with the time of day and the time since the start ("window contact 18:03:07, motion sensor +1 min 20 s"). The running alarm grows live; older ones are collapsed.
+- **What is recorded:** state changes and every change of the sensors of the alarm system (responded, calm again, unreachable), including sensors that report only. Recording continues after a restart of Home Assistant in the middle of an alarm. At most 20 alarms per alarm system and 300 entries per alarm; with a flapping sensor the first entries and the end are kept.
+- **All events** (arming, disarming, sensor failures, schedule) are listed below, no longer on the overview.
+- The recordings are runtime data and not part of the backup.
 
 ## Maintenance and battery forecast
 

@@ -7,11 +7,24 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.12.0] - 2026-11-08
+
+Protokoll als eigener Reiter mit grafischer Zeitachse für jeden Alarm.
+
+Enthält die Änderungen aus 0.7.0, 0.8.0, 0.9.0, 0.10.0 und 0.11.0.
+
+### Hinzugefügt
+
+- **Alarm-Aufzeichnung:** Jeder Alarm wird vom ersten Auslöser (Eingangsverzögerung oder Alarm) bis zum Quittieren durch Deaktivieren aufgezeichnet. Die Aufzeichnung enthält die Zustandswechsel und jede Änderung der Sensoren der Alarmanlage (angesprochen, wieder ruhig, nicht erreichbar, auch Sensoren, die nur melden) mit der Uhrzeit. Sie läuft nach einem Neustart von Home Assistant mitten im Alarm weiter. Auch Eingangsverzögerungen, die mit dem Deaktivieren enden, werden aufgezeichnet. Höchstens 20 Alarme je Alarmanlage und 300 Einträge je Alarm; bei einem flatternden Sensor bleiben die ersten Einträge (die Ursache) und das Ende. Die Aufzeichnungen sind Laufzeitdaten und nicht Teil der Sicherung.
+- **Reiter Protokoll** auf der Startseite: Jeder Alarm als Karte mit Zeitachse (eine Bahn je Sensor mit einem Balken für die Zeit, in der er angesprochen hat, Linien für Eingangsverzögerung, Alarm und quittiert, Zeitachse) und darunter die Reihenfolge mit Uhrzeit und Abstand zum Anfang. Ein laufender Alarm aktualisiert sich alle 5 Sekunden; der neueste Alarm ist offen, ältere sind zugeklappt.
+
+### Geändert
+
+- **Letzte Ereignisse** sind von der Übersicht in den Reiter Protokoll gewandert ("Alle Ereignisse", bis zu 100 über alle Alarmanlagen).
+
 ## [0.11.0] - 2026-11-08
 
-Der Aktionen-Editor kommt ohne JSON aus; jeder Schritt lässt sich testen, Schritte verschiebt man per Ziehen.
-
-Enthält die Änderungen aus 0.7.0, 0.8.0, 0.9.0 und 0.10.0.
+Nicht veröffentlicht; enthalten in 0.12.0.
 
 ### Geändert
 
@@ -29,7 +42,7 @@ Enthält die Änderungen aus 0.7.0, 0.8.0, 0.9.0 und 0.10.0.
 
 ## [0.10.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.11.0.
+Nicht veröffentlicht; enthalten in 0.12.0.
 
 ### Geändert
 
@@ -40,7 +53,7 @@ Nicht veröffentlicht; enthalten in 0.11.0.
 
 ## [0.9.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.11.0.
+Nicht veröffentlicht; enthalten in 0.12.0.
 
 
 Meldungen neu aufgebaut: jede Meldungsart hat eigene Einstellungen, und ein Sensor kann melden statt auszulösen.
@@ -61,7 +74,7 @@ Enthält die Änderungen aus 0.7.0 und 0.8.0.
 
 ## [0.8.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.11.0.
+Nicht veröffentlicht; enthalten in 0.12.0.
 
 
 Neues Aussehen der Einstellungen wie in Device Panel, und beim Reiterwechsel geht nichts verloren.
@@ -76,7 +89,7 @@ Enthält die Änderungen aus 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.11.0.
+Nicht veröffentlicht; enthalten in 0.12.0.
 
 
 Updates aus dem Panel, wie in Device Panel.
@@ -197,6 +210,6 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.11.0
+[0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

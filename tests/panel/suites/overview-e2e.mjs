@@ -25,7 +25,7 @@ for (const lang of ["de", "en"]) {
     const garage = await card("e_garage");
     check(`${tag}: Garage zeigt offenen Sensor`, garage.includes(t.disarmed) && garage.includes(t.readyFor) && garage.includes(t.garageOpen), garage);
     check(`${tag}: Garage nicht bereit`, await s.ev(`return r.querySelectorAll('[data-system="e_garage"] .ag-rchip.no').length === 2`));
-    check(`${tag}: Ereignisse`, (await text()).toLowerCase().includes(t.events.toLowerCase()));
+    check(`${tag}: Ereignisse nur im Protokoll`, !(await text()).toLowerCase().includes(t.events.toLowerCase()));
     const nightOnlyHaus = await s.ev(`return [r.querySelectorAll('[data-system="e_haus"] [data-mode]').length, r.querySelectorAll('[data-system="e_garage"] [data-mode]').length]`);
     check(`${tag}: Nacht nur bei Haus`, nightOnlyHaus[0] === 4 && nightOnlyHaus[1] === 3, JSON.stringify(nightOnlyHaus));
 
@@ -68,7 +68,7 @@ for (const lang of ["de", "en"]) {
     if (mobile) {
       // Reiter mit Symbol und kurzem Text über die ganze Breite (Entscheid des Nutzers)
       const tabs = await s.ev(`const t=r.querySelector('.ag-tabs').getBoundingClientRect(); const c=r.querySelector('.ag-content').getBoundingClientRect(); return [t.width, c.width, r.querySelectorAll('.ag-tabs svg').length]`);
-      check(`${tag}: Reiter volle Breite mit Symbol`, tabs[0] > tabs[1] - 40 && tabs[2] === 2, JSON.stringify(tabs));
+      check(`${tag}: Reiter volle Breite mit Symbol`, tabs[0] > tabs[1] - 40 && tabs[2] === 3, JSON.stringify(tabs));
       const overflow = await s.ev(`const c=r.querySelector('.ag-content'); return c.scrollWidth <= c.clientWidth`);
       check(`${tag}: kein seitliches Scrollen`, overflow);
     }

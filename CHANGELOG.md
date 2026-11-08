@@ -7,11 +7,24 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] - 2026-11-08
+
+Log as its own tab with a graphical timeline for every alarm.
+
+Includes the changes from 0.7.0, 0.8.0, 0.9.0, 0.10.0 and 0.11.0.
+
+### Added
+
+- **Alarm recording:** every alarm is recorded from the first trigger (entry delay or alarm) until it is acknowledged by disarming. The recording holds the state changes and every change of the sensors of the alarm system (responded, calm again, unreachable, also sensors that only report) with the time. It continues after a restart of Home Assistant in the middle of an alarm. Entry delays that end with disarming are recorded too. At most 20 alarms per alarm system and 300 entries per alarm; with a flapping sensor the first entries (the cause) and the end are kept. The recordings are runtime data and not part of the backup.
+- **Log tab** on the start page: every alarm as a card with a timeline (one lane per sensor with a bar for the time it responded, lines for entry delay, alarm and acknowledged, time axis) and the order below it with time of day and time since the start. A running alarm updates every 5 seconds; the newest alarm is open, older ones collapsed.
+
+### Changed
+
+- **Recent events** moved from the overview to the Log tab ("All events", up to 100 across all alarm systems).
+
 ## [0.11.0] - 2026-11-08
 
-The action editor needs no JSON any more; every step can be tested and steps are moved by dragging.
-
-Includes the changes from 0.7.0, 0.8.0, 0.9.0 and 0.10.0.
+Not released; included in 0.12.0.
 
 ### Changed
 
@@ -29,7 +42,7 @@ Includes the changes from 0.7.0, 0.8.0, 0.9.0 and 0.10.0.
 
 ## [0.10.0] - 2026-11-08
 
-Not released; included in 0.11.0.
+Not released; included in 0.12.0.
 
 ### Changed
 
@@ -40,7 +53,7 @@ Not released; included in 0.11.0.
 
 ## [0.9.0] - 2026-11-08
 
-Not released; included in 0.11.0.
+Not released; included in 0.12.0.
 
 
 Notifications rebuilt: every kind of message has its own settings, and a sensor can report instead of triggering.
@@ -61,7 +74,7 @@ Includes the changes from 0.7.0 and 0.8.0.
 
 ## [0.8.0] - 2026-11-08
 
-Not released; included in 0.11.0.
+Not released; included in 0.12.0.
 
 
 New look of the settings like in Device Panel, and nothing gets lost when you switch tabs.
@@ -76,7 +89,7 @@ Includes the changes from 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Not released; included in 0.11.0.
+Not released; included in 0.12.0.
 
 
 Updates from the panel, like in Device Panel.
@@ -197,6 +210,6 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.11.0
+[0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

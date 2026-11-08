@@ -16,6 +16,7 @@ from . import websocket_api
 from .const import DOMAIN, MODES
 from .controller import AlarmController
 from .events import EventLog, async_remove_events
+from .recording import AlarmRecorder, async_remove_recordings
 from .maintenance import async_start_maintenance, async_stop_maintenance
 from .notify import Notifier
 from .panel import async_register_panel, async_remove_panel
@@ -36,6 +37,7 @@ class RuntimeData:
     version: str | None
     notifier: Notifier | None = None
     workflow: WorkflowRunner | None = None
+    recorder: AlarmRecorder | None = None
 
 
 type AlarmageddonConfigEntry = ConfigEntry[RuntimeData]
@@ -53,15 +55,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     controller = AlarmController(hass, entry, settings)
     events = EventLog(hass, entry.entry_id, controller)
     await events.async_load()
+    recorder = AlarmRecorder(hass, entry.entry_id, controller)
+    await recorder.async_load()
     notifier = Notifier(hass, entry, controller, settings)
     workflow = WorkflowRunner(hass, entry, controller, notifier)
     notifier.workflow_has_notify = workflow.has_notify
-    entry.runtime_data = RuntimeData(controller, events, str(integration.version) if integration.version else None, notifier, workflow)
+    entry.runtime_data = RuntimeData(controller, events, str(integration.version) if integration.version else None, notifier, workflow, recorder)
     _remove_unused_zones(hass, entry, controller)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # Erst nach dem Wiederherstellen des Zustands (in der Entität) auf Sensoren hören und protokollieren
     controller.async_start()
     events.async_start()
+    recorder.async_start()
     notifier.async_start()
     await workflow.async_start()
     scheduler = Scheduler(hass, entry, controller)
@@ -99,6 +104,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
     await entry.runtime_data.events.async_stop()
+    if entry.runtime_data.recorder:
+        await entry.runtime_data.recorder.async_stop()
     if entry.runtime_data.workflow:
         await entry.runtime_data.workflow.async_unload()
     others = [
@@ -114,4 +121,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry
 
 async def async_remove_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> None:
     await async_remove_events(hass, entry.entry_id)
+    await async_remove_recordings(hass, entry.entry_id)
     await async_remove_workflow_store(hass, entry.entry_id)

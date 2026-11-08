@@ -14,6 +14,7 @@ const { SystemUi } = await import(`./system.js${V}`);
 const { ActionsUi } = await import(`./actions.js${V}`);
 const { NotifyUi } = await import(`./notify.js${V}`);
 const { UpdatesUi } = await import(`./updates.js${V}`);
+const { LogUi } = await import(`./log.js${V}`);
 const SUBS = ["sensors", "actions", "notify", "system", "updates"];
 
 class AlarmageddonPanel extends HTMLElement {
@@ -23,7 +24,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._hass = null;
     this._data = null;
     this._tab = this._loadPref("tab", "overview");
-    if (!["overview", "config"].includes(this._tab)) this._tab = "overview";
+    if (!["overview", "log", "config"].includes(this._tab)) this._tab = "overview";
     this._sub = this._loadPref("sub", "sensors");
     if (!SUBS.includes(this._sub)) this._sub = "sensors";
     this._sel = this._loadPref("system", null);
@@ -36,6 +37,7 @@ class AlarmageddonPanel extends HTMLElement {
     this.actions = new ActionsUi(this);
     this.notify = new NotifyUi(this);
     this.updates = new UpdatesUi(this);
+    this.log = new LogUi(this);
   }
 
   // Ansicht des gewählten Reiters unter Konfiguration
@@ -282,6 +284,7 @@ class AlarmageddonPanel extends HTMLElement {
     const narrow = this.hasAttribute("narrow");
     const tabs = this._segHtml("tabs", [
       ["overview", this._t(narrow ? "tabOverviewShort" : "tabOverview"), narrow ? "shieldHome" : null],
+      ["log", this._t(narrow ? "tabLogShort" : "tabLog"), narrow ? "groups" : null],
       ["config", this._t(narrow ? "tabConfigShort" : "tabConfig"), narrow ? "cog" : null],
     ], this._tab, "data-tab", "ag-tabs");
     let right = "";
@@ -315,11 +318,13 @@ class AlarmageddonPanel extends HTMLElement {
 
   _renderView(full) {
     if (!this._view || !this._data) return this._placePills();
-    if (!this._systems().length && this._tab === "overview") {
+    if (!this._systems().length && this._tab !== "config") {
       this._setHtml(this._view, this._emptyHtml());
       return;
     }
+    if (this._tab !== "log") this.log.stop();
     if (this._tab === "config") this._renderConfig(full);
+    else if (this._tab === "log") this._renderLogTab(full);
     else this._renderOverview(full);
     this._placePills();
     this._renderDots();
@@ -330,7 +335,8 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._tab === "overview") {
       this._renderTop();
       this._renderList();
-      this._renderLog();
+    } else if (this._tab === "log") {
+      this.log.load(); // ein neuer Zustand (Alarm, Quittieren) gehört in die Zeitachse
     } else if (this._sub === "sensors") {
       this.sensors.render();
     } else if (this._sub === "updates") {
@@ -421,11 +427,20 @@ class AlarmageddonPanel extends HTMLElement {
   _renderOverview(full) {
     if (full || !this._view.querySelector(".ag-ov-top")) {
       this._lastHtml.delete(this._view);
-      this._view.innerHTML = `<div class="ag-ov-top"></div><div class="ag-ov-tools">${this.list.toolsHtml()}</div><div class="ag-ov-list"></div><div class="ag-ov-log"></div>`;
+      this._view.innerHTML = `<div class="ag-ov-top"></div><div class="ag-ov-tools">${this.list.toolsHtml()}</div><div class="ag-ov-list"></div>`;
     }
     this._renderTop();
     this._renderList();
-    this._renderLog();
+  }
+
+  // Protokoll: Gerüst einmal, Inhalt vom Server; beim Öffnen neu laden
+  _renderLogTab(full) {
+    if (full || !this._view.querySelector(".ag-log-body")) {
+      this._lastHtml.delete(this._view);
+      this._view.innerHTML = this.log.html();
+      this.log.render();
+      this.log.load();
+    }
   }
 
   _renderTop(force = false) {
@@ -448,10 +463,6 @@ class AlarmageddonPanel extends HTMLElement {
     const count = toolsEl.querySelector(".ag-list-count");
     if (count) count.textContent = rows.length ? this._t("listCount", { shown, total: rows.length }) : "";
     this._setHtml(listEl, this.list.bodyHtml(rows, this.hasAttribute("narrow")));
-  }
-
-  _renderLog() {
-    this._setHtml(this._view?.querySelector(".ag-ov-log"), this._logHtml());
   }
 
   _look(st) {
@@ -541,17 +552,6 @@ class AlarmageddonPanel extends HTMLElement {
     const text = sensor ? this._t("alarmBy", { sensor: this._name(sensor), time: this._fmtTime(st.last_changed) }) : "";
     return `<div class="ag-alarm" role="alert">${ic("alert", 30)}<div><b>${esc(this._t("alarmTitle", { name: s.title }))}</b><div style="opacity:.9;font-size:13px;margin-top:2px">${esc(text)}</div></div>
       <button class="ag-btn" data-act="mode" data-entry="${esc(s.entry_id)}" data-mode="off">${ic("shieldOff", 18)}${esc(this._t("disarm"))}</button></div>`;
-  }
-
-  _logHtml() {
-    const events = this._systems()
-      .flatMap((s) => (s.events || []).map((e) => ({ ...e, system: s.title })))
-      .sort((a, b) => String(b.t).localeCompare(String(a.t)))
-      .slice(0, 10);
-    const rows = events.length
-      ? events.map((e) => `<div class="ag-row"><time>${esc(this._fmtTime(e.t))}</time><span class="ag-grow"><b style="font-weight:500">${esc(e.system)}</b> · ${esc(this._eventText(e))}</span></div>`).join("")
-      : `<div class="ag-row ag-t2">${esc(this._t("noEvents"))}</div>`;
-    return `<div><div class="ag-label" style="margin:0 4px 8px">${esc(this._t("recentEvents"))}</div><div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}</div></div></div>`;
   }
 
   _eventText(e) {
@@ -704,6 +704,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._tab === "config" && this._sub === "actions" && this.actions.onClick(ev.target.closest("[data-wf], [data-trigger]"))) return;
     if (this._tab === "config" && this._sub === "notify" && this.notify.onClick(ev.target.closest("[data-nt]"))) return;
     if (this.updates.onClick(ev.target.closest("[data-upd]"))) return;
+    if (this._tab === "log" && this.log.onClick(ev.target.closest("[data-log]"))) return;
     const listEl = ev.target.closest("[data-list]");
     if (listEl && this.list.onClick(listEl)) return;
     const tab = ev.target.closest("[data-tab]");

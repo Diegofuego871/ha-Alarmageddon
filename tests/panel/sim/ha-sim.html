@@ -161,6 +161,27 @@
         sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["warning", 2], ["chime", 2]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
       }));
     }
+    if (msg.type === "alarmageddon/log") {
+      // Erfundene Alarme: einer quittiert (Fenster, Bewegung, Fenster wieder zu), optional ein laufender (?alarm=open)
+      const ago = (min) => (off) => iso(min * 60e3 - off * 1000);
+      const c = ago(95);
+      const closed = { id: c(0), start: c(0), end: c(190), ended_by: "Diego", mode: "away", sensor: "binary_sensor.fenster_bad", entries: [
+        { t: c(0), kind: "sensor", sensor: "binary_sensor.fenster_bad", to: "on" },
+        { t: c(1), kind: "state", state: "triggered", sensor: "binary_sensor.fenster_bad" },
+        { t: c(80), kind: "sensor", sensor: "binary_sensor.bewegung_flur", to: "on" },
+        { t: c(95), kind: "sensor", sensor: "binary_sensor.bewegung_flur", to: "off" },
+        { t: c(180), kind: "sensor", sensor: "binary_sensor.fenster_bad", to: "off" },
+        { t: c(190), kind: "state", state: "disarmed", by: "Diego" },
+      ] };
+      const r = ago(2);
+      const running = { id: r(0), start: r(0), end: null, ended_by: null, mode: "away", sensor: "binary_sensor.garagentor", entries: [
+        { t: r(0), kind: "sensor", sensor: "binary_sensor.garagentor", to: "on" },
+        { t: r(1), kind: "state", state: "pending", sensor: "binary_sensor.garagentor" },
+        { t: r(60), kind: "state", state: "triggered", sensor: "binary_sensor.garagentor" },
+      ] };
+      const open = params.get("alarm") === "open";
+      return { systems: window.__systems.map((s) => ({ entry_id: s.entry_id, title: s.title, events: s.events, recordings: s.entry_id === "e_haus" ? (open ? [running, closed] : [closed]) : [], recording: s.entry_id === "e_haus" && open })) };
+    }
     if (msg.type === "alarmageddon/version") {
       if (window.__versionError) throw err("fail", window.__versionError);
       const v = window.__version;

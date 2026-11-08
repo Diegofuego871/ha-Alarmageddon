@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.11.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.12.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -21,6 +21,7 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan, Codes, Sicherung). Auf dem Handy als Karten und Blätter von unten.
 - **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht einen zweiten Sensor, nur melden. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
+- **Protokoll und Alarm-Aufzeichnung:** jeder Alarm als grafische Zeitachse (welcher Sensor wann angesprochen hat, bis zum Quittieren) und alle Ereignisse in einem eigenen Reiter.
 - **Alarmaktionen:** ein grafischer Ablauf pro Alarm: Push-Meldung, Geräte schalten, Rollläden, Alarmton auf Medienplayern (Sonos und andere), Warten, Skript, jede Aktion. Geräte kehren nach dem Alarm in den Zustand davor zurück.
 - **Benachrichtigungen:** kritische Push-Meldungen mit Lautstärke, Empfänger getrennt für Alarme und Wartung, wählbare Ereignisse.
 - **Wartung:** Meldungen bei schwacher Batterie und nicht erreichbaren Sensoren (einmal pro Problem), Batterieprognose in der Liste.
@@ -76,6 +77,15 @@ Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
 - **Nur melden** (Option pro Sensor): Ein Sensor, der oft ohne Einbruch ansprechen oder dessen Batterie zur Neige geht, schickt im scharfen Zustand die Meldung "Sensor meldet", statt den Alarm auszulösen. Höchstens eine Meldung pro Sensor und Minute.
 - **Knopf "Deaktivieren" in der Meldung:** standardmässig aus. iOS fragt nach Face ID oder dem Code des Geräts, Android nicht: Wer das entsperrte Handy hält, kann deaktivieren.
 - **Wartung:** schwache Batterie (Schwelle, Standard 20 %) und Sensoren, die länger als eine eingestellte Zeit nicht erreichbar sind (Standard 60 Minuten), gehen an die Wartungs-Empfänger. Jedes Problem einmal, mehrere in einer Meldung; erneut nach Batteriewechsel oder wenn der Sensor wieder antwortet.
+
+## Protokoll und Alarm-Aufzeichnung
+
+Seitenpanel › Protokoll. Jeder Alarm wird vom ersten Auslöser (Eingangsverzögerung oder Alarm) bis zum Quittieren durch Deaktivieren aufgezeichnet:
+
+- **Zeitachse je Alarm:** eine Bahn je Sensor mit einem Balken für die Zeit, in der er angesprochen hat, Linien für die Zustandswechsel (Eingangsverzögerung, Alarm, quittiert) und die Zeitachse. Darunter die Reihenfolge mit Uhrzeit und Abstand zum Anfang ("Fensterkontakt 18:03:07, Bewegungsmelder +1 min 20 s"). Der laufende Alarm wächst live; ältere sind zugeklappt.
+- **Was aufgezeichnet wird:** Zustandswechsel und jede Änderung der Sensoren der Alarmanlage (angesprochen, wieder ruhig, nicht erreichbar), auch von Sensoren, die nur melden. Die Aufzeichnung läuft nach einem Neustart von Home Assistant mitten im Alarm weiter. Höchstens 20 Alarme je Alarmanlage und 300 Einträge je Alarm; bei einem flatternden Sensor bleiben die ersten Einträge und das Ende.
+- **Alle Ereignisse** (Scharfschalten, Deaktivieren, Sensorausfälle, Zeitplan) stehen darunter, nicht mehr auf der Übersicht.
+- Die Aufzeichnungen sind Laufzeitdaten und nicht Teil der Sicherung.
 
 ## Wartung und Batterieprognose
 

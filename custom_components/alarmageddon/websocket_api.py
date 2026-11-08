@@ -89,6 +89,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_test_workflow)
     websocket_api.async_register_command(hass, ws_stop_workflow)
     websocket_api.async_register_command(hass, ws_battery_forecast)
+    websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_version)
     websocket_api.async_register_command(hass, ws_release_notes)
     websocket_api.async_register_command(hass, ws_set_update)
@@ -592,6 +593,27 @@ async def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         return
     result = backup.plan(hass, data) if msg["dry_run"] else await backup.async_restore(hass, data)
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/log"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_log(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Protokoll: alle Ereignisse und die aufgezeichneten Alarme (Zeitachse) je Anlage, getrennt von "data"."""
+    systems = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.state is not ConfigEntryState.LOADED:
+            continue
+        rt = entry.runtime_data
+        systems.append({
+            "entry_id": entry.entry_id,
+            "title": entry.title,
+            "events": rt.events.events,
+            "recordings": rt.recorder.recordings if rt.recorder else [],
+            "recording": bool(rt.recorder and rt.recorder.current),
+        })
+    systems.sort(key=lambda s: s["title"].lower())
+    connection.send_result(msg["id"], {"systems": systems})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/version", vol.Optional("force", default=False): bool})

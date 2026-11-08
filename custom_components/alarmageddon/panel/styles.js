@@ -299,6 +299,43 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-act { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--ag-divider); background: var(--ag-card); color: var(--ag-text); font: inherit; cursor: pointer; }
 .ag-act.on { background: var(--ag-primary-soft); border-color: transparent; color: var(--ag-primary); font-weight: 500; }
 .ag-actions { display: flex; flex-direction: column; gap: 10px; }
+.ag-inc { padding: 0; margin-bottom: 12px; overflow: hidden; }
+.ag-inc-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ag-inc-head:hover { background: var(--ag-hover); }
+.ag-inc-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ag-inc-text b { font-weight: 500; overflow-wrap: anywhere; }
+.ag-inc-arrow { transition: transform .2s ease; flex: none; }
+.ag-inc.open .ag-inc-arrow { transform: rotate(90deg); }
+.ag-inc-body { padding: 4px 16px 16px; border-top: 1px solid var(--ag-divider); }
+.ag-lg { display: flex; flex-direction: column; gap: 6px; padding: 14px 0 6px; }
+.ag-lg-row { display: grid; grid-template-columns: minmax(110px, 200px) 1fr; gap: 12px; align-items: center; }
+.ag-lg-name { display: flex; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
+.ag-lg-name span:last-child { overflow-wrap: anywhere; }
+.ag-lg-plot { position: relative; height: 22px; border-radius: 6px; background: var(--ag-subtle); }
+.ag-lg-bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; background: var(--ag-error); min-width: 4px; }
+.ag-lg-bar.gone { background: repeating-linear-gradient(45deg, var(--ag-warning-text), var(--ag-warning-text) 3px, transparent 3px, transparent 6px); }
+.ag-lg-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; z-index: 1; background: var(--ag-text3); }
+.ag-lg-mark.warn { background: var(--ag-warning-text); }
+.ag-lg-mark.err { background: var(--ag-error); outline: 1px solid var(--ag-card); }
+.ag-lg-mark.ok { background: var(--ag-success); }
+.ag-lg-axis { position: relative; height: 16px; font-size: 11.5px; color: var(--ag-text2); font-variant-numeric: tabular-nums; }
+.ag-lg-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ag-lg-axis span:first-child { transform: none; }
+.ag-lg-axis span:last-child { transform: translateX(-100%); }
+.ag-lg-legend { margin-top: 4px; }
+.ag-seq { list-style: none; margin: 14px 0 0; padding: 0; position: relative; }
+.ag-seq::before { content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; width: 2px; background: var(--ag-divider); }
+.ag-seq-item { display: flex; align-items: center; gap: 12px; padding: 7px 0; position: relative; }
+.ag-seq-item .ag-mini { position: relative; z-index: 1; flex: none; }
+.ag-seq-item.err .ag-mini { background: var(--ag-error-soft); color: var(--ag-error); }
+.ag-seq-item.warn .ag-mini { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
+.ag-seq-item.ok .ag-mini { background: var(--ag-success-soft); color: var(--ag-success); }
+.ag-seq-text { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; }
+.ag-seq-text b { font-weight: 500; }
+.ag-seq-item time { display: flex; flex-direction: column; align-items: flex-end; font-size: 13px; font-variant-numeric: tabular-nums; flex: none; }
+.ag-seq-item time small { color: var(--ag-text2); font-size: 11.5px; }
+:host([narrow]) .ag-lg-row { grid-template-columns: 1fr; gap: 4px; }
+:host([narrow]) .ag-lg-axisrow .ag-lg-name { display: none; }
 .ag-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .ag-kind { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: left; padding: 12px; border: 1px solid var(--ag-divider); border-radius: 14px; background: var(--ag-card); cursor: pointer; font: inherit; color: inherit; }
 .ag-kind:hover { border-color: var(--ag-primary); }

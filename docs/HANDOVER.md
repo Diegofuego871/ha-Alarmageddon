@@ -3,6 +3,14 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.12.0, Protokoll und Alarm-Aufzeichnung)
+
+- `recording.py` (`AlarmRecorder`, je Anlage, Speicher `alarmageddon.recordings.<entry_id>`, 20 Alarme, 300 Einträge): beginnt bei `pending`/`triggered`, endet beim Deaktivieren. Hört nur während eines Alarms auf `all_sensors()`; der auslösende Sensor wird mit seinem echten `last_changed` nachgetragen. Neustart im Alarm: Eintrag `restart`, Aufzeichnung läuft weiter; Zustand nicht mehr aktiv: abschliessen mit `reason: restart`. Flatternde Sensoren: Sensor-Einträge entfallen ab der Grenze (`truncated`), Zustandseinträge nie. Nicht in der Sicherung (Laufzeitdaten).
+- WebSocket `alarmageddon/log` (Ereignisse und Aufzeichnungen je Anlage, getrennt von `data`).
+- Panel: `panel/log.js` (`LogUi`), Reiter `log` auf der Startseite (Reihenfolge Übersicht, Protokoll, Konfiguration). Zeitachse als Bahnen (CSS, kein SVG) plus Reihenfolge; laufender Alarm lädt alle 5 s nach (`_poll`), sonst beim Öffnen und bei Zustandswechseln. Die Ereignisse der Übersicht sind ins Protokoll gewandert.
+- Tests: `tests/test_recording.py` (8, inkl. Pflichtfälle: Deaktivieren in der Verzögerung, Sensorausfall, Neustart im Alarm), Panel-Suite `log-e2e.mjs`.
+- Offen in echtem HA: Verhalten bei sehr langen Alarmen im Panel (nur Darstellung), Schritte der Aktionen und Meldungen stehen noch nicht in der Zeitachse (möglicher Ausbau).
+
 ## Stand (0.11.0, Aktionen-Editor)
 
 - `panel/actions.js` komplett neu: Bausteine `notify`, `device`, `sound`, `wait`, `scene`, `custom` (Formular, `fromStep/toStep` zum Serverformat von `workflow.py`, gespeichert wird nichts Neues). Gerätefähigkeiten aus `hass.states` (`deviceOptions`: Helligkeit, Farbtemperatur, Position, Stufe, Temperatur, Modus), Felder eigener Aktionen aus `hass.services` (`flatFields/selectorType`, Selektoren text, number, select, entity, boolean; anderes bleibt in `extra` erhalten).
@@ -10,7 +18,6 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - Vorschau des Tons: `pv-play/pv-pause` spielen im Browser, mit Hinweis `pvNote`.
 - Tests: `tests/test_actions.py` (Schritt-Test), actions-e2e (264 Prüfungen: Ziehen mit Maus, Pfeiltasten, Test mit Rückfrage, Licht, eigene Aktion, Szene, Alarmton). Der Nachbau liefert `hass.services` und `light.flur` mit Farbtemperatur.
 - Offen in echtem HA: Dienste mit exotischen Selektoren (zeigen den Hinweis "nicht einstellbar"), Ziehen auf einem echten Handy (Companion App).
-- Geplant: 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse (je Alarm bis zur Quittierung).
 
 ## Stand (0.10.0, Einstellungen je Modus)
 
