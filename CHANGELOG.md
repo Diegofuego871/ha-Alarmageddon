@@ -20,6 +20,7 @@ Includes the changes from 0.13.0, 0.14.0 and 0.15.0.
 ### Fixed
 
 - **Own action in the action editor** showed the technical names of Home Assistant (`cover.set_cover_position`, field `speed`). Types, actions, descriptions, field names and choices are now shown in your language, fetched from Home Assistant like its own interface; where Home Assistant has no translation, the name is made readable ("Set cover position").
+- **Spacing:** the last element of a page no longer sits directly on the bar with "Cancel" and "Save"; hints, warnings and the "Test message" rows have more room.
 
 
 ## [0.15.0] - 2026-11-08

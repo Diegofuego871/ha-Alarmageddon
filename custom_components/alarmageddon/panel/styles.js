@@ -123,7 +123,7 @@ button { font: inherit; color: inherit; }
 .ag-batt { font-variant-numeric: tabular-nums; color: var(--ag-text2); }
 .ag-batt.low { color: var(--ag-error); font-weight: 500; }
 .ag-entry { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ag-warning-text); background: var(--ag-warning-soft); padding: 2px 7px; border-radius: 999px; }
-.ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: 0 -24px calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 3; }
+.ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: 24px -24px calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 3; }
 .ag-foot > span:first-child { min-width: 0; font-size: 13.5px; }
 .ag-foot .ag-saved { color: var(--ag-success); font-weight: 500; }
 .ag-foot .ag-err, .ag-settx .ag-err { color: var(--ag-error); }
@@ -156,7 +156,7 @@ dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 :host([narrow]) .ag-tabs > button { flex: 1; flex-direction: column; gap: 2px; padding: 6px 4px; font-size: 12px; min-height: 52px; }
 :host([narrow]) .ag-alarm .ag-btn { margin-left: 0; width: 100%; }
 :host([narrow]) .list-search { flex: 1 1 100%; min-width: 0; }
-:host([narrow]) .ag-foot { margin: 0 -12px calc(-24px - env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); }
+:host([narrow]) .ag-foot { margin: 20px -12px calc(-24px - env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); }
 :host([narrow]) dialog.ag-dlg { margin: auto 0 0; width: 100vw; max-width: 100vw; border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 /* 0.3.0: Übersicht mit Liste, Konfiguration */
@@ -255,7 +255,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-btns .ag-iconbtn { width: 36px; height: 36px; }
 .ag-wf-btns .ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-wf-empty { margin-left: 20px; }
-.ag-wf-info { display: flex; gap: 6px; align-items: center; margin: 6px 4px 0; }
+.ag-wf-info { display: flex; gap: 8px; align-items: center; margin: 16px 8px 0; line-height: 1.4; }
 .ag-wf-info .ag-ic { display: inline-block; }
 .ag-wf-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .ag-handle { border: 0; background: transparent; color: var(--ag-text3); width: 30px; height: 44px; border-radius: 10px; display: grid; place-items: center; cursor: grab; flex: none; touch-action: none; padding: 0; }
@@ -361,7 +361,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ag-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 .ag-evgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 24px; margin-top: 6px; }
-.ag-warntext { color: var(--ag-warning-text) !important; display: flex !important; gap: 4px; align-items: center; }
+.ag-warntext { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }
 :host([narrow]) .ag-wf-btns .ag-iconbtn { width: 32px; height: 32px; }
 :host([narrow]) .ag-wf-step { flex-wrap: wrap; }
 :host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; }
@@ -483,6 +483,7 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-mt-opt.vol { flex-wrap: wrap; }
 .ag-mt-opt.vol .ag-range { flex: 1 1 200px; max-width: 320px; }
 :host([narrow]) .ag-mt-body { margin-left: 0; }
+:host([narrow]) .ag-mt-opt { flex-wrap: wrap; row-gap: 8px; }
 :host([narrow]) .ag-mt-opt.vol .ag-range { flex-basis: 100%; max-width: none; }
 
 /* 0.10.0: Einstellungen je Modus */

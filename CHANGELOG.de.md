@@ -20,6 +20,7 @@ Enthält die Änderungen aus 0.13.0, 0.14.0 und 0.15.0.
 ### Behoben
 
 - **Eigene Aktion im Aktionen-Editor** zeigte die technischen Namen von Home Assistant (`cover.set_cover_position`, Feld `speed`). Arten, Aktionen, Beschreibungen, Feldnamen und Auswahlwerte erscheinen jetzt in deiner Sprache, geholt bei Home Assistant wie in dessen eigener Oberfläche; wo Home Assistant keine Übersetzung hat, wird der Name lesbar gemacht ("Set cover position").
+- **Abstände:** Das letzte Element einer Seite klebt nicht mehr an der Leiste mit "Abbrechen" und "Speichern"; Hinweise, Warnungen und die Zeilen mit "Testmeldung" haben mehr Platz.
 
 
 ## [0.15.0] - 2026-11-08
