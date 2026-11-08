@@ -17,12 +17,11 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Nächste Schritte
 
-1. Offene Fragen aus `docs/CONCEPT.md` mit dem Nutzer klären.
-2. Phase 1: Kern (Config Flow für mehrere Anlagen, je ein Gerät mit
+1. Phase 1: Kern (Config Flow für mehrere Anlagen, je ein Gerät mit
    `alarm_control_panel`, Zustandsautomat mit Verzögerungen, optional
    Nacht, Zonen als Entitäten, Prüfung HomeKit-Bridge, HACS-Gerüst, Tests),
    Version 0.1.0.
-3. Phase 2: Panel mit Drag and Drop. Vorher Mockups pro Ansicht im Design
+2. Phase 2: Panel mit Drag and Drop. Vorher Mockups pro Ansicht im Design
    von ha-device-panel (Varianten mit Empfehlung).
 
 ## Zweisprachigkeit EN/DE (verbindlich)

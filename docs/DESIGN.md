@@ -40,9 +40,14 @@ offline = `--ag-error`, keine Daten = `--ag-text3`.
 - Symbole: Material Design Icons als SVG-Pfade im Code (kein `ha-icon` im
   iframe).
 
-## Layout
+## Layout (responsiv, Vorgabe des Nutzers)
 
 - Panel als eingebautes iframe-Panel (siehe LEARNINGS).
+- Desktop: volle Breite nutzen. Kacheln im Raster mit `auto-fill`, das sich
+  an die Breite anpasst; Editoren zweispaltig (Liste links, Bearbeitung
+  rechts). Keine fest schmale Mittelspalte.
+- Handy (Companion App): einspaltig, Trefferflächen mindestens 44 px,
+  Antippen als Ersatz für Ziehen, Blätter von unten, Safe-Area beachten.
 - Breite < 600 px: Dialoge als Blatt von unten, Reiter mit Kurzbeschriftung.
 
 ## Interaktion (wie ha-device-panel)

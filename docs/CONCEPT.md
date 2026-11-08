@@ -59,14 +59,18 @@ eingerichtet in einem automatisch angelegten Seitenpanel.
   Aus, ausgelöst), wie sie mit Verzögerungen (`arming`, `pending`) umgeht und
   wie ein Alarmcode in HomeKit hinterlegt wird.
 - Veröffentlichung über HACS, mit allen Regeln (siehe CLAUDE.md, "HACS").
+- Jede Funktechnik: nur über HA-Entitäten, technikunabhängig. Der Nutzer
+  nutzt WLAN und Thread (Matter); Zigbee, Z-Wave, Bluetooth usw. müssen
+  ebenso gehen. Technikspezifische Angaben nur als Zusatz.
+- Ebenen der Einstellungen: global › Alarmanlage › Bereich › Gerät.
+- Responsives Design: Desktop-Monitor in der Breite gut nutzen, auf dem
+  Handy (Companion App) ebenso gut bedienbar.
 - Sprache: Integration Englisch, Deutsch wenn HA auf Deutsch läuft. README
   und Release Notes zweisprachig, Mockups Deutsch (Nutzer, 2026-11-08).
 
 ## Offene Fragen
 
-- Welche Funktechnik (Zigbee2MQTT, ZHA, Z-Wave)?
-- Ebenen der Einstellungen (Vorschlag: global › Alarmanlage › Bereich ›
-  Gerät).
+- Keine. Neue Fragen hier sammeln.
 
 ## Umsetzungsplan
 

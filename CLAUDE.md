@@ -34,6 +34,17 @@ Feste Vorgaben des Nutzers (2026-11-08):
   standardmässig aus. "Anwesend" und "Abwesend" sind immer da.
 - **Veröffentlichung über HACS:** alle Regeln von HACS und hassfest
   einhalten (siehe "HACS").
+- **Jede Funktechnik:** Alarmageddon arbeitet nur mit HA-Entitäten
+  (`binary_sensor`, `sensor` für Batterie, `siren`, `cover` …) und ist damit
+  unabhängig von der Technik. Der Nutzer selbst nutzt WLAN und Thread
+  (Matter); Zigbee (ZHA, Zigbee2MQTT), Z-Wave, Bluetooth und andere müssen
+  ebenso gehen. Angaben je Technik (Signal, "zuletzt gesehen",
+  Koordinator-Ausfall) nur als Zusatz, wo verfügbar, nie als Voraussetzung.
+- **Responsiv:** Das Panel nutzt einen Desktop-Monitor in der Breite gut
+  aus (mehrspaltig, Kacheln füllen die Fläche, keine schmale Mittelspalte)
+  und ist auf dem Handy in der Companion App ebenso gut bedienbar (Tippen
+  statt Ziehen, grosse Trefferflächen, Blätter von unten, Safe-Area). Jede
+  Ansicht wird auf Desktop und Handy (390 × 844) gebaut und geprüft.
 
 ## Sprache (Vorgabe des Nutzers, wörtlich)
 
@@ -98,10 +109,9 @@ Umsetzung:
   Ebenen zugleich, mit Anzeige der Herkunft, Zurücksetzen, Übersicht der
   eigenen Werte, Sicherung und Wiederherstellung und Tests. Nie nur eine
   oder zwei Ebenen bauen und die anderen später nachreichen.
-- Die Ebenen für Alarmageddon sind noch nicht entschieden. Vorschlag:
-  global › Alarmanlage › Bereich › Gerät (Wirksam: Gerät > Bereich >
-  Alarmanlage > global). Vor der ersten solchen Einstellung mit dem Nutzer
-  festlegen.
+- Ebenen für Alarmageddon (Entscheid des Nutzers, 2026-11-08): global ›
+  Alarmanlage › Bereich › Gerät (Wirksam: Gerät > Bereich > Alarmanlage >
+  global).
 
 ## HACS
 
