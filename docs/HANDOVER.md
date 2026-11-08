@@ -24,8 +24,9 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Nächste Schritte
 
-1. Phase 2: Panel mit Drag and Drop. Vorher Mockups pro Ansicht im Design
-   von ha-device-panel (Varianten mit Empfehlung).
+1. Phase 2: Panel mit Drag and Drop. Mockups `docs/mockups/panel-v1`
+   (Übersicht A/B, Sensorgruppen A/B/C, Empfehlung jeweils A) warten auf
+   den Entscheid des Nutzers.
 
 ## Zweisprachigkeit EN/DE (verbindlich)
 
