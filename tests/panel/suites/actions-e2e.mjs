@@ -173,7 +173,7 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
     check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-rpill').length === 1 && r.querySelector('.ag-rpill').innerText.includes('diego')"));
     check(`${tag}: Kapitel mit Titel`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 4"));
-    check(`${tag}: Deaktivieren per Push aus`, await s.ev("return r.querySelector('[data-nt=\"disarm\"]').getAttribute('aria-checked') === 'false'"));
+    check(`${tag}: Knöpfe der Meldung: Öffnen an, Sirene stumm und Deaktivieren aus`, await s.ev("const v=(k) => r.querySelector('[data-nt=\"button\"][data-key=\"' + k + '\"]').getAttribute('aria-checked'); return r.querySelectorAll('[data-nt=\"button\"]').length === 3 && v('open_action') === 'true' && v('silence_action') === 'false' && v('disarm_action') === 'false'"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
     await (await s.el('select[data-nt="target-add"][data-key="maintenance_targets"]')).selectOption("notify.mobile_app_partnerin");
     check(`${tag}: Pille nach der Wahl`, await s.waitFor("return [...r.querySelectorAll('.ag-rpill')].some((p) => p.innerText.includes('partnerin'))"));
@@ -191,11 +191,13 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-nt="enabled"][data-kind="disarmed"]');
     await s.tap('[data-nt="enabled"][data-kind="disarmed"]');
     await s.page.screenshot({ path: `${outDir}notify-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
+    await s.tap('[data-nt="button"][data-key="silence_action"]');
+    await s.tap('[data-nt="button"][data-key="open_action"]');
     await s.tap('[data-nt="save"]');
     check(`${tag}: Meldungen gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const nt = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)?.notify");
     check(`${tag}: Werte je Art gesendet`, nt && JSON.stringify(nt.maintenance_targets) === JSON.stringify(["notify.mobile_app_partnerin"]) && nt.types.triggered.volume === 0.5 && nt.types.triggered.critical === true
-      && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false && nt.disarm_action === false, JSON.stringify(nt));
+      && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false && nt.disarm_action === false && nt.silence_action === true && nt.open_action === false, JSON.stringify(nt));
     // Pille entfernen mit x
     await s.tap('[data-nt="target-del"][data-key="alarm_targets"][data-target="notify.mobile_app_diego"]');
     check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));

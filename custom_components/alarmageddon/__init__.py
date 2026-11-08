@@ -60,6 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     notifier = Notifier(hass, entry, controller, settings)
     workflow = WorkflowRunner(hass, entry, controller, notifier)
     notifier.workflow_has_notify = workflow.has_notify
+    notifier.silence = workflow.async_silence
     entry.runtime_data = RuntimeData(controller, events, str(integration.version) if integration.version else None, notifier, workflow, recorder)
     _remove_unused_zones(hass, entry, controller)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

@@ -244,6 +244,16 @@ class WorkflowRunner:
             except (asyncio.CancelledError, Exception):  # noqa: BLE001 - nur das Ende abwarten
                 pass
 
+    async def async_silence(self) -> bool:
+        """
+        Sirene stumm (Knopf in der Meldung): alle Schritte stoppen und die Geräte zurückstellen, die Anlage bleibt im Alarm
+        (Deaktivieren bleibt Sache des Nutzers). Nur bei einem echten, laufenden Ablauf; ein Test endet mit "Test stoppen".
+        """
+        if not self._run or self._run.get("test"):
+            return False
+        await self.async_stop()
+        return True
+
     async def async_stop(self) -> None:
         """Alle Schritte abbrechen und den Zustand vor dem Alarm wiederherstellen."""
         if self._test_timer:

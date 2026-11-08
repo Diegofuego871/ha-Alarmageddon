@@ -303,3 +303,47 @@ async def test_single_step_test_runs_only_that_step(hass: HomeAssistant, hass_ws
     assert not (await client.receive_json())["success"]
     # Der gespeicherte Ablauf bleibt unberührt
     assert entry.options["workflows"] == {"home": WORKFLOW}
+
+
+async def test_alarm_buttons_follow_settings(hass: HomeAssistant, hass_ws_client) -> None:
+    """Knöpfe der Alarmmeldung (0.16.0): Öffnen an, Sirene stumm und Deaktivieren aus, einzeln schaltbar."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    entry = await setup_alarm(hass)
+    await _notify_settings(hass, hass_ws_client)
+
+    async def actions():
+        await call(hass, "alarm_trigger")
+        await hass.async_block_till_done()
+        titles = [a["action"] for a in pushes[-1].data["data"].get("actions", [])]
+        await call(hass, "alarm_disarm")
+        await hass.async_block_till_done()
+        return titles
+
+    assert await actions() == ["ALARMAGEDDON_OPEN"]
+    await _notify_settings(hass, hass_ws_client, silence_action=True, open_action=False)
+    assert await actions() == [f"ALARMAGEDDON_SILENCE_{entry.entry_id}"]
+    await _notify_settings(hass, hass_ws_client, silence_action=True, open_action=True, disarm_action=True)
+    assert await actions() == [f"ALARMAGEDDON_DISARM_{entry.entry_id}", f"ALARMAGEDDON_SILENCE_{entry.entry_id}", "ALARMAGEDDON_OPEN"]
+
+
+async def test_silence_from_push_stops_steps_keeps_alarm(hass: HomeAssistant, hass_ws_client, freezer) -> None:
+    """Sirene stumm: nur wenn eingeschaltet; stoppt die Schritte und stellt Geräte zurück, die Anlage bleibt im Alarm."""
+    async_mock_service(hass, "notify", "handy")
+    entry, services = await _setup_workflow(hass, [{"type": "action", "action": "switch.turn_on", "target": [SIREN], "restore": True}, {"type": "wait", "seconds": 300}])
+    await _notify_settings(hass, hass_ws_client)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    action = f"ALARMAGEDDON_SILENCE_{entry.entry_id}"
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action})
+    await hass.async_block_till_done()
+    assert entry.runtime_data.workflow.running  # aus: nichts passiert
+    await _notify_settings(hass, hass_ws_client, silence_action=True)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action})
+    await hass.async_block_till_done()
+    assert entry.runtime_data.workflow.running is None
+    assert len(services["switch.turn_off"]) == 1  # Sirene zurückgestellt
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # Alarm bleibt, Deaktivieren bleibt Sache des Nutzers
+    assert entry.runtime_data.events.events[0]["kind"] == "silenced"
+    await call(hass, "alarm_disarm")
+    assert state(hass) == AlarmControlPanelState.DISARMED

@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.15.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.16.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -75,7 +75,7 @@ Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
 - **Empfänger** getrennt für Alarme und Wartungsmeldungen: jeden `notify`-Dienst (zum Beispiel `notify.mobile_app_<handy>` der Companion App) im Dropdown wählen; die gewählten erscheinen als Pille mit x.
 - **Einstellungen je Meldungsart:** Alarm, Sensor meldet (kein Alarm), Sensor im scharfen Zustand nicht erreichbar, Eingangsverzögerung, Scharfschalten nicht möglich, scharf, deaktiviert, Batterie schwach, Sensor nicht erreichbar, Update verfügbar. Jede Art lässt sich ein- und ausschalten, **kritisch** (ertönt auch im Lautlos- und Nicht-stören-Modus) oder nicht einstellen und hat ihre eigene **Lautstärke**. Die Lautstärke gilt für iOS; Android spielt kritische Meldungen im Alarmkanal (`alarm_stream`), dessen Lautstärke stellst du am Handy ein. Jede Art hat einen Knopf "Testmeldung senden" (mit den gespeicherten Einstellungen).
 - **Nur melden** (Option pro Sensor): Ein Sensor, der oft ohne Einbruch ansprechen oder dessen Batterie zur Neige geht, schickt im scharfen Zustand die Meldung "Sensor meldet", statt den Alarm auszulösen. Höchstens eine Meldung pro Sensor und Minute.
-- **Knopf "Deaktivieren" in der Meldung:** standardmässig aus. iOS fragt nach Face ID oder dem Code des Geräts, Android nicht: Wer das entsperrte Handy hält, kann deaktivieren.
+- **Knöpfe in der Alarmmeldung** (je mit eigenem Schalter): "Öffnen" (standardmässig an) öffnet das Panel. "Sirene stumm" (standardmässig aus) stoppt alle Schritte der Alarmaktionen und stellt die Geräte zurück, die Alarmanlage bleibt im Alarm, bis jemand deaktiviert; die letzten Ereignisse zeigen es. "Deaktivieren" (standardmässig aus): iOS fragt nach Face ID oder dem Code des Geräts, Android nicht. Die letzten beiden kann jeder benutzen, der das entsperrte Handy hält.
 - **Wartung:** schwache Batterie (Schwelle, Standard 20 %) und Sensoren, die länger als eine eingestellte Zeit nicht erreichbar sind (Standard 60 Minuten), gehen an die Wartungs-Empfänger. Jedes Problem einmal, mehrere in einer Meldung; erneut nach Batteriewechsel oder wenn der Sensor wieder antwortet.
 
 ## Protokoll und Alarm-Aufzeichnung

@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 14  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 15  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -157,6 +157,9 @@ DEFAULT_NOTIFY: Final = {
     "types": {key: {"enabled": on, "critical": critical, "volume": 0.8} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
     # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
     "disarm_action": False,
+    # Weitere Knöpfe der Alarmmeldung (0.16.0): "Öffnen" (Panel) standardmässig an, "Sirene stumm" aus
+    "open_action": True,
+    "silence_action": False,
     # Wartung (0.5.0): Batterie schwach unter dieser Schwelle (%), nicht erreichbar ab so vielen Minuten
     "battery_threshold": 20,
     "offline_minutes": 60,
@@ -173,6 +176,7 @@ MAINTENANCE_START_DELAY: Final = 5 * 60
 BATTERY_HYSTERESIS: Final = 5
 PUSH_ACTION_DISARM: Final = "ALARMAGEDDON_DISARM_"  # + entry_id
 PUSH_ACTION_OPEN: Final = "ALARMAGEDDON_OPEN"
+PUSH_ACTION_SILENCE: Final = "ALARMAGEDDON_SILENCE_"  # + entry_id
 
 # Aktionen als Ablauf (0.4.0): pro Anlage und Auslöser eine Liste von Schritten (CONF_WORKFLOWS[auslöser])
 CONF_WORKFLOWS: Final = "workflows"

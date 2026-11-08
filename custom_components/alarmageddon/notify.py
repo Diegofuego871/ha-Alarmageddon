@@ -17,7 +17,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .const import NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN
+from .const import NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +45,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "test_title": "Test: {name}",
         "test": "This is a test notification from Alarmageddon.",
         "action_disarm": "Disarm",
+        "action_silence": "Silence siren",
+        "by_silence": "push notification",
         "action_open": "Open",
         "mode_home": "Home",
         "mode_away": "Away",
@@ -89,6 +91,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "test_title": "Test: {name}",
         "test": "Das ist eine Testmeldung von Alarmageddon.",
         "action_disarm": "Deaktivieren",
+        "action_silence": "Sirene stumm",
+        "by_silence": "Push-Meldung",
         "action_open": "Öffnen",
         "mode_home": "Anwesend",
         "mode_away": "Abwesend",
@@ -179,6 +183,8 @@ class Notifier:
         self._unsubs: list[Any] = []
         # Ablauf der Anlage: hat er für diesen Auslöser einen eigenen Push-Schritt, meldet der Alarm nicht doppelt
         self.workflow_has_notify = lambda _trigger: False
+        # Knopf "Sirene stumm": Ablauf stoppen (vom Ablauf der Anlage gesetzt)
+        self.silence = None
 
     @property
     def cfg(self) -> dict[str, Any]:
@@ -261,10 +267,19 @@ class Notifier:
 
     @callback
     def _on_action(self, event: Event) -> None:
-        """Knopf "Deaktivieren" in der Meldung. Nur wenn ausdrücklich eingeschaltet (Sicherheitsregel)."""
-        if event.data.get("action") != f"{PUSH_ACTION_DISARM}{self.entry.entry_id}" or not self.cfg["disarm_action"]:
-            return
-        self.hass.async_create_task(self._ctl.async_disarm(None, self._t("by_push"), skip_code=True))
+        """
+        Knöpfe der Meldung. "Deaktivieren" und "Sirene stumm" nur, wenn ausdrücklich eingeschaltet (Sicherheitsregel).
+        "Sirene stumm" lässt die Anlage im Alarm und stoppt nur die Schritte (Geräte kehren zurück).
+        """
+        action = event.data.get("action")
+        if action == f"{PUSH_ACTION_DISARM}{self.entry.entry_id}" and self.cfg["disarm_action"]:
+            self.hass.async_create_task(self._ctl.async_disarm(None, self._t("by_push"), skip_code=True))
+        elif action == f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}" and self.cfg["silence_action"] and self.silence:
+            self.hass.async_create_task(self._silence())
+
+    async def _silence(self) -> None:
+        if self._ctl.state == AlarmControlPanelState.TRIGGERED and await self.silence():
+            self._ctl.emit("silenced", by=self._t("by_silence"))
 
     # ----- Senden -----
 
@@ -281,7 +296,11 @@ class Notifier:
         message = self._t("triggered", sensor=self._name(sensor), time=time) if sensor else self._t("triggered_manual", time=time)
         if test:
             title = self._t("test_title", name=title)
-        actions = [{"action": PUSH_ACTION_OPEN, "title": self._t("action_open"), "uri": "/alarmageddon"}]
+        actions = []
+        if self.cfg["open_action"]:
+            actions.append({"action": PUSH_ACTION_OPEN, "title": self._t("action_open"), "uri": "/alarmageddon"})
+        if self.cfg["silence_action"]:
+            actions.insert(0, {"action": f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}", "title": self._t("action_silence")})
         if self.cfg["disarm_action"]:
             # iOS verlangt dafür Face ID/Code (authenticationRequired); Android kennt das nicht
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),

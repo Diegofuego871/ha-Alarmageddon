@@ -114,7 +114,7 @@
   setHacs();
   window.__presets = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
   const T = (enabled, critical) => ({ enabled, critical, volume: 0.8 });
-  window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], disarm_action: false, battery_threshold: 20, offline_minutes: 60,
+  window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], disarm_action: false, open_action: true, silence_action: false, battery_threshold: 20, offline_minutes: 60,
     types: { triggered: T(true, true), pending: T(false, false), armed: T(false, false), disarmed: T(false, false), arm_failed: T(true, false), sensor_offline: T(true, true),
       sensor_report: T(true, true), battery_low: T(true, false), sensor_unavailable: T(true, false), update_available: T(true, false) } };
   window.__calls = [];
