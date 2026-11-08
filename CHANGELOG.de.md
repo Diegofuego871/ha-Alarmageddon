@@ -17,6 +17,11 @@ Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0 und 0.16.0.
 
 - **"Nicht abwarten"** (Konfiguration › Aktionen, je Schritt der Art Gerät schalten, Alarmton, Szene oder Skript, Eigene Aktion): Der nächste Schritt startet sofort und nicht erst, wenn dieser zu Ende ist. Für einen sehr langen Alarmton oder ein träges Gerät, damit die folgenden Schritte nicht aufgehalten werden. Deaktivieren stoppt auch Schritte, die nebenher laufen. Ein fehlerhafter Schritt hält die anderen nie auf, mit oder ohne die Option (wie bisher). Schritte, die nebenher laufen, werden nach einem Neustart von Home Assistant mitten im Alarm nicht fortgesetzt; die Schritte danach schon.
 
+### Behoben
+
+- **Leiste mit Speichern unten:** Bei Seiten mit wenig Inhalt (zum Beispiel ein Alarm ohne Schritte) sitzt die Leiste mit "Abbrechen" und "Speichern" jetzt am unteren Fensterrand statt mitten im Bild; der Abstand darüber bleibt.
+
+
 ## [0.16.0] - 2026-11-08
 
 Nicht veröffentlicht; enthalten in 0.17.0.

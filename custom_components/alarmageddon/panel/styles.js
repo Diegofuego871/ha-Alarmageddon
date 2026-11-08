@@ -123,7 +123,7 @@ button { font: inherit; color: inherit; }
 .ag-batt { font-variant-numeric: tabular-nums; color: var(--ag-text2); }
 .ag-batt.low { color: var(--ag-error); font-weight: 500; }
 .ag-entry { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ag-warning-text); background: var(--ag-warning-soft); padding: 2px 7px; border-radius: 999px; }
-.ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: 24px -24px calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 3; }
+.ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: auto -24px calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 3; }
 .ag-foot > span:first-child { min-width: 0; font-size: 13.5px; }
 .ag-foot .ag-saved { color: var(--ag-success); font-weight: 500; }
 .ag-foot .ag-err, .ag-settx .ag-err { color: var(--ag-error); }
@@ -156,7 +156,7 @@ dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 :host([narrow]) .ag-tabs > button { flex: 1; flex-direction: column; gap: 2px; padding: 6px 4px; font-size: 12px; min-height: 52px; }
 :host([narrow]) .ag-alarm .ag-btn { margin-left: 0; width: 100%; }
 :host([narrow]) .list-search { flex: 1 1 100%; min-width: 0; }
-:host([narrow]) .ag-foot { margin: 20px -12px calc(-24px - env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); }
+:host([narrow]) .ag-foot { margin: auto -12px calc(-24px - env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); }
 :host([narrow]) dialog.ag-dlg { margin: auto 0 0; width: 100vw; max-width: 100vw; border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 /* 0.3.0: Übersicht mit Liste, Konfiguration */
@@ -446,7 +446,10 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-chap-t::before { content: ""; flex: none; width: 4px; height: 20px; border-radius: 2px; background: var(--ag-primary); }
 .ag-chap-h { margin: -4px 4px 12px; color: var(--ag-text2); font-size: 13.5px; line-height: 1.45; }
 .ag-chap > .ag-card { margin-top: 0; }
-.ag-pane { display: block; }
+/* Die Seite füllt die Höhe: die Leiste mit Speichern sitzt unten, auch wenn wenig Inhalt da ist; davor bleibt immer Abstand */
+.ag-pane { display: flex; flex-direction: column; flex: 1 0 auto; }
+.ag-pane > :has(+ .ag-foot) { margin-bottom: 24px; }
+:host([narrow]) .ag-pane > :has(+ .ag-foot) { margin-bottom: 20px; }
 .ag-pane.from-right { animation: ag-from-right .24s cubic-bezier(.2,.7,.2,1); }
 .ag-pane.from-left { animation: ag-from-left .24s cubic-bezier(.2,.7,.2,1); }
 @keyframes ag-from-right { from { opacity: 0; transform: translateX(36px); } to { opacity: 1; transform: none; } }

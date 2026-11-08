@@ -17,6 +17,11 @@ Includes the changes from 0.13.0, 0.14.0, 0.15.0 and 0.16.0.
 
 - **"Do not wait for this step"** (Configuration › Actions, per step of type switch device, alarm sound, scene or script, own action): the next step starts right away instead of after this one has ended. For a very long alarm sound or a slow device, so the following steps are not held up. Disarming stops steps that run alongside as well. A failing step never stops the others, with or without the option (as before). Steps that run alongside are not resumed after a restart of Home Assistant in the middle of an alarm; the steps after them are.
 
+### Fixed
+
+- **Save bar at the bottom:** on pages with little content (for example an alarm without steps) the bar with "Cancel" and "Save" now sits at the bottom of the window instead of in the middle; the spacing above it is kept.
+
+
 ## [0.16.0] - 2026-11-08
 
 Not released; included in 0.17.0.
