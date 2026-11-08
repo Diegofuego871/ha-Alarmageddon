@@ -10,7 +10,9 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DATA_PANEL,
+    DATA_ICON,
     DATA_SOUNDS,
+    ICON_URL_PATH,
     SOUNDS_URL_PATH,
     DATA_STATIC,
     PANEL_DIR,
@@ -42,6 +44,11 @@ async def async_register_panel(hass: HomeAssistant) -> None:
         sounds_dir = Path(__file__).parent / "sounds"
         await hass.http.async_register_static_paths([StaticPathConfig(SOUNDS_URL_PATH, str(sounds_dir), True)])
         hass.data[DATA_SOUNDS] = True
+    if not hass.data.get(DATA_ICON):
+        # Das Symbol der Meldungen: Das Handy holt es ohne Token vom Pfad der Integration
+        icon = Path(__file__).parent / "brand" / "icon.png"
+        await hass.http.async_register_static_paths([StaticPathConfig(ICON_URL_PATH, str(icon), True)])
+        hass.data[DATA_ICON] = True
     frontend.async_register_built_in_panel(
         hass,
         component_name="iframe",

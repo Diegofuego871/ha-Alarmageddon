@@ -5,6 +5,10 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.21.0, Symbol in den Meldungen)
+
+- `build_payload` setzt `data.icon_url = /alarmageddon_icon.png` (relativ, die Companion App löst es gegen ihre HA-Adresse auf). `panel.py` meldet `brand/icon.png` einmal als öffentlichen statischen Pfad an (`DATA_ICON`). Android zeigt es als Symbol der Meldung, iOS ignoriert es (Systemvorgabe). Test: `test_notifications_carry_the_integration_icon`. Nicht geprüft: Darstellung auf einem echten Android-Handy.
+
 ## Stand (0.20.0, Einstellungen der Alarmmeldung nur im Push-Schritt)
 
 - Push-Schritt: `critical`, `volume`, `buttons {open, silence, disarm}` (alle optional, fehlt eine Angabe gilt der frühere globale Wert: `types.triggered`, `open_action`, `silence_action`, `disarm_action`; diese sind im Panel nicht mehr einstellbar, bleiben aber als Rückfall in `settings.notify`). `Notifier.send_alarm(test, step)`; `_buttons(step)`, `_button_allowed(key)` leitet die Berechtigung der Push-Aktionen aus den Push-Schritten des aktuellen Modus ab (restart-fest). `_on("triggered")` ist immer wahr (Alarmmeldung nicht abschaltbar).

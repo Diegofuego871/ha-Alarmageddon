@@ -17,7 +17,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .const import NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
+from .const import ICON_URL_PATH, NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -153,7 +153,8 @@ def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, t
     setting = cfg["types"][kind]
     is_critical = setting["critical"] if critical is None else critical
     group = "alarmageddon" if NOTIFY_TYPES[kind] == "alarm" else "alarmageddon_maintenance"
-    data: dict[str, Any] = {"group": group, "url": "/alarmageddon", "clickAction": "/alarmageddon"}
+    # icon_url: Symbol der Integration (Android); iOS zeigt immer das Symbol der App, das lässt sich nicht ersetzen
+    data: dict[str, Any] = {"group": group, "url": "/alarmageddon", "clickAction": "/alarmageddon", "icon_url": ICON_URL_PATH}
     if tag:
         data["tag"] = tag
     if is_critical:

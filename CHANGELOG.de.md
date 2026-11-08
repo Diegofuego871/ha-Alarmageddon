@@ -7,11 +7,19 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.21.0] - 2026-11-08
+
+Meldungen tragen das Symbol der Integration.
+
+Enthält die Änderungen aus 0.13.0 bis 0.20.0.
+
+### Hinzugefügt
+
+- **Symbol der Integration in den Meldungen:** Jede Meldung von Alarmageddon (Alarm, Sensoren, Wartung, Update) trägt das Symbol der Integration. Android zeigt es als Symbol der Meldung. iOS zeigt immer das Symbol der Home-Assistant-App; das lässt sich von einer Integration nicht ersetzen. Das Symbol liefert Home Assistant ohne Anmeldung aus (`/alarmageddon_icon.png`).
+
 ## [0.20.0] - 2026-11-08
 
-Die Einstellungen der Alarmmeldung sind an einer Stelle: im Push-Schritt der Alarmaktionen.
-
-Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0, 0.18.0 und 0.19.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Geändert
 
@@ -22,7 +30,7 @@ Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0, 0.18.0 und 
 
 ## [0.19.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Hinzugefügt
 
@@ -30,7 +38,7 @@ Nicht veröffentlicht; enthalten in 0.20.0.
 
 ## [0.18.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Geändert
 
@@ -39,7 +47,7 @@ Nicht veröffentlicht; enthalten in 0.20.0.
 
 ## [0.17.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Hinzugefügt
 
@@ -52,7 +60,7 @@ Nicht veröffentlicht; enthalten in 0.20.0.
 
 ## [0.16.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Hinzugefügt
 
@@ -66,7 +74,7 @@ Nicht veröffentlicht; enthalten in 0.20.0.
 
 ## [0.15.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Geändert
 
@@ -75,7 +83,7 @@ Nicht veröffentlicht; enthalten in 0.20.0.
 
 ## [0.14.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Geändert
 
@@ -86,7 +94,7 @@ Nicht veröffentlicht; enthalten in 0.20.0.
 
 ## [0.13.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.20.0.
+Nicht veröffentlicht; enthalten in 0.21.0.
 
 ### Hinzugefügt
 
@@ -295,7 +303,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.20.0
+[0.21.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.21.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

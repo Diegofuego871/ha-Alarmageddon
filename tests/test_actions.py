@@ -496,3 +496,17 @@ async def test_buttons_only_work_when_the_message_offers_them(hass: HomeAssistan
     hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"})
     await hass.async_block_till_done()
     assert state(hass) == AlarmControlPanelState.TRIGGERED
+
+
+async def test_notifications_carry_the_integration_icon(hass: HomeAssistant, hass_ws_client, hass_client_no_auth) -> None:
+    """Alle Meldungen tragen das Symbol der Integration (icon_url), und es ist ohne Anmeldung abrufbar (0.21.0)."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass)
+    await _notify_settings(hass, hass_ws_client)
+    await call(hass, "alarm_trigger")
+    await hass.async_block_till_done()
+    assert pushes[-1].data["data"]["icon_url"] == "/alarmageddon_icon.png"
+    client = await hass_client_no_auth()
+    resp = await client.get("/alarmageddon_icon.png")
+    assert resp.status == 200
+    assert (await resp.read())[:8] == b"\x89PNG\r\n\x1a\n"

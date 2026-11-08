@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.20.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.21.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -76,6 +76,7 @@ Side panel › Configuration › Notifications, for all alarm systems:
 - **Recipients** separately for alarms and maintenance messages: pick every `notify` service (for example `notify.mobile_app_<phone>` of the companion app) from a dropdown; the chosen ones appear as tags with an x.
 - **Settings per kind of message:** sensor reports (no alarm), sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available. Each kind can be switched on or off, be **critical** (sounds in silent mode and do not disturb) or not, and has its own **volume**. The volume applies to iOS; Android plays critical messages on the alarm channel (`alarm_stream`), set its volume on the phone. Each kind has a "Send test message" button (with the saved settings).
 - **Report only** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Sensor reports" while armed instead of triggering the alarm. At most one message per sensor and minute.
+- **Icon in notifications:** every notification carries the icon of the integration (Android; iOS always shows the icon of the Home Assistant app).
 - **Alarm message** (Configuration › Actions, step "Push notification", set per mode): title and text, critical, volume and the buttons "Open" (on by default), "Silence siren" (off by default; stops all steps of the alarm actions and returns the devices, the alarm system stays in alarm) and "Disarm" (off by default; iOS asks for Face ID or the passcode, Android does not). Anyone holding the unlocked phone can use the last two. A button only works if the message offers it. Without a push step a default message goes out (critical, button "Open"); the alarm message cannot be switched off. The other kinds of messages stay under Configuration › Notifications.
 - **Maintenance:** low battery (threshold, default 20 %) and sensors unreachable for longer than a set time (default 60 minutes) go to the maintenance recipients. Each problem once, several in one notification; again after the battery was replaced or the sensor responded.
 

@@ -7,11 +7,19 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.21.0] - 2026-11-08
+
+Notifications carry the icon of the integration.
+
+Includes the changes from 0.13.0 to 0.20.0.
+
+### Added
+
+- **Icon of the integration in notifications:** every notification of Alarmageddon (alarm, sensors, maintenance, update) carries the icon of the integration. Android shows it as the icon of the notification. iOS always shows the icon of the Home Assistant app; that cannot be replaced by an integration. The icon is served by Home Assistant without login (`/alarmageddon_icon.png`).
+
 ## [0.20.0] - 2026-11-08
 
-The settings of the alarm message are in one place: the push step of the alarm actions.
-
-Includes the changes from 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0, 0.18.0 and 0.19.0.
+Not released; included in 0.21.0.
 
 ### Changed
 
@@ -22,7 +30,7 @@ Includes the changes from 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0, 0.18.0 and 0.1
 
 ## [0.19.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Added
 
@@ -30,7 +38,7 @@ Not released; included in 0.20.0.
 
 ## [0.18.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Changed
 
@@ -39,7 +47,7 @@ Not released; included in 0.20.0.
 
 ## [0.17.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Added
 
@@ -52,7 +60,7 @@ Not released; included in 0.20.0.
 
 ## [0.16.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Added
 
@@ -66,7 +74,7 @@ Not released; included in 0.20.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Changed
 
@@ -75,7 +83,7 @@ Not released; included in 0.20.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Changed
 
@@ -86,7 +94,7 @@ Not released; included in 0.20.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.20.0.
+Not released; included in 0.21.0.
 
 ### Added
 
@@ -295,7 +303,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.20.0
+[0.21.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.21.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

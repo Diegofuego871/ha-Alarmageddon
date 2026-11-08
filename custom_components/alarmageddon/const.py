@@ -190,6 +190,9 @@ MAX_STEPS: Final = 40
 SOUNDS: Final = {"siren": 4.0, "beep": 3.0, "klaxon": 3.0, "warning": 2.0, "chime": 2.0}
 SOUNDS_URL_PATH: Final = "/alarmageddon_sounds"
 DATA_SOUNDS: Final = f"{DOMAIN}_sounds_registered"
+# Symbol der Integration für Meldungen (Android zeigt es als Symbol der Meldung, iOS kennt das nicht); ohne Anmeldung abrufbar
+ICON_URL_PATH: Final = "/alarmageddon_icon.png"
+DATA_ICON: Final = f"{DOMAIN}_icon_registered"
 # Domänen, deren Zustand vor dem Alarm gespeichert und beim Deaktivieren wiederhergestellt werden kann
 RESTORABLE_DOMAINS: Final = ("switch", "light", "input_boolean", "fan", "siren", "cover", "media_player")
 
