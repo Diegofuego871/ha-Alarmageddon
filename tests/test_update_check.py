@@ -139,11 +139,12 @@ async def test_oversized_answer_rejected(hass: HomeAssistant, aioclient_mock) ->
 # ----- Push -----
 
 
-async def _notify_setup(hass: HomeAssistant, **events: bool) -> list:
+async def _notify_setup(hass: HomeAssistant, **enabled: bool) -> list:
     pushes = async_mock_service(hass, "notify", "tablet")
     settings = hass.data[DATA_SETTINGS]
+    types = {kind: {**settings.notify["types"][kind], "enabled": on} for kind, on in enabled.items()}
     await settings.async_set_notify({**settings.notify, "maintenance_targets": ["notify.tablet"],
-                                     "events": {**settings.notify["events"], **events}})
+                                     "types": {**settings.notify["types"], **types}})
     return pushes
 
 
@@ -168,7 +169,7 @@ async def test_push_german_and_switch_off(hass: HomeAssistant, entry, hass_ws_cl
     await hass.async_block_till_done()
     assert pushes == []
     settings = hass.data[DATA_SETTINGS]
-    await settings.async_set_notify({**settings.notify, "events": {**settings.notify["events"], "update_available": True}})
+    await settings.async_set_notify({**settings.notify, "types": {**settings.notify["types"], "update_available": {**settings.notify["types"]["update_available"], "enabled": True}}})
     await _ws(client, type=f"{DOMAIN}/set_update", check=True)
     await hass.async_block_till_done()
     assert len(pushes) == 1 and pushes[0].data["title"] == "Alarmageddon 99.0.0 verfügbar"

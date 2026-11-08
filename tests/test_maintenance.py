@@ -121,7 +121,7 @@ async def test_without_targets_reported_later(hass: HomeAssistant) -> None:
 async def test_event_switched_off(hass: HomeAssistant) -> None:
     pushes, maint = await _setup(hass)
     settings = hass.data[DATA_SETTINGS]
-    await settings.async_set_notify({**settings.notify, "events": {**settings.notify["events"], "battery_low": False}})
+    await settings.async_set_notify({**settings.notify, "types": {**settings.notify["types"], "battery_low": {**settings.notify["types"]["battery_low"], "enabled": False}}})
     hass.states.async_set(BAT_WINDOW, "12")
     assert maint.async_check() == []
 

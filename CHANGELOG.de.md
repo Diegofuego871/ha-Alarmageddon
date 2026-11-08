@@ -7,7 +7,28 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.9.0] - 2026-11-08
+
+Meldungen neu aufgebaut: jede Meldungsart hat eigene Einstellungen, und ein Sensor kann melden statt auszulösen.
+
+Enthält die Änderungen aus 0.7.0 und 0.8.0.
+
+### Hinzugefügt
+
+- **Einstellungen je Meldungsart** (Konfiguration › Meldungen): Jede Art (Alarm, Sensor meldet, Sensor im scharfen Zustand nicht erreichbar, Eingangsverzögerung, Scharfschalten nicht möglich, scharf, deaktiviert, Batterie schwach, Sensor nicht erreichbar, Update verfügbar) lässt sich ein- und ausschalten, kritisch oder nicht einstellen und hat ihre eigene Lautstärke (iOS). Jede Art hat einen eigenen Knopf "Testmeldung senden", der mit ihren gespeicherten Einstellungen hinausgeht: So hörst du, wie sie klingt.
+- **Empfänger als Dropdown:** Einen Benachrichtigungsdienst im Dropdown wählen; gewählte erscheinen als Pille mit x. Getrennt für Alarme und Wartung. Eine Warnung erscheint, wenn eine Gruppe keinen Empfänger hat.
+- **Nur melden** (neue Option pro Sensor): Spricht dieser Sensor im scharfen Zustand an, kommt eine Meldung (Art "Sensor meldet (kein Alarm)", standardmässig kritisch) statt eines Alarms. Für Sensoren, die oft ohne Einbruch ansprechen (Haustier, Sonnenlicht) oder deren Batterie zur Neige geht. Höchstens eine Meldung pro Sensor und Minute; die letzten Ereignisse zeigen sie. Nie voreingestellt; geht auf Wunsch auch bei "immer aktiven" Sensoren.
+
+### Geändert
+
+- **Meldungen in Kapiteln:** Empfänger, Alarmmeldungen, Wartungsmeldungen, Knöpfe in der Meldung.
+- **Alte Einstellungen werden übernommen:** das einzelne "kritisch" und die "Lautstärke" früherer Versionen werden zu den Einstellungen von Alarm und "Sensor im scharfen Zustand nicht erreichbar"; ausgeschaltete Arten bleiben aus. Sicherungen früherer Versionen werden ebenso gelesen.
+- Wartungsmeldungen und die Update-Meldung sind nur kritisch, wenn du das für ihre Art einschaltest (Standard: nein).
+
 ## [0.8.0] - 2026-11-08
+
+Nicht veröffentlicht; enthalten in 0.9.0.
+
 
 Neues Aussehen der Einstellungen wie in Device Panel, und beim Reiterwechsel geht nichts verloren.
 
@@ -21,7 +42,7 @@ Enthält die Änderungen aus 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.8.0.
+Nicht veröffentlicht; enthalten in 0.9.0.
 
 
 Updates aus dem Panel, wie in Device Panel.
@@ -142,6 +163,6 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.8.0
+[0.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.9.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

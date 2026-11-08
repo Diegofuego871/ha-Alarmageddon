@@ -57,7 +57,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 7  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 8  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -88,7 +88,11 @@ OPT_OFFLINE_ALARM: Final = "offline_alarm"  # nicht erreichbar im scharfen Zusta
 # Löst im scharfen Zustand erst aus, wenn ein zweiter Sensor innerhalb des Zeitfensters anspricht (gegen Fehlalarm
 # durch Haustiere, Sonnenlicht). Nie voreingestellt: im Zweifel alarmieren (0.5.0)
 OPT_CONFIRM: Final = "confirm"
-SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM)
+# Nur melden (0.9.0): Spricht der Sensor an, gibt es eine Meldung (Art "Sensor meldet", standardmässig kritisch), aber nie einen Alarm.
+# Für Sensoren, die oft ohne Einbruch ansprechen (Haustier, Sonnenlicht, Batterie zur Neige). Nie voreingestellt.
+OPT_REPORT_ONLY: Final = "report_only"
+REPORT_THROTTLE: Final = 60  # höchstens eine Meldung pro Sensor und Minute
+SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM, OPT_REPORT_ONLY)
 CONF_CONFIRM_WINDOW: Final = "confirm_window"
 DEFAULT_CONFIRM_WINDOW: Final = 60
 MAX_CONFIRM_WINDOW: Final = 600
@@ -125,21 +129,30 @@ DEFAULT_PRESETS: Final = {
 SETTINGS_STORE_KEY: Final = f"{DOMAIN}.settings"
 DATA_SETTINGS: Final = f"{DOMAIN}_settings"
 
-# Benachrichtigungen (0.4.0, global). Empfänger als Dienste "notify.<name>", getrennt für Alarm und Wartung.
+# Benachrichtigungen (global). Empfänger als Dienste "notify.<name>", getrennt für Alarm und Wartung. Seit 0.9.0 je Meldungsart:
+# an/aus, kritisch ja/nein, Lautstärke (iOS). Die Art gehört zu einer Gruppe, deren Empfänger sie bekommt.
+NOTIFY_TYPES: Final = {
+    "triggered": "alarm", "pending": "alarm", "armed": "alarm", "disarmed": "alarm", "arm_failed": "alarm",
+    "sensor_offline": "alarm", "sensor_report": "alarm",
+    "battery_low": "maintenance", "sensor_unavailable": "maintenance", "update_available": "maintenance",
+}
+# Standard je Art: (an, kritisch). Im Zweifel melden: Alarm und Ausfall eines Sensors im scharfen Zustand sind kritisch.
+NOTIFY_TYPE_DEFAULTS: Final = {
+    "triggered": (True, True), "pending": (False, False), "armed": (False, False), "disarmed": (False, False),
+    "arm_failed": (True, False), "sensor_offline": (True, True), "sensor_report": (True, True),
+    "battery_low": (True, False), "sensor_unavailable": (True, False), "update_available": (True, False),
+}
 DEFAULT_NOTIFY: Final = {
     "alarm_targets": [],
     "maintenance_targets": [],
-    "critical": True,
-    "volume": 0.8,  # Lautstärke der kritischen Meldung (iOS), 0 bis 1
-    "events": {"triggered": True, "pending": False, "armed": False, "disarmed": False, "arm_failed": True, "sensor_offline": True,
-               "battery_low": True, "sensor_unavailable": True, "update_available": True},
+    "types": {key: {"enabled": on, "critical": critical, "volume": 0.8} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
+    # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
+    "disarm_action": False,
     # Wartung (0.5.0): Batterie schwach unter dieser Schwelle (%), nicht erreichbar ab so vielen Minuten
     "battery_threshold": 20,
     "offline_minutes": 60,
-    # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
-    "disarm_action": False,
 }
-NOTIFY_EVENTS: Final = ("triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline", "battery_low", "sensor_unavailable", "update_available")
+NOTIFY_EVENTS: Final = tuple(NOTIFY_TYPES)
 BATTERY_THRESHOLD_RANGE: Final = (5, 50)
 OFFLINE_MINUTES_RANGE: Final = (5, 1440)
 # Wartung: Prüfung alle 15 Minuten, die erste 5 Minuten nach dem Start (Geräte verbinden sich erst)

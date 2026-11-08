@@ -109,26 +109,40 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-sub="notify"]');
 
     // ----- Benachrichtigungen -----
-    check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target\"]')"));
-    check(`${tag}: Empfänger getrennt`, await s.ev("return r.querySelectorAll('[data-nt=\"target\"][data-key=\"alarm_targets\"]').length === 3 && r.querySelectorAll('[data-nt=\"target\"][data-key=\"maintenance_targets\"]').length === 3"));
+    check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
+    check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-rpill').length === 1 && r.querySelector('.ag-rpill').innerText.includes('diego')"));
+    check(`${tag}: Kapitel mit Titel`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 4"));
     check(`${tag}: Deaktivieren per Push aus`, await s.ev("return r.querySelector('[data-nt=\"disarm\"]').getAttribute('aria-checked') === 'false'"));
-    await s.tap('[data-nt="target"][data-key="maintenance_targets"][data-target="notify.mobile_app_partnerin"]');
-    check(`${tag}: Testknöpfe gesperrt bei Änderung`, await s.waitFor("return [...r.querySelectorAll('[data-nt=\"test\"]')].every((b) => b.disabled)"));
-    // Lautstärke über den Regler
-    await s.ev("const i=r.querySelector('[data-nt=\"volume\"]'); i.value='50'; i.dispatchEvent(new Event('input', { bubbles: true }));");
-    check(`${tag}: Lautstärke angezeigt`, await s.waitFor("return r.querySelector('.ag-vol').textContent.trim() === '50 %'"));
-    await s.tap('[data-nt="event"][data-key="armed"]');
-    await s.tap('[data-nt="critical"]');
-    check(`${tag}: Regler weg ohne kritisch`, await s.waitFor("return !r.querySelector('[data-nt=\"volume\"]')"));
-    await s.tap('[data-nt="critical"]');
+    // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
+    await (await s.el('select[data-nt="target-add"][data-key="maintenance_targets"]')).selectOption("notify.mobile_app_partnerin");
+    check(`${tag}: Pille nach der Wahl`, await s.waitFor("return [...r.querySelectorAll('.ag-rpill')].some((p) => p.innerText.includes('partnerin'))"));
+    check(`${tag}: gewählter Dienst nicht mehr im Dropdown`, await s.ev("return ![...r.querySelector('select[data-nt=\"target-add\"][data-key=\"maintenance_targets\"]').options].some((o) => o.value === 'notify.mobile_app_partnerin')"));
+    check(`${tag}: Testknöpfe gesperrt bei Änderung`, await s.waitFor("return [...r.querySelectorAll('[data-nt=\"test\"]')].length > 0 && [...r.querySelectorAll('[data-nt=\"test\"]')].every((b) => b.disabled)"));
+    // Je Art: Alarm leiser, "Eingangsverzögerung" einschalten und kritisch, Batterie kritisch
+    await s.ev("const i=r.querySelector('[data-nt=\"volume\"][data-kind=\"triggered\"]'); i.value='50'; i.dispatchEvent(new Event('input', { bubbles: true }));");
+    check(`${tag}: Lautstärke der Art angezeigt`, await s.waitFor("return r.querySelector('.ag-vol[data-kind=\"triggered\"]').textContent.trim() === '50 %'"));
+    check(`${tag}: Regler nur bei kritischen Arten`, await s.ev("return !r.querySelector('[data-nt=\"volume\"][data-kind=\"armed\"]') && !r.querySelector('[data-nt=\"volume\"][data-kind=\"battery_low\"]')"));
+    await s.tap('[data-nt="enabled"][data-kind="pending"]');
+    check(`${tag}: Art eingeschaltet zeigt Einstellungen`, await s.waitFor("return !!r.querySelector('[data-nt=\"critical\"][data-kind=\"pending\"]')"));
+    await s.tap('[data-nt="critical"][data-kind="pending"]');
+    check(`${tag}: kritisch zeigt Regler`, await s.waitFor("return !!r.querySelector('[data-nt=\"volume\"][data-kind=\"pending\"]')"));
+    await s.tap('[data-nt="critical"][data-kind="battery_low"]');
+    await s.tap('[data-nt="enabled"][data-kind="disarmed"]');
+    await s.tap('[data-nt="enabled"][data-kind="disarmed"]');
     await s.page.screenshot({ path: `${outDir}notify-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     await s.tap('[data-nt="save"]');
     check(`${tag}: Meldungen gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const nt = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)?.notify");
-    check(`${tag}: Werte gesendet`, nt && JSON.stringify(nt.maintenance_targets) === JSON.stringify(["notify.mobile_app_partnerin"]) && nt.volume === 0.5 && nt.critical === true && nt.events.armed === true && nt.disarm_action === false, JSON.stringify(nt));
-    await s.tap('[data-nt="test"][data-group="maintenance"]');
+    check(`${tag}: Werte je Art gesendet`, nt && JSON.stringify(nt.maintenance_targets) === JSON.stringify(["notify.mobile_app_partnerin"]) && nt.types.triggered.volume === 0.5 && nt.types.triggered.critical === true
+      && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false && nt.disarm_action === false, JSON.stringify(nt));
+    // Pille entfernen mit x
+    await s.tap('[data-nt="target-del"][data-key="alarm_targets"][data-target="notify.mobile_app_diego"]');
+    check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));
+    await s.tap('[data-nt="cancel"]');
+    // Testmeldung einer Art
+    await s.tap('[data-nt="test"][data-kind="battery_low"]');
     const tn = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/test_notify').at(-1)");
-    check(`${tag}: Testmeldung Wartung`, tn?.group === "maintenance", JSON.stringify(tn));
+    check(`${tag}: Testmeldung der Art`, tn?.kind === "battery_low", JSON.stringify(tn));
     check(`${tag}: kein Überlauf (Meldungen)`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();

@@ -18,7 +18,7 @@ from .const import (
     BATTERY_THRESHOLD_RANGE,
     DEFAULT_NOTIFY,
     OFFLINE_MINUTES_RANGE,
-    NOTIFY_EVENTS,
+    NOTIFY_TYPES,
     DEFAULT_PRESETS,
     DEFAULT_UPDATE,
     DEVICE_CLASS_TYPE,
@@ -49,25 +49,45 @@ def valid_presets(value: Any) -> dict[str, list[str]]:
 
 
 def valid_notify(value: Any) -> dict[str, Any]:
-    """Nur bekannte Schlüssel mit gültigen Werten; fehlende mit der Grundeinstellung."""
+    """
+    Nur bekannte Schlüssel mit gültigen Werten; fehlende mit der Grundeinstellung. Alte Form (bis 0.8.0: "events", dazu ein
+    gemeinsames "critical" und "volume") wird je Meldungsart übernommen: an/aus aus "events", kritisch und Lautstärke für die
+    Arten, die damals kritisch sein konnten (Alarm, Sensorausfall im scharfen Zustand).
+    """
     out = copy.deepcopy(DEFAULT_NOTIFY)
     if not isinstance(value, dict):
         return out
     for key in ("alarm_targets", "maintenance_targets"):
         if isinstance(value.get(key), list):
-            out[key] = [t for t in value[key] if isinstance(t, str) and t.startswith("notify.")]
-    for key in ("critical", "disarm_action"):
-        if isinstance(value.get(key), bool):
-            out[key] = value[key]
+            out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str) and t.startswith("notify.")]
+    if isinstance(value.get("disarm_action"), bool):
+        out["disarm_action"] = value["disarm_action"]
     for key, (low, high) in (("battery_threshold", BATTERY_THRESHOLD_RANGE), ("offline_minutes", OFFLINE_MINUTES_RANGE)):
         if isinstance(value.get(key), (int, float)) and not isinstance(value.get(key), bool):
             out[key] = max(low, min(high, int(value[key])))
-    if isinstance(value.get("volume"), (int, float)):
-        out["volume"] = max(0.0, min(1.0, float(value["volume"])))
-    if isinstance(value.get("events"), dict):
-        for key in NOTIFY_EVENTS:
-            if isinstance(value["events"].get(key), bool):
-                out["events"][key] = value["events"][key]
+    # Alte Form zuerst, die neue überschreibt sie
+    old = value.get("events")
+    if isinstance(old, dict):
+        for kind in NOTIFY_TYPES:
+            if isinstance(old.get(kind), bool):
+                out["types"][kind]["enabled"] = old[kind]
+        if isinstance(value.get("critical"), bool):
+            for kind in ("triggered", "sensor_offline"):
+                out["types"][kind]["critical"] = value["critical"]
+        if isinstance(value.get("volume"), (int, float)) and not isinstance(value.get("volume"), bool):
+            for kind in out["types"]:
+                out["types"][kind]["volume"] = max(0.0, min(1.0, float(value["volume"])))
+    types = value.get("types")
+    if isinstance(types, dict):
+        for kind in NOTIFY_TYPES:
+            item = types.get(kind)
+            if not isinstance(item, dict):
+                continue
+            for key in ("enabled", "critical"):
+                if isinstance(item.get(key), bool):
+                    out["types"][kind][key] = item[key]
+            if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
+                out["types"][kind]["volume"] = max(0.0, min(1.0, float(item["volume"])))
     return out
 
 

@@ -36,7 +36,7 @@ from homeassistant.loader import async_get_integration
 
 from .const import DATA_SETTINGS, DOMAIN, GITHUB_REPO, MARKET_PLATFORMS
 from .http_limit import read_limited
-from .notify import async_send, text
+from .notify import async_send, build_payload, text
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -264,14 +264,11 @@ async def _async_notify(hass: HomeAssistant, kind: str, latest: str, installed: 
     """
     settings = hass.data[DATA_SETTINGS]
     cfg = settings.notify
-    if not cfg["events"].get("update_available") or settings.update_notified.get(kind) == latest:
+    if not cfg["types"]["update_available"]["enabled"] or settings.update_notified.get(kind) == latest:
         return False
     values = {"latest": latest, "installed": installed or "?"}
-    payload = {
-        "title": text(hass, f"update_{kind}_title", **values),
-        "message": text(hass, f"update_{kind}_text", **values),
-        "data": {"group": "alarmageddon_maintenance", "tag": "alarmageddon_update", "url": "/alarmageddon", "clickAction": "/alarmageddon"},
-    }
+    payload = build_payload(cfg, "update_available", text(hass, f"update_{kind}_title", **values), text(hass, f"update_{kind}_text", **values),
+                            tag="alarmageddon_update")
     if not async_send(hass, cfg["maintenance_targets"], payload):
         return False
     await settings.async_remember_notified(kind, latest)

@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.8.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.9.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -19,7 +19,7 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 
 - **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung.
 - **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan, Codes, Sicherung). Auf dem Handy als Karten und Blätter von unten.
-- **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
+- **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht einen zweiten Sensor, nur melden. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
 - **Alarmaktionen:** ein grafischer Ablauf pro Alarm: Push-Meldung, Geräte schalten, Rollläden, Alarmton auf Medienplayern (Sonos und andere), Warten, Skript, jede Aktion. Geräte kehren nach dem Alarm in den Zustand davor zurück.
 - **Benachrichtigungen:** kritische Push-Meldungen mit Lautstärke, Empfänger getrennt für Alarme und Wartung, wählbare Ereignisse.
@@ -71,9 +71,9 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 
 Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
 
-- **Empfänger** getrennt für Alarme und Wartungsmeldungen: jeder `notify`-Dienst, zum Beispiel `notify.mobile_app_<handy>` der Companion App.
-- **Kritische Alarmmeldung:** ertönt auch im Lautlos- und Nicht-stören-Modus. iOS nutzt die hier eingestellte Lautstärke, Android den Alarmkanal (`alarm_stream`).
-- **Ereignisse:** Alarm, Eingangsverzögerung, scharf, deaktiviert, Scharfschalten nicht möglich, Sensor im scharfen Zustand nicht erreichbar.
+- **Empfänger** getrennt für Alarme und Wartungsmeldungen: jeden `notify`-Dienst (zum Beispiel `notify.mobile_app_<handy>` der Companion App) im Dropdown wählen; die gewählten erscheinen als Pille mit x.
+- **Einstellungen je Meldungsart:** Alarm, Sensor meldet (kein Alarm), Sensor im scharfen Zustand nicht erreichbar, Eingangsverzögerung, Scharfschalten nicht möglich, scharf, deaktiviert, Batterie schwach, Sensor nicht erreichbar, Update verfügbar. Jede Art lässt sich ein- und ausschalten, **kritisch** (ertönt auch im Lautlos- und Nicht-stören-Modus) oder nicht einstellen und hat ihre eigene **Lautstärke**. Die Lautstärke gilt für iOS; Android spielt kritische Meldungen im Alarmkanal (`alarm_stream`), dessen Lautstärke stellst du am Handy ein. Jede Art hat einen Knopf "Testmeldung senden" (mit den gespeicherten Einstellungen).
+- **Nur melden** (Option pro Sensor): Ein Sensor, der oft ohne Einbruch ansprechen oder dessen Batterie zur Neige geht, schickt im scharfen Zustand die Meldung "Sensor meldet", statt den Alarm auszulösen. Höchstens eine Meldung pro Sensor und Minute.
 - **Knopf "Deaktivieren" in der Meldung:** standardmässig aus. iOS fragt nach Face ID oder dem Code des Geräts, Android nicht: Wer das entsperrte Handy hält, kann deaktivieren.
 - **Wartung:** schwache Batterie (Schwelle, Standard 20 %) und Sensoren, die länger als eine eingestellte Zeit nicht erreichbar sind (Standard 60 Minuten), gehen an die Wartungs-Empfänger. Jedes Problem einmal, mehrere in einer Meldung; erneut nach Batteriewechsel oder wenn der Sensor wieder antwortet.
 

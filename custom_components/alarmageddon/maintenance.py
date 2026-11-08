@@ -34,7 +34,7 @@ from .const import (
     MAINTENANCE_STORE_KEY,
 )
 from .devices import battery_of
-from .notify import async_send, text
+from .notify import async_send, build_payload, text
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class Maintenance:
     def async_check(self) -> list[tuple[str, str, Any]]:
         """Prüft alle Sensoren; gibt die neu gemeldeten Probleme zurück (für Tests)."""
         cfg = self._settings.notify
-        events = cfg["events"]
+        types = cfg["types"]
         threshold = cfg["battery_threshold"]
         offline_after = timedelta(minutes=cfg["offline_minutes"])
         now = dt_util.utcnow()
@@ -101,7 +101,7 @@ class Maintenance:
             if value is None:
                 continue
             if value < threshold:
-                if sensor not in self.reported["battery"] and events["battery_low"]:
+                if sensor not in self.reported["battery"] and types["battery_low"]["enabled"]:
                     found.append(("battery", sensor, round(value)))
             elif value >= threshold + BATTERY_HYSTERESIS and self.reported["battery"].pop(sensor, None):
                 changed = True
@@ -111,7 +111,7 @@ class Maintenance:
             if state is None:
                 continue  # Entität fehlt ganz (zum Beispiel beim Start): kein Ausfall, den der Nutzer sehen könnte
             if state.state in GONE:
-                if now - state.last_changed >= offline_after and sensor not in self.reported["offline"] and events["sensor_unavailable"]:
+                if now - state.last_changed >= offline_after and sensor not in self.reported["offline"] and types["sensor_unavailable"]["enabled"]:
                     found.append(("offline", sensor, state.last_changed))
             elif self.reported["offline"].pop(sensor, None):
                 changed = True
@@ -150,12 +150,13 @@ class Maintenance:
             for kind, sensor, value in found
         ]
         title = text(self.hass, "maint_title_one", name=self._name(found[0][1])) if len(found) == 1 else text(self.hass, "maint_title", count=len(found))
-        payload = {
-            "title": title,
-            "message": "\n".join(lines),
-            # Eigene Gruppe und eigener tag: Wartung steht auf dem Handy getrennt von Alarmmeldungen
-            "data": {"group": "alarmageddon_maintenance", "tag": "alarmageddon_maintenance", "url": "/alarmageddon", "clickAction": "/alarmageddon"},
-        }
+        # Gemischt (Batterie und Ausfall in einer Meldung): kritisch, wenn eine der beiden Arten kritisch ist; Lautstärke der lauteren
+        cfg = self._settings.notify
+        kinds = {"battery_low" if kind == "battery" else "sensor_unavailable" for kind, _s, _v in found}
+        loudest = max(kinds, key=lambda k: (cfg["types"][k]["critical"], cfg["types"][k]["volume"]))
+        # Eigene Gruppe und eigener tag: Wartung steht auf dem Handy getrennt von Alarmmeldungen
+        payload = build_payload(cfg, loudest, title, "\n".join(lines), tag="alarmageddon_maintenance",
+                                critical=any(cfg["types"][k]["critical"] for k in kinds))
         return bool(async_send(self.hass, targets, payload))
 
 

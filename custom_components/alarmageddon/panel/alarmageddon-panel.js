@@ -544,6 +544,7 @@ class AlarmageddonPanel extends HTMLElement {
     const sensor = e.sensor ? this._name(e.sensor) : "";
     let text;
     if (e.kind === "sensor_offline") text = this._t("evOffline", { sensor });
+    else if (e.kind === "sensor_report") text = this._t("evReported", { sensor });
     else if (e.kind === "unconfirmed") text = this._t("evUnconfirmed", { sensor });
     else if (e.kind === "schedule_skipped") {
       const action = e.action === "off" ? this._t("schOff") : this._t("schArm", { mode: this._t(MODE_KEY[e.action] || "modeAway") });

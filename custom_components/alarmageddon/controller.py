@@ -37,6 +37,8 @@ from .const import (
     OPT_ALWAYS,
     OPT_ARM_ON_CLOSE,
     OPT_OFFLINE_ALARM,
+    OPT_REPORT_ONLY,
+    REPORT_THROTTLE,
     OPT_OPEN_OK,
     CODE_LOCKOUT_SECONDS,
     CODE_MAX_ATTEMPTS,
@@ -112,6 +114,8 @@ class AlarmController:
         self._locked_until: datetime | None = None
         # Sensoren mit "braucht Bestätigung", die angesprochen haben, und wann (Zwei-Sensor-Bestätigung)
         self._unconfirmed: dict[str, datetime] = {}
+        # Wann ein Sensor "nur melden" zuletzt gemeldet hat (höchstens eine Meldung pro Minute)
+        self._last_report: dict[str, datetime] = {}
 
     # ----- Einstellungen (immer frisch aus den Optionen) -----
 
@@ -322,8 +326,11 @@ class AlarmController:
         went_off = old.state == STATE_ON and new.state == STATE_OFF
         went_away = old.state in (STATE_ON, STATE_OFF) and new.state in GONE
 
-        # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort
+        # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort. Mit "Nur melden" nur eine Meldung.
         if went_on and entity in self.always_sensors() and self.state != AlarmControlPanelState.TRIGGERED:
+            if self.option(entity, OPT_REPORT_ONLY):
+                self._report(entity)
+                return
             self.triggered_by = entity
             self._go_triggered()
             return
@@ -345,6 +352,10 @@ class AlarmController:
             return
         if not went_on:
             return
+        # "Nur melden": der Sensor löst nie aus (auch nicht mit Bestätigung), er meldet nur
+        if self.option(entity, OPT_REPORT_ONLY):
+            self._report(entity)
+            return
         if self.state != AlarmControlPanelState.PENDING and not self._confirmed(entity):
             return
 
@@ -360,6 +371,15 @@ class AlarmController:
             self._go_pending(self.entry_delay)
         else:
             self._go_triggered()
+
+    @callback
+    def _report(self, entity: str) -> None:
+        now = dt_util.utcnow()
+        last = self._last_report.get(entity)
+        if last and (now - last).total_seconds() < REPORT_THROTTLE:
+            return
+        self._last_report[entity] = now
+        self._emit("sensor_report", sensor=entity)
 
     @callback
     def _confirmed(self, entity: str) -> bool:

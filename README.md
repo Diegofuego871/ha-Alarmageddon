@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.8.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.9.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -19,7 +19,7 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 
 - **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change.
 - **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (modes, delays, behaviour for open sensors, schedule, codes, backup). On the phone as cards and sheets from the bottom.
-- **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm. Defaults per sensor type, own values per sensor.
+- **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, report only. Defaults per sensor type, own values per sensor.
 - **Ready to arm:** one entity per mode with the blocking sensors.
 - **Alarm actions:** a graphical workflow per alarm: push notification, switch devices, covers, alarm sound on media players (Sonos and others), wait, script, any action. Devices return to their previous state after the alarm.
 - **Notifications:** critical push notifications with volume, recipients separately for alarms and maintenance, selectable events.
@@ -71,9 +71,9 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 
 Side panel › Configuration › Notifications, for all alarm systems:
 
-- **Recipients** separately for alarms and maintenance notifications: every `notify` service, for example `notify.mobile_app_<phone>` of the companion app.
-- **Critical alarm notification:** sounds in silent mode and do not disturb. iOS uses the volume set here, Android the alarm channel (`alarm_stream`).
-- **Events:** alarm, entry delay, armed, disarmed, arming not possible, sensor unreachable while armed.
+- **Recipients** separately for alarms and maintenance messages: pick every `notify` service (for example `notify.mobile_app_<phone>` of the companion app) from a dropdown; the chosen ones appear as tags with an x.
+- **Settings per kind of message:** alarm, sensor reports (no alarm), sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available. Each kind can be switched on or off, be **critical** (sounds in silent mode and do not disturb) or not, and has its own **volume**. The volume applies to iOS; Android plays critical messages on the alarm channel (`alarm_stream`), set its volume on the phone. Each kind has a "Send test message" button (with the saved settings).
+- **Report only** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Sensor reports" while armed instead of triggering the alarm. At most one message per sensor and minute.
 - **"Disarm" button in the notification:** off by default. iOS asks for Face ID or the passcode, Android does not: anyone holding the unlocked phone can disarm.
 - **Maintenance:** low battery (threshold, default 20 %) and sensors unreachable for longer than a set time (default 60 minutes) go to the maintenance recipients. Each problem once, several in one notification; again after the battery was replaced or the sensor responded.
 

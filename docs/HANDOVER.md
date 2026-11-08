@@ -3,13 +3,21 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.9.0, Meldungen)
+
+- 0.7.0 und 0.8.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.9.0 enthalten.
+- Meldungen je Art: `NOTIFY_TYPES` (Art → Gruppe alarm/maintenance), `NOTIFY_TYPE_DEFAULTS` (an, kritisch), `settings.notify["types"][art] = {enabled, critical, volume}`. `notify.build_payload(cfg, art, …)` baut jede Meldung (auch Wartung und Update); `valid_notify` übernimmt die alte Form (`events`, `critical`, `volume`) je Art, auch aus alten Sicherungen. WebSocket `save_notify` führt `types` je Art zusammen, `test_notify` nimmt `kind`.
+- Sensor-Option `report_only` ("Nur melden"): `controller._report` (höchstens eine Meldung pro Sensor und Minute, Ereignis `sensor_report`), geht vor Bestätigung, gilt auch für "immer aktiv". Nie voreingestellt.
+- Panel: `notify.js` neu (Kapitel, Empfänger als Dropdown mit Pillen, Arten mit Schaltern, Regler und Test je Art).
+- Tests: `tests/test_notify_types.py`; Panel-Suiten actions-e2e/hardening-e2e angepasst.
+
 ## Stand (0.8.0, Design und Entwürfe)
 
 - 0.7.0 hat keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.8.0 enthalten.
 - Kapitel: `chapter(title, body, hint)` in `panel/common.js`, CSS `.ag-chap` (Strich vor dem Titel); Anlage und Updates sind umgestellt, Meldungen folgen mit 0.9.0.
 - Seiten gleiten: `.ag-pane` mit `from-right`/`from-left` (`_slide` in `alarmageddon-panel.js`, Richtung nach Reihenfolge `SUBS`).
 - Entwürfe: Reiterwechsel (Unterreiter und Übersicht) verwirft nichts mehr; `_renderDots()` setzt `has-edit` (gelb) an Reiter mit offenen Änderungen, `has-dot` (blau) für Updates. Rückfrage (`_guard`) nur beim Wechsel der Anlage; `beforeunload` warnt beim Neuladen.
-- Geplant, in dieser Reihenfolge: 0.9.0 Meldungen neu (je Art kritisch/Lautstärke, Empfänger als Dropdown mit Pillen) und Sensor-Option "nur melden"; 0.10.0 Einstellungen je Modus; 0.11.0 Aktionen-Editor ohne JSON (Fähigkeiten aus HA), Testknopf je Aktion, Greifer, Medienplayer mit Dropdown und Test auf dem Handy; 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
+- Geplant, in dieser Reihenfolge: 0.10.0 Einstellungen je Modus; 0.11.0 Aktionen-Editor ohne JSON (Fähigkeiten aus HA), Testknopf je Aktion, Greifer, Medienplayer mit Dropdown und Test auf dem Handy; 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
 
 ## Stand (0.7.0, Updates)
 

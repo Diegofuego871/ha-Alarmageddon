@@ -94,6 +94,7 @@ export const OPTIONS = [
   { key: "arm_on_close", icon: "lockClosed", name: "optArmOnClose", hint: "optArmOnCloseHint", short: "optArmOnCloseShort" },
   { key: "offline_alarm", icon: "offline", name: "optOffline", hint: "optOfflineHint", short: "optOfflineShort" },
   { key: "confirm", icon: "groups", name: "optConfirm", hint: "optConfirmHint", short: "optConfirmShort" },
+  { key: "report_only", icon: "bell", name: "optReport", hint: "optReportHint", short: "optReportShort" },
 ];
 export const TYPES = [
   ["door", "door", "typeDoor"], ["window", "window", "typeWindow"], ["motion", "motion", "typeMotion"],

@@ -26,7 +26,7 @@ async def _notify_settings(hass: HomeAssistant, hass_ws_client, **notify: Any) -
 async def test_critical_push_on_alarm(hass: HomeAssistant, hass_ws_client) -> None:
     pushes = async_mock_service(hass, "notify", "handy")
     await setup_alarm(hass)
-    await _notify_settings(hass, hass_ws_client, volume=0.6)
+    await _notify_settings(hass, hass_ws_client, types={"triggered": {"volume": 0.6}})
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
@@ -96,10 +96,12 @@ async def test_test_notification(hass: HomeAssistant, hass_ws_client) -> None:
     await setup_alarm(hass)
     await _notify_settings(hass, hass_ws_client)
     client = await hass_ws_client(hass)
-    await client.send_json({"id": 5, "type": "alarmageddon/test_notify", "group": "maintenance"})
+    await client.send_json({"id": 5, "type": "alarmageddon/test_notify", "kind": "battery_low"})
     assert (await client.receive_json())["result"]["targets"] == ["notify.tablet"]
     await hass.async_block_till_done()
-    assert tablet[0].data["title"].startswith("Test")
+    assert tablet[0].data["title"] == "Test: Low battery"
+    # Wartung ist standardmässig nicht kritisch
+    assert "push" not in tablet[0].data["data"]
 
 
 # ----- Ablauf -----

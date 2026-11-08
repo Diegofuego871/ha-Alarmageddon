@@ -48,9 +48,9 @@ async def test_round_trip(hass: HomeAssistant, hass_ws_client) -> None:
     # Alles umstellen, dann zurückholen
     hass.config_entries.async_update_entry(entry, options={**entry.options, "workflows": {}, "entry_delay": 5, "zone_away": [FRONT_DOOR]})
     settings = hass.data[DATA_SETTINGS]
-    await settings.async_set_notify({**settings.notify, "volume": 0.1})
+    await settings.async_set_notify({**settings.notify, "types": {**settings.notify["types"], "triggered": {**settings.notify["types"]["triggered"], "volume": 0.1}}})
     await hass.async_block_till_done()
-    exported["settings"]["notify"]["volume"] = 0.9
+    exported["settings"]["notify"]["types"]["triggered"]["volume"] = 0.9
     exported["systems"].append({"title": "Ferienhaus", "options": {}})
     plan = await _ws(client, type="alarmageddon/import", data=exported, dry_run=True)
     assert plan["result"] == {"systems": ["Haus"], "missing": ["Ferienhaus"], "settings": True}
@@ -61,7 +61,7 @@ async def test_round_trip(hass: HomeAssistant, hass_ws_client) -> None:
     assert entry.options["workflows"] == WORKFLOW
     assert entry.options["entry_delay"] == 45
     assert entry.options["zone_away"] == [FRONT_DOOR, WINDOW, MOTION]
-    assert hass.data[DATA_SETTINGS].notify["volume"] == 0.9
+    assert hass.data[DATA_SETTINGS].notify["types"]["triggered"]["volume"] == 0.9
     # Der Code der Anlage bleibt
     assert entry.options["code_hash"] == code_hash
 
@@ -94,3 +94,22 @@ async def test_import_ignores_code_fields(hass: HomeAssistant, hass_ws_client) -
     await hass.async_block_till_done()
     assert "code_hash" not in entry.options and not entry.options.get("codes")
     assert entry.options["code_arm_required"] is False
+
+
+async def test_old_notify_backup_and_report_only_survive_import(hass: HomeAssistant, hass_ws_client) -> None:
+    """Eine Sicherung aus 0.8.0 (Form "events", "critical", "volume") wird je Meldungsart übernommen; "Nur melden" bleibt erhalten."""
+    entry = await setup_alarm(hass, sensor_options={MOTION: {"report_only": True}})
+    client = await hass_ws_client(hass)
+    exported = (await _ws(client, type="alarmageddon/export"))["result"]
+    assert exported["systems"][0]["options"]["sensor_options"] == {MOTION: {"report_only": True}}
+    assert set(exported["settings"]["notify"]["types"]) >= {"triggered", "sensor_report"}
+    exported["settings"]["notify"] = {"alarm_targets": ["notify.handy"], "critical": False, "volume": 0.4, "events": {"armed": True}}
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "sensor_options": {}})
+    await hass.async_block_till_done()
+    result = await _ws(client, type="alarmageddon/import", data=exported)
+    assert result["success"]
+    await hass.async_block_till_done()
+    notify = hass.data[DATA_SETTINGS].notify
+    assert notify["alarm_targets"] == ["notify.handy"] and notify["types"]["armed"]["enabled"] is True
+    assert notify["types"]["triggered"]["critical"] is False and notify["types"]["triggered"]["volume"] == 0.4
+    assert entry.options["sensor_options"] == {MOTION: {"report_only": True}}

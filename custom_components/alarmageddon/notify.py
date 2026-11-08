@@ -17,7 +17,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .const import PUSH_ACTION_DISARM, PUSH_ACTION_OPEN
+from .const import NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,6 +50,12 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Away",
         "mode_night": "Night",
         "by_push": "push notification",
+        "report_title": "Sensor reports: {name}",
+        "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Report only\".",
+        "type_triggered": "Alarm", "type_pending": "Entry delay", "type_armed": "Armed", "type_disarmed": "Disarmed",
+        "type_arm_failed": "Arming not possible", "type_sensor_offline": "Sensor unreachable while armed",
+        "type_sensor_report": "Sensor reports (no alarm)", "type_battery_low": "Low battery",
+        "type_sensor_unavailable": "Sensor unreachable", "type_update_available": "Update available",
         "by_schedule": "Schedule",
         "maint_title_one": "Maintenance: {name}",
         "maint_title": "Maintenance: {count} sensors",
@@ -88,6 +94,12 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Abwesend",
         "mode_night": "Nacht",
         "by_push": "Push-Meldung",
+        "report_title": "Sensor meldet: {name}",
+        "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Nur melden\" steht.",
+        "type_triggered": "Alarm", "type_pending": "Eingangsverzögerung", "type_armed": "Scharf geschaltet", "type_disarmed": "Deaktiviert",
+        "type_arm_failed": "Scharfschalten nicht möglich", "type_sensor_offline": "Sensor im scharfen Zustand nicht erreichbar",
+        "type_sensor_report": "Sensor meldet (kein Alarm)", "type_battery_low": "Batterie schwach",
+        "type_sensor_unavailable": "Sensor nicht erreichbar", "type_update_available": "Update verfügbar",
         "by_schedule": "Zeitplan",
         "maint_title_one": "Wartung: {name}",
         "maint_title": "Wartung: {count} Sensoren",
@@ -124,6 +136,28 @@ def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any])
         hass.async_create_task(_async_call(hass, domain, service, payload))
         sent.append(target)
     return sent
+
+
+def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, tag: str | None = None,
+                  actions: list | None = None, critical: bool | None = None) -> dict[str, Any]:
+    """
+    Inhalt einer Meldung der Art `kind`. Kritisch und Lautstärke kommen aus den Einstellungen der Art; `critical` überschreibt
+    nur das "kritisch" (der Abschluss "Alarm beendet" ersetzt die kritische Meldung durch eine normale mit demselben tag).
+    Kritisch: iOS mit "critical" und Lautstärke, Android über den Kanal "alarm_stream" mit hoher Priorität; beides steht in
+    jeder kritischen Meldung, jede App nimmt sich, was sie kennt.
+    """
+    setting = cfg["types"][kind]
+    is_critical = setting["critical"] if critical is None else critical
+    group = "alarmageddon" if NOTIFY_TYPES[kind] == "alarm" else "alarmageddon_maintenance"
+    data: dict[str, Any] = {"group": group, "url": "/alarmageddon", "clickAction": "/alarmageddon"}
+    if tag:
+        data["tag"] = tag
+    if is_critical:
+        data["push"] = {"sound": {"name": "default", "critical": 1, "volume": setting["volume"]}, "interruption-level": "critical"}
+        data.update({"ttl": 0, "priority": "high", "channel": "alarm_stream"})
+    if actions:
+        data["actions"] = actions
+    return {"title": title, "message": message, "data": data}
 
 
 async def _async_call(hass: HomeAssistant, domain: str, service: str, payload: dict[str, Any]) -> None:
@@ -175,6 +209,9 @@ class Notifier:
 
     # ----- Auslöser -----
 
+    def _on(self, kind: str) -> bool:
+        return bool(self.cfg["types"][kind]["enabled"])
+
     @callback
     def _on_change(self) -> None:
         state = str(self._ctl.state)
@@ -182,42 +219,45 @@ class Notifier:
         if state == previous:
             return
         self._last_state = state
-        events = self.cfg["events"]
         name = self.entry.title
         if state == AlarmControlPanelState.TRIGGERED:
             trigger = self._ctl.mode or "always"
-            if events["triggered"] and not self.workflow_has_notify(trigger):
+            if self._on("triggered") and not self.workflow_has_notify(trigger):
                 self.send_alarm()
-        elif state == AlarmControlPanelState.PENDING and events["pending"]:
-            self._send(self.cfg["alarm_targets"], self._t("pending_title", name=name),
-                       self._t("pending", sensor=self._name(self._ctl.triggered_by), seconds=self._ctl.entry_delay), critical=False)
+        elif state == AlarmControlPanelState.PENDING and self._on("pending"):
+            self._send("pending", self._t("pending_title", name=name),
+                       self._t("pending", sensor=self._name(self._ctl.triggered_by), seconds=self._ctl.entry_delay))
         elif state in (AlarmControlPanelState.ARMED_HOME, AlarmControlPanelState.ARMED_AWAY, AlarmControlPanelState.ARMED_NIGHT):
-            if events["armed"] and previous not in (AlarmControlPanelState.TRIGGERED,):
+            if self._on("armed") and previous not in (AlarmControlPanelState.TRIGGERED,):
                 by = self._ctl.changed_by
-                self._send(self.cfg["alarm_targets"], self._t("armed_title", name=name, mode=self._mode(self._ctl.mode)),
-                           self._t("armed", by=by) if by else self._t("armed_noby"), critical=False)
+                self._send("armed", self._t("armed_title", name=name, mode=self._mode(self._ctl.mode)),
+                           self._t("armed", by=by) if by else self._t("armed_noby"))
         elif state == AlarmControlPanelState.DISARMED:
             by = self._ctl.changed_by
-            if previous == AlarmControlPanelState.TRIGGERED and events["triggered"]:
-                # Gleicher tag: ersetzt die kritische Meldung auf dem Handy durch "Alarm beendet"
-                self._send(self.cfg["alarm_targets"], self._t("ended_title", name=name),
-                           self._t("ended", by=by) if by else self._t("ended_noby"), critical=False, tag=self._tag())
-            elif events["disarmed"]:
-                self._send(self.cfg["alarm_targets"], self._t("disarmed_title", name=name),
-                           self._t("disarmed", by=by) if by else self._t("disarmed_noby"), critical=False)
+            if previous == AlarmControlPanelState.TRIGGERED and self._on("triggered"):
+                # Gleicher tag: ersetzt die kritische Meldung auf dem Handy durch "Alarm beendet" (nie kritisch)
+                self._send("triggered", self._t("ended_title", name=name),
+                           self._t("ended", by=by) if by else self._t("ended_noby"), tag=self._tag(), critical=False)
+            elif self._on("disarmed"):
+                self._send("disarmed", self._t("disarmed_title", name=name),
+                           self._t("disarmed", by=by) if by else self._t("disarmed_noby"))
 
     @callback
     def _on_event(self, kind: str, data: dict[str, Any]) -> None:
-        events = self.cfg["events"]
         name = self.entry.title
-        if kind == "arm_failed" and events["arm_failed"]:
+        if kind == "arm_failed" and self._on("arm_failed"):
             sensors = ", ".join(self._name(e) for e in data.get("sensors", []))
-            self._send(self.cfg["alarm_targets"], self._t("arm_failed_title", name=name, mode=self._mode(data.get("mode"))),
-                       self._t("arm_failed", sensors=sensors), critical=False)
-        elif kind == "sensor_offline" and events["sensor_offline"]:
-            # Im scharfen Zustand ist ein ausgefallener Melder ein blinder Fleck: kritisch an die Alarm-Empfänger
-            self._send(self.cfg["alarm_targets"], self._t("offline_title", name=self._name(data.get("sensor"))),
-                       self._t("offline", sensor=self._name(data.get("sensor"))), critical=True)
+            self._send("arm_failed", self._t("arm_failed_title", name=name, mode=self._mode(data.get("mode"))),
+                       self._t("arm_failed", sensors=sensors))
+        elif kind == "sensor_offline" and self._on("sensor_offline"):
+            # Im scharfen Zustand ist ein ausgefallener Melder ein blinder Fleck (Standard: kritisch an die Alarm-Empfänger)
+            self._send("sensor_offline", self._t("offline_title", name=self._name(data.get("sensor"))),
+                       self._t("offline", sensor=self._name(data.get("sensor"))))
+        elif kind == "sensor_report" and self._on("sensor_report"):
+            # Sensor auf "Nur melden": keine Alarmauslösung, aber eine Meldung (Standard: kritisch), eigener tag je Sensor
+            sensor = data.get("sensor")
+            self._send("sensor_report", self._t("report_title", name=self._name(sensor)),
+                       self._t("report", sensor=self._name(sensor)), tag=f"{self._tag()}_report_{sensor}")
 
     @callback
     def _on_action(self, event: Event) -> None:
@@ -233,7 +273,7 @@ class Notifier:
 
     @callback
     def send_alarm(self, test: bool = False) -> None:
-        """Kritische Alarmmeldung mit Aktionen (auch als Schritt im Ablauf)."""
+        """Alarmmeldung mit Aktionen (auch als Schritt im Ablauf); kritisch und Lautstärke nach den Einstellungen der Art "Alarm"."""
         name = self.entry.title
         sensor = self._ctl.triggered_by
         time = dt_util.as_local(dt_util.utcnow()).strftime("%H:%M")
@@ -246,25 +286,19 @@ class Notifier:
             # iOS verlangt dafür Face ID/Code (authenticationRequired); Android kennt das nicht
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),
                                "authenticationRequired": True, "destructive": True})
-        self._send(self.cfg["alarm_targets"], title, message, critical=self.cfg["critical"], tag=self._tag(), actions=actions)
+        self._send("triggered", title, message, tag=self._tag(), actions=actions)
 
     @callback
-    def send_test(self, group: str) -> list[str]:
-        targets = self.cfg["maintenance_targets" if group == "maintenance" else "alarm_targets"]
-        self._send(targets, self._t("test_title", name=self.entry.title), self._t("test"), critical=group == "alarm" and self.cfg["critical"])
-        return targets
+    def send_test(self, kind: str) -> list[str]:
+        """Testmeldung einer Art an ihre Empfänger, mit ihrem Kritisch und ihrer Lautstärke (so hört man, wie sie klingt)."""
+        title = self._t("test_title", name=self._t(f"type_{kind}"))
+        self._send(kind, title, self._t("test"))
+        return self._targets(kind)
 
-    def payload(self, title: str, message: str, critical: bool, tag: str | None = None, actions: list | None = None) -> dict[str, Any]:
-        data: dict[str, Any] = {"group": "alarmageddon", "url": "/alarmageddon", "clickAction": "/alarmageddon"}
-        if tag:
-            data["tag"] = tag
-        if critical:
-            data["push"] = {"sound": {"name": "default", "critical": 1, "volume": self.cfg["volume"]}, "interruption-level": "critical"}
-            data.update({"ttl": 0, "priority": "high", "channel": "alarm_stream"})
-        if actions:
-            data["actions"] = actions
-        return {"title": title, "message": message, "data": data}
+    def _targets(self, kind: str) -> list[str]:
+        return self.cfg["alarm_targets" if NOTIFY_TYPES[kind] == "alarm" else "maintenance_targets"]
 
     @callback
-    def _send(self, targets: list[str], title: str, message: str, critical: bool, tag: str | None = None, actions: list | None = None) -> None:
-        async_send(self.hass, targets, self.payload(title, message, critical, tag, actions))
+    def _send(self, kind: str, title: str, message: str, *, tag: str | None = None, actions: list | None = None,
+              critical: bool | None = None) -> None:
+        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical))

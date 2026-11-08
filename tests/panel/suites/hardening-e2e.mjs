@@ -4,7 +4,7 @@ import { check, done, launch, open, outDir } from "../lib.mjs";
 
 const T = {
   de: { saved: "Gespeichert", confirm: "Braucht einen zweiten Sensor", mismatch: "stimmen nicht", taken: "schon vergeben", restored: "wiederhergestellt", maint: "Wartungsmeldungen", unconfirmed: "Nicht bestätigt, kein Alarm: Bewegung Flur", armFailed: "Abwesend nicht möglich, offen: Fenster Bad" },
-  en: { saved: "Saved", confirm: "Needs a second sensor", mismatch: "do not match", taken: "already used", restored: "restored", maint: "Maintenance notifications", unconfirmed: "Not confirmed, no alarm: Bewegung Flur", armFailed: "Away not possible, open: Fenster Bad" },
+  en: { saved: "Saved", confirm: "Needs a second sensor", mismatch: "do not match", taken: "already used", restored: "restored", maint: "Maintenance messages", unconfirmed: "Not confirmed, no alarm: Bewegung Flur", armFailed: "Away not possible, open: Fenster Bad" },
 };
 
 const browser = await launch();
@@ -30,11 +30,13 @@ for (const lang of ["de", "en"]) {
     const sheet = mobile ? "#ag-sheet" : ".ag-side";
     check(`${tag}: Option im Seitenblatt`, await s.waitFor(`return r.querySelector('${sheet}')?.innerText.includes('${t.confirm}')`));
     await s.tap(`${sheet} [data-sen="opt"][data-key="confirm"]`);
+    check(`${tag}: Option "Nur melden" im Seitenblatt`, await s.ev(`return !!r.querySelector('${sheet} [data-sen="opt"][data-key="report_only"]')`));
+    await s.tap(`${sheet} [data-sen="opt"][data-key="report_only"]`);
     if (mobile) await s.tap('#ag-sheet [data-sen="close-detail"]');
     await s.tap('[data-sen="save"]');
     check(`${tag}: Option gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const zones = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");
-    check(`${tag}: confirm gesendet`, zones?.sensor_options?.["binary_sensor.bewegung_flur"]?.confirm === true, JSON.stringify(zones?.sensor_options));
+    check(`${tag}: confirm und report_only gesendet`, zones?.sensor_options?.["binary_sensor.bewegung_flur"]?.confirm === true && zones?.sensor_options?.["binary_sensor.bewegung_flur"]?.report_only === true, JSON.stringify(zones?.sensor_options));
 
     // ----- Anlage: Bestätigungsfenster -----
     await s.tap('[data-sub="system"]');
@@ -95,16 +97,17 @@ for (const lang of ["de", "en"]) {
     // ----- Wartungsmeldungen -----
     await s.tap('[data-sub="notify"]');
     check(`${tag}: Wartung in Benachrichtigungen`, await s.waitFor(`return r.querySelector('.ag-nt')?.innerText.includes('${t.maint}')`));
-    await s.tap('[data-nt="event"][data-key="sensor_unavailable"]');
     const thr = await s.el('[data-nt="num"][data-key="battery_threshold"]');
     await thr.fill("80");
     check(`${tag}: Schwelle zu hoch abgelehnt`, await s.waitFor("return r.querySelector('[data-nt=\"save\"]').disabled && !!r.querySelector('.ag-foot .ag-err')"));
     await thr.fill("25");
     await (await s.el('[data-nt="num"][data-key="offline_minutes"]')).fill("120");
+    await s.tap('[data-nt="enabled"][data-kind="sensor_unavailable"]');
+    check(`${tag}: Art aus blendet ihre Einstellungen aus`, await s.waitFor("return !r.querySelector('[data-nt=\"num\"][data-key=\"offline_minutes\"]')"));
     await s.tap('[data-nt="save"]');
     check(`${tag}: Wartung gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const nt = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)?.notify");
-    check(`${tag}: Wartungswerte gesendet`, nt?.battery_threshold === 25 && nt?.offline_minutes === 120 && nt?.events?.sensor_unavailable === false && nt?.events?.battery_low === true, JSON.stringify(nt));
+    check(`${tag}: Wartungswerte gesendet`, nt?.battery_threshold === 25 && nt?.offline_minutes === 120 && nt?.types?.sensor_unavailable?.enabled === false && nt?.types?.battery_low?.enabled === true, JSON.stringify(nt));
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();

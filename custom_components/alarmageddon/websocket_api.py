@@ -50,7 +50,7 @@ from .const import (
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
-    NOTIFY_EVENTS,
+    NOTIFY_TYPES,
     SOUNDS,
     SOUNDS_URL_PATH,
     WORKFLOW_TRIGGERS,
@@ -354,9 +354,12 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         vol.Required("notify"): {
             vol.Optional("alarm_targets"): [str],
             vol.Optional("maintenance_targets"): [str],
-            vol.Optional("critical"): bool,
-            vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
-            vol.Optional("events"): {vol.In(NOTIFY_EVENTS): bool},
+            # Je Meldungsart: an/aus, kritisch, Lautstärke (iOS); fehlende Werte bleiben, wie sie sind
+            vol.Optional("types"): {vol.In(list(NOTIFY_TYPES)): {
+                vol.Optional("enabled"): bool,
+                vol.Optional("critical"): bool,
+                vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+            }},
             vol.Optional("disarm_action"): bool,
             vol.Optional("battery_threshold"): vol.All(vol.Coerce(int), vol.Range(min=BATTERY_THRESHOLD_RANGE[0], max=BATTERY_THRESHOLD_RANGE[1])),
             vol.Optional("offline_minutes"): vol.All(vol.Coerce(int), vol.Range(min=OFFLINE_MINUTES_RANGE[0], max=OFFLINE_MINUTES_RANGE[1])),
@@ -368,22 +371,25 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
 async def ws_save_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Benachrichtigungen, für alle Anlagen gleich."""
     settings = await async_get_settings(hass)
-    await settings.async_set_notify({**settings.notify, **msg["notify"]})
+    merged = {**settings.notify, **msg["notify"]}
+    # Arten einzeln zusammenführen: eine Meldung mit nur einer Art lässt die anderen unberührt
+    merged["types"] = {kind: {**current, **msg["notify"].get("types", {}).get(kind, {})} for kind, current in settings.notify["types"].items()}
+    await settings.async_set_notify(merged)
     connection.send_result(msg["id"], {"notify": settings.notify})
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): f"{DOMAIN}/test_notify", vol.Required("group"): vol.In(["alarm", "maintenance"])}
+    {vol.Required("type"): f"{DOMAIN}/test_notify", vol.Required("kind"): vol.In(list(NOTIFY_TYPES))}
 )
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    """Testmeldung an die Empfänger einer Gruppe (Alarm kritisch, wenn eingeschaltet)."""
+    """Testmeldung einer Art an ihre Empfänger, mit ihrem Kritisch und ihrer Lautstärke."""
     entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
     if not entries:
         connection.send_error(msg["id"], "not_found", "No alarm system")
         return
-    targets = entries[0].runtime_data.notifier.send_test(msg["group"])
+    targets = entries[0].runtime_data.notifier.send_test(msg["kind"])
     connection.send_result(msg["id"], {"targets": targets})
 
 

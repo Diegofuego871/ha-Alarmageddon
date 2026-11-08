@@ -375,4 +375,28 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-seg > button.has-edit { position: relative; }
 .ag-seg > button.has-edit::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-warning); box-shadow: 0 0 0 2px var(--ag-subtle); }
 .ag-seg > button.has-edit.has-dot::after { background: var(--ag-warning); }
+
+/* 0.9.0: Meldungen (Empfänger-Dropdown mit Pillen, Arten mit kritisch und Lautstärke) */
+.ag-rline { margin-top: 10px; }
+.ag-rsel { min-width: 220px; max-width: 100%; appearance: auto; }
+.ag-rpills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ag-rpill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 6px 0 12px; border-radius: 999px; background: var(--ag-primary-soft); color: var(--ag-primary); font-size: 14px; font-weight: 500; }
+.ag-rpill.gone { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
+.ag-rx { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.ag-rx:hover { background: color-mix(in srgb, currentColor 16%, transparent); }
+.ag-rx:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+.ag-mtlist { padding: 4px 0; }
+.ag-mt { padding: 12px 16px; border-top: 1px solid var(--ag-divider); }
+.ag-mt:first-child { border-top: 0; }
+.ag-mt-head { display: flex; align-items: center; gap: 12px; }
+.ag-mt-head .ag-settx { flex: 1 1 auto; min-width: 0; }
+.ag-mt.off .ag-settx { opacity: .6; }
+.ag-mt-body { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 2px 40px; padding: 4px 12px; border-radius: 12px; background: var(--ag-subtle); }
+.ag-mt-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 6px 0; }
+.ag-mt-opt > span:first-child { flex: 1 1 auto; min-width: 0; }
+.ag-mt-opt small { display: block; margin-top: 1px; color: var(--ag-text2); font-size: 12px; line-height: 1.35; }
+.ag-mt-opt.vol { flex-wrap: wrap; }
+.ag-mt-opt.vol .ag-range { flex: 1 1 200px; max-width: 320px; }
+:host([narrow]) .ag-mt-body { margin-left: 0; }
+:host([narrow]) .ag-mt-opt.vol .ag-range { flex-basis: 100%; max-width: none; }
 `;

@@ -107,9 +107,10 @@
   };
   setHacs();
   window.__presets = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
-  window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], critical: true, volume: 0.8,
-    events: { triggered: true, pending: false, armed: false, disarmed: false, arm_failed: true, sensor_offline: true, battery_low: true, sensor_unavailable: true, update_available: true },
-    disarm_action: false, battery_threshold: 20, offline_minutes: 60 };
+  const T = (enabled, critical) => ({ enabled, critical, volume: 0.8 });
+  window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], disarm_action: false, battery_threshold: 20, offline_minutes: 60,
+    types: { triggered: T(true, true), pending: T(false, false), armed: T(false, false), disarmed: T(false, false), arm_failed: T(true, false), sensor_offline: T(true, true),
+      sensor_report: T(true, true), battery_low: T(true, false), sensor_unavailable: T(true, false), update_available: T(true, false) } };
   window.__calls = [];
   window.__services = [];
   window.__updateSettings = { check: true, prerelease: null, auto_update: false };
@@ -197,10 +198,15 @@
       return { forecast: { "sensor.haustuer_batterie": 410, "sensor.bewegung_flur_batterie": 95, "sensor.fenster_bad_batterie": 0, "sensor.fenster_kueche_batterie": 21, "sensor.terrassentuer_batterie": null } };
     }
     if (msg.type === "alarmageddon/save_notify") {
-      window.__notify = { ...window.__notify, ...JSON.parse(JSON.stringify(msg.notify)) };
+      const incoming = JSON.parse(JSON.stringify(msg.notify));
+      const types = Object.fromEntries(Object.entries(window.__notify.types).map(([k, v]) => [k, { ...v, ...(incoming.types?.[k] || {}) }]));
+      window.__notify = { ...window.__notify, ...incoming, types };
       return { notify: window.__notify };
     }
-    if (msg.type === "alarmageddon/test_notify") return { targets: msg.group === "alarm" ? window.__notify.alarm_targets : window.__notify.maintenance_targets };
+    if (msg.type === "alarmageddon/test_notify") {
+      const alarm = ["triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline", "sensor_report"].includes(msg.kind);
+      return { targets: alarm ? window.__notify.alarm_targets : window.__notify.maintenance_targets };
+    }
     if (msg.type === "alarmageddon/save_presets") {
       window.__presets = { ...window.__presets, ...msg.presets };
       return { presets: window.__presets };

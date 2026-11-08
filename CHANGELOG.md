@@ -7,7 +7,28 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-11-08
+
+Notifications rebuilt: every kind of message has its own settings, and a sensor can report instead of triggering.
+
+Includes the changes from 0.7.0 and 0.8.0.
+
+### Added
+
+- **Settings per kind of message** (Configuration › Alerts): every kind (alarm, sensor reports, sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available) can be switched on or off, be critical or not, and has its own volume (iOS). Each kind has its own "Send test message" button, which goes out with its saved settings, so you hear how it sounds.
+- **Recipients as a dropdown:** pick a notification service from a dropdown; the chosen ones appear as tags with an x. Separate for alarms and for maintenance. A warning shows when a group has no recipient.
+- **Report only** (new option per sensor): if this sensor responds while armed, a message is sent (kind "Sensor reports (no alarm)", critical by default) instead of triggering the alarm. For sensors that often respond without a break-in (pet, sunlight) or whose battery runs low. At most one message per sensor and minute; the recent events show it. Never set by default; also works for "always active" sensors if you choose so.
+
+### Changed
+
+- **Messages in chapters:** Recipients, Alarm messages, Maintenance messages, Buttons in the message.
+- **Old settings carry over:** the single "critical" and "volume" of earlier versions become the settings of the alarm and of "sensor unreachable while armed"; switched-off kinds stay off. Backups from earlier versions are read the same way.
+- Maintenance messages and the update message are critical only if you switch that on for their kind (default: no).
+
 ## [0.8.0] - 2026-11-08
+
+Not released; included in 0.9.0.
+
 
 New look of the settings like in Device Panel, and nothing gets lost when you switch tabs.
 
@@ -21,7 +42,7 @@ Includes the changes from 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Not released; included in 0.8.0.
+Not released; included in 0.9.0.
 
 
 Updates from the panel, like in Device Panel.
@@ -142,6 +163,6 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.8.0
+[0.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.9.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0
