@@ -244,10 +244,11 @@ th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute
     <div class="card">
       <h2>Offene Fragen an dich</h2>
       <ul class="clean">
-        <li>Sollen "Anwesend" und "Abwesend" die einzigen Modi sein, oder zusätzlich "Nacht"? Das Datenmodell könnte beliebig viele Modi unterstützen, die UI bliebe bei zwei festen Standardmodi.</li>
-        <li>Mehrere Alarmanlagen pro HA (zum Beispiel Haus und Garage)? Ich plane es als mehrere Config Entries ein, ein Panel zeigt dann alle.</li>
+        <li><s>Modus "Nacht"</s> Entschieden: optional, pro Alarmanlage zuschaltbar, standardmässig aus.</li>
+        <li><s>Mehrere Alarmanlagen</s> Entschieden: ja. Ein Config Entry pro Anlage, je ein Gerät mit eigener <span class="mono">alarm_control_panel</span>-Entität. Ein Panel zeigt alle.</li>
+        <li><s>HomeKit</s> Entschieden: zentral. Jede Anlage muss über die HomeKit-Bridge in Apple Home steuerbar sein.</li>
         <li><s>Sprache</s> Entschieden: Integration Englisch, Deutsch wenn HA auf Deutsch läuft. README und Release Notes zweisprachig, Mockups Deutsch.</li>
-        <li>Lizenz und Zielgruppe: nur privat, oder später HACS-Veröffentlichung? Das beeinflusst Doku und Tests.</li>
+        <li><s>HACS</s> Entschieden: Veröffentlichung über HACS, mit allen Regeln von HACS und hassfest.</li>
         <li>Welche Geräte nutzt du real (Zigbee2MQTT, ZHA, Z-Wave)? Das bestimmt, welche Attribute für Batterie und "zuletzt gesehen" bereitstehen.</li>
       </ul>
     </div>
@@ -469,7 +470,7 @@ monitoring: {battery_pct: 20, offline_h: 12, …}</pre>
       <h2>Umsetzungsplan</h2>
       <div class="scroll"><table>
         <tr><th>Phase</th><th>Inhalt</th><th>Ergebnis</th></tr>
-        <tr><td><b>1 · Kern</b></td><td>Config Flow, <span class="mono">alarm_control_panel</span>, Zustandsautomat mit Ein- und Ausgangsverzögerung, Zonen als Entitäten, Tests.</td><td>Funktionierende Anlage ohne UI-Komfort, Zonen per Dienst setzbar.</td></tr>
+        <tr><td><b>1 · Kern</b></td><td>Config Flow für mehrere Anlagen, je ein Gerät mit <span class="mono">alarm_control_panel</span>, Zustandsautomat mit Ein- und Ausgangsverzögerung, optional Nacht, Zonen als Entitäten, Prüfung HomeKit-Bridge, HACS-Gerüst, Tests.</td><td>Funktionierende Anlage ohne UI-Komfort, Zonen per Dienst setzbar.</td></tr>
         <tr><td><b>2 · Panel</b></td><td>Automatisches Panel, Drag-and-Drop-Zonen, WebSocket-API, Übersicht mit Scharfschalten.</td><td>Einrichtung komplett grafisch.</td></tr>
         <tr><td><b>3 · Szenarien</b></td><td>Szenario-Engine mit Verzögerungen, Gegenaktionen, Wiederherstellung nach Neustart, Editor im Panel.</td><td>Sirene, Rollläden, Medien, Push mit Stopp bei Deaktivierung.</td></tr>
         <tr><td><b>4 · Wartung</b></td><td>Überwachung (Batterie, Offline, Inaktivität), Kacheln nach Bereich, Prognose, Meldungen und Ruhezeiten.</td><td>Wartungsübersicht inklusive Benachrichtigungen.</td></tr>

@@ -11,7 +11,7 @@ eingerichtet in einem automatisch angelegten Seitenpanel.
 ## Bausteine
 
 1. **Sensorgruppen:** zwei feste Zonen "Anwesend" (`armed_home`) und
-   "Abwesend" (`armed_away`). Sensoren per Drag and Drop oder Antippen; ein
+   "Abwesend" (`armed_away`), optional "Nacht" (`armed_night`). Sensoren per Drag and Drop oder Antippen; ein
    Sensor darf in beiden Zonen liegen. Schnellwahl "alle Fenster" usw.
 2. **Wartung:** Kacheln nach Bereich mit Batterie, Verlauf, Prognose der
    Restlaufzeit, letzter Aktivität, "zuletzt gesehen". Geräte mit Hinweis
@@ -48,16 +48,22 @@ eingerichtet in einem automatisch angelegten Seitenpanel.
 - Kritische Meldungen brauchen die Companion-App mit erteilten Rechten;
   Testmeldung beim Einrichten.
 
-## Entschieden
+## Entschieden (Nutzer, 2026-11-08)
 
+- Modus "Nacht" optional, pro Alarmanlage zuschaltbar, standardmässig aus.
+- Mehrere Alarmanlagen pro HA: ein Config Entry pro Anlage, je ein Gerät mit
+  eigener `alarm_control_panel`-Entität.
+- Apple HomeKit ist zentral: jede Anlage muss über die HomeKit-Bridge
+  steuerbar sein. Zu prüfen in Phase 1 im HA-Quellcode und mit Tests: welche
+  Zustände und Funktionen die Bridge abbildet (Anwesend, Abwesend, Nacht,
+  Aus, ausgelöst), wie sie mit Verzögerungen (`arming`, `pending`) umgeht und
+  wie ein Alarmcode in HomeKit hinterlegt wird.
+- Veröffentlichung über HACS, mit allen Regeln (siehe CLAUDE.md, "HACS").
 - Sprache: Integration Englisch, Deutsch wenn HA auf Deutsch läuft. README
   und Release Notes zweisprachig, Mockups Deutsch (Nutzer, 2026-11-08).
 
 ## Offene Fragen
 
-- Nur "Anwesend" und "Abwesend", oder zusätzlich "Nacht"?
-- Mehrere Alarmanlagen pro HA (zum Beispiel Haus und Garage)?
-- Veröffentlichung über HACS geplant?
 - Welche Funktechnik (Zigbee2MQTT, ZHA, Z-Wave)?
 - Ebenen der Einstellungen (Vorschlag: global › Alarmanlage › Bereich ›
   Gerät).
@@ -66,7 +72,7 @@ eingerichtet in einem automatisch angelegten Seitenpanel.
 
 | Phase | Inhalt |
 | --- | --- |
-| 1 · Kern | Config Flow, `alarm_control_panel`, Zustandsautomat mit Ein- und Ausgangsverzögerung, Zonen als Entitäten, Tests |
+| 1 · Kern | Config Flow (mehrere Anlagen), Gerät und `alarm_control_panel` pro Anlage, Zustandsautomat mit Ein- und Ausgangsverzögerung, optional Nacht, Zonen als Entitäten, Prüfung HomeKit-Bridge, HACS-Gerüst (Actions, hacs.json, Brand), Tests |
 | 2 · Panel | Automatisches Panel, Drag-and-Drop-Zonen, WebSocket-API, Übersicht |
 | 3 · Szenarien | Szenario-Engine mit Verzögerungen, Gegenaktionen, Wiederherstellung nach Neustart, Editor |
 | 4 · Wartung | Überwachung, Kacheln nach Bereich, Prognose, Meldungen und Ruhezeiten |

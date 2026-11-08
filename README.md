@@ -8,7 +8,9 @@ Alarm system for Home Assistant with a guided graphical setup and built-in senso
 
 ## Features (planned)
 
-- **Alarm entity:** an `alarm_control_panel` with the modes "Home" and "Away", exit and entry delay.
+- **Alarm entity:** an `alarm_control_panel` with the modes "Home" and "Away", optionally "Night", exit and entry delay.
+- **Several alarm systems:** add as many as you need (for example house and garage). Each one is its own device and entity.
+- **Apple HomeKit:** every alarm system can be passed to Apple Home through the HomeKit Bridge of Home Assistant.
 - **Sensor groups by drag and drop:** a side panel is added automatically. Drag window, door and motion sensors into the zones "Home" and "Away".
 - **Alarm scenarios:** a timeline of actions per zone and mode, for example siren, covers, media players such as Sonos, lights and critical push notifications with actions.
 - **Stop on disarm:** disarming cancels pending steps and stops everything a scenario started.

@@ -8,7 +8,9 @@ Alarmanlage für Home Assistant mit geführter grafischer Einrichtung und eingeb
 
 ## Funktionen (geplant)
 
-- **Alarm-Entität:** ein `alarm_control_panel` mit den Modi "Anwesend" und "Abwesend", Ausgangs- und Eingangsverzögerung.
+- **Alarm-Entität:** ein `alarm_control_panel` mit den Modi "Anwesend" und "Abwesend", optional "Nacht", Ausgangs- und Eingangsverzögerung.
+- **Mehrere Alarmanlagen:** beliebig viele (zum Beispiel Haus und Garage). Jede ist ein eigenes Gerät mit eigener Entität.
+- **Apple HomeKit:** Jede Alarmanlage lässt sich über die HomeKit-Bridge von Home Assistant an Apple Home übergeben.
 - **Sensorgruppen per Drag and Drop:** Ein Seitenpanel wird automatisch angelegt. Fenster-, Tür- und Bewegungssensoren werden in die Zonen "Anwesend" und "Abwesend" gezogen.
 - **Alarmszenarien:** eine Zeitachse von Aktionen pro Zone und Modus, zum Beispiel Sirene, Rollläden, Medienplayer wie Sonos, Licht und kritische Push-Meldungen mit Aktionen.
 - **Stopp beim Deaktivieren:** Deaktivieren bricht ausstehende Schritte ab und stoppt alles, was ein Szenario gestartet hat.

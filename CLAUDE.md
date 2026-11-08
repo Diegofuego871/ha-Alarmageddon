@@ -20,6 +20,21 @@ der Sensoren nach Bereich (Batterie, letzte Aktivität, Prognose) und
 Überwachung nach dem Vorbild von Device Panel. Konzept: `docs/CONCEPT.md`,
 Mockups: `docs/mockups/konzept-v1/`.
 
+Feste Vorgaben des Nutzers (2026-11-08):
+
+- **Mehrere Alarmanlagen pro HA:** ein Config Entry pro Alarmanlage, jede mit
+  eigenem Gerät und eigener `alarm_control_panel`-Entität. Kein
+  `single_config_entry`.
+- **Apple HomeKit ist zentral:** Jede Alarmanlage muss sich über die
+  HomeKit-Bridge von HA übergeben und dort steuern lassen. Zustände,
+  unterstützte Funktionen und Code-Verhalten so wählen, dass HomeKit sie
+  abbildet; Verhalten im HA-Quellcode (`homeassistant/components/homekit`)
+  prüfen und mit Tests absichern, nicht annehmen.
+- **Modus "Nacht" optional:** pro Alarmanlage zuschaltbar (`armed_night`),
+  standardmässig aus. "Anwesend" und "Abwesend" sind immer da.
+- **Veröffentlichung über HACS:** alle Regeln von HACS und hassfest
+  einhalten (siehe "HACS").
+
 ## Sprache (Vorgabe des Nutzers, wörtlich)
 
 > Die Integration soll grundsätzlich English sein, erkennt aber zusätzlich
@@ -87,6 +102,25 @@ Umsetzung:
   global › Alarmanlage › Bereich › Gerät (Wirksam: Gerät > Bereich >
   Alarmanlage > global). Vor der ersten solchen Einstellung mit dem Nutzer
   festlegen.
+
+## HACS
+
+- Öffentliches Repository, genau eine Integration unter
+  `custom_components/alarmageddon/`.
+- `hacs.json` im Root mit `name`, `render_readme`, ehrlicher Mindestversion
+  `homeassistant`.
+- `manifest.json` mit `domain`, `name`, `version`, `documentation`,
+  `issue_tracker`, `codeowners`, `config_flow`, `iot_class`,
+  `integration_type`, `requirements`, `dependencies`/`after_dependencies`
+  für jede importierte Integration.
+- Brand-Bilder lokal unter `custom_components/alarmageddon/brand/`
+  (`icon.png` 256 × 256, `icon@2x.png`, `logo.png`, `logo@2x.png`, Test
+  der Masse), optional PR an home-assistant/brands.
+- GitHub: Beschreibung und Topics (`home-assistant`, `hacs`, `integration`,
+  `home-assistant-custom`), Issues aktiviert.
+- Actions `validate.yml` (HACS-Action und hassfest) und `tests.yml` müssen
+  grün sein; Actions mit fester Commit-Version.
+- Releases als GitHub-Release mit Tag (siehe "Git und Releases").
 
 ## Design-Regeln
 
