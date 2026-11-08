@@ -3,7 +3,7 @@
 Vorschläge für Icon und Logo (Wunsch des Nutzers: zum Beispiel eine
 Polizei-Katze). Jedes Blatt zeigt das Icon gross, in den Grössen, in denen HA
 es zeigt (64, 48, 32, 24 px), als Zeile in der Integrationsliste und als Logo
-mit Schriftzug, je hell und dunkel. **Noch kein Entscheid des Nutzers.**
+mit Schriftzug, je hell und dunkel. **Entscheid des Nutzers (2026-11-08): vorerst bleibt das heutige Logo (D, Schild mit A).** Die Vorschläge bleiben für später hier.
 
 | Bild | Inhalt |
 | --- | --- |

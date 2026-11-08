@@ -67,6 +67,6 @@ aus dem HA-Nachbau prüfen.
 
 ## Offen
 
-- Icon und Logo für Alarmageddon (Brand-Bilder, Push-Bild mit 20 % Rand).
+- Icon und Logo: vorerst bleibt das Schild mit A (Entscheid des Nutzers, 2026-11-08). Vorschläge mit Katze in `docs/mockups/brand-v1`. Ein Push-Bild mit 20 % Rand fehlt noch (kommt mit den Push-Meldungen).
 - Die Konzept-Mockups (`docs/mockups/konzept-v1`) nutzen noch eine eigene
   Farbwelt; die echten Mockups pro Ansicht folgen dieser Datei.
