@@ -3,7 +3,7 @@
 // Dieselben Schlüssel wie der Optionsdialog von HA (WebSocket alarmageddon/save_system). Der Code bleibt im Optionsdialog.
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, MODE_KEY, MODE_ICON, errText } = await import(`./common.js${V}`);
+const { ic, esc, MODE_KEY, MODE_ICON, errText, chapter } = await import(`./common.js${V}`);
 
 const MAX = 3600;
 const ALL_MODES = ["home", "away", "night"];
@@ -91,17 +91,19 @@ export class SystemUi {
     const num = (key, value, min = 0, max = MAX) => `<span class="ag-num ${bad.has(key) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-key="${key}" value="${esc(value)}" aria-label="${esc(key)}"><span class="ag-t2">${esc(this._t("seconds"))}</span></span>`;
     const seg = `<div class="ag-seg small" data-seg="sys-open"><span class="ag-pill"></span>${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
       .map(([v, label]) => `<button data-sys="open" data-value="${v}" class="${d.open_sensors === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
-    const html = `<div class="ag-card ag-setlist">
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysModes"))}</b><small>${esc(this._t("sysModesHint"))}</small>
-          <div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
-          ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysExitDelay"))}</b><small>${esc(this._t("sysExitDelayHint"))}</small></div>
+    const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
+    const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
+          ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
+    const timesRows = `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysExitDelay"))}</b><small>${esc(this._t("sysExitDelayHint"))}</small></div>
           <div class="ag-numgrid">${modes.map((m) => `<label class="ag-numlabel"><span class="ag-t2 ag-small">${esc(this._t(MODE_KEY[m]))}</span>${num(`exit_${m}`, d.exit_delay[m])}</label>`).join("")}</div></div>
         <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysEntryDelay"))}</b><small>${esc(this._t("sysEntryDelayHint"))}</small></div>${num("entry_delay", d.entry_delay)}</div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysTriggerTime"))}</b><small>${esc(this._t("sysTriggerTimeHint"))}</small></div>${num("trigger_time", d.trigger_time)}</div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysOpen"))}</b></div>${seg}</div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysConfirm"))}</b><small>${esc(this._t("sysConfirmHint"))}</small></div>${num("confirm_window", d.confirm_window, 5, 600)}</div>
-        </div>${this._schedulesHtml(modes)}${this._codesHtml()}${this._backupHtml()}`;
+        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysTriggerTime"))}</b><small>${esc(this._t("sysTriggerTimeHint"))}</small></div>${num("trigger_time", d.trigger_time)}</div>`;
+    const behaviourRows = `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysOpen"))}</b></div>${seg}</div>
+        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysConfirm"))}</b><small>${esc(this._t("sysConfirmHint"))}</small></div>${num("confirm_window", d.confirm_window, 5, 600)}</div>`;
+    const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint"))
+      + chapter(this._t("chapTimes"), card(timesRows))
+      + chapter(this._t("chapBehaviour"), card(behaviourRows))
+      + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml();
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
     h._setHtml(form, html);
     h._placePills();
@@ -128,10 +130,10 @@ export class SystemUi {
         <button class="ag-iconbtn" data-sys="sch-del" data-index="${i}" aria-label="${esc(this._t("schDelete"))}">${ic("trash", 18)}</button>
         ${off ? `<small class="ag-warntext ag-schwarn">${ic("alert", 14)} ${esc(this._t("schModeOff"))}</small>` : ""}</div>`;
     }).join("");
-    return `<div class="ag-card ag-setlist ag-codes ag-sched">
-      <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("schTitle"))}</b><small>${esc(this._t("schHint"))}</small></div>
+    return chapter(this._t("schTitle"), `<div class="ag-card ag-setlist ag-codes ag-sched">
+      <div class="ag-setrow"><div class="ag-settx"><small>${esc(this._t("schHint"))}</small></div>
         <button class="ag-btn" data-sys="sch-add">${ic("plus", 18)}${esc(this._t("schAdd"))}</button></div>
-      ${rows || `<div class="ag-coderow ag-t2">${esc(this._t("schEmpty"))}</div>`}</div>`;
+      ${rows || `<div class="ag-coderow ag-t2">${esc(this._t("schEmpty"))}</div>`}</div>`);
   }
 
   // ----- Codes pro Person (sofort gespeichert, nicht Teil des Entwurfs: ein Code soll nie im Panel liegen bleiben) -----
@@ -142,18 +144,18 @@ export class SystemUi {
     const userName = (id) => users.find((u) => u.id === id)?.name;
     const rows = (s.codes || []).map((c) => `<div class="ag-coderow"><span class="ag-mini">${ic("hand", 16)}</span><span class="ag-grow"><b>${esc(c.name)}</b><small class="ag-t2">${esc(userName(c.user_id) || this._t("codeNoUser"))}</small></span>
         <button class="ag-iconbtn" data-sys="code-del" data-id="${esc(c.id)}" aria-label="${esc(`${this._t("remove")}: ${c.name}`)}">${ic("trash", 18)}</button></div>`).join("");
-    return `<div class="ag-card ag-setlist ag-codes">
-      <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysCodes"))}</b><small>${esc(this._t("sysCodesHint"))}</small></div>
+    return chapter(this._t("sysCodes"), `<div class="ag-card ag-setlist ag-codes">
+      <div class="ag-setrow"><div class="ag-settx"><small>${esc(this._t("sysCodesHint"))}</small></div>
         <button class="ag-btn" data-sys="code-add">${ic("plus", 18)}${esc(this._t("codeAdd"))}</button></div>
       ${rows}
       <div class="ag-coderow"><span class="ag-mini">${ic("lockClosed", 16)}</span><span class="ag-grow"><b>${esc(this._t("sysCodeMain"))}</b><small class="ag-t2">${esc(this._t(s.main_code ? "sysCodeMainSet" : "sysCodeMainNone"))}</small></span>
-        <button class="ag-btn" data-sys="code">${ic("cog", 18)}${esc(this._t("sysCodeOpen"))}</button></div></div>`;
+        <button class="ag-btn" data-sys="code">${ic("cog", 18)}${esc(this._t("sysCodeOpen"))}</button></div></div>`);
   }
 
   _backupHtml() {
-    return `<div class="ag-card ag-setlist ag-codes"><div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("bkTitle"))}</b><small>${esc(this._t("bkHint"))}</small></div>
+    return chapter(this._t("bkTitle"), `<div class="ag-card ag-setlist ag-codes"><div class="ag-setrow"><div class="ag-settx"><small>${esc(this._t("bkHint"))}</small></div>
       <div class="ag-btnrow"><button class="ag-btn" data-sys="export">${ic("arrowDown", 18)}${esc(this._t("bkExport"))}</button>
-        <button class="ag-btn" data-sys="import">${ic("arrowUp", 18)}${esc(this._t("bkImport"))}</button><input type="file" accept="application/json,.json" data-sys="import-file" hidden></div></div></div>`;
+        <button class="ag-btn" data-sys="import">${ic("arrowUp", 18)}${esc(this._t("bkImport"))}</button><input type="file" accept="application/json,.json" data-sys="import-file" hidden></div></div></div>`);
   }
 
   async exportBackup() {
@@ -287,6 +289,7 @@ export class SystemUi {
 
   renderFoot() {
     const h = this.host;
+    h._renderDots?.(); // Punkt "ungespeichert" an den Reitern
     const foot = h._view?.querySelector(".ag-foot");
     if (!foot) return;
     const n = this.dirtyCount();

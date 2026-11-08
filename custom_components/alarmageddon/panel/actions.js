@@ -151,6 +151,7 @@ export class ActionsUi {
 
   renderFoot() {
     const h = this.host;
+    h._renderDots?.(); // Punkt "ungespeichert" an den Reitern
     const foot = h._view?.querySelector(".ag-foot");
     if (!foot) return;
     const n = this.dirtyCount();

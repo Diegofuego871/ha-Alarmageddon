@@ -101,3 +101,6 @@ export const TYPES = [
 ];
 export const DEFAULT_PRESETS = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
 export const GONE = new Set(["unavailable", "unknown"]);
+
+// Kapitel in den Einstellungen (wie in Device Panel): Titel mit Strich davor, optional eine Zeile Erklärung, darunter die Karte
+export const chapter = (title, body, hint = "", extra = "") => `<section class="ag-chap ${extra}"><h3 class="ag-chap-t">${esc(title)}</h3>${hint ? `<p class="ag-chap-h">${esc(hint)}</p>` : ""}${body}</section>`;

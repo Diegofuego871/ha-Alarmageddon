@@ -7,7 +7,22 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-11-08
+
+New look of the settings like in Device Panel, and nothing gets lost when you switch tabs.
+
+Includes the changes from 0.7.0.
+
+### Changed
+
+- **Settings in chapters:** every chapter has a title with a bar in front (Configuration › Alarm system: Modes, Times, Behaviour, Schedule, Codes per person, Backup; Updates: Version, Settings).
+- **Tabs slide:** switching between the tabs of the configuration slides the page in from the side.
+- **Nothing gets lost when switching tabs:** each tab keeps its unsaved changes, also when you go to the overview and back. A yellow dot on the tab shows where something is still open; "Cancel" and "Save" stay in each tab. A question only comes where a draft would really be replaced (another alarm system) and when the page is reloaded or closed.
+
 ## [0.7.0] - 2026-11-08
+
+Not released; included in 0.8.0.
+
 
 Updates from the panel, like in Device Panel.
 
@@ -127,6 +142,6 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.7.0
+[0.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.8.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

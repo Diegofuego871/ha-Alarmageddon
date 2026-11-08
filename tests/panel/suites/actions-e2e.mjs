@@ -95,14 +95,18 @@ for (const lang of ["de", "en"]) {
     await s.tap('.ag-wf-head [data-trigger="night"]');
     check(`${tag}: leerer Ablauf mit Hinweis`, await s.waitFor("return !!r.querySelector('.ag-wf-empty') && r.querySelector('[data-wf=\"test\"]').disabled"));
     check(`${tag}: Auslöser gemerkt`, await s.ev("return localStorage.getItem('alarmageddon.trigger') === 'night'"));
-    // Mit Änderung wegklicken fragt nach
+    // Mit Änderung wegklicken verliert nichts: der Ablauf bleibt als Entwurf, ein Punkt am Reiter zeigt es
     await s.tap('.ag-wf-empty [data-wf="add"]');
     await s.tap('#ag-step [data-wf="kind"][data-kind="notify"]');
     await s.tap('#ag-step [data-wf="apply"]');
     await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 1");
     await s.tap('[data-sub="notify"]');
-    check(`${tag}: Verlassen mit Änderung fragt nach`, await s.waitFor("return r.getElementById('ag-discard')?.open"));
-    await s.tap('#ag-discard [data-act="discard"]');
+    check(`${tag}: Wechsel ohne Rückfrage`, await s.waitFor("return !r.getElementById('ag-discard')?.open && !!r.querySelector('.ag-nt')"));
+    check(`${tag}: Punkt am Reiter Aktionen`, await s.ev("return r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit')"));
+    await s.tap('[data-sub="actions"]');
+    check(`${tag}: Entwurf der Aktionen noch da`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 1"));
+    await s.tap('[data-wf="cancel"]');
+    await s.tap('[data-sub="notify"]');
 
     // ----- Benachrichtigungen -----
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target\"]')"));

@@ -82,17 +82,30 @@ for (const lang of ["de", "en"]) {
     const z = saved[0]?.zones || {};
     check(`${tag}: Aufruf save_zones`, saved.length === 1 && saved[0].entry_id === "e_haus" && z.home.includes("binary_sensor.bewegung_garage") && z.home[0] === "binary_sensor.haustuer" && saved[0].entry_sensors.join() === "binary_sensor.haustuer", JSON.stringify(saved));
 
-    // Rückfrage beim Verlassen mit Änderungen
+    // Reiterwechsel verliert nichts: der Entwurf bleibt, ein gelber Punkt zeigt es am Reiter
     await s.tap(box("binary_sensor.fenster_bad", "night"));
     await s.tap('[data-tab="overview"]');
-    check(`${tag}: Rückfrage`, await s.waitFor(`return r.getElementById("ag-discard").open && r.getElementById("ag-discard").innerText.includes(${JSON.stringify(t.discard)})`));
+    check(`${tag}: Wechsel ohne Rückfrage`, await s.waitFor(`return !!r.querySelector('.ag-sys') && !r.getElementById("ag-discard").open`));
+    check(`${tag}: gelber Punkt am Reiter Konfiguration`, await s.ev(`return r.querySelector('[data-tab="config"]').classList.contains('has-edit')`));
+    await s.tap('[data-tab="config"]');
+    check(`${tag}: Entwurf noch da`, await s.waitFor(`return !!r.querySelector('.ag-table') && r.querySelector('${box("binary_sensor.fenster_bad", "night")}').classList.contains('on') && r.querySelector('.ag-foot').innerText.match(/1 (Änderung|change)/)`));
+    // Anderer Unterreiter: Entwurf bleibt, Punkt am Unterreiter "Sensoren"
+    await s.tap('[data-sub="notify"]');
+    check(`${tag}: Punkt am Unterreiter`, await s.waitFor(`return r.querySelector('[data-sub="sensors"]').classList.contains('has-edit')`));
+    await s.tap('[data-sub="sensors"]');
+    check(`${tag}: Entwurf nach Unterreiter noch da`, await s.waitFor(`return r.querySelector('${box("binary_sensor.fenster_bad", "night")}').classList.contains('on')`));
+    // Wechsel der Anlage würde den Entwurf ersetzen: hier fragt es nach
+    await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_garage"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
+    check(`${tag}: Rückfrage beim Wechsel der Anlage`, await s.waitFor(`return r.getElementById("ag-discard").open && r.getElementById("ag-discard").innerText.includes(${JSON.stringify(t.discard)})`));
     check(`${tag}: Fokus auf Weiter bearbeiten`, await s.ev(`return r.activeElement?.dataset.act === "keep"`));
     await s.tap('[data-act="keep"]');
     check(`${tag}: bleibt in Gruppen`, await s.ev(`return !!r.querySelector('.ag-table') && r.querySelector('${box("binary_sensor.fenster_bad", "night")}').classList.contains('on')`));
-    await s.tap('[data-tab="overview"]');
+    await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_garage"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
     await s.waitFor(`return r.getElementById("ag-discard").open`);
     await s.tap('[data-act="discard"]');
-    check(`${tag}: Verwerfen wechselt`, await s.waitFor(`return !!r.querySelector('.ag-sys')`));
+    check(`${tag}: Verwerfen wechselt die Anlage`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 7`));
+    await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_haus"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
+    await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 8`);
 
     // Garage hat keine Nacht: keine Spalte Nacht
     await s.tap('[data-tab="config"]');

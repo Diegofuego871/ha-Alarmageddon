@@ -158,7 +158,13 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   der Grafik. Überholte Antworten verwerfen, geholte Zeiträume kurz
   zwischenspeichern. Nie "Lädt …" als Text oder einen Balken.
 - **Einheitlich speichern:** Änderungen sind ein Entwurf mit "Abbrechen" und
-  "Speichern"; Schliessen mit Änderungen fragt nach.
+  "Speichern". Beim Wechsel zwischen Reitern geht nie etwas verloren: jeder
+  Reiter behält seinen Entwurf, ein gelber Punkt am Reiter zeigt offene
+  Änderungen. Rückfrage nur dort, wo ein Entwurf wirklich ersetzt oder
+  verworfen würde (andere Anlage, Neuladen der Seite).
+- **Kapitel:** Einstellungen stehen in Kapiteln; jedes hat einen Titel mit
+  einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte.
+  Reiter der Konfiguration gleiten beim Wechsel seitlich herein.
 - **Drag and Drop** mit Pointer-Ereignissen am Fenster und Tastatur-Ersatz
   (siehe LEARNINGS); auf Touch zusätzlich Antippen statt Ziehen.
 

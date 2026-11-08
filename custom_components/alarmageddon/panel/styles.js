@@ -358,4 +358,21 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-rn code, .ag-rn pre { background: var(--ag-subtle); border-radius: 6px; font-size: 12.5px; }
 .ag-rn code { padding: 1px 5px; }
 .ag-rn pre { padding: 8px 10px; overflow-x: auto; }
+
+/* 0.8.0: Kapitel wie in Device Panel (Titel mit Strich davor), gleitende Seiten, Punkt "ungespeichert" */
+.ag-chap { margin-top: 22px; }
+.ag-chap:first-child { margin-top: 6px; }
+.ag-chap-t { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; font-size: 17px; font-weight: 600; letter-spacing: .005em; }
+.ag-chap-t::before { content: ""; flex: none; width: 4px; height: 20px; border-radius: 2px; background: var(--ag-primary); }
+.ag-chap-h { margin: -4px 4px 12px; color: var(--ag-text2); font-size: 13.5px; line-height: 1.45; }
+.ag-chap > .ag-card { margin-top: 0; }
+.ag-pane { display: block; }
+.ag-pane.from-right { animation: ag-from-right .24s cubic-bezier(.2,.7,.2,1); }
+.ag-pane.from-left { animation: ag-from-left .24s cubic-bezier(.2,.7,.2,1); }
+@keyframes ag-from-right { from { opacity: 0; transform: translateX(36px); } to { opacity: 1; transform: none; } }
+@keyframes ag-from-left { from { opacity: 0; transform: translateX(-36px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ag-pane.from-right, .ag-pane.from-left { animation: none; } }
+.ag-seg > button.has-edit { position: relative; }
+.ag-seg > button.has-edit::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-warning); box-shadow: 0 0 0 2px var(--ag-subtle); }
+.ag-seg > button.has-edit.has-dot::after { background: var(--ag-warning); }
 `;

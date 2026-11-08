@@ -82,6 +82,13 @@ class AlarmageddonPanel extends HTMLElement {
         this.sensors.render();
       }
     });
+    // Beim Neuladen oder Schliessen der Seite mit offenen Änderungen warnt der Browser
+    this.ownerDocument.defaultView.addEventListener("beforeunload", (ev) => {
+      if ([this.sensors, this.systemUi, this.actions, this.notify, this.updates].some((ui) => ui.dirtyCount() > 0)) {
+        ev.preventDefault();
+        ev.returnValue = "";
+      }
+    });
     this._root.addEventListener("click", (ev) => this._onClick(ev));
     this._root.addEventListener("input", (ev) => this._onInput(ev));
     this._root.addEventListener("change", (ev) => this._onChange(ev));
@@ -272,9 +279,22 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   // Punkt am Reiter "Konfiguration" und am Unterreiter "Updates", wenn es etwas Neues gibt (Update oder Neustart)
+  // und ein anderer Punkt (gelb) an den Reitern mit ungespeicherten Änderungen: nichts geht beim Wechseln verloren, der Punkt zeigt es
   _renderDots() {
     const news = this.updates.hasNews();
-    this._root.querySelector('[data-tab="config"]')?.classList.toggle("has-dot", news);
+    const uis = { sensors: this.sensors, actions: this.actions, notify: this.notify, system: this.systemUi, updates: this.updates };
+    let anyEdit = false;
+    for (const [sub, ui] of Object.entries(uis)) {
+      const edit = ui.dirtyCount() > 0;
+      anyEdit ||= edit;
+      const el = this._root.querySelector(`[data-sub="${sub}"]`);
+      el?.classList.toggle("has-edit", edit);
+      if (edit && el) el.title = this._t("unsavedTab");
+      else el?.removeAttribute("title");
+    }
+    const cfg = this._root.querySelector('[data-tab="config"]');
+    cfg?.classList.toggle("has-dot", news || anyEdit);
+    cfg?.classList.toggle("has-edit", anyEdit);
     this._root.querySelector('[data-sub="updates"]')?.classList.toggle("has-dot", news);
   }
 
@@ -553,7 +573,10 @@ class AlarmageddonPanel extends HTMLElement {
         : "";
       const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
       this._lastHtml.delete(this._view);
-      this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}${pick}</div>${body}`;
+      // Die Seite gleitet von der Seite herein, wenn der Reiter wechselt (nicht bei jedem Neuaufbau)
+      const slide = this._slide || "";
+      this._slide = "";
+      this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}${pick}</div><div class="ag-pane ${slide}">${body}</div>`;
     }
     if (!this._systems().length) return;
     // Nie neu aufbauen, während ein Eingabefeld den Fokus hat (Cursor bliebe nicht stehen)
@@ -649,23 +672,21 @@ class AlarmageddonPanel extends HTMLElement {
     const listEl = ev.target.closest("[data-list]");
     if (listEl && this.list.onClick(listEl)) return;
     const tab = ev.target.closest("[data-tab]");
+    // Reiterwechsel verwirft nie etwas: jeder Reiter behält seinen Entwurf, ein gelber Punkt zeigt, wo noch etwas offen ist.
+    // Rückfrage nur dort, wo ein Entwurf wirklich ersetzt würde (andere Anlage) und beim Neuladen der Seite.
     if (tab && tab.dataset.tab !== this._tab) {
-      this._guard(() => {
-        this._resetConfig();
-        this._tab = tab.dataset.tab;
-        this._savePref("tab", this._tab);
-        this._render();
-      });
+      this._tab = tab.dataset.tab;
+      this._savePref("tab", this._tab);
+      this._render();
       return;
     }
     const sub = ev.target.closest("[data-sub]");
     if (sub && sub.dataset.sub !== this._sub) {
-      this._guard(() => {
-        this._resetConfig();
-        this._sub = sub.dataset.sub;
-        this._savePref("sub", this._sub);
-        this._renderView(true);
-      });
+      const order = SUBS;
+      this._slide = order.indexOf(sub.dataset.sub) > order.indexOf(this._sub) ? "from-right" : "from-left";
+      this._sub = sub.dataset.sub;
+      this._savePref("sub", this._sub);
+      this._renderView(true);
       return;
     }
     const el = ev.target.closest("[data-act]");

@@ -3,7 +3,7 @@
 // installieren) als Entwurf mit "Speichern". Installiert wird nur über die Update-Entität von HACS für dieses Repository.
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, errText, isConnectionError } = await import(`./common.js${V}`);
+const { ic, esc, errText, isConnectionError, chapter } = await import(`./common.js${V}`);
 
 const REPO = "Diegofuego871/ha-Alarmageddon";
 // Link auf dieses Repository, am Host verankert (wie update_check.is_repo_url im Server)
@@ -249,7 +249,7 @@ export class UpdatesUi {
   // ----- Darstellung -----
 
   html() {
-    return `<div class="ag-upd"><div class="ag-ver-slot"></div><div class="ag-upd-set"></div></div><div class="ag-foot"></div>`;
+    return `<div class="ag-upd">${chapter(this._t("updChapVersion"), '<div class="ag-ver-slot"></div>')}<div class="ag-upd-set"></div></div><div class="ag-foot"></div>`;
   }
 
   ensureDraft() {
@@ -357,14 +357,15 @@ export class UpdatesUi {
     const on = (key) => (key === "auto_update" ? d.auto_update && d.check : d[key]);
     const toggle = (key, label, hint, disabled = false) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(label))}</b><small>${esc(this._t(hint))}</small></div>
       <button class="ag-toggle ${on(key) ? "on" : ""}" data-upd="set" data-key="${key}" role="switch" aria-checked="${on(key)}" aria-label="${esc(this._t(label))}" ${disabled ? "disabled" : ""}></button></div>`;
-    this.host._setHtml(box, `<div class="ag-card ag-setlist">
+    this.host._setHtml(box, chapter(this._t("updChapSettings"), `<div class="ag-card ag-setlist">
       ${toggle("check", "updSetCheck", "updSetCheckHint")}
       ${toggle("prerelease", "updSetPre", "updSetPreHint")}
-      ${toggle("auto_update", "updSetAuto", "updSetAutoHint", !d.check)}</div>`);
+      ${toggle("auto_update", "updSetAuto", "updSetAutoHint", !d.check)}</div>`));
   }
 
   renderFoot() {
     const h = this.host;
+    h._renderDots?.(); // Punkt "ungespeichert" an den Reitern
     const foot = h._view?.querySelector(".ag-foot");
     if (!foot) return;
     const n = this.dirtyCount();

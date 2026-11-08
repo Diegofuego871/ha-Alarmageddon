@@ -104,12 +104,15 @@ for (const mobile of [false, true]) {
   check("Anlage: gespeichert", await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')"));
   const sys = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
   check("Anlage: gesendet", sys?.entry_delay === 45 && sys.open_sensors === "bypass" && sys.night_enabled === true, JSON.stringify(sys));
-  // Rückfrage beim Wechsel mit Änderungen
+  // Wechsel mit Änderungen verliert nichts
   await s.tap('[data-sys="mode"][data-mode="night"]');
   await s.tap('[data-sub="sensors"]');
-  check("Anlage: Rückfrage", await s.waitFor(`return r.getElementById("ag-discard").open`));
-  await s.tap('[data-act="discard"]');
-  check("Anlage: verworfen", await s.waitFor("return !!r.querySelector('.ag-table')"));
+  check("Anlage: Wechsel ohne Rückfrage", await s.waitFor("return !!r.querySelector('.ag-table') && !r.getElementById('ag-discard').open"));
+  check("Anlage: Punkt am Reiter", await s.ev("return r.querySelector('[data-sub=\"system\"]').classList.contains('has-edit')"));
+  await s.tap('[data-sub="system"]');
+  check("Anlage: Entwurf noch da", await s.waitFor("return r.querySelector('.ag-foot').innerText.match(/1 (Änderung|change)/) !== null"));
+  await s.tap('[data-sys="cancel"]');
+  check("Anlage: verworfen", await s.waitFor("return !r.querySelector('[data-sub=\"system\"]').classList.contains('has-edit')"));
   check("keine Fehler im Browser", s.errors.length === 0, s.errors.join(" | "));
   await s.ctx.close();
 }

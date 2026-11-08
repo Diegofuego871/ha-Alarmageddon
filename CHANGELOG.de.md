@@ -7,7 +7,22 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.8.0] - 2026-11-08
+
+Neues Aussehen der Einstellungen wie in Device Panel, und beim Reiterwechsel geht nichts verloren.
+
+Enthält die Änderungen aus 0.7.0.
+
+### Geändert
+
+- **Einstellungen in Kapiteln:** jedes Kapitel hat einen Titel mit Strich davor (Konfiguration › Anlage: Modi, Zeiten, Verhalten, Zeitplan, Codes pro Person, Sicherung; Updates: Version, Einstellungen).
+- **Reiter gleiten:** Beim Wechsel zwischen den Reitern der Konfiguration gleitet die Seite von der Seite herein.
+- **Beim Reiterwechsel geht nichts verloren:** Jeder Reiter behält seine ungespeicherten Änderungen, auch wenn du zur Übersicht und zurück gehst. Ein gelber Punkt am Reiter zeigt, wo noch etwas offen ist; "Abbrechen" und "Speichern" bleiben in jedem Reiter. Eine Rückfrage kommt nur dort, wo ein Entwurf wirklich ersetzt würde (andere Alarmanlage) und beim Neuladen oder Schliessen der Seite.
+
 ## [0.7.0] - 2026-11-08
+
+Nicht veröffentlicht; enthalten in 0.8.0.
+
 
 Updates aus dem Panel, wie in Device Panel.
 
@@ -127,6 +142,6 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.7.0
+[0.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.8.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

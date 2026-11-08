@@ -3,6 +3,14 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.8.0, Design und Entwürfe)
+
+- 0.7.0 hat keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.8.0 enthalten.
+- Kapitel: `chapter(title, body, hint)` in `panel/common.js`, CSS `.ag-chap` (Strich vor dem Titel); Anlage und Updates sind umgestellt, Meldungen folgen mit 0.9.0.
+- Seiten gleiten: `.ag-pane` mit `from-right`/`from-left` (`_slide` in `alarmageddon-panel.js`, Richtung nach Reihenfolge `SUBS`).
+- Entwürfe: Reiterwechsel (Unterreiter und Übersicht) verwirft nichts mehr; `_renderDots()` setzt `has-edit` (gelb) an Reiter mit offenen Änderungen, `has-dot` (blau) für Updates. Rückfrage (`_guard`) nur beim Wechsel der Anlage; `beforeunload` warnt beim Neuladen.
+- Geplant, in dieser Reihenfolge: 0.9.0 Meldungen neu (je Art kritisch/Lautstärke, Empfänger als Dropdown mit Pillen) und Sensor-Option "nur melden"; 0.10.0 Einstellungen je Modus; 0.11.0 Aktionen-Editor ohne JSON (Fähigkeiten aus HA), Testknopf je Aktion, Greifer, Medienplayer mit Dropdown und Test auf dem Handy; 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
+
 ## Stand (0.7.0, Updates)
 
 - 0.6.0 ist veröffentlicht (Tag `v0.6.0`, Vorabversion). 0.7.0 ist die Update-Funktion nach dem Vorbild von ha-device-panel (`update_check.py`, `http_limit.py` aus dort, Panel `updates.js`).
