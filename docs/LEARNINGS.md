@@ -11,7 +11,22 @@ zuoberst.
 
 ## Alarmageddon
 
-- (noch keine)
+- **HomeKit-Bridge und Alarmanlage (HA 2026.2, `homekit/type_security_systems.py`):** Apple Home bietet nur an, was
+  `supported_features` meldet (ARM_HOME → "Zuhause", ARM_AWAY → "Abwesend", ARM_NIGHT → "Nacht"; "Aus" und "Alarm"
+  immer). `arming` zeigt HomeKit als "Aus" mit Ziel "Abwesend", auch beim Scharfschalten auf "Anwesend"; darum für
+  "Anwesend" und "Nacht" standardmässig keine Ausgangsverzögerung. `pending` steht in keiner Tabelle der Bridge:
+  Apple Home zeigt weiter den vorigen Zustand ("scharf"). Ein Code kommt nur aus der HomeKit-Konfiguration
+  (`entity_config` → `code`) oder aus dem Standardcode der Entität (Entitätseinstellungen von HA,
+  `code_or_default_code` in der Basisklasse). Ändert sich `supported_features`, baut die Bridge das Zubehör neu.
+- **HomeKit im Test:** Das echte Zubehör braucht die Pakete der Bridge (`requirements_test.txt`) und eine echte
+  `AccessoryIIDStorage` (mit `MagicMock` scheitert die Vergabe der IIDs). Die Bridge übernimmt einen neuen Zustand
+  eine Runde später: nach einer Kette (Sensor → Alarm → Bridge) ein zusätzliches `async_block_till_done()`.
+- **Nicht gemeldete Funktion:** Ruft man einen Dienst auf, dessen Funktion die Entität nicht meldet (zum Beispiel
+  `alarm_arm_night` ohne ARM_NIGHT), lehnt HA ihn selbst ab (`service_not_supported`); die Entität sieht den Aufruf nie.
+- **Eigenschaften, die von Optionen abhängen:** `supported_features`, `code_format` und `code_arm_required` sind in
+  der Basisklasse `cached_property`; als eigene `@property` überschreiben, sonst bleibt der erste Wert stehen.
+- **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
+  Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
 
 ## Aus ha-device-panel und unifi_dynamic
 

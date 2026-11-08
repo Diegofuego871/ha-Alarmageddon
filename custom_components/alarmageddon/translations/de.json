@@ -1,0 +1,141 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Neue Alarmanlage",
+        "description": "Jede Alarmanlage ist ein eigenes Gerät mit eigener Alarm-Entität. Die Sensoren wählst du danach in den Optionen.",
+        "data": {
+          "name": "Name",
+          "night_enabled": "Modus \"Nacht\"",
+          "code": "Code (optional)"
+        },
+        "data_description": {
+          "name": "Zum Beispiel \"Haus\" oder \"Garage\". Gerät und Alarm-Entität bekommen diesen Namen.",
+          "night_enabled": "Ergänzt den Modus \"Nacht\" mit eigener Zone. Standardmässig aus.",
+          "code": "4 bis 8 Ziffern. Nötig zum Deaktivieren. Leer lassen für keinen Code."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Gib einen Namen ein.",
+      "invalid_code_format": "Der Code muss 4 bis 8 Ziffern haben."
+    },
+    "abort": {
+      "already_configured": "Es gibt schon eine Alarmanlage mit diesem Namen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Alarmanlage",
+        "description": "Zonen, Verzögerungen und Verhalten dieser Alarmanlage. Die grafische Einrichtung im Seitenpanel folgt in einer späteren Version.",
+        "sections": {
+          "zones": {
+            "name": "Zonen",
+            "description": "Sensoren, die in jedem Modus überwacht werden. Ein Sensor kann in mehreren Zonen sein.",
+            "data": {
+              "zone_home": "Zone \"Anwesend\"",
+              "zone_away": "Zone \"Abwesend\"",
+              "zone_night": "Zone \"Nacht\""
+            },
+            "data_description": {
+              "zone_home": "Überwacht, wenn anwesend scharf, meist Türen und Fenster.",
+              "zone_away": "Überwacht, wenn abwesend scharf, meist Türen, Fenster und Bewegungsmelder.",
+              "zone_night": "Überwacht, wenn nachts scharf. Nur genutzt, wenn der Modus \"Nacht\" eingeschaltet ist."
+            }
+          },
+          "delays": {
+            "name": "Verzögerungen",
+            "description": "Zeiten in Sekunden.",
+            "data": {
+              "exit_delay_home": "Ausgangsverzögerung \"Anwesend\"",
+              "exit_delay_away": "Ausgangsverzögerung \"Abwesend\"",
+              "exit_delay_night": "Ausgangsverzögerung \"Nacht\"",
+              "entry_delay": "Eingangsverzögerung",
+              "entry_sensors": "Sensoren mit Eingangsverzögerung",
+              "trigger_time": "Alarmdauer"
+            },
+            "data_description": {
+              "exit_delay_home": "Zeit bis zum Scharfschalten. 0 schaltet sofort scharf.",
+              "exit_delay_away": "Zeit, um das Haus zu verlassen, bevor die Anlage scharf ist.",
+              "exit_delay_night": "Zeit bis der Modus \"Nacht\" scharf ist. 0 schaltet sofort scharf.",
+              "entry_delay": "Zeit zum Deaktivieren, nachdem ein Eingangssensor geöffnet wurde.",
+              "entry_sensors": "Zum Beispiel die Haustür. Alle anderen Sensoren lösen sofort aus.",
+              "trigger_time": "Wie lange der Alarm dauert, bevor die Anlage wieder scharf ist. 0 hält den Alarm bis zum Deaktivieren."
+            }
+          },
+          "behaviour": {
+            "name": "Verhalten",
+            "description": "Modi und Scharfschalten.",
+            "data": {
+              "night_enabled": "Modus \"Nacht\"",
+              "open_sensors": "Offener Sensor beim Scharfschalten",
+              "code_arm_required": "Code zum Scharfschalten"
+            },
+            "data_description": {
+              "night_enabled": "Ergänzt den Modus \"Nacht\" mit eigener Zone. Standardmässig aus.",
+              "open_sensors": "Was passiert, wenn beim Scharfschalten ein Sensor der Zone offen ist.",
+              "code_arm_required": "Auch das Scharfschalten verlangt den Code. Nur mit Code möglich."
+            }
+          },
+          "code_section": {
+            "name": "Code",
+            "description": "Der Code wird nur als Hash gespeichert und nie angezeigt.",
+            "data": {
+              "code": "Neuer Code",
+              "remove_code": "Code entfernen"
+            },
+            "data_description": {
+              "code": "4 bis 8 Ziffern. Leer lassen, um den bisherigen Code zu behalten.",
+              "remove_code": "Deaktivieren braucht keinen Code mehr."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "entry_not_in_zone": "Jeder Sensor mit Eingangsverzögerung muss in einer der aktiven Zonen sein.",
+      "invalid_code_format": "Der Code muss 4 bis 8 Ziffern haben.",
+      "code_and_remove": "Gib einen neuen Code ein oder entferne den Code, nicht beides.",
+      "code_missing": "\"Code zum Scharfschalten\" braucht einen Code."
+    }
+  },
+  "selector": {
+    "open_sensors": {
+      "options": {
+        "block": "Scharfschalten verhindern",
+        "bypass": "Offene Sensoren bis zum Deaktivieren umgehen"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "zone_home": {
+        "name": "Zone anwesend"
+      },
+      "zone_away": {
+        "name": "Zone abwesend"
+      },
+      "zone_night": {
+        "name": "Zone Nacht"
+      }
+    }
+  },
+  "exceptions": {
+    "invalid_code": {
+      "message": "Falscher Code."
+    },
+    "code_locked": {
+      "message": "Zu viele falsche Codes. Versuche es in {seconds} Sekunden wieder."
+    },
+    "open_sensors": {
+      "message": "Scharfschalten nicht möglich, offene Sensoren: {sensors}."
+    },
+    "disarm_first": {
+      "message": "Deaktiviere die Alarmanlage zuerst."
+    },
+    "mode_not_enabled": {
+      "message": "Der Modus \"{mode}\" ist für diese Alarmanlage nicht eingeschaltet."
+    }
+  }
+}

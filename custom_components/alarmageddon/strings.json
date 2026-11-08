@@ -1,0 +1,141 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "New alarm system",
+        "description": "Each alarm system is its own device with its own alarm entity. You choose the sensors afterwards in the options.",
+        "data": {
+          "name": "Name",
+          "night_enabled": "Night mode",
+          "code": "Code (optional)"
+        },
+        "data_description": {
+          "name": "For example \"House\" or \"Garage\". The device and the alarm entity get this name.",
+          "night_enabled": "Adds the mode \"Night\" with its own zone. Off by default.",
+          "code": "4 to 8 digits. Needed to disarm. Leave empty for no code."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Enter a name.",
+      "invalid_code_format": "The code must have 4 to 8 digits."
+    },
+    "abort": {
+      "already_configured": "An alarm system with this name already exists."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Alarm system",
+        "description": "Zones, delays and behaviour of this alarm system. The graphical setup in the side panel follows in a later version.",
+        "sections": {
+          "zones": {
+            "name": "Zones",
+            "description": "Sensors watched in each mode. A sensor can be in several zones.",
+            "data": {
+              "zone_home": "Zone \"Home\"",
+              "zone_away": "Zone \"Away\"",
+              "zone_night": "Zone \"Night\""
+            },
+            "data_description": {
+              "zone_home": "Watched when armed home, usually doors and windows.",
+              "zone_away": "Watched when armed away, usually doors, windows and motion sensors.",
+              "zone_night": "Watched when armed night. Only used when night mode is on."
+            }
+          },
+          "delays": {
+            "name": "Delays",
+            "description": "Times in seconds.",
+            "data": {
+              "exit_delay_home": "Exit delay \"Home\"",
+              "exit_delay_away": "Exit delay \"Away\"",
+              "exit_delay_night": "Exit delay \"Night\"",
+              "entry_delay": "Entry delay",
+              "entry_sensors": "Sensors with entry delay",
+              "trigger_time": "Alarm duration"
+            },
+            "data_description": {
+              "exit_delay_home": "Time to leave before the alarm system is armed. 0 arms at once.",
+              "exit_delay_away": "Time to leave the house before the alarm system is armed.",
+              "exit_delay_night": "Time before night mode is armed. 0 arms at once.",
+              "entry_delay": "Time to disarm after an entry sensor opens.",
+              "entry_sensors": "For example the front door. All other sensors trigger the alarm at once.",
+              "trigger_time": "How long the alarm lasts before the alarm system returns to armed. 0 keeps the alarm until disarmed."
+            }
+          },
+          "behaviour": {
+            "name": "Behaviour",
+            "description": "Modes and arming.",
+            "data": {
+              "night_enabled": "Night mode",
+              "open_sensors": "Open sensor when arming",
+              "code_arm_required": "Code required to arm"
+            },
+            "data_description": {
+              "night_enabled": "Adds the mode \"Night\" with its own zone. Off by default.",
+              "open_sensors": "What happens if a sensor of the zone is open when arming.",
+              "code_arm_required": "Arming also asks for the code. Only possible with a code."
+            }
+          },
+          "code_section": {
+            "name": "Code",
+            "description": "The code is stored only as a hash and never shown.",
+            "data": {
+              "code": "New code",
+              "remove_code": "Remove code"
+            },
+            "data_description": {
+              "code": "4 to 8 digits. Leave empty to keep the current code.",
+              "remove_code": "Disarming no longer needs a code."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "entry_not_in_zone": "Every sensor with entry delay must be in one of the active zones.",
+      "invalid_code_format": "The code must have 4 to 8 digits.",
+      "code_and_remove": "Enter a new code or remove the code, not both.",
+      "code_missing": "\"Code required to arm\" needs a code."
+    }
+  },
+  "selector": {
+    "open_sensors": {
+      "options": {
+        "block": "Block arming",
+        "bypass": "Bypass open sensors until disarmed"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "zone_home": {
+        "name": "Zone home"
+      },
+      "zone_away": {
+        "name": "Zone away"
+      },
+      "zone_night": {
+        "name": "Zone night"
+      }
+    }
+  },
+  "exceptions": {
+    "invalid_code": {
+      "message": "Wrong code."
+    },
+    "code_locked": {
+      "message": "Too many wrong codes. Try again in {seconds} seconds."
+    },
+    "open_sensors": {
+      "message": "Cannot arm: open sensors: {sensors}."
+    },
+    "disarm_first": {
+      "message": "Disarm the alarm system first."
+    },
+    "mode_not_enabled": {
+      "message": "The mode \"{mode}\" is not enabled for this alarm system."
+    }
+  }
+}

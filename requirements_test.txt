@@ -1,0 +1,11 @@
+# Feste Versionen: ein neuer Release ändert die Home-Assistant-Version unter den Tests nicht unbemerkt.
+# Zum Aktualisieren die Nummern anheben und die Tests laufen lassen.
+pytest-homeassistant-custom-component==0.13.316
+pyflakes==4.1.0
+# HomeKit-Bridge im Test (tests/test_homekit.py), Versionen aus homekit/manifest.json und den Abhängigkeiten
+HAP-python==5.0.0
+fnv-hash-fast==1.6.0
+PyQRCode==1.2.1
+base36==0.1.1
+PyTurboJPEG==1.8.0
+ha-ffmpeg==3.2.2

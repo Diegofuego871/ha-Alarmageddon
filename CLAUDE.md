@@ -222,7 +222,7 @@ Gelten, sobald der jeweilige Teil existiert:
   (`node --check` allein findet in Modulen keine Syntaxfehler)
 - kein "ß" in Code, Texten, README, CHANGELOG
 - README und CHANGELOG EN/DE gleich aufgebaut (Test)
-- `python -m pytest` (Python 3.13, `pytest-homeassistant-custom-component`)
+- `python -m pytest` (Python 3.13, `pip install -r requirements_test.txt`)
 - Panel-Tests mit HA-Nachbau und Playwright, je Sprache, Desktop und Handy
   (390 × 844), echte Klicks/Taps.
 

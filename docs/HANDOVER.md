@@ -3,25 +3,28 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
-## Stand (2026-11-08, Konzeptphase, noch kein Code)
+## Stand (0.1.0, Phase 1: Kern)
+
+- `custom_components/alarmageddon/`: `controller.py` (Zustandsautomat, Zeitgeber über `async_track_point_in_utc_time` mit `@callback`-Methoden, Sensorüberwachung, Code mit Sperre, Wiederherstellung), `alarm_control_panel.py` (Entität mit `RestoreEntity`, Zusatzdaten `mode`, `deadline`, `bypassed`, `triggered_by`, `changed_by`), `binary_sensor.py` (eine Entität pro Zone), `config_flow.py` (Anlegen: Name, Nacht, Code; Optionen in vier Abschnitten als Übergang bis zum Panel), `code.py` (PBKDF2, Vergleich in konstanter Zeit).
+- Optionen-Schlüssel (das Panel schreibt in Phase 2 dieselben): `zone_home/away/night`, `entry_sensors`, `exit_delay_home/away/night`, `entry_delay`, `trigger_time`, `night_enabled`, `open_sensors` (`block`/`bypass`), `code_arm_required`, `code_hash`, `code_salt`.
+- Neuladen bei jeder Optionsänderung; der Zustand übersteht das über `RestoreEntity` (Test `test_options_change_keeps_state`). "Nacht" aus entfernt die Zonen-Entität aus der Registry.
+- HomeKit: echtes Zubehör `SecuritySystem` im Test (`tests/test_homekit.py`, Pakete in `requirements_test.txt`). Befunde in LEARNINGS.
+- Brand: `docs/brand/icon.svg`, `logo.svg`, `render.mjs` → `custom_components/alarmageddon/brand/`. Erster Vorschlag, noch nicht vom Nutzer bestätigt.
+- Nicht im echten HA geprüft (nur pytest mit echtem HA-Kern). Offen für die Prüfung im echten HA: Optionsdialog mit Abschnitten in der Oberfläche, HomeKit mit echtem iPhone.
+- Tests: `pip install -r requirements_test.txt`, dann `python -m pytest`.
+
+## Stand (2026-11-08, Konzeptphase)
 
 - Konzept mit bedienbaren Mockups: `docs/mockups/konzept-v1/konzept.html`
   (Bilder im selben Ordner), Zusammenfassung in `docs/CONCEPT.md`.
 - Regeln aus ha-device-panel übernommen: `CLAUDE.md`, `docs/LEARNINGS.md`,
   `docs/DESIGN.md`, Skill `.claude/skills/apple-design`,
   `.github/scripts/changelog_section.py` (mit Deutsch-Option).
-- Noch nicht übernommen, weil es Code voraussetzt: GitHub Actions
-  (`validate.yml` mit HACS und hassfest, `tests.yml`), `pytest.ini`,
-  `hacs.json`, `tests/test_translations.py`. Kommen mit Phase 1, als Kopie
-  aus ha-device-panel (feste Versionen der Actions und der Test-Bibliothek).
+- GitHub Actions, `pytest.ini`, `hacs.json` und Tests der Übersetzungen kamen mit 0.1.0.
 
 ## Nächste Schritte
 
-1. Phase 1: Kern (Config Flow für mehrere Anlagen, je ein Gerät mit
-   `alarm_control_panel`, Zustandsautomat mit Verzögerungen, optional
-   Nacht, Zonen als Entitäten, Prüfung HomeKit-Bridge, HACS-Gerüst, Tests),
-   Version 0.1.0.
-2. Phase 2: Panel mit Drag and Drop. Vorher Mockups pro Ansicht im Design
+1. Phase 2: Panel mit Drag and Drop. Vorher Mockups pro Ansicht im Design
    von ha-device-panel (Varianten mit Empfehlung).
 
 ## Zweisprachigkeit EN/DE (verbindlich)
