@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.3.0). Alarm core, side panel with overview, sensor list and configuration work. Alarm actions, notifications and maintenance follow in later versions.
+> **Status:** early pre-release (0.4.0). Alarm core, side panel, alarm actions and notifications work. Maintenance notifications and battery prognosis follow in a later version.
 
 ## Features
 
@@ -20,8 +20,10 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (delays, night mode, behaviour for open sensors). On the phone as cards and sheets from the bottom.
 - **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm. Defaults per sensor type, own values per sensor.
 - **Ready to arm:** one entity per mode with the blocking sensors.
+- **Alarm actions:** a graphical workflow per alarm: push notification, switch devices, covers, alarm sound on media players (Sonos and others), wait, script, any action. Devices return to their previous state after the alarm.
+- **Notifications:** critical push notifications with volume, recipients separately for alarms and maintenance, selectable events.
 
-Planned: alarm actions (siren, covers, media players, critical push notifications with actions), maintenance overview and monitoring.
+Planned: maintenance notifications (low battery, unreachable) and battery prognosis.
 
 ## Installation
 
@@ -42,6 +44,34 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
    - **Code:** set a new code or remove it.
 
 Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not trigger.
+
+## Alarm actions
+
+Side panel › Configuration › Actions. Choose the alarm system and the alarm ("Home", "Away", "Night" or "always active" for smoke, water and gas), then add steps with "+":
+
+| Step | Does |
+| --- | --- |
+| Push notification | Alarm notification to the alarm recipients (see Notifications) |
+| Turn on / Turn off | Sirens, switches, lights, fans, helpers |
+| Open / close covers | Covers |
+| Alarm sound | Plays one of five sounds on media players with volume and repetitions |
+| Wait | Pauses the following steps |
+| Script | Runs a script |
+| Own action | Any Home Assistant action with target and data (JSON) |
+
+- **Back to the previous state:** devices with the arrow symbol return to their state before the alarm when you disarm or the alarm duration ends (on/off, brightness, position, volume, source; Sonos with its own snapshot including groups). On by default for alarm sounds.
+- **Disarming stops everything,** also after a restart of Home Assistant in the middle of an alarm. A failing step does not stop the other steps.
+- **Test** runs the saved workflow without alarm and stops after 60 seconds at the latest.
+- **Media players** fetch the sounds from Home Assistant (`/alarmageddon_sounds/…`). The player must reach the local URL of Home Assistant (Settings → System → Network).
+
+## Notifications
+
+Side panel › Configuration › Notifications, for all alarm systems:
+
+- **Recipients** separately for alarms and maintenance notifications: every `notify` service, for example `notify.mobile_app_<phone>` of the companion app.
+- **Critical alarm notification:** sounds in silent mode and do not disturb. iOS uses the volume set here, Android the alarm channel (`alarm_stream`).
+- **Events:** alarm, entry delay, armed, disarmed, arming not possible, sensor unreachable while armed.
+- **"Disarm" button in the notification:** off by default. iOS asks for Face ID or the passcode, Android does not: anyone holding the unlocked phone can disarm.
 
 ## Apple HomeKit
 

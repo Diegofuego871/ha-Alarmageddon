@@ -51,7 +51,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 2  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 3  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -112,3 +112,32 @@ DEFAULT_PRESETS: Final = {
 # Globale Einstellungen (für alle Anlagen gleich)
 SETTINGS_STORE_KEY: Final = f"{DOMAIN}.settings"
 DATA_SETTINGS: Final = f"{DOMAIN}_settings"
+
+# Benachrichtigungen (0.4.0, global). Empfänger als Dienste "notify.<name>", getrennt für Alarm und Wartung.
+DEFAULT_NOTIFY: Final = {
+    "alarm_targets": [],
+    "maintenance_targets": [],
+    "critical": True,
+    "volume": 0.8,  # Lautstärke der kritischen Meldung (iOS), 0 bis 1
+    "events": {"triggered": True, "pending": False, "armed": False, "disarmed": False, "arm_failed": True, "sensor_offline": True},
+    # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
+    "disarm_action": False,
+}
+NOTIFY_EVENTS: Final = ("triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline")
+PUSH_ACTION_DISARM: Final = "ALARMAGEDDON_DISARM_"  # + entry_id
+PUSH_ACTION_OPEN: Final = "ALARMAGEDDON_OPEN"
+
+# Aktionen als Ablauf (0.4.0): pro Anlage und Auslöser eine Liste von Schritten (CONF_WORKFLOWS[auslöser])
+CONF_WORKFLOWS: Final = "workflows"
+WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor bei deaktivierter Anlage
+WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
+STEP_TYPES: Final = ("notify", "action", "wait", "sound")
+WORKFLOW_STORE_KEY: Final = f"{DOMAIN}.workflow"
+TEST_SECONDS: Final = 60  # ein Test endet spätestens nach so vielen Sekunden von selbst
+MAX_STEPS: Final = 40
+# Mitgelieferte Töne: Name und Länge in Sekunden (scripts/make_sounds.py)
+SOUNDS: Final = {"siren": 4.0, "beep": 3.0, "klaxon": 3.0, "warning": 2.0, "chime": 2.0}
+SOUNDS_URL_PATH: Final = "/alarmageddon_sounds"
+DATA_SOUNDS: Final = f"{DOMAIN}_sounds_registered"
+# Domänen, deren Zustand vor dem Alarm gespeichert und beim Deaktivieren wiederhergestellt werden kann
+RESTORABLE_DOMAINS: Final = ("switch", "light", "input_boolean", "fan", "siren", "cover", "media_player")

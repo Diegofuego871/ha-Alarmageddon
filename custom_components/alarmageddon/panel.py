@@ -10,6 +10,8 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DATA_PANEL,
+    DATA_SOUNDS,
+    SOUNDS_URL_PATH,
     DATA_STATIC,
     PANEL_DIR,
     PANEL_HTML_FILE,
@@ -35,6 +37,11 @@ async def async_register_panel(hass: HomeAssistant) -> None:
         panel_dir = Path(__file__).parent / PANEL_DIR
         await hass.http.async_register_static_paths([StaticPathConfig(PANEL_STATIC_URL_PATH, str(panel_dir), True)])
         hass.data[DATA_STATIC] = True
+    if not hass.data.get(DATA_SOUNDS):
+        # Alarmtöne ohne Anmeldung: Medienplayer (Sonos & Co.) holen die Datei selbst und haben kein Token
+        sounds_dir = Path(__file__).parent / "sounds"
+        await hass.http.async_register_static_paths([StaticPathConfig(SOUNDS_URL_PATH, str(sounds_dir), True)])
+        hass.data[DATA_SOUNDS] = True
     frontend.async_register_built_in_panel(
         hass,
         component_name="iframe",

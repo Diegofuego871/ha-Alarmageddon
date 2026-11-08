@@ -11,6 +11,9 @@ const { ic, esc, MODE_ICON, MODE_KEY, ARMED, DC, GONE, POLL_MS, WS_TIMEOUT_MS, e
 const { ListUi } = await import(`./list.js${V}`);
 const { SensorsUi } = await import(`./sensors.js${V}`);
 const { SystemUi } = await import(`./system.js${V}`);
+const { ActionsUi } = await import(`./actions.js${V}`);
+const { NotifyUi } = await import(`./notify.js${V}`);
+const SUBS = ["sensors", "actions", "notify", "system"];
 
 class AlarmageddonPanel extends HTMLElement {
   constructor() {
@@ -21,7 +24,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._tab = this._loadPref("tab", "overview");
     if (!["overview", "config"].includes(this._tab)) this._tab = "overview";
     this._sub = this._loadPref("sub", "sensors");
-    if (!["sensors", "system"].includes(this._sub)) this._sub = "sensors";
+    if (!SUBS.includes(this._sub)) this._sub = "sensors";
     this._sel = this._loadPref("system", null);
     this._fetchSeq = 0;
     this._sig = "";
@@ -29,6 +32,13 @@ class AlarmageddonPanel extends HTMLElement {
     this.list = new ListUi(this);
     this.sensors = new SensorsUi(this);
     this.systemUi = new SystemUi(this);
+    this.actions = new ActionsUi(this);
+    this.notify = new NotifyUi(this);
+  }
+
+  // Ansicht des gewählten Reiters unter Konfiguration
+  get _cfgUi() {
+    return { sensors: this.sensors, system: this.systemUi, actions: this.actions, notify: this.notify }[this._sub];
   }
 
   // ----- Lebenszyklus -----
@@ -57,7 +67,8 @@ class AlarmageddonPanel extends HTMLElement {
   _init() {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
       <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
-      <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog></div>`;
+      <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
+      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
     // Wie auch immer der Code-Dialog schliesst (Abbrechen, Escape, Erfolg): Auswahl wieder nach dem echten Zustand
     this._root.getElementById("ag-code").addEventListener("close", () => this._renderTop(true));
@@ -136,8 +147,7 @@ class AlarmageddonPanel extends HTMLElement {
       this._data = data;
       this._connError = false;
       if (!this._systems().some((s) => s.entry_id === this._sel)) this._sel = this._systems()[0]?.entry_id || null;
-      if (!this.sensors.dirtyCount()) this.sensors.draft = null;
-      if (!this.systemUi.dirtyCount()) this.systemUi.draft = null;
+      for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) if (!ui.dirtyCount()) ui.draft = null;
       this._sig = this._stateSig();
       // Erstes Laden: alles; danach nur die Ansicht, damit Suchfeld und Fokus bleiben
       if (!this._loaded || !this._view) {
@@ -487,26 +497,29 @@ class AlarmageddonPanel extends HTMLElement {
   _renderConfig(full) {
     const narrow = this.hasAttribute("narrow");
     if (full || !this._view.querySelector(".ag-cfg")) {
-      const subs = this._segHtml("sub", [["sensors", this._t("subSensors")], ["system", this._t("subSystem")]], this._sub, "data-sub", "small");
+      const label = (key) => this._t(narrow ? `${key}Short` : key);
+      const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")]], this._sub, "data-sub", "small ag-subs");
       const systems = this._systems();
-      const pick = systems.length > 1
+      // Benachrichtigungen gelten für alle Anlagen: dort keine Auswahl der Anlage
+      const pick = systems.length > 1 && this._sub !== "notify"
         ? `<select class="ag-select" data-act="system" aria-label="${esc(this._t("groupsSystem"))}">${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this._sel ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>`
         : "";
-      const body = !systems.length ? this._emptyHtml() : this._sub === "system" ? this.systemUi.html() : this.sensors.html();
+      const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
       this._lastHtml.delete(this._view);
       this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}${pick}</div>${body}`;
     }
     if (!this._systems().length) return;
-    if (this._sub === "system") {
-      // Nie neu aufbauen, während ein Zahlenfeld den Fokus hat (Cursor bliebe nicht stehen)
-      if (full || !this._view.querySelector(".ag-sys-form")?.contains(this._root.activeElement)) this.systemUi.render();
-    } else {
-      this.sensors.render();
-    }
+    // Nie neu aufbauen, während ein Eingabefeld den Fokus hat (Cursor bliebe nicht stehen)
+    const focused = this._root.activeElement && this._view.contains(this._root.activeElement) && /INPUT|TEXTAREA/.test(this._root.activeElement.tagName);
+    if (full || !focused || this._sub === "sensors") this._cfgUi.render();
+  }
+
+  _resetConfig() {
+    for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) ui.reset();
   }
 
   _dirty() {
-    return this._tab === "config" && (this.sensors.dirtyCount() > 0 || this.systemUi.dirtyCount() > 0);
+    return this._tab === "config" && [this.sensors, this.systemUi, this.actions, this.notify].some((ui) => ui.dirtyCount() > 0);
   }
 
   // Rückfrage vor dem Verlassen mit offenen Änderungen (Einheitlich speichern)
@@ -583,13 +596,14 @@ class AlarmageddonPanel extends HTMLElement {
   _onClick(ev) {
     if (this._tab === "config" && this._sub === "sensors" && this.sensors.onClick(ev.target.closest("[data-sen]"), ev)) return;
     if (this._tab === "config" && this._sub === "system" && this.systemUi.onClick(ev.target.closest("[data-sys]"))) return;
+    if (this._tab === "config" && this._sub === "actions" && this.actions.onClick(ev.target.closest("[data-wf], [data-trigger]"))) return;
+    if (this._tab === "config" && this._sub === "notify" && this.notify.onClick(ev.target.closest("[data-nt]"))) return;
     const listEl = ev.target.closest("[data-list]");
     if (listEl && this.list.onClick(listEl)) return;
     const tab = ev.target.closest("[data-tab]");
     if (tab && tab.dataset.tab !== this._tab) {
       this._guard(() => {
-        this.sensors.reset();
-        this.systemUi.reset();
+        this._resetConfig();
         this._tab = tab.dataset.tab;
         this._savePref("tab", this._tab);
         this._render();
@@ -599,8 +613,7 @@ class AlarmageddonPanel extends HTMLElement {
     const sub = ev.target.closest("[data-sub]");
     if (sub && sub.dataset.sub !== this._sub) {
       this._guard(() => {
-        this.sensors.reset();
-        this.systemUi.reset();
+        this._resetConfig();
         this._sub = sub.dataset.sub;
         this._savePref("sub", this._sub);
         this._renderView(true);
@@ -629,8 +642,7 @@ class AlarmageddonPanel extends HTMLElement {
       this._closeDialog("ag-discard");
     } else if (act === "discard") {
       this._closeDialog("ag-discard");
-      this.sensors.reset();
-      this.systemUi.reset();
+      this._resetConfig();
       const action = this._pending;
       this._pending = null;
       action?.();
@@ -642,6 +654,8 @@ class AlarmageddonPanel extends HTMLElement {
     if (this.list.onInput(el)) return;
     if (this._tab === "config" && this._sub === "sensors" && this.sensors.onInput(el)) return;
     if (this._tab === "config" && this._sub === "system") this.systemUi.onInput(el);
+    if (this._tab === "config" && this._sub === "actions") this.actions.onInput(el);
+    if (this._tab === "config" && this._sub === "notify") this.notify.onInput(el);
   }
 
   _onChange(ev) {
@@ -653,8 +667,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._guard(() => {
       this._sel = value;
       this._savePref("system", value);
-      this.sensors.reset();
-      this.systemUi.reset();
+      this._resetConfig();
       this._renderView(true);
     });
   }

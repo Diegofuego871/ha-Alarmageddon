@@ -7,13 +7,16 @@ import { fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const panelDir = join(here, "..", "..", "custom_components", "alarmageddon", "panel");
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png", ".svg": "image/svg+xml" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png", ".svg": "image/svg+xml", ".wav": "audio/wav" };
 const PREFIX = "/alarmageddon_panel/";
+const SOUNDS = "/alarmageddon_sounds/";
+const soundsDir = join(here, "..", "..", "custom_components", "alarmageddon", "sounds");
 
 function resolve(url) {
   const path = decodeURIComponent(new URL(url, "http://x").pathname);
   if (path.includes("..")) return null;
   if (path.startsWith(PREFIX)) return join(panelDir, path.slice(PREFIX.length));
+  if (path.startsWith(SOUNDS)) return join(soundsDir, path.slice(SOUNDS.length));
   return join(here, "sim", normalize(path === "/" ? "/ha-sim.html" : path));
 }
 

@@ -374,6 +374,7 @@ class AlarmController:
         bypassed: set[str] = set()
         if open_now:
             if self.options.get(CONF_OPEN_SENSORS, DEFAULT_OPEN_SENSORS) != OPEN_BYPASS:
+                self._emit("arm_failed", mode=mode, sensors=list(open_now))
                 raise _error("open_sensors", sensors=", ".join(self._name(e) for e in open_now))
             bypassed = set(open_now)
         self._cancel_timer()
@@ -389,8 +390,9 @@ class AlarmController:
         else:
             self._go_armed()
 
-    async def async_disarm(self, code: str | None, changed_by: str | None = None) -> None:
-        if self.has_code:
+    async def async_disarm(self, code: str | None, changed_by: str | None = None, skip_code: bool = False) -> None:
+        # skip_code nur für die Push-Aktion "Deaktivieren", die der Nutzer ausdrücklich eingeschaltet hat
+        if self.has_code and not skip_code:
             await self._async_check_code(code)
         self._cancel_timer()
         self.mode = None

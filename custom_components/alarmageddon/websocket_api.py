@@ -18,6 +18,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_integrations
@@ -30,7 +31,13 @@ from .const import (
     CONF_OPEN_SENSORS,
     CONF_SENSOR_OPTIONS,
     CONF_TRIGGER_TIME,
+    CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
+    MAX_STEPS,
+    NOTIFY_EVENTS,
+    SOUNDS,
+    SOUNDS_URL_PATH,
+    WORKFLOW_TRIGGERS,
     DOMAIN,
     MAX_DELAY,
     MODES,
@@ -56,6 +63,11 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_arm)
     websocket_api.async_register_command(hass, ws_save_presets)
     websocket_api.async_register_command(hass, ws_save_system)
+    websocket_api.async_register_command(hass, ws_save_notify)
+    websocket_api.async_register_command(hass, ws_test_notify)
+    websocket_api.async_register_command(hass, ws_save_workflows)
+    websocket_api.async_register_command(hass, ws_test_workflow)
+    websocket_api.async_register_command(hass, ws_stop_workflow)
 
 
 def _entry(hass: HomeAssistant, connection, msg: dict[str, Any]) -> ConfigEntry | None:
@@ -150,6 +162,9 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "open_sensors": entry.options.get(CONF_OPEN_SENSORS, "block"),
                 "night_enabled": ctl.night_enabled,
                 "sensor_options": ctl.sensor_overrides,
+                "workflows": entry.options.get(CONF_WORKFLOWS) or {},
+                "workflow_running": (entry.runtime_data.workflow.running or {}).get("trigger") if entry.runtime_data.workflow else None,
+                "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
                 "has_code": ctl.has_code,
                 "code_arm_required": ctl.code_arm_required,
                 "events": entry.runtime_data.events.events[:20],
@@ -163,7 +178,15 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     for info in sensors.values():
         info["integration"] = names.get(info["platform"], info["platform"])
     settings = await async_get_settings(hass)
-    connection.send_result(msg["id"], {"systems": systems, "sensors": sensors, "presets": settings.presets})
+    notify_services = sorted(f"notify.{name}" for name in hass.services.async_services().get("notify", {}) if name not in ("notify", "send_message", "persistent_notification"))
+    connection.send_result(msg["id"], {
+        "systems": systems,
+        "sensors": sensors,
+        "presets": settings.presets,
+        "notify": settings.notify,
+        "notify_services": notify_services,
+        "sounds": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in SOUNDS.items()],
+    })
 
 
 @websocket_api.websocket_command(
@@ -281,4 +304,122 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         if key in msg:
             options[conf] = msg[key]
     hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/save_notify",
+        vol.Required("notify"): {
+            vol.Optional("alarm_targets"): [str],
+            vol.Optional("maintenance_targets"): [str],
+            vol.Optional("critical"): bool,
+            vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+            vol.Optional("events"): {vol.In(NOTIFY_EVENTS): bool},
+            vol.Optional("disarm_action"): bool,
+        },
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_save_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Benachrichtigungen, für alle Anlagen gleich."""
+    settings = await async_get_settings(hass)
+    await settings.async_set_notify({**settings.notify, **msg["notify"]})
+    connection.send_result(msg["id"], {"notify": settings.notify})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/test_notify", vol.Required("group"): vol.In(["alarm", "maintenance"])}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Testmeldung an die Empfänger einer Gruppe (Alarm kritisch, wenn eingeschaltet)."""
+    entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
+    if not entries:
+        connection.send_error(msg["id"], "not_found", "No alarm system")
+        return
+    targets = entries[0].runtime_data.notifier.send_test(msg["group"])
+    connection.send_result(msg["id"], {"targets": targets})
+
+
+_ENTITY_LIST = [cv.entity_id]
+STEP_SCHEMAS = {
+    "notify": vol.Schema({vol.Required("type"): "notify"}),
+    "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
+    "action": vol.Schema({
+        vol.Required("type"): "action",
+        vol.Required("action"): cv.service,
+        vol.Optional("target", default=[]): _ENTITY_LIST,
+        vol.Optional("data", default={}): dict,
+        vol.Optional("restore", default=False): bool,
+    }),
+    "sound": vol.Schema({
+        vol.Required("type"): "sound",
+        vol.Required("players"): vol.All(_ENTITY_LIST, vol.Length(min=1)),
+        vol.Required("sound"): vol.In(list(SOUNDS)),
+        vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
+        vol.Optional("repeat", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=50)),
+        vol.Optional("restore", default=True): bool,
+    }),
+}
+
+
+def _valid_step(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or value.get("type") not in STEP_SCHEMAS:
+        raise vol.Invalid("unknown step type")
+    return STEP_SCHEMAS[value["type"]](value)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/save_workflows",
+        vol.Required("entry_id"): str,
+        vol.Required("workflows"): {vol.In(WORKFLOW_TRIGGERS): vol.All([_valid_step], vol.Length(max=MAX_STEPS))},
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Abläufe einer Anlage. Laden neu (wie alle Optionen); ein laufender Alarm geht weiter."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    options = dict(entry.options)
+    options[CONF_WORKFLOWS] = {k: v for k, v in msg["workflows"].items() if v}
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/test_workflow", vol.Required("entry_id"): str, vol.Required("trigger"): vol.In(WORKFLOW_TRIGGERS)}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_test_workflow(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Gespeicherten Ablauf testen, ohne Alarm. Endet von selbst nach TEST_SECONDS oder mit stop_workflow."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    runner = entry.runtime_data.workflow
+    if runner.running:
+        connection.send_error(msg["id"], "busy", "Alarm actions are already running")
+        return
+    if not await runner.async_run(msg["trigger"], test=True):
+        connection.send_error(msg["id"], "empty", "No steps for this alarm")
+        return
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/stop_workflow", vol.Required("entry_id"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_stop_workflow(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Test beenden. Ein echter Alarm stoppt nur mit Deaktivieren."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    runner = entry.runtime_data.workflow
+    if runner.running and not runner.running.get("test"):
+        connection.send_error(msg["id"], "alarm_running", "Disarm to stop a real alarm")
+        return
+    await runner.async_stop()
     connection.send_result(msg["id"], {"ok": True})

@@ -3,6 +3,17 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.4.0, Aktionen und Benachrichtigungen)
+
+- 0.3.0 hat keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.4.0 enthalten. Letzter veröffentlichter Tag: `v0.2.0` (Vorabversion).
+- Server: `notify.py` (`Notifier`, Texte en/de, kritische Meldung iOS/Android, Push-Aktion "Deaktivieren" nur mit `disarm_action`), `workflow.py` (`WorkflowRunner`: Schritte `notify`, `wait`, `action`, `sound`; Schnappschuss vor dem ersten Schritt im Store `alarmageddon.workflow.<entry_id>`, Sonos zusätzlich `sonos.snapshot`; Wiederherstellen beim Verlassen von "triggered", auch nach Neustart; Test endet nach `TEST_SECONDS`). Warten über `async_call_later` mit Future (nicht `asyncio.sleep`, siehe LEARNINGS), Lauf als Hintergrund-Task.
+- Einstellungen: Benachrichtigungen global in `settings.py` (`notify`, `valid_notify`), Abläufe pro Anlage in `options["workflows"]` (Prüfung mit `STEP_SCHEMAS` in `websocket_api.py`).
+- Töne: `sounds/*.wav` aus `scripts/make_sounds.py`, öffentlich unter `/alarmageddon_sounds` (Medienplayer haben kein Login); URL über `get_url` (lokal bevorzugt).
+- Panel: `actions.js` (Zeitachse, Auswahl der Bausteine, Editor im Dialog `ag-step`), `notify.js`; Unterreiter Sensoren, Aktionen, Benachrichtigungen, Anlage (Handy: kurze Texte).
+- Tests: `tests/test_actions.py` (16), Panel-Suite `actions-e2e` (Ablauf bearbeiten, verschieben, löschen, speichern, testen; Benachrichtigungen; je Sprache, Desktop und Handy).
+- Sicherung: Abläufe liegen in den Optionen des Config Entry, Benachrichtigungen und Voreinstellungen im Store; beides ist in der Sicherung von HA enthalten. Ein eigener Export/Import im Panel fehlt noch (Backlog).
+- Nicht im echten HA geprüft: Sonos-Wiedergabe der Töne, kritische Meldung auf echtem iPhone/Android, Push-Aktion.
+
 ## Stand (0.3.0, Optionen pro Sensor, neues Panel)
 
 - Wunsch des Nutzers (2026-11-08): ohne Mockups weiterarbeiten, bis der Backlog leer ist. Für die offenen Fragen aus `docs/mockups/sensor-options-v1` gelten die Empfehlungen (Optionen im Seitenblatt A, "Bereit" als Zeile B); Ebenen der Sensor-Optionen: Voreinstellung je Sensorart (global, `settings.py`) › eigener Wert pro Sensor und Anlage (`options["sensor_options"]`). Eine Rückfrage an den Nutzer dazu steht noch aus.
@@ -44,12 +55,13 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Nächste Schritte
 
-1. 0.4.0: Konfiguration › Benachrichtigungen (Empfänger Alarm/Wartung,
-   kritisch mit Lautstärke) und Konfiguration › Aktionen (Ablauf je Modus:
-   Schalten, Warten, Alarmton auf Medienplayer mit mitgelieferten Tönen,
-   Schnappschuss und Wiederherstellung samt Lautstärke, Push, HA-Aktion).
-2. 0.5.0: Wartung (Prognose, Meldungen), Sensorausfall melden,
-   Zwei-Sensor-Bestätigung, mehrere Codes pro Person.
+1. 0.5.0: Wartung (Batterieprognose aus dem Verlauf, Wartungsmeldungen bei
+   schwacher Batterie und Ausfall an die Wartungs-Empfänger, mit Ruhe gegen
+   Wiederholungen), Zwei-Sensor-Bestätigung gegen Fehlalarm, mehrere Codes
+   pro Person (verknüpft mit HA-Benutzern), Export/Import der Einstellungen.
+2. Offene Rückfrage an den Nutzer: Ebenen der Sensor-Optionen (Voreinstellung
+   je Sensorart › Wert pro Sensor) wurden ohne ausdrückliche Bestätigung
+   gebaut.
 
 ## Zweisprachigkeit EN/DE (verbindlich)
 

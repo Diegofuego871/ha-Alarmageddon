@@ -35,6 +35,13 @@ zuoberst.
 - **Zustand setzen im Test behält keine Attribute:** `hass.states.async_set(entity, "on")` ohne Attribute entfernt
   die Geräteklasse. Logik, die die Sensorart aus dem Zustand liest (Voreinstellungen), greift dann nicht mehr; echte
   Sensoren behalten ihre Attribute. In Tests die bisherigen Attribute mitgeben (`open_sensor` in `test_sensor_options.py`).
+- **Warten in einem Ablauf:** `asyncio.sleep` läuft in echter Zeit; im Test schiebt die eingefrorene Zeit
+  (`freezer`, `async_fire_time_changed`) ihn nicht weiter. Warten deshalb über `async_call_later` mit einer
+  `@callback`-Funktion und einem Future (`WorkflowRunner._sleep`). Lange laufende Abläufe als
+  `hass.async_create_background_task` starten: `async_block_till_done` wartet sonst auf sie und der Test hängt.
+- **Tags vor dem CHANGELOG prüfen, nicht erst vor dem Push:** 0.2.0 wurde veröffentlicht, während 0.3.0 entstand;
+  der CHANGELOG markierte 0.2.0 kurz als "nicht veröffentlicht". Vor dem Schreiben eines neuen Abschnitts die Tags und
+  Releases auf GitHub ansehen.
 - **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
   Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
 

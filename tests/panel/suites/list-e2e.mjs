@@ -34,8 +34,9 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-list="vdone"]');
     check(`${tag}: ohne Gruppen`, await s.waitFor("return !r.querySelector('.ag-ov-list tr.grp, .ag-ov-list .ag-group-label')"));
     await s.page.reload();
-    await s.frame.waitForFunction(new Function(`return document.querySelector("alarmageddon-panel")?.shadowRoot?.querySelector(".ag-ov-list .ag-card")`), null, { timeout: 10000 }).catch(() => {});
+    // Nach dem Neuladen ist der alte Frame weg: auf den neuen warten, bis die Liste steht
     const f = await (await s.page.waitForSelector("#panel-frame")).contentFrame();
+    await f.waitForFunction(new Function(`return document.querySelector("alarmageddon-panel")?.shadowRoot?.querySelector(".ag-ov-list .ag-card")`), null, { timeout: 10000 });
     const remembered = await f.evaluate(new Function(`const r=document.querySelector("alarmageddon-panel").shadowRoot; return [!r.querySelector('.ag-ov-list tr.grp, .ag-ov-list .ag-group-label'), [...r.querySelectorAll('.ag-ltable th')].some((th) => /firmware/i.test(th.textContent))]`));
     check(`${tag}: Ansicht gemerkt`, remembered[0] && (mobile || !remembered[1]), JSON.stringify(remembered));
     await s.page.screenshot({ path: `${outDir}list-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });

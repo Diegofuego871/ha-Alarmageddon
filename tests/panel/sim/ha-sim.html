@@ -58,11 +58,19 @@
                night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
       entry_sensors: ["binary_sensor.haustuer"], exit_delay: { home: 0, away: 60, night: 0 }, entry_delay: 30, has_code: true, code_arm_required: false, code: "1234",
       trigger_time: 180, open_sensors: "block", night_enabled: true, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
+      workflow_running: null, workflow_test: false,
+      workflows: { away: [
+        { type: "notify" },
+        { type: "action", action: "cover.open_cover", target: ["cover.rollladen_wohnzimmer", "cover.rollladen_kueche"], data: {}, restore: false },
+        { type: "wait", seconds: 30 },
+        { type: "action", action: "siren.turn_on", target: ["siren.flur"], data: {}, restore: true },
+        { type: "sound", players: ["media_player.sonos_wohnzimmer"], sound: "siren", volume: 0.7, repeat: 5, restore: true },
+      ] },
       events: [ { t: iso(3 * 3600e3), state: "armed_away", mode: "away", by: "Diego" }, { t: iso(3.3 * 3600e3), state: "disarmed", mode: null, by: "Wandtablet" } ] },
     { entry_id: "e_garage", title: "Garage", entity_id: "alarm_control_panel.garage", modes: ["home", "away"],
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
       entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false,
-      trigger_time: 180, open_sensors: "block", night_enabled: false, sensor_options: {},
+      trigger_time: 180, open_sensors: "block", night_enabled: false, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
       events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
   ];
 
@@ -74,10 +82,21 @@
   set("binary_sensor.garagentor", "on", { device_class: "garage_door" }, now - 12 * 60e3);
   for (const [k, v] of Object.entries(BATT)) set(`sensor.${k}_batterie`, String(v), { device_class: "battery", unit_of_measurement: "%" });
   for (const [k, v] of Object.entries(SIGNAL)) set(`sensor.${k}_signal`, String(v), v < 0 ? { device_class: "signal_strength", unit_of_measurement: "dBm" } : { unit_of_measurement: "lqi" });
+  // Geräte für die Aktionen (erfundene Namen)
+  set("siren.flur", "off", { friendly_name: "Sirene Flur" });
+  set("switch.steckdose_flur", "off", { friendly_name: "Steckdose Flur" });
+  set("light.flur", "off", { friendly_name: "Licht Flur" });
+  set("cover.rollladen_wohnzimmer", "closed", { friendly_name: "Rollladen Wohnzimmer", current_position: 0 });
+  set("cover.rollladen_kueche", "closed", { friendly_name: "Rollladen Küche", current_position: 0 });
+  set("media_player.sonos_wohnzimmer", "playing", { friendly_name: "Sonos Wohnzimmer", volume_level: 0.2 });
+  set("media_player.sonos_kueche", "idle", { friendly_name: "Sonos Küche", volume_level: 0.3 });
+  set("script.alles_licht_an", "off", { friendly_name: "Alles Licht an" });
   set("alarm_control_panel.haus", "armed_away", { friendly_name: "Haus", arm_mode: "away", changed_by: "Diego", code_format: "number" }, now - 3 * 3600e3);
   set("alarm_control_panel.garage", "disarmed", { friendly_name: "Garage", arm_mode: null, changed_by: "Automation", code_format: null }, now - 20 * 60e3);
 
   window.__presets = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
+  window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], critical: true, volume: 0.8,
+    events: { triggered: true, pending: false, armed: false, disarmed: false, arm_failed: true, sensor_offline: true }, disarm_action: false };
   window.__calls = [];
   window.__wsDelay = 0;
   window.__wsFail = null;
@@ -108,8 +127,17 @@
     if (msg.type === "alarmageddon/data") {
       const sensors = {};
       for (const [id, info] of Object.entries(SENSORS)) sensors[id] = { ...info };
-      return JSON.parse(JSON.stringify({ systems: window.__systems.map(({ code, ...s }) => s), sensors, presets: window.__presets }));
+      return JSON.parse(JSON.stringify({
+        systems: window.__systems.map(({ code, ...s }) => s), sensors, presets: window.__presets, notify: window.__notify,
+        notify_services: ["notify.mobile_app_diego", "notify.mobile_app_partnerin", "notify.mobile_app_tablet"],
+        sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["warning", 2], ["chime", 2]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
+      }));
     }
+    if (msg.type === "alarmageddon/save_notify") {
+      window.__notify = { ...window.__notify, ...JSON.parse(JSON.stringify(msg.notify)) };
+      return { notify: window.__notify };
+    }
+    if (msg.type === "alarmageddon/test_notify") return { targets: msg.group === "alarm" ? window.__notify.alarm_targets : window.__notify.maintenance_targets };
     if (msg.type === "alarmageddon/save_presets") {
       window.__presets = { ...window.__presets, ...msg.presets };
       return { presets: window.__presets };
@@ -122,6 +150,21 @@
       for (const m of ["home", "away", "night"]) sys.zones[m] = [...new Set(msg.zones[m] || [])];
       sys.entry_sensors = [...msg.entry_sensors];
       if (msg.sensor_options) sys.sensor_options = JSON.parse(JSON.stringify(msg.sensor_options));
+      return { ok: true };
+    }
+    if (msg.type === "alarmageddon/save_workflows") {
+      sys.workflows = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(msg.workflows))).filter(([, v]) => v.length));
+      return { ok: true };
+    }
+    if (msg.type === "alarmageddon/test_workflow") {
+      if (!(sys.workflows[msg.trigger] || []).length) throw err("empty");
+      sys.workflow_running = msg.trigger;
+      sys.workflow_test = true;
+      return { ok: true };
+    }
+    if (msg.type === "alarmageddon/stop_workflow") {
+      sys.workflow_running = null;
+      sys.workflow_test = false;
       return { ok: true };
     }
     if (msg.type === "alarmageddon/save_system") {

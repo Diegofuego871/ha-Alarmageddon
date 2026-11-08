@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.3.0). Kern der Alarmanlage und Seitenpanel mit Übersicht, Sensorliste und Konfiguration funktionieren. Alarmaktionen, Benachrichtigungen und Wartung folgen in späteren Versionen.
+> **Status:** frühe Vorabversion (0.4.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen und Benachrichtigungen funktionieren. Wartungsmeldungen und Batterieprognose folgen in einer späteren Version.
 
 ## Funktionen
 
@@ -20,8 +20,10 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Verzögerungen, Modus "Nacht", Verhalten bei offenen Sensoren). Auf dem Handy als Karten und Blätter von unten.
 - **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
+- **Alarmaktionen:** ein grafischer Ablauf pro Alarm: Push-Meldung, Geräte schalten, Rollläden, Alarmton auf Medienplayern (Sonos und andere), Warten, Skript, jede Aktion. Geräte kehren nach dem Alarm in den Zustand davor zurück.
+- **Benachrichtigungen:** kritische Push-Meldungen mit Lautstärke, Empfänger getrennt für Alarme und Wartung, wählbare Ereignisse.
 
-Geplant: Alarmaktionen (Sirene, Rollläden, Medienplayer, kritische Push-Meldungen mit Aktionen), Wartungsübersicht und Überwachung.
+Geplant: Wartungsmeldungen (Batterie schwach, nicht erreichbar) und Batterieprognose.
 
 ## Installation
 
@@ -42,6 +44,34 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
    - **Code:** neuen Code setzen oder entfernen.
 
 Nur ein echter Wechsel von "zu" auf "offen" löst aus. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
+
+## Alarmaktionen
+
+Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwesend", "Abwesend", "Nacht" oder "immer aktiv" für Rauch, Wasser und Gas), dann Schritte mit "+" hinzufügen:
+
+| Schritt | Macht |
+| --- | --- |
+| Push-Meldung | Alarmmeldung an die Empfänger für Alarme (siehe Benachrichtigungen) |
+| Einschalten / Ausschalten | Sirenen, Schalter, Lichter, Ventilatoren, Helfer |
+| Rollläden öffnen / schliessen | Rollläden |
+| Alarmton | Spielt einen von fünf Tönen auf Medienplayern mit Lautstärke und Wiederholungen |
+| Warten | Hält die folgenden Schritte an |
+| Skript | Startet ein Skript |
+| Eigene Aktion | Jede Aktion von Home Assistant mit Ziel und Daten (JSON) |
+
+- **Zurück in den Zustand davor:** Geräte mit dem Pfeil-Symbol kehren beim Deaktivieren oder am Ende der Alarmdauer in den Zustand vor dem Alarm zurück (ein/aus, Helligkeit, Position, Lautstärke, Quelle; Sonos mit eigenem Schnappschuss samt Gruppen). Bei Alarmtönen standardmässig an.
+- **Deaktivieren stoppt alles,** auch nach einem Neustart von Home Assistant mitten im Alarm. Ein fehlerhafter Schritt hält die übrigen nicht auf.
+- **Test** führt den gespeicherten Ablauf ohne Alarm aus und endet spätestens nach 60 Sekunden.
+- **Medienplayer** holen die Töne bei Home Assistant (`/alarmageddon_sounds/…`). Der Player muss die lokale Adresse von Home Assistant erreichen (Einstellungen → System → Netzwerk).
+
+## Benachrichtigungen
+
+Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
+
+- **Empfänger** getrennt für Alarme und Wartungsmeldungen: jeder `notify`-Dienst, zum Beispiel `notify.mobile_app_<handy>` der Companion App.
+- **Kritische Alarmmeldung:** ertönt auch im Lautlos- und Nicht-stören-Modus. iOS nutzt die hier eingestellte Lautstärke, Android den Alarmkanal (`alarm_stream`).
+- **Ereignisse:** Alarm, Eingangsverzögerung, scharf, deaktiviert, Scharfschalten nicht möglich, Sensor im scharfen Zustand nicht erreichbar.
+- **Knopf "Deaktivieren" in der Meldung:** standardmässig aus. iOS fragt nach Face ID oder dem Code des Geräts, Android nicht: Wer das entsperrte Handy hält, kann deaktivieren.
 
 ## Apple HomeKit
 
