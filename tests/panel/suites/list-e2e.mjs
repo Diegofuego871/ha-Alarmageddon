@@ -105,7 +105,7 @@ for (const mobile of [false, true]) {
   const sys = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
   check("Anlage: gesendet", sys?.entry_delay === 45 && sys.open_sensors === "bypass" && sys.night_enabled === true, JSON.stringify(sys));
   // Rückfrage beim Wechsel mit Änderungen
-  await s.tap('[data-sys="night"]');
+  await s.tap('[data-sys="mode"][data-mode="night"]');
   await s.tap('[data-sub="sensors"]');
   check("Anlage: Rückfrage", await s.waitFor(`return r.getElementById("ag-discard").open`));
   await s.tap('[data-act="discard"]');

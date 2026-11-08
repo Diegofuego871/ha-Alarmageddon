@@ -503,6 +503,10 @@ class AlarmageddonPanel extends HTMLElement {
     let text;
     if (e.kind === "sensor_offline") text = this._t("evOffline", { sensor });
     else if (e.kind === "unconfirmed") text = this._t("evUnconfirmed", { sensor });
+    else if (e.kind === "schedule_skipped") {
+      const action = e.action === "off" ? this._t("schOff") : this._t("schArm", { mode: this._t(MODE_KEY[e.action] || "modeAway") });
+      text = this._t(e.reason === "alarm" ? "evScheduleSkippedAlarm" : "evScheduleSkipped", { action });
+    }
     else if (e.kind === "arm_failed") text = this._t("evArmFailed", { mode, sensors: (e.sensors || []).map((x) => this._name(x)).join(", ") });
     else if (ARMED[e.state]) text = this._t("evArmed", { mode });
     else if (e.state === "arming") text = this._t("evArming", { mode });

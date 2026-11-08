@@ -126,7 +126,7 @@ button { font: inherit; color: inherit; }
 .ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: 0 -24px calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 3; }
 .ag-foot > span:first-child { min-width: 0; font-size: 13.5px; }
 .ag-foot .ag-saved { color: var(--ag-success); font-weight: 500; }
-.ag-foot .ag-err { color: var(--ag-error); }
+.ag-foot .ag-err, .ag-settx .ag-err { color: var(--ag-error); }
 .ag-mcards { display: flex; flex-direction: column; gap: 8px; }
 .ag-mcard { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .ag-mcard-top { display: flex; gap: 10px; align-items: center; }
@@ -294,6 +294,18 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ag-codes { margin-top: 16px; }
 .ag-coderow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--ag-divider); }
 .ag-coderow small { display: block; font-size: 12.5px; }
+.ag-schrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--ag-divider); }
+.ag-schrow.dim > :not(.ag-toggle):not(.ag-iconbtn) { opacity: .55; }
+.ag-schrow .ag-time { width: 140px; }
+.ag-schrow .ag-toggle { margin: 0 0 0 auto; }
+.ag-schrow select.ag-input { min-width: 150px; }
+.ag-days { display: flex; gap: 4px; flex-wrap: wrap; }
+.ag-day { width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--ag-divider); background: var(--ag-card); color: var(--ag-text2); font: inherit; font-size: 13px; cursor: pointer; padding: 0; }
+.ag-day.on { background: var(--ag-primary); border-color: var(--ag-primary); color: #fff; font-weight: 500; }
+.ag-day:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 2px; }
+.ag-schwarn { flex-basis: 100%; }
+:host([narrow]) .ag-schrow .ag-time, :host([narrow]) .ag-schrow select.ag-input { flex: 1 1 120px; min-width: 0; }
+:host([narrow]) .ag-schrow .ag-days { flex-basis: 100%; }
 .ag-btnrow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 /* Lange Texte in der Auswahl "Offener Sensor" auf dem Handy: volle Breite, Text darf umbrechen statt abgeschnitten zu werden */
 :host([narrow]) [data-seg="sys-open"] { display: flex; width: 100%; }

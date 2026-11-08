@@ -3,6 +3,14 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.6.0, Zeitplan und Modi)
+
+- 0.3.0, 0.4.0 und 0.5.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.6.0 enthalten. Letzter veröffentlichter Tag: `v0.2.0` (Vorabversion).
+- Modi frei wählbar (Wunsch des Nutzers, ändert die frühere Vorgabe "Anwesend und Abwesend immer da", CLAUDE.md nachgeführt): Optionen `home_enabled`, `away_enabled`, `night_enabled` (`MODE_ENABLED_KEY`/`MODE_ENABLED_DEFAULT`), `controller.modes` daraus, `supported_features` nur für eingeschaltete Modi. `save_system` lehnt "kein Modus" (`no_mode`) und das Abschalten des aktiven Modus (`mode_active`) ab. Panel: Chips "Modi" in `system.js`.
+- Zeitplan: `scheduler.py` (`async_track_time_change` pro aktiver Regel, Wochentag lokal, nie während `pending`/`triggered`, ohne Code, `changed_by` "Zeitplan"/"Schedule", Ereignis `schedule_skipped`). Regeln in `options["schedules"]`, Prüfung `schemas.SCHEDULES`, in der Sicherung enthalten. Panel: Karte "Zeitplan" in `system.js` (Teil des Entwurfs).
+- Tests: `tests/test_schedule.py`, HomeKit (`test_only_chosen_modes_in_apple_home`, `test_scheduled_arm_shows_in_apple_home`), Panel-Suite `schedule-e2e`.
+- Der Optionsdialog von HA kennt weiterhin nur "Nacht"; Anwesend/Abwesend nur im Panel.
+
 ## Stand (0.5.0, Wartung und Härtung)
 
 - 0.3.0 und 0.4.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.5.0 enthalten. Letzter veröffentlichter Tag: `v0.2.0` (Vorabversion).
@@ -66,7 +74,7 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Nächste Schritte
 
-Backlog leer (Stand 0.5.0). Offen:
+Backlog leer (Stand 0.6.0). Offen:
 
 1. Rückfrage an den Nutzer: Ebenen der Sensor-Optionen. Gebaut sind
    Voreinstellung je Sensorart (global) › Wert pro Sensor. Die Regel in

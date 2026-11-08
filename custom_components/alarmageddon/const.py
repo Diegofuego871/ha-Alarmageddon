@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "alarmageddon"
 
-# Modi der Anlage. "night" ist pro Anlage zuschaltbar (Vorgabe des Nutzers), die beiden anderen immer da.
+# Modi der Anlage. Seit 0.6.0 alle drei pro Anlage wählbar (Wunsch des Nutzers), mindestens einer; "night" standardmässig aus.
 MODE_HOME: Final = "home"
 MODE_AWAY: Final = "away"
 MODE_NIGHT: Final = "night"
@@ -17,6 +17,8 @@ CONF_NAME: Final = "name"
 
 # Optionen (im Optionsdialog änderbar, später auch im Panel)
 CONF_NIGHT_ENABLED: Final = "night_enabled"
+CONF_HOME_ENABLED: Final = "home_enabled"
+CONF_AWAY_ENABLED: Final = "away_enabled"
 CONF_ZONE_PREFIX: Final = "zone_"  # zone_home, zone_away, zone_night: Liste von Entitäten
 CONF_ENTRY_SENSORS: Final = "entry_sensors"  # Sensoren mit Eingangsverzögerung, alle anderen lösen sofort aus
 CONF_EXIT_DELAY_PREFIX: Final = "exit_delay_"  # exit_delay_home usw., Sekunden
@@ -55,7 +57,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 4  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 5  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -164,3 +166,13 @@ SOUNDS_URL_PATH: Final = "/alarmageddon_sounds"
 DATA_SOUNDS: Final = f"{DOMAIN}_sounds_registered"
 # Domänen, deren Zustand vor dem Alarm gespeichert und beim Deaktivieren wiederhergestellt werden kann
 RESTORABLE_DOMAINS: Final = ("switch", "light", "input_boolean", "fan", "siren", "cover", "media_player")
+
+# Modus an/aus: Schlüssel in den Optionen und Grundeinstellung (fehlt der Schlüssel, gilt sie)
+MODE_ENABLED_KEY: Final = {"home": CONF_HOME_ENABLED, "away": CONF_AWAY_ENABLED, "night": CONF_NIGHT_ENABLED}
+MODE_ENABLED_DEFAULT: Final = {"home": True, "away": True, "night": False}
+
+# Zeitplan (0.6.0): pro Anlage Regeln {"id", "enabled", "action", "time" "HH:MM", "days" [0 = Montag … 6]}
+CONF_SCHEDULES: Final = "schedules"
+SCHEDULE_OFF: Final = "off"
+SCHEDULE_ACTIONS: Final = (SCHEDULE_OFF, "home", "away", "night")
+MAX_SCHEDULES: Final = 20

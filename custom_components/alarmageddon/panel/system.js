@@ -1,10 +1,13 @@
-// Konfiguration › Anlage: Verzögerungen, Alarmdauer, Modus "Nacht", Verhalten bei offenen Sensoren.
+// Konfiguration › Anlage: Modi, Verzögerungen, Alarmdauer, Verhalten bei offenen Sensoren, Zeitplan (Entwurf mit "Speichern");
+// dazu Codes pro Person und Sicherung (sofort).
 // Dieselben Schlüssel wie der Optionsdialog von HA (WebSocket alarmageddon/save_system). Der Code bleibt im Optionsdialog.
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, MODE_KEY, errText } = await import(`./common.js${V}`);
+const { ic, esc, MODE_KEY, MODE_ICON, errText } = await import(`./common.js${V}`);
 
 const MAX = 3600;
+const ALL_MODES = ["home", "away", "night"];
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class SystemUi {
   constructor(host) {
@@ -28,9 +31,10 @@ export class SystemUi {
       exit_delay: { home: 0, away: 60, night: 0, ...(s.exit_delay || {}) },
       entry_delay: s.entry_delay ?? 30,
       trigger_time: s.trigger_time ?? 180,
-      night_enabled: !!s.night_enabled,
+      modes: Object.fromEntries(ALL_MODES.map((m) => [m, (s.modes || ["home", "away"]).includes(m)])),
       open_sensors: s.open_sensors || "block",
       confirm_window: s.confirm_window ?? 60,
+      schedules: JSON.parse(JSON.stringify(s.schedules || [])),
     };
   }
 
@@ -53,7 +57,9 @@ export class SystemUi {
     const d = this.draft;
     let n = 0;
     for (const m of ["home", "away", "night"]) if (a.exit_delay[m] !== d.exit_delay[m]) n += 1;
-    for (const k of ["entry_delay", "trigger_time", "night_enabled", "open_sensors", "confirm_window"]) if (a[k] !== d[k]) n += 1;
+    for (const k of ["entry_delay", "trigger_time", "open_sensors", "confirm_window"]) if (a[k] !== d[k]) n += 1;
+    for (const m of ALL_MODES) if (a.modes[m] !== d.modes[m]) n += 1;
+    if (JSON.stringify(a.schedules) !== JSON.stringify(d.schedules)) n += 1;
     return n;
   }
 
@@ -66,6 +72,8 @@ export class SystemUi {
     check("entry_delay", d.entry_delay);
     check("trigger_time", d.trigger_time);
     if (!Number.isInteger(d.confirm_window) || d.confirm_window < 5 || d.confirm_window > 600) bad.push("confirm_window");
+    if (!ALL_MODES.some((m) => d.modes[m])) bad.push("modes");
+    if (d.schedules.some((r) => !TIME_RE.test(r.time || "") || !r.days?.length)) bad.push("schedules");
     return bad;
   }
 
@@ -78,25 +86,52 @@ export class SystemUi {
     const form = h._view?.querySelector(".ag-sys-form");
     const d = this.ensureDraft();
     if (!form || !d) return;
-    const modes = d.night_enabled ? ["home", "away", "night"] : ["home", "away"];
+    const modes = ALL_MODES.filter((m) => d.modes[m]);
     const bad = new Set(this.invalid());
     const num = (key, value, min = 0, max = MAX) => `<span class="ag-num ${bad.has(key) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-key="${key}" value="${esc(value)}" aria-label="${esc(key)}"><span class="ag-t2">${esc(this._t("seconds"))}</span></span>`;
     const seg = `<div class="ag-seg small" data-seg="sys-open"><span class="ag-pill"></span>${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
       .map(([v, label]) => `<button data-sys="open" data-value="${v}" class="${d.open_sensors === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
     const html = `<div class="ag-card ag-setlist">
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysNight"))}</b><small>${esc(this._t("sysNightHint"))}</small></div>
-          <button class="ag-toggle ${d.night_enabled ? "on" : ""}" data-sys="night" role="switch" aria-checked="${d.night_enabled}" aria-label="${esc(this._t("sysNight"))}"></button></div>
+        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysModes"))}</b><small>${esc(this._t("sysModesHint"))}</small>
+          <div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
+          ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>
         <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysExitDelay"))}</b><small>${esc(this._t("sysExitDelayHint"))}</small></div>
           <div class="ag-numgrid">${modes.map((m) => `<label class="ag-numlabel"><span class="ag-t2 ag-small">${esc(this._t(MODE_KEY[m]))}</span>${num(`exit_${m}`, d.exit_delay[m])}</label>`).join("")}</div></div>
         <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysEntryDelay"))}</b><small>${esc(this._t("sysEntryDelayHint"))}</small></div>${num("entry_delay", d.entry_delay)}</div>
         <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysTriggerTime"))}</b><small>${esc(this._t("sysTriggerTimeHint"))}</small></div>${num("trigger_time", d.trigger_time)}</div>
         <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysOpen"))}</b></div>${seg}</div>
         <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysConfirm"))}</b><small>${esc(this._t("sysConfirmHint"))}</small></div>${num("confirm_window", d.confirm_window, 5, 600)}</div>
-        </div>${this._codesHtml()}${this._backupHtml()}`;
+        </div>${this._schedulesHtml(modes)}${this._codesHtml()}${this._backupHtml()}`;
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
     h._setHtml(form, html);
     h._placePills();
     this.renderFoot();
+  }
+
+  // ----- Zeitplan (Teil des Entwurfs) -----
+
+  _schedulesHtml(modes) {
+    const d = this.draft;
+    const days = this._t("schDays").split(",");
+    const actionLabel = (a) => (a === "off" ? this._t("schOff") : this._t("schArm", { mode: this._t(MODE_KEY[a]) }));
+    const rows = d.schedules.map((r, i) => {
+      const actions = ["off", ...ALL_MODES.filter((m) => modes.includes(m) || r.action === m)];
+      const off = r.action !== "off" && !modes.includes(r.action);
+      return `<div class="ag-schrow ${r.enabled === false ? "dim" : ""}">
+        <input type="time" class="ag-input ag-time" data-sys="sch-time" data-index="${i}" value="${esc(r.time)}" aria-label="${esc(this._t("schTime"))}">
+        <select class="ag-input" data-sys="sch-action" data-index="${i}" aria-label="${esc(this._t("schAction"))}">${actions.map((a) => `<option value="${a}" ${a === r.action ? "selected" : ""}>${esc(actionLabel(a))}</option>`).join("")}</select>
+        <div class="ag-days">${days.map((label, k) => {
+          const on = r.days.includes(k);
+          return `<button class="ag-day ${on ? "on" : ""}" data-sys="sch-day" data-index="${i}" data-day="${k}" aria-pressed="${on}">${esc(label)}</button>`;
+        }).join("")}</div>
+        <button class="ag-toggle ${r.enabled !== false ? "on" : ""}" data-sys="sch-on" data-index="${i}" role="switch" aria-checked="${r.enabled !== false}" aria-label="${esc(this._t("schOn"))}"></button>
+        <button class="ag-iconbtn" data-sys="sch-del" data-index="${i}" aria-label="${esc(this._t("schDelete"))}">${ic("trash", 18)}</button>
+        ${off ? `<small class="ag-warntext ag-schwarn">${ic("alert", 14)} ${esc(this._t("schModeOff"))}</small>` : ""}</div>`;
+    }).join("");
+    return `<div class="ag-card ag-setlist ag-codes ag-sched">
+      <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("schTitle"))}</b><small>${esc(this._t("schHint"))}</small></div>
+        <button class="ag-btn" data-sys="sch-add">${ic("plus", 18)}${esc(this._t("schAdd"))}</button></div>
+      ${rows || `<div class="ag-coderow ag-t2">${esc(this._t("schEmpty"))}</div>`}</div>`;
   }
 
   // ----- Codes pro Person (sofort gespeichert, nicht Teil des Entwurfs: ein Code soll nie im Panel liegen bleiben) -----
@@ -260,7 +295,12 @@ export class SystemUi {
     let status;
     if (this.saveState === "saved" && !n) status = `<span class="ag-saved">${ic("check", 16)} ${esc(this._t("saved"))}</span>`;
     else if (this.saveState && this.saveState !== "saved") status = `<span class="ag-err">${esc(this.saveState)}</span>`;
-    else if (bad) status = `<span class="ag-err">${esc((badKeys[0] === "confirm_window" ? this._t("invalidNumber", { min: 5, max: 600 }) : this._t("invalidNumber", { min: 0, max: MAX })))}</span>`;
+    else if (bad) {
+      const first = badKeys[0];
+      const text = first === "modes" ? this._t("sysModesNone") : first === "schedules" ? this._t("schInvalid")
+        : first === "confirm_window" ? this._t("invalidNumber", { min: 5, max: 600 }) : this._t("invalidNumber", { min: 0, max: MAX });
+      status = `<span class="ag-err">${esc(text)}</span>`;
+    }
     else status = `<span class="ag-t2">${esc(n === 0 ? this._t("noChanges") : n === 1 ? this._t("change") : this._t("changes", { count: n }))}</span>`;
     h._setHtml(foot, `${status}<span class="ag-grow"></span><button class="ag-btn" data-sys="cancel" ${n ? "" : "disabled"}>${esc(this._t("cancel"))}</button>
       <button class="ag-btn primary" data-sys="save" ${n && !bad && !this.saving ? "" : "disabled"}>${ic("check", 18)}${esc(this._t("save"))}</button>`);
@@ -274,16 +314,18 @@ export class SystemUi {
     this.saving = true;
     this.renderFoot();
     try {
-      const exit = d.night_enabled ? d.exit_delay : { home: d.exit_delay.home, away: d.exit_delay.away };
-      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, exit_delay: exit, entry_delay: d.entry_delay, trigger_time: d.trigger_time, night_enabled: d.night_enabled, open_sensors: d.open_sensors, confirm_window: d.confirm_window });
-      Object.assign(s, { confirm_window: d.confirm_window, exit_delay: { ...s.exit_delay, ...exit }, entry_delay: d.entry_delay, trigger_time: d.trigger_time, night_enabled: d.night_enabled, open_sensors: d.open_sensors });
-      if (d.night_enabled && !s.modes.includes("night")) s.modes = [...s.modes, "night"];
-      if (!d.night_enabled) s.modes = s.modes.filter((m) => m !== "night");
+      const modes = ALL_MODES.filter((m) => d.modes[m]);
+      const exit = Object.fromEntries(modes.map((m) => [m, d.exit_delay[m]]));
+      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, exit_delay: exit, entry_delay: d.entry_delay, trigger_time: d.trigger_time,
+        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, open_sensors: d.open_sensors, confirm_window: d.confirm_window, schedules: d.schedules });
+      Object.assign(s, { confirm_window: d.confirm_window, exit_delay: { ...s.exit_delay, ...exit }, entry_delay: d.entry_delay, trigger_time: d.trigger_time,
+        night_enabled: d.modes.night, modes, open_sensors: d.open_sensors, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
       h._fetch();
     } catch (err) {
-      this.saveState = this._t("saveFailed", { message: errText(err) });
+      const known = { no_mode: "errNoMode", mode_active: "errModeActive" }[err?.code];
+      this.saveState = known ? this._t(known) : this._t("saveFailed", { message: errText(err) });
     } finally {
       this.saving = false;
       this.render();
@@ -294,8 +336,28 @@ export class SystemUi {
     const act = el?.dataset.sys;
     if (!act) return false;
     const d = this.ensureDraft();
-    if (act === "night") {
-      d.night_enabled = !d.night_enabled;
+    const i = Number(el.dataset.index);
+    if (act === "mode") {
+      d.modes[el.dataset.mode] = !d.modes[el.dataset.mode];
+      this.saveState = null;
+      this.render();
+    } else if (act === "sch-add") {
+      const mode = ["away", "night", "home"].find((m) => d.modes[m]) || "away";
+      d.schedules.push({ id: Math.random().toString(36).slice(2, 10), enabled: true, action: mode, time: "08:00", days: [0, 1, 2, 3, 4] });
+      this.saveState = null;
+      this.render();
+    } else if (act === "sch-day") {
+      const day = Number(el.dataset.day);
+      const r = d.schedules[i];
+      r.days = r.days.includes(day) ? r.days.filter((x) => x !== day) : [...r.days, day].sort((a, b) => a - b);
+      this.saveState = null;
+      this.render();
+    } else if (act === "sch-on") {
+      d.schedules[i].enabled = d.schedules[i].enabled === false;
+      this.saveState = null;
+      this.render();
+    } else if (act === "sch-del") {
+      d.schedules.splice(i, 1);
       this.saveState = null;
       this.render();
     } else if (act === "open") {
@@ -346,6 +408,20 @@ export class SystemUi {
         if (!name.value) name.value = (this.host._data?.users || []).find((u) => u.id === el.value)?.name || "";
       }
       this._codeError("");
+      return true;
+    }
+    if (el.dataset.sys === "sch-time" || el.dataset.sys === "sch-action") {
+      const d = this.ensureDraft();
+      const r = d.schedules[Number(el.dataset.index)];
+      if (el.dataset.sys === "sch-time") {
+        r.time = el.value;
+        this.saveState = null;
+        this.renderFoot(); // Uhrzeit: nicht neu aufbauen, sonst springt die Eingabe
+      } else {
+        r.action = el.value;
+        this.saveState = null;
+        this.render();
+      }
       return true;
     }
     if (el.dataset.sys !== "num") return false;

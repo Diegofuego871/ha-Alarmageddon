@@ -9,7 +9,12 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    CONF_AWAY_ENABLED,
     CONF_CONFIRM_WINDOW,
+    CONF_HOME_ENABLED,
+    CONF_SCHEDULES,
+    MAX_SCHEDULES,
+    SCHEDULE_ACTIONS,
     CONF_ENTRY_DELAY,
     CONF_ENTRY_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
@@ -58,6 +63,25 @@ def valid_step(value: Any) -> dict[str, Any]:
     return STEP_SCHEMAS[value["type"]](value)
 
 
+def _days(value: Any) -> list[int]:
+    days = vol.Schema([vol.All(vol.Coerce(int), vol.Range(min=0, max=6))])(value)
+    if not days:
+        raise vol.Invalid("at least one day")
+    return sorted(set(days))
+
+
+SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required("id"): vol.All(str, vol.Length(min=1, max=32)),
+        vol.Optional("enabled", default=True): bool,
+        vol.Required("action"): vol.In(SCHEDULE_ACTIONS),
+        vol.Required("time"): vol.All(str, vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$")),
+        vol.Required("days"): _days,
+    }
+)
+SCHEDULES = vol.All([SCHEDULE_SCHEMA], vol.Length(max=MAX_SCHEDULES))
+
+
 def _binary_sensors(value: Any) -> list[str]:
     ids = vol.Schema([cv.entity_id])(value)
     if any(not e.startswith("binary_sensor.") for e in ids):
@@ -74,6 +98,9 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENTRY_DELAY): SECONDS,
         vol.Optional(CONF_TRIGGER_TIME): SECONDS,
         vol.Optional(CONF_NIGHT_ENABLED): bool,
+        vol.Optional(CONF_HOME_ENABLED): bool,
+        vol.Optional(CONF_AWAY_ENABLED): bool,
+        vol.Optional(CONF_SCHEDULES): SCHEDULES,
         vol.Optional(CONF_OPEN_SENSORS): vol.In(OPEN_SENSOR_MODES),
         vol.Optional("code_arm_required"): bool,
         vol.Optional(CONF_CONFIRM_WINDOW): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),

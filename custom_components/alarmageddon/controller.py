@@ -47,6 +47,8 @@ from .const import (
     CONF_ENTRY_DELAY,
     CONF_ENTRY_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
+    MODE_ENABLED_DEFAULT,
+    MODE_ENABLED_KEY,
     CONF_NIGHT_ENABLED,
     CONF_OPEN_SENSORS,
     CONF_TRIGGER_TIME,
@@ -121,9 +123,14 @@ class AlarmController:
     def night_enabled(self) -> bool:
         return bool(self.options.get(CONF_NIGHT_ENABLED, False))
 
+    def mode_enabled(self, mode: str) -> bool:
+        return bool(self.options.get(MODE_ENABLED_KEY[mode], MODE_ENABLED_DEFAULT[mode]))
+
     @property
     def modes(self) -> tuple[str, ...]:
-        return MODES if self.night_enabled else (MODE_HOME, MODE_AWAY)
+        modes = tuple(m for m in MODES if self.mode_enabled(m))
+        # Das Panel verlangt mindestens einen Modus; falls doch keiner gesetzt ist, bleibt "Abwesend"
+        return modes or (MODE_AWAY,)
 
     def zone(self, mode: str) -> list[str]:
         if mode not in self.modes:
@@ -218,6 +225,11 @@ class AlarmController:
     def add_event_listener(self, listener: Callable[[str, dict[str, Any]], None]) -> CALLBACK_TYPE:
         self._event_listeners.append(listener)
         return partial(self._event_listeners.remove, listener)
+
+    @callback
+    def emit(self, kind: str, **data: Any) -> None:
+        """Ereignis ohne Zustandswechsel, auch von aussen (Zeitplan übersprungen)."""
+        self._emit(kind, **data)
 
     @callback
     def _emit(self, kind: str, **data: Any) -> None:
@@ -411,12 +423,13 @@ class AlarmController:
 
     # ----- Befehle -----
 
-    async def async_arm(self, mode: str, code: str | None, changed_by: str | None = None) -> None:
+    async def async_arm(self, mode: str, code: str | None, changed_by: str | None = None, skip_code: bool = False) -> None:
+        # skip_code nur für den Zeitplan, den ein Administrator eingerichtet hat
         if mode not in self.modes:
             raise _error("mode_not_enabled", mode=mode)
         if self.state in (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED):
             raise _error("disarm_first")
-        if self.code_arm_required:
+        if self.code_arm_required and not skip_code:
             changed_by = await self._async_check_code(code) or changed_by
         open_now = self.blocking_sensors(mode)
         bypassed: set[str] = set()

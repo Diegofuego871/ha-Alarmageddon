@@ -7,11 +7,26 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-11-08
+
+Schedule for arming and disarming, and the modes of an alarm system are now chosen in the panel.
+
+Includes the changes from 0.3.0, 0.4.0 and 0.5.0.
+
+### Added
+
+- **Schedule:** per alarm system any number of times in Configuration › Alarm system: arm "Home", "Away" or "Night", or disarm, at a set time on chosen weekdays, each time switchable on and off. A running alarm or entry delay is never disarmed or overridden by the schedule (recorded in the recent events). Open sensors block arming as usual and the notification "arming not possible" follows. No code is needed. "Changed by" shows "Schedule". Times missed while Home Assistant was off are not made up.
+
+### Changed
+
+- **Modes freely selectable:** "Home", "Away" and "Night" can each be switched on and off per alarm system in Configuration › Alarm system (before only "Night", and only when setting up or in the options). At least one mode; Apple Home and the overview offer only the modes switched on. A mode switched off keeps its zone and actions. The mode the alarm system is armed in cannot be switched off.
+
 ## [0.5.0] - 2026-11-08
+
+Not released; included in 0.6.0.
 
 Maintenance notifications and battery forecast, two-sensor confirmation against false alarms, codes per person and a backup of all settings.
 
-Includes the changes from 0.3.0 and 0.4.0.
 
 ### Added
 
@@ -32,7 +47,7 @@ Includes the changes from 0.3.0 and 0.4.0.
 
 ## [0.4.0] - 2026-11-08
 
-Not released; included in 0.5.0.
+Not released; included in 0.6.0.
 
 Alarm actions as a graphical workflow per alarm, own alarm sounds for media players and notifications with critical push messages.
 
@@ -49,7 +64,7 @@ Alarm actions as a graphical workflow per alarm, own alarm sounds for media play
 
 ## [0.3.0] - 2026-11-08
 
-Not released; included in 0.5.0.
+Not released; included in 0.6.0.
 
 New start page with a sensor list like Device Panel, a configuration area with options per sensor and "ready to arm".
 
@@ -99,5 +114,5 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.5.0
+[0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

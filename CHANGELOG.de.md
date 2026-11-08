@@ -7,11 +7,26 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.6.0] - 2026-11-08
+
+Zeitplan zum Scharfschalten und Deaktivieren, und die Modi einer Alarmanlage werden jetzt im Panel gewählt.
+
+Enthält die Änderungen aus 0.3.0, 0.4.0 und 0.5.0.
+
+### Hinzugefügt
+
+- **Zeitplan:** pro Alarmanlage beliebig viele Zeiten unter Konfiguration › Anlage: "Anwesend", "Abwesend" oder "Nacht" scharf schalten oder deaktivieren, zu einer festen Uhrzeit an gewählten Wochentagen, jede Zeit einzeln ein- und ausschaltbar. Ein laufender Alarm oder eine Eingangsverzögerung wird per Zeitplan nie deaktiviert oder überschrieben (steht in den letzten Ereignissen). Offene Sensoren verhindern das Scharfschalten wie gewohnt, die Meldung "Scharfschalten nicht möglich" folgt. Ein Code ist nicht nötig. "Geändert von" zeigt "Zeitplan". Zeiten, die verstreichen, während Home Assistant aus ist, werden nicht nachgeholt.
+
+### Geändert
+
+- **Modi frei wählbar:** "Anwesend", "Abwesend" und "Nacht" lassen sich pro Alarmanlage unter Konfiguration › Anlage einzeln ein- und ausschalten (vorher nur "Nacht", und nur beim Einrichten oder in den Optionen). Mindestens ein Modus; Apple Home und die Übersicht bieten nur die eingeschalteten an. Ein abgeschalteter Modus behält Zone und Aktionen. Den Modus, in dem die Anlage gerade scharf ist, kann man nicht abschalten.
+
 ## [0.5.0] - 2026-11-08
+
+Nicht veröffentlicht; enthalten in 0.6.0.
 
 Wartungsmeldungen und Batterieprognose, Zwei-Sensor-Bestätigung gegen Fehlalarm, Codes pro Person und eine Sicherung aller Einstellungen.
 
-Enthält die Änderungen aus 0.3.0 und 0.4.0.
 
 ### Hinzugefügt
 
@@ -32,7 +47,7 @@ Enthält die Änderungen aus 0.3.0 und 0.4.0.
 
 ## [0.4.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.5.0.
+Nicht veröffentlicht; enthalten in 0.6.0.
 
 Alarmaktionen als grafischer Ablauf pro Alarm, eigene Alarmtöne für Medienplayer und Benachrichtigungen mit kritischen Push-Meldungen.
 
@@ -49,7 +64,7 @@ Alarmaktionen als grafischer Ablauf pro Alarm, eigene Alarmtöne für Medienplay
 
 ## [0.3.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.5.0.
+Nicht veröffentlicht; enthalten in 0.6.0.
 
 Neue Startseite mit einer Liste der Sensoren wie in Device Panel, ein Bereich Konfiguration mit Optionen pro Sensor und "Bereit zum Scharfschalten".
 
@@ -99,5 +114,5 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.5.0
+[0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

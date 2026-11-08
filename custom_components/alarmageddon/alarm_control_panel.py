@@ -46,13 +46,12 @@ class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEnti
     @property
     def supported_features(self) -> AlarmControlPanelEntityFeature:
         # Was hier steht, bietet die HomeKit-Bridge in Apple Home an: "Nacht" nur, wenn eingeschaltet.
-        features = (
-            AlarmControlPanelEntityFeature.ARM_HOME
-            | AlarmControlPanelEntityFeature.ARM_AWAY
-            | AlarmControlPanelEntityFeature.TRIGGER
-        )
-        if self._ctl.night_enabled:
-            features |= AlarmControlPanelEntityFeature.ARM_NIGHT
+        # Nur eingeschaltete Modi (seit 0.6.0 alle drei wählbar)
+        features = AlarmControlPanelEntityFeature.TRIGGER
+        for mode, feature in ((MODE_HOME, AlarmControlPanelEntityFeature.ARM_HOME), (MODE_AWAY, AlarmControlPanelEntityFeature.ARM_AWAY),
+                              (MODE_NIGHT, AlarmControlPanelEntityFeature.ARM_NIGHT)):
+            if mode in self._ctl.modes:
+                features |= feature
         return features
 
     @property

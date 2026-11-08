@@ -19,6 +19,7 @@ from .events import EventLog, async_remove_events
 from .maintenance import async_start_maintenance, async_stop_maintenance
 from .notify import Notifier
 from .panel import async_register_panel, async_remove_panel
+from .scheduler import Scheduler
 from .settings import async_get_settings
 from .workflow import WorkflowRunner, async_remove_workflow_store
 
@@ -62,6 +63,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     events.async_start()
     notifier.async_start()
     await workflow.async_start()
+    scheduler = Scheduler(hass, entry, controller)
+    scheduler.async_start()
+    entry.async_on_unload(scheduler.async_stop)
     entry.async_on_unload(controller.async_stop)
     entry.async_on_unload(notifier.async_stop)
     # Zonen, Modi und Verzögerungen bestimmen, welche Entitäten es gibt und wem zugehört wird: neu laden.

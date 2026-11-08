@@ -30,8 +30,11 @@ Feste Vorgaben des Nutzers (2026-11-08):
   unterstützte Funktionen und Code-Verhalten so wählen, dass HomeKit sie
   abbildet; Verhalten im HA-Quellcode (`homeassistant/components/homekit`)
   prüfen und mit Tests absichern, nicht annehmen.
-- **Modus "Nacht" optional:** pro Alarmanlage zuschaltbar (`armed_night`),
-  standardmässig aus. "Anwesend" und "Abwesend" sind immer da.
+- **Modi frei wählbar (geändert 2026-11-08, vorher waren "Anwesend" und
+  "Abwesend" immer da):** pro Alarmanlage "Anwesend", "Abwesend" und
+  "Nacht" einzeln ein- und ausschaltbar, im Panel unter Konfiguration ›
+  Anlage, mindestens einer. Standard: Anwesend und Abwesend an, Nacht aus.
+  Den Modus, in dem die Anlage gerade scharf ist, kann man nicht abschalten.
 - **Veröffentlichung über HACS:** alle Regeln von HACS und hassfest
   einhalten (siehe "HACS").
 - **Jede Funktechnik:** Alarmageddon arbeitet nur mit HA-Entitäten

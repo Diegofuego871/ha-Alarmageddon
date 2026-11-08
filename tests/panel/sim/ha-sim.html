@@ -58,6 +58,7 @@
                night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
       entry_sensors: ["binary_sensor.haustuer"], exit_delay: { home: 0, away: 60, night: 0 }, entry_delay: 30, has_code: true, code_arm_required: false, code: "1234",
       main_code: true, codes: [{ id: "c_anna", name: "Anna", user_id: "u_anna" }], pcodes: { c_anna: "2468" },
+      schedules: [{ id: "s_nacht", enabled: true, action: "night", time: "22:30", days: [0, 1, 2, 3, 4, 5, 6] }, { id: "s_morgen", enabled: true, action: "off", time: "06:45", days: [0, 1, 2, 3, 4] }],
       trigger_time: 180, open_sensors: "block", night_enabled: true, confirm_window: 60, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
       workflow_running: null, workflow_test: false,
       workflows: { away: [
@@ -70,7 +71,7 @@
       events: [ { t: iso(3 * 3600e3), state: "armed_away", mode: "away", by: "Diego" }, { t: iso(3.3 * 3600e3), state: "disarmed", mode: null, by: "Wandtablet" } ] },
     { entry_id: "e_garage", title: "Garage", entity_id: "alarm_control_panel.garage", modes: ["home", "away"],
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
-      entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {},
+      entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [],
       trigger_time: 180, open_sensors: "block", night_enabled: false, confirm_window: 60, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
       events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
   ];
@@ -211,10 +212,16 @@
     if (msg.type === "alarmageddon/save_system") {
       for (const [m, v] of Object.entries(msg.exit_delay || {})) sys.exit_delay[m] = v;
       for (const k of ["entry_delay", "trigger_time", "open_sensors", "confirm_window"]) if (k in msg) sys[k] = msg[k];
-      if ("night_enabled" in msg) {
-        sys.night_enabled = msg.night_enabled;
-        sys.modes = msg.night_enabled ? ["home", "away", "night"] : ["home", "away"];
-      }
+      if (msg.schedules) sys.schedules = JSON.parse(JSON.stringify(msg.schedules));
+      const enabled = { home: sys.modes.includes("home"), away: sys.modes.includes("away"), night: sys.modes.includes("night") };
+      for (const m of ["home", "away", "night"]) if (`${m}_enabled` in msg) enabled[m] = msg[`${m}_enabled`];
+      const modes = ["home", "away", "night"].filter((m) => enabled[m]);
+      if (!modes.length) throw err("no_mode");
+      const st = states[sys.entity_id]?.state;
+      const active = states[sys.entity_id]?.attributes?.arm_mode;
+      if (active && st !== "disarmed" && !modes.includes(active)) throw err("mode_active");
+      sys.modes = modes;
+      sys.night_enabled = enabled.night;
       return { ok: true };
     }
     if (msg.type === "alarmageddon/arm") {

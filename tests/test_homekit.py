@@ -85,6 +85,25 @@ async def test_night_offered_when_enabled(hass: HomeAssistant, hk_driver) -> Non
     assert _valid(acc.char_target_state) == {HK_STAY, HK_AWAY, HK_NIGHT, HK_DISARMED}
 
 
+async def test_only_chosen_modes_in_apple_home(hass: HomeAssistant, hk_driver) -> None:
+    """Modi frei wählbar (0.6.0): Apple Home bietet nur die eingeschalteten an."""
+    await setup_alarm(hass, home_enabled=False, night_enabled=True)
+    acc = await _accessory(hass, hk_driver)
+    assert _valid(acc.char_target_state) == {HK_AWAY, HK_NIGHT, HK_DISARMED}
+
+
+async def test_scheduled_arm_shows_in_apple_home(hass: HomeAssistant, hk_driver) -> None:
+    """Vom Zeitplan scharf geschaltet: Apple Home zeigt denselben Zustand."""
+    entry = await setup_alarm(hass, exit_delay_away=0)
+    acc = await _accessory(hass, hk_driver)
+    from custom_components.alarmageddon.scheduler import Scheduler
+
+    await Scheduler(hass, entry, entry.runtime_data.controller).async_run("away")
+    await hass.async_block_till_done()
+    await hass.async_block_till_done()
+    assert acc.char_current_state.value == HK_AWAY
+
+
 async def test_control_from_apple_home(hass: HomeAssistant, hk_driver) -> None:
     await setup_alarm(hass, exit_delay_away=0, night_enabled=True)
     acc = await _accessory(hass, hk_driver)

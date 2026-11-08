@@ -41,6 +41,9 @@ from .const import (
     CONF_ENTRY_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
     CONF_NIGHT_ENABLED,
+    CONF_SCHEDULES,
+    MODE_ENABLED_DEFAULT,
+    MODE_ENABLED_KEY,
     CONF_OPEN_SENSORS,
     CONF_SENSOR_OPTIONS,
     CONF_TRIGGER_TIME,
@@ -60,7 +63,7 @@ from .const import (
 )
 from .devices import battery_of, device_sensors
 from .forecast import async_forecasts
-from .schemas import SECONDS as _SECONDS, valid_step
+from .schemas import SCHEDULES, SECONDS as _SECONDS, valid_step
 from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
@@ -171,6 +174,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "trigger_time": ctl.trigger_time,
                 "open_sensors": entry.options.get(CONF_OPEN_SENSORS, "block"),
                 "night_enabled": ctl.night_enabled,
+                "schedules": entry.options.get(CONF_SCHEDULES) or [],
                 "confirm_window": ctl.confirm_window,
                 "sensor_options": ctl.sensor_overrides,
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
@@ -303,6 +307,9 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         vol.Optional("entry_delay"): _SECONDS,
         vol.Optional("trigger_time"): _SECONDS,
         vol.Optional("night_enabled"): bool,
+        vol.Optional("home_enabled"): bool,
+        vol.Optional("away_enabled"): bool,
+        vol.Optional("schedules"): SCHEDULES,
         vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),
         vol.Optional("confirm_window"): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
     }
@@ -316,9 +323,24 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     options = dict(entry.options)
     for mode, seconds in msg.get("exit_delay", {}).items():
         options[f"{CONF_EXIT_DELAY_PREFIX}{mode}"] = seconds
+    if "schedules" in msg:
+        options[CONF_SCHEDULES] = msg["schedules"]
     for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("trigger_time", CONF_TRIGGER_TIME), ("night_enabled", CONF_NIGHT_ENABLED), ("open_sensors", CONF_OPEN_SENSORS), ("confirm_window", CONF_CONFIRM_WINDOW)):
         if key in msg:
             options[conf] = msg[key]
+    # Modi: mindestens einer, und nie den Modus abschalten, in dem die Anlage gerade scharf ist oder wird
+    # (nach dem Neuladen fände der Zustand keinen Modus mehr und die Anlage wäre still deaktiviert)
+    for mode, key in MODE_ENABLED_KEY.items():
+        if f"{mode}_enabled" in msg:
+            options[key] = msg[f"{mode}_enabled"]
+    ctl = entry.runtime_data.controller
+    enabled = [m for m, key in MODE_ENABLED_KEY.items() if options.get(key, MODE_ENABLED_DEFAULT[m])]
+    if not enabled:
+        connection.send_error(msg["id"], "no_mode", "At least one mode is needed")
+        return
+    if ctl.mode and ctl.mode not in enabled and str(ctl.state) != "disarmed":
+        connection.send_error(msg["id"], "mode_active", "Disarm before switching off the active mode")
+        return
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
 

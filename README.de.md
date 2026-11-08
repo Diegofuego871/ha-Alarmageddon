@@ -4,11 +4,12 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.5.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.6.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
-- **Alarm-Entität:** ein `alarm_control_panel` mit den Modi "Anwesend" und "Abwesend", optional "Nacht", Ausgangs- und Eingangsverzögerung.
+- **Alarm-Entität:** ein `alarm_control_panel` mit den Modi "Anwesend", "Abwesend" und "Nacht", pro Alarmanlage einzeln ein- und ausschaltbar (Standard: Anwesend und Abwesend), Ausgangs- und Eingangsverzögerung.
+- **Zeitplan:** zu festen Zeiten an gewählten Wochentagen in einem gewählten Modus scharf schalten oder deaktivieren.
 - **Mehrere Alarmanlagen:** beliebig viele (zum Beispiel Haus und Garage). Jede ist ein eigenes Gerät mit eigener Alarm-Entität.
 - **Apple HomeKit:** Jede Alarmanlage lässt sich über die HomeKit-Bridge von Home Assistant an Apple Home übergeben.
 - **Zonen:** eine Entität pro Zone, die "ein" ist, sobald ein Sensor der Zone offen ist.
@@ -17,7 +18,7 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Jede Funktechnik:** Alarmageddon nutzt nur Entitäten von Home Assistant. WLAN, Thread/Matter, Zigbee, Z-Wave und Bluetooth funktionieren gleichermassen.
 
 - **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung.
-- **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Verzögerungen, Modus "Nacht", Verhalten bei offenen Sensoren). Auf dem Handy als Karten und Blätter von unten.
+- **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan, Codes, Sicherung). Auf dem Handy als Karten und Blätter von unten.
 - **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
 - **Alarmaktionen:** ein grafischer Ablauf pro Alarm: Push-Meldung, Geräte schalten, Rollläden, Alarmton auf Medienplayern (Sonos und andere), Warten, Skript, jede Aktion. Geräte kehren nach dem Alarm in den Zustand davor zurück.
@@ -38,7 +39,7 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
 ## Einrichtung
 
 1. **Neue Alarmanlage:** Name, Modus "Nacht" und optional ein Code.
-2. **Seitenpanel "Alarmageddon"** (erscheint für Administratoren in der Seitenleiste): Konfiguration › Sensoren ordnet Sensoren den Zonen "Anwesend", "Abwesend" und "Nacht" zu; der Pfeil am Ende einer Zeile öffnet die Optionen des Sensors. Konfiguration › Anlage setzt Verzögerungen und Verhalten. Änderungen gelten mit "Speichern".
+2. **Seitenpanel "Alarmageddon"** (erscheint für Administratoren in der Seitenleiste): Konfiguration › Sensoren ordnet Sensoren den Zonen "Anwesend", "Abwesend" und "Nacht" zu; der Pfeil am Ende einer Zeile öffnet die Optionen des Sensors. Konfiguration › Anlage setzt Modi, Verzögerungen, Verhalten und den Zeitplan. Änderungen gelten mit "Speichern".
 3. **Optionen** (Einstellungen → Geräte & Dienste → Alarmageddon → "Konfigurieren"):
    - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht" (dasselbe wie im Seitenpanel). Ein Sensor kann in mehreren Zonen sein.
    - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür), Alarmdauer.
@@ -88,6 +89,21 @@ Seitenpanel › Konfiguration › Anlage › "Codes pro Person": Jede Person bek
 
 Option pro Sensor "Braucht einen zweiten Sensor" (Seitenblatt des Sensors oder Voreinstellungen je Sensorart). Im scharfen Zustand löst ein solcher Sensor nur aus, wenn ein weiterer Sensor mit dieser Option innerhalb des Bestätigungsfensters anspricht (Konfiguration › Anlage, Standard 60 Sekunden). Derselbe Sensor zweimal zählt nicht. Sensoren ohne die Option lösen wie bisher allein aus; während der Eingangsverzögerung gilt die Option nicht, und "Ausfall gilt als Alarm" löst weiterhin sofort aus. Standardmässig aus: Eine Alarmanlage soll im Zweifel alarmieren.
 
+## Modi
+
+Seitenpanel › Konfiguration › Anlage › "Modi": "Anwesend", "Abwesend" und "Nacht" lassen sich einzeln ein- und ausschalten. Mindestens ein Modus bleibt an. Apple Home, die Übersicht, die Zonen, "Bereit für" und die Aktionen bieten nur die eingeschalteten Modi an. Ein abgeschalteter Modus behält Zone und Aktionen und bekommt sie beim Einschalten zurück. Den Modus, in dem die Anlage gerade scharf ist, kann man nicht abschalten: zuerst deaktivieren.
+
+## Zeitplan
+
+Seitenpanel › Konfiguration › Anlage › "Zeitplan": "Zeit hinzufügen" legt eine Regel mit Uhrzeit, Aktion ("Anwesend", "Abwesend" oder "Nacht" scharf oder deaktivieren) und Wochentagen an. Jede Zeit lässt sich abschalten, ohne sie zu löschen. Regeln:
+
+- Ein laufender Alarm oder eine Eingangsverzögerung wird per Zeitplan nie deaktiviert oder überschrieben; die übersprungene Zeit steht in den letzten Ereignissen.
+- Offene Sensoren verhindern das Scharfschalten wie gewohnt (oder werden je nach Einstellung umgangen); die Meldung "Scharfschalten nicht möglich" folgt.
+- Ein Code ist nicht nötig. "Geändert von" zeigt "Zeitplan".
+- Eine Zeit für einen abgeschalteten Modus wird übersprungen.
+- Zeiten, die verstreichen, während Home Assistant aus ist, werden nicht nachgeholt.
+- Deaktivieren per Zeitplan heisst: zu dieser Zeit ist die Anlage aus, egal wer zu Hause ist. Nur dort verwenden, wo das gewollt ist.
+
 ## Sicherung
 
 Seitenpanel › Konfiguration › Anlage › "Sicherung": "Exportieren" speichert alle Einstellungen aller Alarmanlagen als JSON-Datei (Zonen, Verzögerungen, Optionen pro Sensor, Aktionen, Voreinstellungen, Benachrichtigungen). "Importieren" zeigt zuerst, welche Alarmanlagen gefunden werden (Zuordnung über den Namen), und ersetzt deren Einstellungen nach Bestätigung. Codes sind nie Teil einer Sicherung, und die Codes der Zielanlage bleiben, wie sie sind. Die Sicherung von Home Assistant enthält ohnehin alle Einstellungen samt Codes.
@@ -95,7 +111,7 @@ Seitenpanel › Konfiguration › Anlage › "Sicherung": "Exportieren" speicher
 ## Apple HomeKit
 
 1. Die Alarm-Entität in die HomeKit-Bridge von Home Assistant aufnehmen (Domain `alarm_control_panel` oder die Entität einschliessen).
-2. Apple Home zeigt "Zuhause", "Abwesend", "Aus" und mit eingeschaltetem Modus "Nacht" auch "Nacht".
+2. Apple Home zeigt "Aus" und die eingeschalteten Modi ("Zuhause", "Abwesend", "Nacht").
 3. **Mit Code:** HomeKit fragt den Code nicht ab. Entweder den Code in der Konfiguration der HomeKit-Bridge hinterlegen (`entity_config` → `code`) oder ihn als Standardcode in den Entitätseinstellungen der Alarm-Entität in Home Assistant eintragen.
 
 Bekanntes Verhalten der HomeKit-Bridge:
@@ -110,8 +126,10 @@ Bekanntes Verhalten der HomeKit-Bridge:
 | `alarm_control_panel.<name>` | Die Alarmanlage. Attribute: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by` |
 | `binary_sensor.<name>_zone_home` | Ein, wenn ein Sensor der Zone "Anwesend" offen ist |
 | `binary_sensor.<name>_zone_away` | Ein, wenn ein Sensor der Zone "Abwesend" offen ist |
-| `binary_sensor.<name>_zone_night` | Nur mit Modus "Nacht" |
+| `binary_sensor.<name>_zone_night` | Ein, wenn ein Sensor der Zone "Nacht" offen ist |
 | "Bereit für Anwesend/Abwesend/Nacht" | Ein, wenn kein offener Sensor das Scharfschalten in diesem Modus verhindert. Attribut: `blocking_sensors` |
+
+Zonen- und "Bereit"-Entitäten gibt es nur für eingeschaltete Modi.
 
 ## Sprachen
 
