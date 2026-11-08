@@ -7,11 +7,20 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.15.0] - 2026-11-08
+
+Clearer notification settings.
+
+Includes the changes from 0.13.0 and 0.14.0.
+
+### Changed
+
+- **Unreachable sensors in one place** (Configuration › Notifications, chapter "Maintenance messages"): the two entries "Sensor unreachable while armed" and "Sensor unreachable" are now one card "Sensor unreachable" with two cases, each with its own switch, critical, volume and test message: "While the alarm system is armed" (reported at once, goes to the alarm recipients) and "Out for a long time" (after the set time, also while disarmed, goes to the maintenance recipients). Settings and recipients are unchanged.
+- **Better explanations:** "Sensor reports (no alarm)" now says that only this message goes out instead of an alarm, at most one per sensor and minute, and where the option "Report only" is set (per sensor).
+
 ## [0.14.0] - 2026-11-08
 
-You choose which sensors appear in the configuration.
-
-Includes the changes from 0.13.0.
+Not released; included in 0.15.0.
 
 ### Changed
 
@@ -22,7 +31,7 @@ Includes the changes from 0.13.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.14.0.
+Not released; included in 0.15.0.
 
 ### Added
 
@@ -231,7 +240,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.14.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.14.0
+[0.15.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.15.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

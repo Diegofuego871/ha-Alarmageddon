@@ -5,6 +5,10 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.15.0, Meldungen: nicht erreichbare Sensoren in einer Karte)
+
+- Nur Darstellung (`notify.js`): `sensor_offline` und `sensor_unavailable` bleiben getrennte Arten mit eigenen Einstellungen und Empfängern (Alarm bzw. Wartung), erscheinen aber als eine Karte "Sensor nicht erreichbar" im Kapitel Wartung (`ntGroupOffline`, Unterpunkte `ntT2_`/`ntH2_`). Test: hardening-e2e.
+
 ## Stand (0.14.0, Sensorauswahl)
 
 - Option `sensors` (`CONF_SENSORS`) je Anlage: vom Nutzer gewählte Sensoren der Konfigurationsliste. Angezeigt wird `sensors ∪ Zonen ∪ Schlüssel von sensor_options` (`SensorsUi.baseSensors`), darum keine Umstellung bestehender Anlagen. `save_zones` nimmt `sensors`; `data` liefert `sensors` je Anlage und die Kandidaten (alle binary_sensor passender Klasse). In Sicherung (`SYSTEM_OPTIONS_SCHEMA`).

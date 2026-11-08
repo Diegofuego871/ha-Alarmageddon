@@ -468,6 +468,11 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-mtlist { padding: 4px 0; }
 .ag-mt { padding: 12px 16px; border-top: 1px solid var(--ag-divider); }
 .ag-mt:first-child { border-top: 0; }
+.ag-mt.group { padding-bottom: 4px; }
+.ag-mt-subs { margin: 6px 0 4px 40px; border-left: 2px solid var(--ag-divider); }
+.ag-mt.sub { border-top: 0; padding: 10px 0 10px 14px; }
+.ag-mt.sub .ag-mt-body { margin-left: 0; }
+:host([narrow]) .ag-mt-subs { margin-left: 8px; }
 .ag-mt-head { display: flex; align-items: center; gap: 12px; }
 .ag-mt-head .ag-settx { flex: 1 1 auto; min-width: 0; }
 .ag-mt.off .ag-settx { opacity: .6; }

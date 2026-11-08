@@ -7,8 +7,8 @@ const { ic, esc, errText, chapter } = await import(`./common.js${V}`);
 
 // Arten je Gruppe in der Reihenfolge der Anzeige, mit Symbol
 const GROUPS = {
-  alarm: [["triggered", "alert"], ["sensor_report", "bell"], ["sensor_offline", "offline"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
-  maintenance: [["battery_low", "battery"], ["sensor_unavailable", "offline"], ["update_available", "verUp"]],
+  alarm: [["triggered", "alert"], ["sensor_report", "bell"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
+  maintenance: [["battery_low", "battery"], ["sensor_offline", "offline"], ["sensor_unavailable", "offline"], ["update_available", "verUp"]],
 };
 const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" };
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
@@ -91,11 +91,13 @@ export class NotifyUi {
 
   // ----- Eine Meldungsart -----
 
-  _type(kind, icon, dirty) {
+  // sub: Unterpunkt in einer gemeinsamen Karte (eigene Namen "ntT2_", "ntH2_")
+  _type(kind, icon, dirty, sub = false) {
     const d = this.draft;
     const s = d.types[kind];
     const toggle = (attr, on, label) => `<button class="ag-toggle ${on ? "on" : ""}" ${attr} role="switch" aria-checked="${on}" aria-label="${esc(label)}"></button>`;
-    const name = this._t(`ntT_${kind}`);
+    const name = this._t(sub ? `ntT2_${kind}` : `ntT_${kind}`);
+    const hint = this._t(sub ? `ntH2_${kind}` : `ntH_${kind}`);
     const pct = Math.round(s.volume * 100);
     let body = "";
     if (s.enabled) {
@@ -109,8 +111,8 @@ export class NotifyUi {
         <div class="ag-mt-opt"><span class="ag-t2 ag-small">${esc(this._t("ntTestHint"))}</span>
           <button class="ag-btn" data-nt="test" data-kind="${kind}" ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
     }
-    return `<div class="ag-mt ${s.enabled ? "" : "off"}"><div class="ag-mt-head"><span class="ag-mini ${kind === "triggered" ? "err" : ""}">${ic(icon, 16)}</span>
-        <div class="ag-settx"><b>${esc(name)}</b><small>${esc(this._t(`ntH_${kind}`))}</small></div>
+    return `<div class="ag-mt ${sub ? "sub" : ""} ${s.enabled ? "" : "off"}"><div class="ag-mt-head"><span class="ag-mini ${kind === "triggered" ? "err" : ""}">${ic(icon, 16)}</span>
+        <div class="ag-settx"><b>${esc(name)}</b><small>${esc(hint)}</small></div>
         ${toggle(`data-nt="enabled" data-kind="${kind}"`, s.enabled, name)}</div>${body}</div>`;
   }
 
@@ -121,7 +123,11 @@ export class NotifyUi {
     if (!box) return;
     const dirty = this.dirtyCount() > 0;
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
-    const list = (group) => GROUPS[group].map(([kind, icon]) => this._type(kind, icon, dirty)).join("");
+    // Nicht erreichbare Sensoren: ein Punkt mit zwei Fällen (scharf, dauerhaft) statt zwei getrennter Einträge in zwei Kapiteln
+    const offline = () => `<div class="ag-mt group"><div class="ag-mt-head"><span class="ag-mini">${ic("offline", 16)}</span>
+        <div class="ag-settx"><b>${esc(this._t("ntGroupOffline"))}</b><small>${esc(this._t("ntGroupOfflineHint"))}</small></div></div>
+        <div class="ag-mt-subs">${this._type("sensor_offline", "alert", dirty, true)}${this._type("sensor_unavailable", "timer", dirty, true)}</div></div>`;
+    const list = (group) => GROUPS[group].map(([kind, icon]) => (kind === "sensor_offline" ? offline() : kind === "sensor_unavailable" ? "" : this._type(kind, icon, dirty))).join("");
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
       + chapter(this._t("ntChapAlarm"), `<div class="ag-card ag-mtlist">${list("alarm")}</div>`, this._t("ntChapAlarmHint"))
       + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"))
