@@ -107,6 +107,8 @@ class AlarmController:
         self._listeners: list[Callable[[], None]] = []
         # Ereignisse ohne Zustandswechsel (Sensor ausgefallen) für Protokoll und später Meldungen
         self._event_listeners: list[Callable[[str, dict[str, Any]], None]] = []
+        # Nur für die Alarm-Aufzeichnung (Aktionsschritte, gesendete Meldungen): nicht ins Ereignisprotokoll
+        self._record_listeners: list[Callable[[str, dict[str, Any]], None]] = []
         # Ursprüngliches Ende der Ausgangsverzögerung, falls "scharf, sobald geschlossen" sie verkürzt hat
         self._arming_deadline: datetime | None = None
         self._unsub_timer: CALLBACK_TYPE | None = None
@@ -250,6 +252,17 @@ class AlarmController:
     def add_event_listener(self, listener: Callable[[str, dict[str, Any]], None]) -> CALLBACK_TYPE:
         self._event_listeners.append(listener)
         return partial(self._event_listeners.remove, listener)
+
+    @callback
+    def add_record_listener(self, listener: Callable[[str, dict[str, Any]], None]) -> CALLBACK_TYPE:
+        self._record_listeners.append(listener)
+        return partial(self._record_listeners.remove, listener)
+
+    @callback
+    def record(self, kind: str, **data: Any) -> None:
+        """Hinweis für die Zeitachse eines laufenden Alarms."""
+        for listener in list(self._record_listeners):
+            listener(kind, data)
 
     @callback
     def emit(self, kind: str, **data: Any) -> None:

@@ -301,4 +301,5 @@ class Notifier:
     @callback
     def _send(self, kind: str, title: str, message: str, *, tag: str | None = None, actions: list | None = None,
               critical: bool | None = None) -> None:
+        self._ctl.record("notified", type=kind)
         async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical))

@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.12.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.13.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -83,7 +83,7 @@ Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
 Seitenpanel › Protokoll. Jeder Alarm wird vom ersten Auslöser (Eingangsverzögerung oder Alarm) bis zum Quittieren durch Deaktivieren aufgezeichnet:
 
 - **Zeitachse je Alarm:** eine Bahn je Sensor mit einem Balken für die Zeit, in der er angesprochen hat, Linien für die Zustandswechsel (Eingangsverzögerung, Alarm, quittiert) und die Zeitachse. Darunter die Reihenfolge mit Uhrzeit und Abstand zum Anfang ("Fensterkontakt 18:03:07, Bewegungsmelder +1 min 20 s"). Der laufende Alarm wächst live; ältere sind zugeklappt.
-- **Was aufgezeichnet wird:** Zustandswechsel und jede Änderung der Sensoren der Alarmanlage (angesprochen, wieder ruhig, nicht erreichbar), auch von Sensoren, die nur melden. Die Aufzeichnung läuft nach einem Neustart von Home Assistant mitten im Alarm weiter. Höchstens 20 Alarme je Alarmanlage und 300 Einträge je Alarm; bei einem flatternden Sensor bleiben die ersten Einträge und das Ende.
+- **Was aufgezeichnet wird:** gestartete Aktionen und gesendete Meldungen während des Alarms, Zustandswechsel und jede Änderung der Sensoren der Alarmanlage (angesprochen, wieder ruhig, nicht erreichbar), auch von Sensoren, die nur melden. Die Aufzeichnung läuft nach einem Neustart von Home Assistant mitten im Alarm weiter. Höchstens 20 Alarme je Alarmanlage und 300 Einträge je Alarm; bei einem flatternden Sensor bleiben die ersten Einträge und das Ende.
 - **Alle Ereignisse** (Scharfschalten, Deaktivieren, Sensorausfälle, Zeitplan) stehen darunter, nicht mehr auf der Übersicht.
 - Die Aufzeichnungen sind Laufzeitdaten und nicht Teil der Sicherung.
 

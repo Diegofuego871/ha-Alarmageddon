@@ -178,6 +178,8 @@
         { t: r(0), kind: "sensor", sensor: "binary_sensor.garagentor", to: "on" },
         { t: r(1), kind: "state", state: "pending", sensor: "binary_sensor.garagentor" },
         { t: r(60), kind: "state", state: "triggered", sensor: "binary_sensor.garagentor" },
+        { t: r(61), kind: "notified", type: "triggered" },
+        { t: r(61), kind: "step", step: "action", action: "siren.turn_on", targets: ["siren.flur"], test: false },
       ] };
       const open = params.get("alarm") === "open";
       return { systems: window.__systems.map((s) => ({ entry_id: s.entry_id, title: s.title, events: s.events, recordings: s.entry_id === "e_haus" ? (open ? [running, closed] : [closed]) : [], recording: s.entry_id === "e_haus" && open })) };

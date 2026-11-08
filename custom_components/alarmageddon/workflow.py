@@ -173,12 +173,26 @@ class WorkflowRunner:
                 return
             self._run["index"] = index
             self._store.async_delay_save(lambda: self._run or {}, 0)
+            self._record(steps[index], test)
             try:
                 await self._step(steps[index], test)
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 - Sicherheitsregel: ein fehlerhafter Schritt stoppt die anderen nicht
                 _LOGGER.exception("%s: step %s of the alarm actions failed", self.entry.title, index + 1)
+
+    def _record(self, step: dict[str, Any], test: bool) -> None:
+        """Zeitachse des Alarms: welcher Schritt wann gestartet ist (ohne Daten, nur Art, Aktion und Ziele)."""
+        entry: dict[str, Any] = {"step": step.get("type"), "test": test}
+        if step.get("type") == "action":
+            entry["action"] = step.get("action")
+            entry["targets"] = list(step.get("target") or [])
+        elif step.get("type") == "sound":
+            entry["targets"] = list(step.get("players") or [])
+            entry["sound"] = step.get("sound")
+        elif step.get("type") == "wait":
+            entry["seconds"] = step.get("seconds")
+        self._ctl.record("step", **entry)
 
     async def _step(self, step: dict[str, Any], test: bool) -> None:
         kind = step.get("type")

@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.12.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.13.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -83,7 +83,7 @@ Side panel › Configuration › Notifications, for all alarm systems:
 Side panel › Log. Every alarm is recorded from the first trigger (entry delay or alarm) until it is acknowledged by disarming:
 
 - **Timeline per alarm:** one lane per sensor with a bar for the time it responded, lines for the state changes (entry delay, alarm, acknowledged) and the time axis. Below, the order with the time of day and the time since the start ("window contact 18:03:07, motion sensor +1 min 20 s"). The running alarm grows live; older ones are collapsed.
-- **What is recorded:** state changes and every change of the sensors of the alarm system (responded, calm again, unreachable), including sensors that report only. Recording continues after a restart of Home Assistant in the middle of an alarm. At most 20 alarms per alarm system and 300 entries per alarm; with a flapping sensor the first entries and the end are kept.
+- **What is recorded:** actions started and notifications sent during the alarm, state changes and every change of the sensors of the alarm system (responded, calm again, unreachable), including sensors that report only. Recording continues after a restart of Home Assistant in the middle of an alarm. At most 20 alarms per alarm system and 300 entries per alarm; with a flapping sensor the first entries and the end are kept.
 - **All events** (arming, disarming, sensor failures, schedule) are listed below, no longer on the overview.
 - The recordings are runtime data and not part of the backup.
 

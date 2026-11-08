@@ -91,6 +91,15 @@ export class LogUi {
     const sensor = e.sensor ? this.host._name(e.sensor) : "";
     if (e.kind === "sensor") return this._t(e.to === "on" ? "logSensorOn" : e.to === "off" ? "logSensorOff" : "logSensorGone", { sensor });
     if (e.kind === "restart") return this._t("logRestart");
+    if (e.kind === "notified") return this._t("logNotified", { type: this._t(`ntT_${e.type}`) });
+    if (e.kind === "step") {
+      const targets = (e.targets || []).map((id) => this.host._name(id)).join(", ");
+      const test = e.test ? ` (${this._t("logTest")})` : "";
+      if (e.step === "notify") return this._t("logStepNotify") + test;
+      if (e.step === "wait") return this._t("logStepWait", { seconds: e.seconds }) + test;
+      if (e.step === "sound") return this._t("logStepSound", { targets }) + test;
+      return this._t("logStepAction", { action: e.action || "?", targets: targets || "–" }) + test;
+    }
     // Zustandseinträge wie im Ereignisprotokoll formulieren (dort ohne "kind", damit die Person erscheint)
     return this.host._eventText(e.kind === "state" ? { ...e, kind: undefined, mode: record.mode } : { ...e, mode: record.mode });
   }
@@ -99,6 +108,7 @@ export class LogUi {
     if (e.kind === "sensor") return e.to === "on" ? "err" : e.to === "off" ? "none" : "warn";
     if (e.kind === "state") return STATE_COLOR[e.state] || "none";
     if (e.kind === "sensor_offline") return "warn";
+    if (e.kind === "step" || e.kind === "notified") return "info";
     return STATE_COLOR[e.kind] || "none";
   }
 
@@ -152,7 +162,7 @@ export class LogUi {
     const t0 = new Date(record.start).getTime();
     return `<ol class="ag-seq">${(record.entries || []).map((e) => {
       const off = new Date(e.t).getTime() - t0;
-      const icon = e.kind === "sensor" ? this._icon(e.sensor) : e.state === "disarmed" ? "shieldOff" : e.kind === "restart" ? "refresh" : "alert";
+      const icon = e.kind === "sensor" ? this._icon(e.sensor) : e.state === "disarmed" ? "shieldOff" : e.kind === "restart" ? "refresh" : e.kind === "notified" ? "bell" : e.kind === "step" ? "power" : "alert";
       return `<li class="ag-seq-item ${this._tone(e)}"><span class="ag-mini">${ic(icon, 16)}</span>
         <div class="ag-seq-text"><b>${esc(this._text(e, record))}</b></div>
         <time>${esc(this._clock(e.t))}<small>${off > 0 ? `+${esc(this._dur(off))}` : esc(this._t("logStart"))}</small></time></li>`;

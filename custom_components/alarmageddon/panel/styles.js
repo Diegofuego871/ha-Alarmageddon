@@ -329,6 +329,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-seq-item .ag-mini { position: relative; z-index: 1; flex: none; }
 .ag-seq-item.err .ag-mini { background: var(--ag-error-soft); color: var(--ag-error); }
 .ag-seq-item.warn .ag-mini { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
+.ag-seq-item.info .ag-mini { background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-seq-item.ok .ag-mini { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-seq-text { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; }
 .ag-seq-text b { font-weight: 500; }

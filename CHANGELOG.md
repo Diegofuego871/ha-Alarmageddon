@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] - 2026-11-08
+
+Actions and sent notifications appear in the timeline of an alarm.
+
+### Added
+
+- **Actions and notifications in the alarm timeline:** every started step of the alarm actions (notification, action with devices, alarm sound, wait) and every notification that goes out during the alarm appears in the Log tab in order with the sensors. Steps of a test run are marked "test".
+
 ## [0.12.0] - 2026-11-08
 
 Log as its own tab with a graphical timeline for every alarm.
@@ -210,6 +218,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.13.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.13.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

@@ -17,7 +17,7 @@ def _rec(entry):
 
 
 def _kinds(record):
-    return [(e["kind"], e.get("state") or e.get("to"), e.get("sensor")) for e in record["entries"]]
+    return [(e["kind"], e.get("state") or e.get("to"), e.get("sensor")) for e in record["entries"] if e["kind"] in ("sensor", "state")]
 
 
 async def test_records_from_first_sensor_until_disarm(hass: HomeAssistant, freezer) -> None:
@@ -38,7 +38,7 @@ async def test_records_from_first_sensor_until_disarm(hass: HomeAssistant, freez
         ("sensor", "on", MOTION),
         ("sensor", "off", WINDOW),
     ]
-    times = [e["t"] for e in record["entries"]]
+    times = [e["t"] for e in record["entries"] if e["kind"] in ("sensor", "state")]
     assert times[2] > times[1] and times[3] > times[2]
     await call(hass, "alarm_disarm")
     done = _rec(entry).recordings[0]
@@ -154,3 +154,23 @@ async def test_ws_log(hass: HomeAssistant, hass_ws_client, freezer) -> None:
     res = (await client.receive_json())["result"]["systems"][0]
     assert res["entry_id"] == entry.entry_id and res["recording"] is True
     assert res["recordings"][0]["sensor"] == WINDOW and res["events"]
+
+
+async def test_steps_and_notifications_on_the_timeline(hass: HomeAssistant, hass_ws_client) -> None:
+    """Aktionsschritte und gesendete Meldungen eines Alarms stehen in der Zeitachse (0.13.0)."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    async_mock_service(hass, "notify", "handy")
+    async_mock_service(hass, "switch", "turn_on")
+    entry = await setup_alarm(hass, exit_delay_away=0, entry_delay_away=0, trigger_time=0,
+                              workflows={"away": [{"type": "action", "action": "switch.turn_on", "target": ["switch.sirene"], "data": {}}]})
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {"alarm_targets": ["notify.handy"]}})
+    assert (await client.receive_json())["success"]
+    await call(hass, "alarm_arm_away")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    kinds = [(e["kind"], e.get("step") or e.get("type")) for e in _rec(entry).current["entries"]]
+    assert ("notified", "triggered") in kinds and ("step", "action") in kinds
+    step = next(e for e in _rec(entry).current["entries"] if e["kind"] == "step")
+    assert step["action"] == "switch.turn_on" and step["targets"] == ["switch.sirene"]

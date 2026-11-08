@@ -64,7 +64,7 @@ class AlarmRecorder:
             else:
                 # Während des Neustarts quittiert oder abgelaufen: abschliessen, nichts erfinden
                 self._finish(None, reason="restart")
-        self._unsubs = [self._ctl.add_listener(self._on_change), self._ctl.add_event_listener(self._on_event)]
+        self._unsubs = [self._ctl.add_listener(self._on_change), self._ctl.add_event_listener(self._on_event), self._ctl.add_record_listener(self._on_record)]
 
     @callback
     def _on_change(self) -> None:
@@ -127,6 +127,12 @@ class AlarmRecorder:
     def _on_event(self, kind: str, data: dict[str, Any]) -> None:
         """Ereignisse ohne Zustandswechsel (Sensor ausgefallen, nicht bestätigt) gehören in einen laufenden Alarm."""
         if self.current is not None and kind in ("sensor_offline", "sensor_report", "unconfirmed"):
+            self._add({"kind": kind, **data})
+
+    @callback
+    def _on_record(self, kind: str, data: dict[str, Any]) -> None:
+        """Aktionsschritte und gesendete Meldungen des laufenden Alarms."""
+        if self.current is not None and kind in ("step", "notified"):
             self._add({"kind": kind, **data})
 
     @callback

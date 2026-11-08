@@ -41,6 +41,7 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: zwei Alarme, der laufende offen`, await r.waitFor("const h=r.querySelectorAll('.ag-inc-head'); return h.length === 2 && h[0].getAttribute('aria-expanded') === 'true' && h[1].getAttribute('aria-expanded') === 'false'"));
     check(`${tag}: laufender Alarm markiert`, await r.ev(`return r.querySelector('.ag-inc-head .ag-tag.err').textContent.trim() === '${t.running}'`));
     check(`${tag}: laufende Bahn reicht bis jetzt`, await r.ev("const b=r.querySelector('.ag-lg-bar'); return parseFloat(b.style.left) === 0 && parseFloat(b.style.width) > 95"));
+    check(`${tag}: Meldung und Aktionsschritt in der Reihenfolge`, await r.ev("const li=[...r.querySelectorAll('.ag-inc')[0].querySelectorAll('.ag-seq-item')]; return li.length === 5 && li[3].innerText.includes('Alarm') && li[4].innerText.includes('Sirene Flur') && li[4].innerText.includes('siren.turn_on')"));
     await r.tap('.ag-inc:nth-of-type(2) .ag-inc-head');
     check(`${tag}: zweiter aufklappbar, erster bleibt`, await r.waitFor("return r.querySelectorAll('.ag-inc-body').length === 2"));
     check(`${tag}: keine Fehler (laufend)`, r.errors.length === 0, r.errors.join(" | "));
