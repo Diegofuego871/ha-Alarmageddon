@@ -666,7 +666,7 @@ class AlarmageddonPanel extends HTMLElement {
 
   _onClick(ev) {
     if (this._tab === "config" && this._sub === "sensors" && this.sensors.onClick(ev.target.closest("[data-sen]"), ev)) return;
-    if (this._tab === "config" && this._sub === "system" && this.systemUi.onClick(ev.target.closest("[data-sys]"))) return;
+    if (this._tab === "config" && this._sub === "system" && this.systemUi.onClick(ev.target.closest("[data-sys], [data-scope]"))) return;
     if (this._tab === "config" && this._sub === "actions" && this.actions.onClick(ev.target.closest("[data-wf], [data-trigger]"))) return;
     if (this._tab === "config" && this._sub === "notify" && this.notify.onClick(ev.target.closest("[data-nt]"))) return;
     if (this.updates.onClick(ev.target.closest("[data-upd]"))) return;

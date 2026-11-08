@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.9.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.10.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -100,6 +100,20 @@ Side panel › Configuration › Updates (like in Device Panel):
 - **Install updates automatically** (off by default): downloads the new version through HACS after the daily check. The restart stays with you.
 - **Pre-releases:** offered on request. HACS installs them only if its own switch "Pre-release" is on for this integration (enable the entity in the HACS device and switch it on); the panel explains this.
 - The settings are part of the backup.
+
+## Settings per mode
+
+Side panel › Configuration › Alarm system › "Settings per mode": choose "Home", "Away", "Night" or "Always active" and set the values of that mode:
+
+| Value | Meaning |
+| --- | --- |
+| Exit delay | Time to leave before the alarm system is armed (not for "Always active") |
+| Entry delay | Time to disarm after an entry sensor opened (not for "Always active") |
+| Alarm duration | How long the alarm lasts; 0 = until disarmed |
+| Open sensor when arming | Block arming or bypass the open sensors (not for "Always active") |
+| Confirmation window | Time for the second sensor with "Needs a second sensor" (not for "Always active") |
+
+"Always active" is the alarm of an always-active sensor (smoke, water) while the alarm system is disarmed; only the alarm duration applies. Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
 
 ## Modes
 

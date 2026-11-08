@@ -399,4 +399,11 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-mt-opt.vol .ag-range { flex: 1 1 200px; max-width: 320px; }
 :host([narrow]) .ag-mt-body { margin-left: 0; }
 :host([narrow]) .ag-mt-opt.vol .ag-range { flex-basis: 100%; max-width: none; }
+
+/* 0.10.0: Einstellungen je Modus */
+.ag-scopebar { margin: 0 0 12px; overflow-x: auto; }
+.ag-subh { margin: 14px 4px 8px; color: var(--ag-text2); font-size: 12px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
+:host([narrow]) .ag-scopebar .ag-seg { display: flex; width: 100%; box-sizing: border-box; }
+:host([narrow]) .ag-scopebar .ag-seg > button { flex: 1 1 0; min-width: 0; padding: 7px 2px; font-size: 13px; }
+:host([narrow]) .ag-scopebar .ag-seg > button svg { display: none; }
 `;

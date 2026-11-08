@@ -7,7 +7,23 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-11-08
+
+Times and behaviour are set per mode, not for the whole alarm system.
+
+Includes the changes from 0.7.0, 0.8.0 and 0.9.0.
+
+### Changed
+
+- **Settings per mode** (Configuration › Alarm system): choose "Home", "Away", "Night" or "Always active" and set the values of that mode: exit delay, entry delay, alarm duration, behaviour for open sensors and the confirmation window for two-sensor confirmation. "Always active" is the alarm of an always-active sensor (smoke, water) while the alarm system is disarmed and has only the alarm duration. Every mode keeps its own values, also when it is switched off.
+- **Existing alarm systems keep their behaviour:** as long as a mode has no value of its own, the common value of earlier versions applies to it.
+- **The options dialog of Home Assistant** sets common values: a value you change there applies to all modes afterwards; unchanged values leave the per-mode values alone.
+- The backup contains the values per mode.
+
 ## [0.9.0] - 2026-11-08
+
+Not released; included in 0.10.0.
+
 
 Notifications rebuilt: every kind of message has its own settings, and a sensor can report instead of triggering.
 
@@ -27,7 +43,7 @@ Includes the changes from 0.7.0 and 0.8.0.
 
 ## [0.8.0] - 2026-11-08
 
-Not released; included in 0.9.0.
+Not released; included in 0.10.0.
 
 
 New look of the settings like in Device Panel, and nothing gets lost when you switch tabs.
@@ -42,7 +58,7 @@ Includes the changes from 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Not released; included in 0.9.0.
+Not released; included in 0.10.0.
 
 
 Updates from the panel, like in Device Panel.
@@ -163,6 +179,6 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.9.0
+[0.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.10.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

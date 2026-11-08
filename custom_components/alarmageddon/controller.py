@@ -38,6 +38,7 @@ from .const import (
     OPT_ARM_ON_CLOSE,
     OPT_OFFLINE_ALARM,
     OPT_REPORT_ONLY,
+    SCOPE_ALWAYS,
     REPORT_THROTTLE,
     OPT_OPEN_OK,
     CODE_LOCKOUT_SECONDS,
@@ -144,9 +145,28 @@ class AlarmController:
     def exit_delay(self, mode: str) -> int:
         return int(self.options.get(f"{CONF_EXIT_DELAY_PREFIX}{mode}", DEFAULT_EXIT_DELAY[mode]))
 
+    def mode_value(self, field: str, scope: str | None, default: Any) -> Any:
+        """Wert einer Einstellung für einen Modus ("always" ohne Modus): eigener Wert, sonst der alte gemeinsame, sonst Grundeinstellung."""
+        if scope is not None and (own := self.options.get(f"{field}_{scope}")) is not None:
+            return own
+        return self.options.get(field, default)
+
+    def entry_delay_for(self, mode: str | None) -> int:
+        return int(self.mode_value(CONF_ENTRY_DELAY, mode, DEFAULT_ENTRY_DELAY))
+
+    def trigger_time_for(self, mode: str | None) -> int:
+        return int(self.mode_value(CONF_TRIGGER_TIME, mode or SCOPE_ALWAYS, DEFAULT_TRIGGER_TIME))
+
+    def open_sensors_for(self, mode: str | None) -> str:
+        return str(self.mode_value(CONF_OPEN_SENSORS, mode, DEFAULT_OPEN_SENSORS))
+
+    def confirm_window_for(self, mode: str | None) -> int:
+        return int(self.mode_value(CONF_CONFIRM_WINDOW, mode, DEFAULT_CONFIRM_WINDOW))
+
     @property
     def entry_delay(self) -> int:
-        return int(self.options.get(CONF_ENTRY_DELAY, DEFAULT_ENTRY_DELAY))
+        """Eingangsverzögerung des Modus, in dem die Anlage gerade scharf ist (oder wird)."""
+        return self.entry_delay_for(self.mode)
 
     @property
     def entry_sensors(self) -> set[str]:
@@ -154,11 +174,12 @@ class AlarmController:
 
     @property
     def trigger_time(self) -> int:
-        return int(self.options.get(CONF_TRIGGER_TIME, DEFAULT_TRIGGER_TIME))
+        """Alarmdauer des aktuellen Modus; ohne Modus (Alarm bei deaktivierter Anlage) die von "immer aktiv"."""
+        return self.trigger_time_for(self.mode)
 
     @property
     def confirm_window(self) -> int:
-        return int(self.options.get(CONF_CONFIRM_WINDOW, DEFAULT_CONFIRM_WINDOW))
+        return self.confirm_window_for(self.mode)
 
     @property
     def codes(self) -> list[dict[str, Any]]:
@@ -454,7 +475,7 @@ class AlarmController:
         open_now = self.blocking_sensors(mode)
         bypassed: set[str] = set()
         if open_now:
-            if self.options.get(CONF_OPEN_SENSORS, DEFAULT_OPEN_SENSORS) != OPEN_BYPASS:
+            if self.open_sensors_for(mode) != OPEN_BYPASS:
                 self._emit("arm_failed", mode=mode, sensors=list(open_now))
                 raise _error("open_sensors", sensors=", ".join(self._name(e) for e in open_now))
             bypassed = set(open_now)

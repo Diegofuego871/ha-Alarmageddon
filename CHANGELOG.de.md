@@ -7,7 +7,23 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.0] - 2026-11-08
+
+Zeiten und Verhalten gelten je Modus, nicht für die ganze Alarmanlage.
+
+Enthält die Änderungen aus 0.7.0, 0.8.0 und 0.9.0.
+
+### Geändert
+
+- **Einstellungen je Modus** (Konfiguration › Anlage): "Anwesend", "Abwesend", "Nacht" oder "Immer aktiv" wählen und die Werte dieses Modus einstellen: Ausgangsverzögerung, Eingangsverzögerung, Alarmdauer, Verhalten bei offenen Sensoren und das Bestätigungsfenster der Zwei-Sensor-Bestätigung. "Immer aktiv" ist der Alarm eines immer aktiven Sensors (Rauch, Wasser), während die Anlage deaktiviert ist, und hat nur die Alarmdauer. Jeder Modus behält seine eigenen Werte, auch wenn er abgeschaltet ist.
+- **Bestehende Anlagen verhalten sich wie bisher:** Solange ein Modus keinen eigenen Wert hat, gilt für ihn der gemeinsame Wert früherer Versionen.
+- **Der Optionsdialog von Home Assistant** setzt gemeinsame Werte: Ein dort geänderter Wert gilt danach für alle Modi; unveränderte Werte lassen die Werte je Modus in Ruhe.
+- Die Sicherung enthält die Werte je Modus.
+
 ## [0.9.0] - 2026-11-08
+
+Nicht veröffentlicht; enthalten in 0.10.0.
+
 
 Meldungen neu aufgebaut: jede Meldungsart hat eigene Einstellungen, und ein Sensor kann melden statt auszulösen.
 
@@ -27,7 +43,7 @@ Enthält die Änderungen aus 0.7.0 und 0.8.0.
 
 ## [0.8.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.9.0.
+Nicht veröffentlicht; enthalten in 0.10.0.
 
 
 Neues Aussehen der Einstellungen wie in Device Panel, und beim Reiterwechsel geht nichts verloren.
@@ -42,7 +58,7 @@ Enthält die Änderungen aus 0.7.0.
 
 ## [0.7.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.9.0.
+Nicht veröffentlicht; enthalten in 0.10.0.
 
 
 Updates aus dem Panel, wie in Device Panel.
@@ -163,6 +179,6 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.9.0
+[0.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.10.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

@@ -32,6 +32,7 @@ from .const import (
     CONF_NIGHT_ENABLED,
     CONF_OPEN_SENSORS,
     CONF_TRIGGER_TIME,
+    SCOPE_ALWAYS,
     CONF_ZONE_PREFIX,
     DEFAULT_ENTRY_DELAY,
     DEFAULT_EXIT_DELAY,
@@ -133,8 +134,16 @@ class AlarmageddonOptionsFlow(OptionsFlow):
             options[CONF_ENTRY_SENSORS] = list(delays.get(CONF_ENTRY_SENSORS, []))
             options[CONF_ENTRY_DELAY] = int(delays.get(CONF_ENTRY_DELAY, 0))
             options[CONF_TRIGGER_TIME] = int(delays.get(CONF_TRIGGER_TIME, 0))
+            # Dieser Dialog setzt gemeinsame Werte: ein geänderter Wert gilt für alle Modi (im Panel lassen sie sich je Modus einstellen)
+            for key in (CONF_ENTRY_DELAY, CONF_TRIGGER_TIME):
+                if options[key] != current[key]:
+                    for scope in (*MODES, SCOPE_ALWAYS):
+                        options[f"{key}_{scope}"] = options[key]
             options[CONF_NIGHT_ENABLED] = bool(behaviour.get(CONF_NIGHT_ENABLED, False))
             options[CONF_OPEN_SENSORS] = behaviour.get(CONF_OPEN_SENSORS, DEFAULT_OPEN_SENSORS)
+            if options[CONF_OPEN_SENSORS] != current[CONF_OPEN_SENSORS]:
+                for scope in MODES:
+                    options[f"{CONF_OPEN_SENSORS}_{scope}"] = options[CONF_OPEN_SENSORS]
             options[CONF_CODE_ARM_REQUIRED] = bool(behaviour.get(CONF_CODE_ARM_REQUIRED, False))
 
             active = [m for m in MODES if m != "night" or options[CONF_NIGHT_ENABLED]]

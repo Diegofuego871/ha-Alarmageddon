@@ -57,7 +57,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 8  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 9  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -94,6 +94,11 @@ OPT_REPORT_ONLY: Final = "report_only"
 REPORT_THROTTLE: Final = 60  # höchstens eine Meldung pro Sensor und Minute
 SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM, OPT_REPORT_ONLY)
 CONF_CONFIRM_WINDOW: Final = "confirm_window"
+# Einstellungen je Modus (0.10.0): Schlüssel "<name>_<modus>" (entry_delay_away …), "always" für Alarme durch immer aktive Sensoren
+# bei deaktivierter Anlage (nur Alarmdauer). Fehlt der Wert, gilt der alte gemeinsame Schlüssel ohne Modus, dann die Grundeinstellung.
+SCOPE_ALWAYS: Final = "always"
+PER_MODE_FIELDS: Final = ("entry_delay", "trigger_time", "open_sensors", "confirm_window")
+ALWAYS_FIELDS: Final = ("trigger_time",)
 DEFAULT_CONFIRM_WINDOW: Final = 60
 MAX_CONFIRM_WINDOW: Final = 600
 # Zeit nach dem Schliessen, bevor "scharf, sobald geschlossen" greift: eine zufallende Tür prellt (wie Alarmo: Kontakt-Prellen)

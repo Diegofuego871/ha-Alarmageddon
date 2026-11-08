@@ -90,10 +90,12 @@ for (const mobile of [false, true]) {
 
   await s.tap('[data-sub="system"]');
   check("Anlage: Formular", await s.waitFor("return !!r.querySelector('.ag-sys-form input')"));
-  const input = await s.el('[data-key="entry_delay"]');
+  // Einstellungen je Modus: Abwesend ist vorgewählt, jeder Modus hat eigene Werte
+  check("Anlage: Modusleiste mit Immer aktiv", await s.ev(`return [...r.querySelectorAll('[data-scope]')].map((b) => b.dataset.scope).join() === "home,away,night,always" && r.querySelector('[data-scope="away"]').classList.contains('on')`));
+  const input = await s.el('[data-field="entry_delay"]');
   await input.fill("");
   await input.type("45");
-  check("Anlage: Fokus bleibt beim Tippen", await s.ev(`return r.activeElement?.dataset.key === "entry_delay"`));
+  check("Anlage: Fokus bleibt beim Tippen", await s.ev(`return r.activeElement?.dataset.field === "entry_delay"`));
   await input.fill("");
   await input.type("99999");
   check("Anlage: ungültig gesperrt", await s.ev(`return r.querySelector('[data-sys="save"]').disabled && r.querySelector('.ag-num.bad') !== null`));
@@ -103,7 +105,23 @@ for (const mobile of [false, true]) {
   await s.tap('[data-sys="save"]');
   check("Anlage: gespeichert", await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')"));
   const sys = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
-  check("Anlage: gesendet", sys?.entry_delay === 45 && sys.open_sensors === "bypass" && sys.night_enabled === true, JSON.stringify(sys));
+  const away = sys?.mode_settings?.away;
+  check("Anlage: gesendet je Modus", away?.entry_delay === 45 && away.open_sensors === "bypass" && sys.mode_settings.home.entry_delay === 30 && sys.mode_settings.home.open_sensors === "block" && sys.night_enabled === true, JSON.stringify(sys));
+  // Anderer Modus: eigene Werte, Entwurf bleibt beim Wechsel der Ansicht
+  await s.tap('[data-scope="home"]');
+  check("Anlage: Anwesend zeigt eigene Werte", await s.waitFor(`return r.querySelector('[data-field="entry_delay"]').value === "30" && r.querySelector('[data-sys="open"][data-value="block"]').classList.contains('on')`));
+  await (await s.el('[data-field="trigger_time"]')).fill("45");
+  await s.tap('[data-scope="away"]');
+  check("Anlage: Abwesend noch mit 45", await s.ev(`return r.querySelector('[data-field="entry_delay"]').value === "45"`));
+  await s.tap('[data-scope="always"]');
+  check("Anlage: Immer aktiv nur mit Alarmdauer", await s.waitFor(`return r.querySelectorAll('[data-sys="num"]').length === 1 && r.querySelector('[data-field="trigger_time"]') && !r.querySelector('[data-sys="open"]')`));
+  await s.tap('[data-scope="home"]');
+  check("Anlage: ein Modus mit Änderung, Entwurf gezählt", await s.ev(`return r.querySelector('.ag-foot').innerText.match(/1 (Änderung|change)/) !== null && r.querySelector('[data-field="trigger_time"]').value === "45"`));
+  await s.tap('[data-sys="save"]');
+  await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')");
+  const sys2 = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
+  check("Anlage: Alarmdauer Anwesend gesendet, Abwesend unberührt", sys2?.mode_settings?.home?.trigger_time === 45 && sys2.mode_settings.away.trigger_time === 180 && sys2.mode_settings.away.entry_delay === 45, JSON.stringify(sys2));
+  await s.tap('[data-scope="away"]');
   // Wechsel mit Änderungen verliert nichts
   await s.tap('[data-sys="mode"][data-mode="night"]');
   await s.tap('[data-sub="sensors"]');

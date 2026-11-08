@@ -40,15 +40,15 @@ for (const lang of ["de", "en"]) {
 
     // ----- Anlage: Bestätigungsfenster -----
     await s.tap('[data-sub="system"]');
-    check(`${tag}: Anlage offen`, await s.waitFor("return !!r.querySelector('[data-key=\"confirm_window\"]')"));
-    const win = await s.el('[data-key="confirm_window"]');
+    check(`${tag}: Anlage offen`, await s.waitFor("return !!r.querySelector('[data-field=\"confirm_window\"]')"));
+    const win = await s.el('[data-field="confirm_window"]');
     await win.fill("3");
     check(`${tag}: zu kleines Fenster abgelehnt`, await s.waitFor("return r.querySelector('[data-sys=\"save\"]').disabled && r.querySelector('.ag-foot .ag-err')?.textContent.includes('600')"));
     await win.fill("90");
     await s.tap('[data-sys="save"]');
     check(`${tag}: Fenster gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const sys = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
-    check(`${tag}: confirm_window gesendet`, sys?.confirm_window === 90, JSON.stringify(sys));
+    check(`${tag}: confirm_window gesendet (Abwesend)`, sys?.mode_settings?.away?.confirm_window === 90 && sys.mode_settings.home.confirm_window === 60, JSON.stringify(sys));
 
     // ----- Codes pro Person -----
     check(`${tag}: Anna mit Benutzer`, await s.ev("const row=[...r.querySelectorAll('.ag-coderow')].find((x) => x.innerText.includes('Anna')); return !!row && row.querySelectorAll('small')[0].textContent === 'Anna'"));

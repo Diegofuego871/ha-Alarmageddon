@@ -6,6 +6,8 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, MODE_KEY, MODE_ICON, errText, chapter } = await import(`./common.js${V}`);
 
 const MAX = 3600;
+const DEFAULTS = { exit_delay: 0, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 };
+const WINDOW = [5, 600];
 const ALL_MODES = ["home", "away", "night"];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -15,6 +17,7 @@ export class SystemUi {
     this.draft = null;
     this.saveState = null;
     this.saving = false;
+    this.scope = "away"; // Modus, dessen Werte gerade angezeigt werden (Ansicht, nicht Teil des Entwurfs)
   }
 
   _t(key, vars) {
@@ -25,15 +28,16 @@ export class SystemUi {
     return this.host._system();
   }
 
+  // Werte je Modus (und "always" nur mit Alarmdauer); fehlt etwas im Server-Stand, gilt die Grundeinstellung
   base(s = this.system) {
+    const ms = s.mode_settings || {};
+    const per = {};
+    for (const m of ALL_MODES) per[m] = { ...DEFAULTS, ...(ms[m] || {}) };
+    per.always = { trigger_time: ms.always?.trigger_time ?? DEFAULTS.trigger_time };
     return {
       entry: s.entry_id,
-      exit_delay: { home: 0, away: 60, night: 0, ...(s.exit_delay || {}) },
-      entry_delay: s.entry_delay ?? 30,
-      trigger_time: s.trigger_time ?? 180,
+      per,
       modes: Object.fromEntries(ALL_MODES.map((m) => [m, (s.modes || ["home", "away"]).includes(m)])),
-      open_sensors: s.open_sensors || "block",
-      confirm_window: s.confirm_window ?? 60,
       schedules: JSON.parse(JSON.stringify(s.schedules || [])),
     };
   }
@@ -56,8 +60,8 @@ export class SystemUi {
     const a = this.base(s);
     const d = this.draft;
     let n = 0;
-    for (const m of ["home", "away", "night"]) if (a.exit_delay[m] !== d.exit_delay[m]) n += 1;
-    for (const k of ["entry_delay", "trigger_time", "open_sensors", "confirm_window"]) if (a[k] !== d[k]) n += 1;
+    // Je Modus mit Änderungen zählt einmal ("Abwesend: 2 Werte" ist eine Änderung am Modus)
+    for (const scope of [...ALL_MODES, "always"]) if (Object.keys(a.per[scope]).some((k) => a.per[scope][k] !== d.per[scope][k])) n += 1;
     for (const m of ALL_MODES) if (a.modes[m] !== d.modes[m]) n += 1;
     if (JSON.stringify(a.schedules) !== JSON.stringify(d.schedules)) n += 1;
     return n;
@@ -67,11 +71,15 @@ export class SystemUi {
   invalid() {
     const d = this.draft;
     const bad = [];
-    const check = (key, v) => (!Number.isInteger(v) || v < 0 || v > MAX) && bad.push(key);
-    for (const m of ["home", "away", "night"]) check(`exit_${m}`, d.exit_delay[m]);
-    check("entry_delay", d.entry_delay);
-    check("trigger_time", d.trigger_time);
-    if (!Number.isInteger(d.confirm_window) || d.confirm_window < 5 || d.confirm_window > 600) bad.push("confirm_window");
+    const check = (key, v, [min, max] = [0, MAX]) => (!Number.isInteger(v) || v < min || v > max) && bad.push(key);
+    for (const scope of [...ALL_MODES.filter((m) => d.modes[m]), "always"]) {
+      const v = d.per[scope];
+      check(`${scope}.trigger_time`, v.trigger_time);
+      if (scope === "always") continue;
+      check(`${scope}.exit_delay`, v.exit_delay);
+      check(`${scope}.entry_delay`, v.entry_delay);
+      check(`${scope}.confirm_window`, v.confirm_window, WINDOW);
+    }
     if (!ALL_MODES.some((m) => d.modes[m])) bad.push("modes");
     if (d.schedules.some((r) => !TIME_RE.test(r.time || "") || !r.days?.length)) bad.push("schedules");
     return bad;
@@ -87,22 +95,27 @@ export class SystemUi {
     const d = this.ensureDraft();
     if (!form || !d) return;
     const modes = ALL_MODES.filter((m) => d.modes[m]);
+    // Gewählter Modus der Einstellungen: ein abgeschalteter fällt auf den ersten eingeschalteten zurück
+    if (this.scope !== "always" && !modes.includes(this.scope)) this.scope = modes.includes("away") ? "away" : modes[0] || "away";
+    const scope = this.scope;
+    const v = d.per[scope];
     const bad = new Set(this.invalid());
-    const num = (key, value, min = 0, max = MAX) => `<span class="ag-num ${bad.has(key) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-key="${key}" value="${esc(value)}" aria-label="${esc(key)}"><span class="ag-t2">${esc(this._t("seconds"))}</span></span>`;
-    const seg = `<div class="ag-seg small" data-seg="sys-open"><span class="ag-pill"></span>${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
-      .map(([v, label]) => `<button data-sys="open" data-value="${v}" class="${d.open_sensors === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
+    const num = (field, value, min = 0, max = MAX, unit = "seconds") => `<span class="ag-num ${bad.has(`${scope}.${field}`) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-field="${field}" value="${esc(value)}" aria-label="${esc(field)}"><span class="ag-t2">${esc(this._t(unit))}</span></span>`;
+    const openSeg = `<div class="ag-seg small" data-seg="sys-open"><span class="ag-pill"></span>${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
+      .map(([val, label]) => `<button data-sys="open" data-value="${val}" class="${v.open_sensors === val ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
+    const scopeSeg = h._segHtml("sys-scope", [...modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), ["always", this._t("wfAlways"), "flash"]], scope, "data-scope", "small");
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
     const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
           ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
-    const timesRows = `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysExitDelay"))}</b><small>${esc(this._t("sysExitDelayHint"))}</small></div>
-          <div class="ag-numgrid">${modes.map((m) => `<label class="ag-numlabel"><span class="ag-t2 ag-small">${esc(this._t(MODE_KEY[m]))}</span>${num(`exit_${m}`, d.exit_delay[m])}</label>`).join("")}</div></div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysEntryDelay"))}</b><small>${esc(this._t("sysEntryDelayHint"))}</small></div>${num("entry_delay", d.entry_delay)}</div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysTriggerTime"))}</b><small>${esc(this._t("sysTriggerTimeHint"))}</small></div>${num("trigger_time", d.trigger_time)}</div>`;
-    const behaviourRows = `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysOpen"))}</b></div>${seg}</div>
-        <div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysConfirm"))}</b><small>${esc(this._t("sysConfirmHint"))}</small></div>${num("confirm_window", d.confirm_window, 5, 600)}</div>`;
-    const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint"))
-      + chapter(this._t("chapTimes"), card(timesRows))
-      + chapter(this._t("chapBehaviour"), card(behaviourRows))
+    const row = (title, hint, control) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(title))}</b>${hint ? `<small>${esc(this._t(hint))}</small>` : ""}</div>${control}</div>`;
+    const timesRows = (scope === "always" ? "" : row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay)))
+      + row("sysTriggerTime", "sysTriggerTimeHint", num("trigger_time", v.trigger_time));
+    const behaviourRows = row("sysOpen", "", openSeg) + row("sysConfirm", "sysConfirmHint", num("confirm_window", v.confirm_window, WINDOW[0], WINDOW[1]));
+    const perMode = chapter(this._t("chapPerMode"), `<div class="ag-scopebar">${scopeSeg}</div>
+        ${scope === "always" ? `<p class="ag-chap-h">${esc(this._t("sysAlwaysHint"))}</p>` : ""}
+        <div class="ag-subh">${esc(this._t("chapTimes"))}</div>${card(timesRows)}
+        ${scope === "always" ? "" : `<div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}`}`, this._t("chapPerModeHint"));
+    const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint")) + perMode
       + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml();
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
     h._setHtml(form, html);
@@ -301,7 +314,7 @@ export class SystemUi {
     else if (bad) {
       const first = badKeys[0];
       const text = first === "modes" ? this._t("sysModesNone") : first === "schedules" ? this._t("schInvalid")
-        : first === "confirm_window" ? this._t("invalidNumber", { min: 5, max: 600 }) : this._t("invalidNumber", { min: 0, max: MAX });
+        : first.endsWith(".confirm_window") ? this._t("invalidNumber", { min: 5, max: 600 }) : this._t("invalidNumber", { min: 0, max: MAX });
       status = `<span class="ag-err">${esc(text)}</span>`;
     }
     else status = `<span class="ag-t2">${esc(n === 0 ? this._t("noChanges") : n === 1 ? this._t("change") : this._t("changes", { count: n }))}</span>`;
@@ -318,11 +331,11 @@ export class SystemUi {
     this.renderFoot();
     try {
       const modes = ALL_MODES.filter((m) => d.modes[m]);
-      const exit = Object.fromEntries(modes.map((m) => [m, d.exit_delay[m]]));
-      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, exit_delay: exit, entry_delay: d.entry_delay, trigger_time: d.trigger_time,
-        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, open_sensors: d.open_sensors, confirm_window: d.confirm_window, schedules: d.schedules });
-      Object.assign(s, { confirm_window: d.confirm_window, exit_delay: { ...s.exit_delay, ...exit }, entry_delay: d.entry_delay, trigger_time: d.trigger_time,
-        night_enabled: d.modes.night, modes, open_sensors: d.open_sensors, schedules: JSON.parse(JSON.stringify(d.schedules)) });
+      // Alle Modi (auch abgeschaltete behalten ihre Werte) und "always" mit der Alarmdauer
+      const mode_settings = Object.fromEntries([...ALL_MODES.map((m) => [m, { ...d.per[m] }]), ["always", { trigger_time: d.per.always.trigger_time }]]);
+      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings,
+        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, schedules: d.schedules });
+      Object.assign(s, { mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
       h._fetch();
@@ -336,6 +349,12 @@ export class SystemUi {
   }
 
   onClick(el) {
+    // Modus der Einstellungen wählen: nur die Ansicht wechselt, der Entwurf bleibt
+    if (el?.dataset.scope) {
+      this.scope = el.dataset.scope;
+      this.render();
+      return true;
+    }
     const act = el?.dataset.sys;
     if (!act) return false;
     const d = this.ensureDraft();
@@ -364,7 +383,7 @@ export class SystemUi {
       this.saveState = null;
       this.render();
     } else if (act === "open") {
-      d.open_sensors = el.dataset.value;
+      d.per[this.scope].open_sensors = el.dataset.value;
       this.saveState = null;
       this.render();
     } else if (act === "cancel") {
@@ -430,11 +449,10 @@ export class SystemUi {
     if (el.dataset.sys !== "num") return false;
     const d = this.ensureDraft();
     const v = el.value === "" ? NaN : Number(el.value);
-    const key = el.dataset.key;
-    if (key.startsWith("exit_")) d.exit_delay[key.slice(5)] = v;
-    else d[key] = v;
+    const field = el.dataset.field;
+    d.per[this.scope][field] = v;
     this.saveState = null;
-    const [min, max] = key === "confirm_window" ? [5, 600] : [0, MAX];
+    const [min, max] = field === "confirm_window" ? WINDOW : [0, MAX];
     el.closest(".ag-num")?.classList.toggle("bad", !Number.isInteger(v) || v < min || v > max);
     this.renderFoot();
     return true;

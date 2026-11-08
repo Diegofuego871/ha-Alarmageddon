@@ -3,6 +3,15 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.10.0, Einstellungen je Modus)
+
+- Werte je Modus in den Optionen als `<feld>_<modus>` (`entry_delay_away`, `trigger_time_always`, `open_sensors_home`, `confirm_window_night`; `exit_delay_<modus>` gab es schon). Rückfall: gemeinsamer Schlüssel ohne Modus, dann Grundeinstellung (`controller.mode_value`). Kein Umschreiben bestehender Daten nötig. Bereich `always` (Alarm durch immer aktiven Sensor bei deaktivierter Anlage) kennt nur `trigger_time`.
+- WebSocket: `data` liefert `mode_settings` je Modus plus `always`; `save_system` nimmt `mode_settings` (Kurzform `entry_delay` usw. ohne Modus setzt alle Modi). Optionsdialog: ein geänderter gemeinsamer Wert (Eingangsverzögerung, Alarmdauer, offener Sensor) wird auf alle Modi übertragen. Sicherung: `schemas.SYSTEM_OPTIONS_SCHEMA` kennt die Schlüssel je Modus.
+- Panel: Modusleiste (`data-scope`, Ansicht, nicht Teil des Entwurfs) in `system.js`; `d.per[modus]`.
+- Nicht je Modus (bewusst): Eingangssensoren (`entry_sensors`, eine Liste je Anlage), Code zum Scharfschalten.
+- Tests: `tests/test_mode_settings.py` (12) inkl. Pflichtfällen; Panel-Suite list-e2e angepasst.
+- Geplant, in dieser Reihenfolge: 0.11.0 Aktionen-Editor ohne JSON (Fähigkeiten aus HA), Testknopf je Aktion, Greifer, Medienplayer mit Dropdown und Test auf dem Handy; 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
+
 ## Stand (0.9.0, Meldungen)
 
 - 0.7.0 und 0.8.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.9.0 enthalten.
@@ -17,7 +26,6 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - Kapitel: `chapter(title, body, hint)` in `panel/common.js`, CSS `.ag-chap` (Strich vor dem Titel); Anlage und Updates sind umgestellt, Meldungen folgen mit 0.9.0.
 - Seiten gleiten: `.ag-pane` mit `from-right`/`from-left` (`_slide` in `alarmageddon-panel.js`, Richtung nach Reihenfolge `SUBS`).
 - Entwürfe: Reiterwechsel (Unterreiter und Übersicht) verwirft nichts mehr; `_renderDots()` setzt `has-edit` (gelb) an Reiter mit offenen Änderungen, `has-dot` (blau) für Updates. Rückfrage (`_guard`) nur beim Wechsel der Anlage; `beforeunload` warnt beim Neuladen.
-- Geplant, in dieser Reihenfolge: 0.10.0 Einstellungen je Modus; 0.11.0 Aktionen-Editor ohne JSON (Fähigkeiten aus HA), Testknopf je Aktion, Greifer, Medienplayer mit Dropdown und Test auf dem Handy; 0.12.0 Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
 
 ## Stand (0.7.0, Updates)
 

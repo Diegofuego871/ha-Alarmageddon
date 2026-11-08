@@ -41,7 +41,9 @@ from .const import (
     CONF_ENTRY_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
     CONF_NIGHT_ENABLED,
+    ALWAYS_FIELDS,
     CONF_SCHEDULES,
+    SCOPE_ALWAYS,
     MODE_ENABLED_DEFAULT,
     MODE_ENABLED_KEY,
     CONF_OPEN_SENSORS,
@@ -172,13 +174,14 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "modes": list(ctl.modes),
                 "zones": zones,
                 "entry_sensors": sorted(ctl.entry_sensors),
-                "exit_delay": {mode: ctl.exit_delay(mode) for mode in ctl.modes},
-                "entry_delay": ctl.entry_delay,
-                "trigger_time": ctl.trigger_time,
-                "open_sensors": entry.options.get(CONF_OPEN_SENSORS, "block"),
+                # Einstellungen je Modus (0.10.0); "always": Alarm durch einen immer aktiven Sensor bei deaktivierter Anlage
+                "mode_settings": {
+                    **{mode: {"exit_delay": ctl.exit_delay(mode), "entry_delay": ctl.entry_delay_for(mode), "trigger_time": ctl.trigger_time_for(mode),
+                              "open_sensors": ctl.open_sensors_for(mode), "confirm_window": ctl.confirm_window_for(mode)} for mode in ctl.modes},
+                    SCOPE_ALWAYS: {"trigger_time": ctl.trigger_time_for(None)},
+                },
                 "night_enabled": ctl.night_enabled,
                 "schedules": entry.options.get(CONF_SCHEDULES) or [],
-                "confirm_window": ctl.confirm_window,
                 "sensor_options": ctl.sensor_overrides,
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
                 "workflow_running": (entry.runtime_data.workflow.running or {}).get("trigger") if entry.runtime_data.workflow else None,
@@ -306,6 +309,15 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     {
         vol.Required("type"): f"{DOMAIN}/save_system",
         vol.Required("entry_id"): str,
+        # Je Modus (und "always" nur mit Alarmdauer): fehlende Werte bleiben, wie sie sind
+        vol.Optional("mode_settings"): {vol.In([*MODES, SCOPE_ALWAYS]): {
+            vol.Optional("exit_delay"): _SECONDS,
+            vol.Optional("entry_delay"): _SECONDS,
+            vol.Optional("trigger_time"): _SECONDS,
+            vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),
+            vol.Optional("confirm_window"): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
+        }},
+        # Kurzform: gilt für alle Modi (und als gemeinsamer Wert für Modi, die es noch nicht gibt)
         vol.Optional("exit_delay"): {vol.In(MODES): _SECONDS},
         vol.Optional("entry_delay"): _SECONDS,
         vol.Optional("trigger_time"): _SECONDS,
@@ -328,9 +340,21 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         options[f"{CONF_EXIT_DELAY_PREFIX}{mode}"] = seconds
     if "schedules" in msg:
         options[CONF_SCHEDULES] = msg["schedules"]
-    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("trigger_time", CONF_TRIGGER_TIME), ("night_enabled", CONF_NIGHT_ENABLED), ("open_sensors", CONF_OPEN_SENSORS), ("confirm_window", CONF_CONFIRM_WINDOW)):
+    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("trigger_time", CONF_TRIGGER_TIME), ("open_sensors", CONF_OPEN_SENSORS), ("confirm_window", CONF_CONFIRM_WINDOW)):
         if key in msg:
+            # Kurzform: für alle Modi (der gemeinsame Wert bleibt der Rückfall)
             options[conf] = msg[key]
+            for scope in MODES if key != "trigger_time" else (*MODES, SCOPE_ALWAYS):
+                options[f"{conf}_{scope}"] = msg[key]
+    if "night_enabled" in msg:
+        options[CONF_NIGHT_ENABLED] = msg["night_enabled"]
+    for scope, values in msg.get("mode_settings", {}).items():
+        for field, value in values.items():
+            if field == "exit_delay":
+                if scope != SCOPE_ALWAYS:
+                    options[f"{CONF_EXIT_DELAY_PREFIX}{scope}"] = value
+            elif scope != SCOPE_ALWAYS or field in ALWAYS_FIELDS:
+                options[f"{field}_{scope}"] = value
     # Modi: mindestens einer, und nie den Modus abschalten, in dem die Anlage gerade scharf ist oder wird
     # (nach dem Neuladen fände der Zustand keinen Modus mehr und die Anlage wäre still deaktiviert)
     for mode, key in MODE_ENABLED_KEY.items():

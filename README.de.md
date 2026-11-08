@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.9.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.10.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -100,6 +100,20 @@ Seitenpanel › Konfiguration › Updates (wie in Device Panel):
 - **Updates automatisch installieren** (standardmässig aus): lädt die neue Version nach der täglichen Prüfung über HACS herunter. Der Neustart bleibt bei dir.
 - **Vorabversionen:** auf Wunsch angeboten. HACS installiert sie nur, wenn sein eigener Schalter "Pre-release" bei dieser Integration an ist (Entität im HACS-Gerät aktivieren und einschalten); das Panel erklärt das.
 - Die Einstellungen gehören zur Sicherung.
+
+## Einstellungen je Modus
+
+Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend", "Abwesend", "Nacht" oder "Immer aktiv" wählen und die Werte dieses Modus einstellen:
+
+| Wert | Bedeutung |
+| --- | --- |
+| Ausgangsverzögerung | Zeit zum Verlassen, bevor die Anlage scharf ist (nicht bei "Immer aktiv") |
+| Eingangsverzögerung | Zeit zum Deaktivieren, nachdem ein Eingangssensor aufging (nicht bei "Immer aktiv") |
+| Alarmdauer | Wie lange der Alarm dauert; 0 = bis zum Deaktivieren |
+| Offener Sensor beim Scharfschalten | Scharfschalten verhindern oder die offenen Sensoren umgehen (nicht bei "Immer aktiv") |
+| Bestätigungsfenster | Zeit für den zweiten Sensor bei "Braucht einen zweiten Sensor" (nicht bei "Immer aktiv") |
+
+"Immer aktiv" ist der Alarm eines immer aktiven Sensors (Rauch, Wasser), während die Anlage deaktiviert ist; es gilt nur die Alarmdauer. Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
 
 ## Modi
 
