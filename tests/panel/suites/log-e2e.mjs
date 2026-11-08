@@ -28,6 +28,49 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Ereignisliste gefüllt`, await s.ev("return r.querySelectorAll('.ag-log .ag-row').length > 1"));
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
     await s.page.screenshot({ path: `${outDir}log-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
+    // ----- Zeitraum und Export -----
+    const rows = () => s.ev("return r.querySelectorAll('.ag-log .ag-row').length");
+    const pick = async (v) => { await (await s.el('[data-log="range"]')).selectOption(v); await s.page.waitForTimeout(150); };
+    const dayStr = (ms) => { const d = new Date(Date.now() - ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+    check(`${tag}: Zeitraum "Alles": alle Ereignisse, Anlagenwahl bei zwei Anlagen`, await rows() === 5 && await s.ev("return !!r.querySelector('[data-log=\"system\"]') && r.querySelector('.ag-log-count').textContent.includes('5')"));
+    await pick("3h");
+    check(`${tag}: letzte 3 Stunden: nur das jüngste Ereignis und der Alarm`, await s.waitFor("return r.querySelectorAll('.ag-log .ag-row').length === 1 && r.querySelectorAll('.ag-inc').length === 1"));
+    await pick("7d");
+    check(`${tag}: letzte 7 Tage: ohne das Ereignis von vor 40 Tagen`, await rows() === 4 && await s.ev("return r.querySelector('.ag-log-count').textContent.includes('4')"));
+    await pick("30d");
+    check(`${tag}: letzte 30 Tage`, await rows() === 4);
+    await pick("today");
+    check(`${tag}: heute und gestern ohne Fehler`, await s.ev("return !!r.querySelector('.ag-log-count').textContent"));
+    await pick("yesterday");
+    await pick("24h");
+    check(`${tag}: letzte 24 Stunden: drei Ereignisse (3 h, 3,3 h, 20 min)`, await rows() === 3);
+    await pick("day");
+    check(`${tag}: Tag wählen zeigt ein Datumsfeld`, await s.ev("return !!r.querySelector('input[type=\"date\"][data-log=\"from\"]')"));
+    await s.ev(`const i=r.querySelector('[data-log="from"]'); i.value='${dayStr(5 * 86400e3)}'; i.dispatchEvent(new Event('change', { bubbles: true }));`);
+    check(`${tag}: ein Tag: genau das Ereignis von vor 5 Tagen, kein Alarm`, await s.waitFor("return r.querySelectorAll('.ag-log .ag-row').length === 1 && r.querySelectorAll('.ag-inc').length === 0"));
+    await pick("span");
+    check(`${tag}: Zeitraum wählen zeigt zwei Datumsfelder`, await s.ev("return r.querySelectorAll('input[type=\"date\"]').length === 2"));
+    await s.ev(`const a=r.querySelector('[data-log="from"]'); a.value='${dayStr(6 * 86400e3)}'; a.dispatchEvent(new Event('change', { bubbles: true })); const b=r.querySelector('[data-log="to"]'); b.value='${dayStr(0)}'; b.dispatchEvent(new Event('change', { bubbles: true }));`);
+    check(`${tag}: Zeitraum von bis: vier Ereignisse`, await s.waitFor("return r.querySelectorAll('.ag-log .ag-row').length === 4"));
+    check(`${tag}: Zeitraum wird pro Browser gemerkt`, await s.ev("return localStorage.getItem('alarmageddon.logRange') === 'span'"));
+    await s.ev("const sel=r.querySelector('[data-log=\"system\"]'); sel.value=[...sel.options].find((o) => o.value !== 'all' && o.text === 'Garage').value; sel.dispatchEvent(new Event('change', { bubbles: true }));");
+    check(`${tag}: Anlage Garage: nur ihr Ereignis`, await s.waitFor("const t=r.querySelector('.ag-log').innerText; return r.querySelectorAll('.ag-log .ag-row').length === 1 && t.includes('Garage')"));
+    await s.ev("const sel=r.querySelector('[data-log=\"system\"]'); sel.value='all'; sel.dispatchEvent(new Event('change', { bubbles: true }));");
+    // Export: richtet sich nach dem Filter (7 Tage: 4 Ereignisse und der Alarm mit 6 Einträgen)
+    await pick("7d");
+    const [csv] = await Promise.all([s.page.waitForEvent("download", { timeout: 5000 }), s.tap('[data-log="export-csv"]')]);
+    const text = (await import("node:fs")).readFileSync(await csv.path(), "utf8");
+    const lines = text.replace(/^\ufeff/, "").trim().split("\r\n");
+    check(`${tag}: CSV-Name mit Zeitraum`, /^alarmageddon-log-7d-\d{4}-\d{2}-\d{2}\.csv$/.test(csv.suggestedFilename()), csv.suggestedFilename());
+    check(`${tag}: CSV: Kopfzeile, 4 Ereignisse und 6 Alarm-Einträge, Semikolon`, lines.length === 1 + 4 + 6 && lines[0].split(";").length === 7 && text.startsWith("\ufeff") && text.includes("Wandtablet"), String(lines.length));
+    check(`${tag}: CSV ohne das Ereignis von vor 40 Tagen, mit Sensornamen im Alarm`, lines.filter((x) => x.includes('"Alarm"')).length === 6 && lines.some((x) => x.includes("Fenster Bad hat angesprochen") || x.includes("Fenster Bad responded")));
+    await pick("3h");
+    const [json] = await Promise.all([s.page.waitForEvent("download", { timeout: 5000 }), s.tap('[data-log="export-json"]')]);
+    const data = JSON.parse((await import("node:fs")).readFileSync(await json.path(), "utf8"));
+    check(`${tag}: JSON mit Filter, 3 Stunden: ein Ereignis, ein Alarm`, data.format === "alarmageddon-log" && data.filter.range === "3h"
+      && data.systems.reduce((n, x) => n + x.events.length, 0) === 1 && data.systems.reduce((n, x) => n + x.recordings.length, 0) === 1, JSON.stringify(data.filter));
+    await pick("all");
+
     // Zuklappen
     await s.tap('.ag-inc-head');
     check(`${tag}: zugeklappt`, await s.waitFor("return !r.querySelector('.ag-inc-body') && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'false'"));

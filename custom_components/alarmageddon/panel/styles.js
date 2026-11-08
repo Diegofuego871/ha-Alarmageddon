@@ -299,6 +299,10 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-act { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--ag-divider); background: var(--ag-card); color: var(--ag-text); font: inherit; cursor: pointer; }
 .ag-act.on { background: var(--ag-primary-soft); border-color: transparent; color: var(--ag-primary); font-weight: 500; }
 .ag-actions { display: flex; flex-direction: column; gap: 10px; }
+.ag-log-tools { margin-bottom: 4px; }
+.ag-date { height: 38px; border-radius: 999px; padding: 0 12px; min-width: 150px; }
+:host([narrow]) .ag-log-tools .ag-grow { flex-basis: 100%; height: 0; }
+:host([narrow]) .ag-log-tools .ag-date { flex: 1 1 140px; min-width: 0; }
 .ag-inc { padding: 0; margin-bottom: 12px; overflow: hidden; }
 .ag-inc-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .ag-inc-head:hover { background: var(--ag-hover); }

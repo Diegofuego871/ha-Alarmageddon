@@ -6,6 +6,17 @@
 const V = new URL(import.meta.url).search;
 const { ic, esc, DC, chapter, errText } = await import(`./common.js${V}`);
 
+// Zeiträume des Protokolls; "day" = ein gewählter Tag, "span" = von … bis (je ganze Tage)
+const RANGES = ["all", "3h", "24h", "today", "yesterday", "7d", "30d", "day", "span"];
+const HOURS = { "3h": 3, "24h": 24, "7d": 168, "30d": 720 };
+const pad = (n) => String(n).padStart(2, "0");
+const dayStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const stamp = (d) => `${dayStr(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const parseDay = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(s || "") ? new Date(`${s}T00:00:00`) : null);
+
+const SHOWN = 300; // Zeilen in der Liste; der Export enthält alles im Zeitraum
+
 const STATE_COLOR = { pending: "warn", triggered: "err", disarmed: "ok", restart: "none" };
 
 export class LogUi {
@@ -16,6 +27,13 @@ export class LogUi {
     this.touched = false;
     this.seq = 0;
     this.error = null;
+    // Filter (Zeitraum und Anlage), der Zeitraum bleibt pro Browser gemerkt
+    const saved = host._loadPref("logRange", "all");
+    this.range = RANGES.includes(saved) ? saved : "all";
+    const today = dayStr(new Date());
+    this.from = host._loadPref("logFrom", today);
+    this.to = host._loadPref("logTo", today);
+    this.system = "all";
   }
 
   dirtyCount() {
@@ -40,6 +58,12 @@ export class LogUi {
       if (seq !== this.seq) return;
       this.error = errText(err);
     }
+    // Werkzeugleiste nur neu, wenn sich die Anlagen ändern (sonst verliert eine offene Auswahl alle 5 s ihren Fokus)
+    const sig = (this.systems || []).map((s) => s.entry_id).join();
+    if (sig !== this._toolsSig) {
+      this._toolsSig = sig;
+      this.renderTools();
+    }
     this.render();
     this._poll();
   }
@@ -56,10 +80,47 @@ export class LogUi {
     this.seq += 1;
   }
 
+  // Zeitfenster des gewählten Zeitraums: [von, bis) in Millisekunden, null = offen
+  window() {
+    const now = Date.now();
+    if (HOURS[this.range]) return [now - HOURS[this.range] * 3600e3, null];
+    const today = midnight(new Date()).getTime();
+    if (this.range === "today") return [today, null];
+    if (this.range === "yesterday") return [today - 86400e3, today];
+    const a = parseDay(this.from);
+    const b = parseDay(this.to);
+    if (this.range === "day" && a) return [a.getTime(), new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1).getTime()];
+    if (this.range === "span" && a && b) {
+      const [lo, hi] = a <= b ? [a, b] : [b, a];
+      return [lo.getTime(), new Date(hi.getFullYear(), hi.getMonth(), hi.getDate() + 1).getTime()];
+    }
+    return [null, null];
+  }
+
+  _sys() {
+    return (this.systems || []).filter((s) => this.system === "all" || s.entry_id === this.system);
+  }
+
+  _inWindow(t) {
+    const [lo, hi] = this.window();
+    const ms = new Date(t).getTime();
+    return (lo === null || ms >= lo) && (hi === null || ms < hi);
+  }
+
   incidents() {
-    return (this.systems || [])
+    const [lo, hi] = this.window();
+    return this._sys()
       .flatMap((s) => (s.recordings || []).map((r) => ({ ...r, system: s.title })))
+      // Ein Alarm gehört dazu, wenn er sich mit dem Zeitraum überschneidet
+      .filter((r) => (hi === null || new Date(r.start).getTime() < hi) && (lo === null || new Date(r.end || Date.now()).getTime() >= lo))
       .sort((a, b) => String(b.start).localeCompare(String(a.start)));
+  }
+
+  events() {
+    return this._sys()
+      .flatMap((s) => (s.events || []).map((e) => ({ ...e, system: s.title })))
+      .filter((e) => this._inWindow(e.t))
+      .sort((a, b) => String(b.t).localeCompare(String(a.t)));
   }
 
   // ----- Hilfen -----
@@ -186,8 +247,31 @@ export class LogUi {
   }
 
   html() {
-    if (!this.systems) return `<div class="ag-log-body"></div>`;
-    return `<div class="ag-log-body">${this._body()}</div>`;
+    return `<div class="ag-tools ag-log-tools">${this._toolsHtml()}</div><div class="ag-log-body">${this.systems ? this._body() : ""}</div>`;
+  }
+
+  _toolsHtml() {
+    const opt = (k) => `<option value="${k}" ${k === this.range ? "selected" : ""}>${esc(this._t(`logRange_${k}`))}</option>`;
+    const date = (key, value, label) => `<input type="date" class="ag-input ag-date" data-log="${key}" value="${esc(value)}" aria-label="${esc(label)}">`;
+    const systems = this.systems || [];
+    return `<select class="ag-select" data-log="range" aria-label="${esc(this._t("logRange"))}">${RANGES.map(opt).join("")}</select>
+      ${this.range === "day" ? date("from", this.from, this._t("logDay")) : ""}
+      ${this.range === "span" ? `${date("from", this.from, this._t("logFrom"))}<span class="ag-t2">–</span>${date("to", this.to, this._t("logTo"))}` : ""}
+      ${systems.length > 1 ? `<select class="ag-select" data-log="system" aria-label="${esc(this._t("groupsSystem"))}"><option value="all">${esc(this._t("logAllSystems"))}</option>${systems.map((s) => `<option value="${esc(s.entry_id)}" ${s.entry_id === this.system ? "selected" : ""}>${esc(s.title)}</option>`).join("")}</select>` : ""}
+      <span class="ag-grow"></span><span class="ag-t2 ag-small ag-log-count"></span>
+      <button class="ag-btn" data-log="export-csv" title="${esc(this._t("logExportHint"))}">${ic("arrowDown", 18)}${esc(this._t("logExportCsv"))}</button>
+      <button class="ag-btn" data-log="export-json">${ic("arrowDown", 18)}${esc(this._t("logExportJson"))}</button>`;
+  }
+
+  renderTools() {
+    const el = this.host._view?.querySelector(".ag-log-tools");
+    if (el) el.innerHTML = this._toolsHtml();
+    this._count();
+  }
+
+  _count() {
+    const el = this.host._view?.querySelector(".ag-log-count");
+    if (el && this.systems) el.textContent = this._t("logCount", { events: this.events().length, alarms: this.incidents().length });
   }
 
   _body() {
@@ -197,25 +281,85 @@ export class LogUi {
     const expanded = (r, i) => (this.touched ? this.open.has(r.id) : i === 0);
     const alarms = incidents.length
       ? incidents.map((r, i) => this._card(r, expanded(r, i))).join("")
-      : `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t("logNoAlarms"))}</span></div>`;
-    const events = this.systems
-      .flatMap((s) => (s.events || []).map((e) => ({ ...e, system: s.title })))
-      .sort((a, b) => String(b.t).localeCompare(String(a.t)))
-      .slice(0, 100);
+      : `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(this.range === "all" && this.system === "all" ? "logNoAlarms" : "logNoAlarmsRange"))}</span></div>`;
+    const events = this.events();
     const rows = events.length
-      ? events.map((e) => `<div class="ag-row"><time>${esc(this.host._fmtTime(e.t))}</time><span class="ag-grow"><b style="font-weight:500">${esc(e.system)}</b> · ${esc(this.host._eventText(e))}</span></div>`).join("")
-      : `<div class="ag-row ag-t2">${esc(this._t("noEvents"))}</div>`;
+      ? events.slice(0, SHOWN).map((e) => `<div class="ag-row"><time>${esc(this.host._fmtTime(e.t))}</time><span class="ag-grow"><b style="font-weight:500">${esc(e.system)}</b> · ${esc(this.host._eventText(e))}</span></div>`).join("")
+      : `<div class="ag-row ag-t2">${esc(this._t("logNoEventsRange"))}</div>`;
+    const more = events.length > SHOWN ? `<div class="ag-row ag-t2">${esc(this._t("logMore", { count: events.length - SHOWN }))}</div>` : "";
     return chapter(this._t("logAlarms"), alarms, this._t("logAlarmsHint"))
-      + chapter(this._t("logEvents"), `<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}</div></div>`);
+      + chapter(this._t("logEvents"), `<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}${more}</div></div>`);
   }
 
   render() {
     const view = this.host._view?.querySelector(".ag-log-body");
     if (!view || this.host._tab !== "log") return;
     this.host._setHtml(view, this._body());
+    this._count();
+  }
+
+  // Zeitraum, Daten und Anlage (select und date lösen "change" aus)
+  onChange(el) {
+    const k = el?.dataset?.log;
+    if (!["range", "from", "to", "system"].includes(k)) return false;
+    if (k === "range") {
+      this.range = el.value;
+      this.host._savePref("logRange", this.range);
+    } else if (k === "system") this.system = el.value;
+    else {
+      this[k] = el.value;
+      this.host._savePref(k === "from" ? "logFrom" : "logTo", el.value);
+    }
+    this.renderTools();
+    this.render();
+    return true;
+  }
+
+  // ----- Export: genau das, was der gewählte Zeitraum zeigt -----
+
+  _rangeName() {
+    return this.range === "day" ? this.from : this.range === "span" ? `${this.from}_${this.to}` : this.range;
+  }
+
+  _download(name, text, type) {
+    const blob = new Blob([text], { type });
+    const a = this.host.ownerDocument.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  exportFile(kind) {
+    if (!this.systems) return;
+    const events = this.events().reverse();
+    const incidents = this.incidents().reverse();
+    const base = `alarmageddon-log-${this._rangeName()}-${dayStr(new Date())}`;
+    if (kind === "json") {
+      const keep = new Set(events.map((e) => `${e.system}|${e.t}`));
+      const systems = this._sys().map((s) => ({
+        title: s.title,
+        events: (s.events || []).filter((e) => keep.has(`${s.title}|${e.t}`)),
+        recordings: incidents.filter((r) => r.system === s.title).map(({ system, ...r }) => r),
+      }));
+      const data = { format: "alarmageddon-log", exported: new Date().toISOString(), filter: { range: this.range, from: this.range === "day" || this.range === "span" ? this.from : null, to: this.range === "span" ? this.to : null, system: this.system }, systems };
+      this._download(`${base}.json`, JSON.stringify(data, null, 2), "application/json");
+      return;
+    }
+    // CSV mit Semikolon und BOM: öffnet sich in Excel im deutschsprachigen Raum richtig
+    const q = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
+    const rows = [];
+    for (const e of events) rows.push([e.t, e.system, this._t("logCsvEvent"), this.host._eventText(e), e.sensor || (e.sensors || []).join(" "), e.by || "", ""]);
+    for (const r of incidents) for (const e of r.entries || []) rows.push([e.t, r.system, this._t("logCsvAlarmRow"), this._text(e, r), e.sensor || "", e.by || "", stamp(new Date(r.start))]);
+    rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    const head = ["logCsvTime", "logCsvSystem", "logCsvType", "logCsvText", "logCsvSensor", "logCsvPerson", "logCsvAlarm"].map((k) => this._t(k));
+    const csv = [head, ...rows.map((r) => [stamp(new Date(r[0])), ...r.slice(1)])].map((r) => r.map(q).join(";")).join("\r\n");
+    this._download(`${base}.csv`, `\ufeff${csv}\r\n`, "text/csv;charset=utf-8");
   }
 
   onClick(el) {
+    if (el?.dataset?.log === "export-csv") return this.exportFile("csv"), true;
+    if (el?.dataset?.log === "export-json") return this.exportFile("json"), true;
     if (!el || el.dataset.log !== "toggle") return false;
     if (!this.touched) {
       this.touched = true;

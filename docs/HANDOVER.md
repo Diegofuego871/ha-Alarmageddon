@@ -5,6 +5,11 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.22.0, Protokoll mit Zeitraum und Export)
+
+- `log.js`: Zeitraum (`all, 3h, 24h, today, yesterday, 7d, 30d, day, span`, Pref `logRange/logFrom/logTo`) und Anlage filtern `events()` und `incidents()` (Alarm zählt bei Überschneidung); `window()` liefert [von, bis). Export `exportFile('csv'|'json')`: CSV mit Semikolon und BOM, eine Zeile je Ereignis und je Alarm-Eintrag; JSON mit `filter` und Rohdaten. Werkzeugleiste (`.ag-log-tools`) wird nur bei Änderung der Anlagen neu gebaut, damit offene Auswahlfelder beim 5-s-Nachladen nicht zurückspringen. Liste zeigt höchstens 300 Ereignisse, der Export alle.
+- Aufbewahrung: `EVENTS_KEEP` 1000, `RECORDINGS_KEEP` 30. Tests: log-e2e (Zeiträume, Tag, Zeitraum, Anlage, CSV und JSON).
+
 ## Stand (0.21.0, Symbol in den Meldungen)
 
 - `build_payload` setzt `data.icon_url = /alarmageddon_icon.png` (relativ, die Companion App löst es gegen ihre HA-Adresse auf). `panel.py` meldet `brand/icon.png` einmal als öffentlichen statischen Pfad an (`DATA_ICON`). Android zeigt es als Symbol der Meldung, iOS ignoriert es (Systemvorgabe). Test: `test_notifications_carry_the_integration_icon`. Nicht geprüft: Darstellung auf einem echten Android-Handy.

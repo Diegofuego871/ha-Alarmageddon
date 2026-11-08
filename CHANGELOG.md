@@ -7,11 +7,24 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.22.0] - 2026-11-08
+
+The log can be filtered by period and exported.
+
+Includes the changes from 0.13.0 to 0.21.0.
+
+### Added
+
+- **Period in the log** (Log tab): "All", "Last 3 hours", "Last 24 hours", "Today", "Yesterday", "Last 7 days", "Last 30 days", "Choose a day …" (jump to a day with the date field) and "Choose a period …" (from, to). With several alarm systems you can also filter by alarm system. The list shows how many events and alarms match. The period is remembered per browser.
+- **Export of the log** as CSV (semicolons and BOM, opens correctly in Excel) or JSON. The export contains exactly what the chosen period and alarm system show: the events and the timelines of the alarms (CSV: one row per entry with time, alarm system, type, description, sensor, person and the alarm it belongs to). The list on screen shows the newest 300 events; the export contains all of them.
+
+### Changed
+
+- **The log keeps more:** up to 1000 events and 30 alarms per alarm system (before 50 and 20), so that periods like "Last 30 days" are useful.
+
 ## [0.21.0] - 2026-11-08
 
-Notifications carry the icon of the integration.
-
-Includes the changes from 0.13.0 to 0.20.0.
+Not released; included in 0.22.0.
 
 ### Added
 
@@ -19,7 +32,7 @@ Includes the changes from 0.13.0 to 0.20.0.
 
 ## [0.20.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Changed
 
@@ -30,7 +43,7 @@ Not released; included in 0.21.0.
 
 ## [0.19.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Added
 
@@ -38,7 +51,7 @@ Not released; included in 0.21.0.
 
 ## [0.18.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Changed
 
@@ -47,7 +60,7 @@ Not released; included in 0.21.0.
 
 ## [0.17.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Added
 
@@ -60,7 +73,7 @@ Not released; included in 0.21.0.
 
 ## [0.16.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Added
 
@@ -74,7 +87,7 @@ Not released; included in 0.21.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Changed
 
@@ -83,7 +96,7 @@ Not released; included in 0.21.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Changed
 
@@ -94,7 +107,7 @@ Not released; included in 0.21.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.21.0.
+Not released; included in 0.22.0.
 
 ### Added
 
@@ -303,7 +316,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.21.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.21.0
+[0.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.22.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0
