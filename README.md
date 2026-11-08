@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.4.0). Alarm core, side panel, alarm actions and notifications work. Maintenance notifications and battery prognosis follow in a later version.
+> **Status:** early pre-release (0.5.0). Alarm core, side panel, alarm actions, notifications, maintenance and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -22,8 +22,10 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Ready to arm:** one entity per mode with the blocking sensors.
 - **Alarm actions:** a graphical workflow per alarm: push notification, switch devices, covers, alarm sound on media players (Sonos and others), wait, script, any action. Devices return to their previous state after the alarm.
 - **Notifications:** critical push notifications with volume, recipients separately for alarms and maintenance, selectable events.
-
-Planned: maintenance notifications (low battery, unreachable) and battery prognosis.
+- **Maintenance:** notifications for low battery and unreachable sensors (once per problem), battery forecast in the list.
+- **Two-sensor confirmation:** motion sensors can require a second sensor before they trigger, against false alarms.
+- **Codes per person:** own code per person, optionally linked to a Home Assistant user; "changed by" shows the person.
+- **Backup:** all settings as a file, without codes.
 
 ## Installation
 
@@ -41,7 +43,7 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
    - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
    - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door), alarm duration.
    - **Behaviour:** night mode, open sensor when arming (block or bypass), code required to arm.
-   - **Code:** set a new code or remove it.
+   - **Code:** set a new main code or remove it. Personal codes: see "Codes per person".
 
 Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not trigger.
 
@@ -72,6 +74,23 @@ Side panel › Configuration › Notifications, for all alarm systems:
 - **Critical alarm notification:** sounds in silent mode and do not disturb. iOS uses the volume set here, Android the alarm channel (`alarm_stream`).
 - **Events:** alarm, entry delay, armed, disarmed, arming not possible, sensor unreachable while armed.
 - **"Disarm" button in the notification:** off by default. iOS asks for Face ID or the passcode, Android does not: anyone holding the unlocked phone can disarm.
+- **Maintenance:** low battery (threshold, default 20 %) and sensors unreachable for longer than a set time (default 60 minutes) go to the maintenance recipients. Each problem once, several in one notification; again after the battery was replaced or the sensor responded.
+
+## Maintenance and battery forecast
+
+The sensor list on the overview shows a battery forecast ("~3 months"): the time until the battery falls below the threshold, from the recorder history of the last 90 days since the last battery change. Without enough history (less than three days or no drop) the column stays empty. Requires the recorder (on by default in Home Assistant).
+
+## Codes per person
+
+Side panel › Configuration › Alarm system › "Codes per person": each person gets their own code (4 to 8 digits), optionally linked to a Home Assistant user. Arming or disarming with that code shows the person as "changed by", in the recent events and in the notifications. Actions of a linked user without a code show the same name. The main code from the options keeps working. Codes are stored only as a hash and never shown. Wrong codes count together: after five wrong codes the alarm system is locked for one minute.
+
+## Two-sensor confirmation
+
+Option per sensor "Needs a second sensor" (side sheet of the sensor or defaults per sensor type). While armed such a sensor triggers only if another sensor with this option responds within the confirmation window (Configuration › Alarm system, default 60 seconds). The same sensor twice does not count. Sensors without the option trigger alone as before; during the entry delay the option does not apply, and "failure counts as alarm" still triggers at once. Off by default: an alarm system should rather alarm in doubt.
+
+## Backup
+
+Side panel › Configuration › Alarm system › "Backup": "Export" saves all settings of all alarm systems as a JSON file (zones, delays, options per sensor, actions, defaults, notifications). "Import" shows first which alarm systems are found (matched by name) and replaces their settings after confirming. Codes are never part of a backup, and the codes of the target alarm system stay as they are. The backup of Home Assistant contains all settings including codes anyway.
 
 ## Apple HomeKit
 

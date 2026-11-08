@@ -7,7 +7,7 @@
 const V = new URL(import.meta.url).search;
 const { pickLang, translate } = await import(`./strings.js${V}`);
 const { CSS } = await import(`./styles.js${V}`);
-const { ic, esc, MODE_ICON, MODE_KEY, ARMED, DC, GONE, POLL_MS, WS_TIMEOUT_MS, errText, isConnectionError } = await import(`./common.js${V}`);
+const { ic, esc, MODE_ICON, MODE_KEY, ARMED, DC, GONE, POLL_MS, WS_TIMEOUT_MS, errText, isConnectionError, LOW_BATTERY } = await import(`./common.js${V}`);
 const { ListUi } = await import(`./list.js${V}`);
 const { SensorsUi } = await import(`./sensors.js${V}`);
 const { SystemUi } = await import(`./system.js${V}`);
@@ -68,7 +68,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
       <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
-      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog></div>`;
+      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
     // Wie auch immer der Code-Dialog schliesst (Abbrechen, Escape, Erfolg): Auswahl wieder nach dem echten Zustand
     this._root.getElementById("ag-code").addEventListener("close", () => this._renderTop(true));
@@ -134,6 +134,19 @@ class AlarmageddonPanel extends HTMLElement {
 
   // ----- Daten -----
 
+  // Batterieprognose getrennt: der Verlauf kann dauern, die Liste soll nicht warten. Höchstens einmal pro Stunde.
+  async _fetchForecast() {
+    if (this._forecastAt && Date.now() - this._forecastAt < 3600e3) return;
+    this._forecastAt = Date.now();
+    try {
+      const res = await this._hass.callWS({ type: "alarmageddon/battery_forecast" });
+      this._forecast = res?.forecast || {};
+      if (this._tab === "overview" && this._view) this._renderView(false);
+    } catch {
+      this._forecastAt = 0; // nächster Abruf versucht es wieder; ohne Prognose bleibt die Spalte leer
+    }
+  }
+
   async _fetch() {
     if (!this._hass) return;
     const seq = ++this._fetchSeq;
@@ -149,6 +162,7 @@ class AlarmageddonPanel extends HTMLElement {
       if (!this._systems().some((s) => s.entry_id === this._sel)) this._sel = this._systems()[0]?.entry_id || null;
       for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) if (!ui.dirtyCount()) ui.draft = null;
       this._sig = this._stateSig();
+      this._fetchForecast();
       // Erstes Laden: alles; danach nur die Ansicht, damit Suchfeld und Fokus bleiben
       if (!this._loaded || !this._view) {
         this._loaded = true;
@@ -186,6 +200,11 @@ class AlarmageddonPanel extends HTMLElement {
 
   _name(entityId) {
     return this._state(entityId)?.attributes?.friendly_name || this._sensor(entityId).name || entityId;
+  }
+
+  // Schwelle "Batterie schwach" aus den Benachrichtigungen (global), damit Liste, Kachel und Meldung übereinstimmen
+  _lowBattery() {
+    return this._data?.notify?.battery_threshold ?? LOW_BATTERY;
   }
 
   _battery(entityId) {
@@ -483,6 +502,8 @@ class AlarmageddonPanel extends HTMLElement {
     const sensor = e.sensor ? this._name(e.sensor) : "";
     let text;
     if (e.kind === "sensor_offline") text = this._t("evOffline", { sensor });
+    else if (e.kind === "unconfirmed") text = this._t("evUnconfirmed", { sensor });
+    else if (e.kind === "arm_failed") text = this._t("evArmFailed", { mode, sensors: (e.sensors || []).map((x) => this._name(x)).join(", ") });
     else if (ARMED[e.state]) text = this._t("evArmed", { mode });
     else if (e.state === "arming") text = this._t("evArming", { mode });
     else if (e.state === "disarmed") text = this._t("evDisarmed");

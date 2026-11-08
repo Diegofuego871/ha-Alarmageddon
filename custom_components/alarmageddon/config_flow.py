@@ -24,6 +24,7 @@ from .const import (
     CONF_CODE_ARM_REQUIRED,
     CONF_CODE_HASH,
     CONF_CODE_SALT,
+    CONF_CODES,
     CONF_ENTRY_DELAY,
     CONF_ENTRY_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
@@ -153,7 +154,7 @@ class AlarmageddonOptionsFlow(OptionsFlow):
                     options[CONF_CODE_HASH], options[CONF_CODE_SALT] = await self.hass.async_add_executor_job(
                         hash_code, new_code
                     )
-                if options[CONF_CODE_ARM_REQUIRED] and not options.get(CONF_CODE_HASH):
+                if options[CONF_CODE_ARM_REQUIRED] and not options.get(CONF_CODE_HASH) and not options.get(CONF_CODES):
                     errors["base"] = "code_missing"
                 else:
                     return self.async_create_entry(data=options)

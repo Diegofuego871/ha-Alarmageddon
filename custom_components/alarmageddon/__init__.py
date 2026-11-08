@@ -16,6 +16,7 @@ from . import websocket_api
 from .const import DOMAIN, MODES
 from .controller import AlarmController
 from .events import EventLog, async_remove_events
+from .maintenance import async_start_maintenance, async_stop_maintenance
 from .notify import Notifier
 from .panel import async_register_panel, async_remove_panel
 from .settings import async_get_settings
@@ -69,6 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     # Neue Voreinstellungen ändern, welche Sensoren immer aktiv sind und wem zugehört wird: neu laden
     entry.async_on_unload(settings.add_listener(lambda: hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))))
     await async_register_panel(hass)
+    await async_start_maintenance(hass, settings)
     return True
 
 
@@ -99,6 +101,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry
     # Das Panel bleibt, solange noch eine Anlage geladen ist (auch während eines Neuladens wird es kurz entfernt)
     if not others:
         async_remove_panel(hass)
+        await async_stop_maintenance(hass)
     return True
 
 

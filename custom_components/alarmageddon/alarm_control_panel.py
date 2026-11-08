@@ -96,6 +96,9 @@ class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEnti
         """Name des Benutzers aus dem Aufruf, für "geändert von" (später auch in Push-Meldungen)."""
         if not self._context or not self._context.user_id:
             return None
+        # Mit einem persönlichen Code verknüpft: der Name der Person, sonst der Name des Benutzers
+        if person := self._ctl.person_for_user(self._context.user_id):
+            return person
         user = await self.hass.auth.async_get_user(self._context.user_id)
         return user.name if user else None
 

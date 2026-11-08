@@ -3,7 +3,7 @@
 // Änderungen sind ein Entwurf mit "Abbrechen" und "Speichern" (Regel aus ha-device-panel).
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, DC, OPENINGS, MOTION, LOW_BATTERY, MODE_KEY, MODE_ICON, OPTIONS, TYPES, DEFAULT_PRESETS, errText } = await import(`./common.js${V}`);
+const { ic, esc, DC, OPENINGS, MOTION, MODE_KEY, MODE_ICON, OPTIONS, TYPES, DEFAULT_PRESETS, errText } = await import(`./common.js${V}`);
 
 const ALL_MODES = ["home", "away", "night"];
 
@@ -192,7 +192,7 @@ export class SensorsUi {
     ];
     const sub = r.info.missing ? this._t("missing") : [this._t(label), ...active].join(" · ");
     const b = h._battery(r.id);
-    const batt = b === null ? `<span class="ag-batt">${r.info.battery ? "–" : esc(this._t("mains"))}</span>` : `<span class="ag-batt ${b < LOW_BATTERY ? "low" : ""}">${b} %</span>`;
+    const batt = b === null ? `<span class="ag-batt">${r.info.battery ? "–" : esc(this._t("mains"))}</span>` : `<span class="ag-batt ${b < this.host._lowBattery() ? "low" : ""}">${b} %</span>`;
     const ownDot = this.draft.opts[r.id] ? `<span class="ag-owndot" title="${esc(this._t("originOwn"))}"></span>` : "";
     return { av: `<span class="ag-av ${cls}">${ic(r.info.missing ? "offline" : icon, 18)}</span>`, sub, batt, ownDot };
   }

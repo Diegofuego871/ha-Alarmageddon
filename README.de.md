@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.4.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen und Benachrichtigungen funktionieren. Wartungsmeldungen und Batterieprognose folgen in einer späteren Version.
+> **Status:** frühe Vorabversion (0.5.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -22,8 +22,10 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
 - **Alarmaktionen:** ein grafischer Ablauf pro Alarm: Push-Meldung, Geräte schalten, Rollläden, Alarmton auf Medienplayern (Sonos und andere), Warten, Skript, jede Aktion. Geräte kehren nach dem Alarm in den Zustand davor zurück.
 - **Benachrichtigungen:** kritische Push-Meldungen mit Lautstärke, Empfänger getrennt für Alarme und Wartung, wählbare Ereignisse.
-
-Geplant: Wartungsmeldungen (Batterie schwach, nicht erreichbar) und Batterieprognose.
+- **Wartung:** Meldungen bei schwacher Batterie und nicht erreichbaren Sensoren (einmal pro Problem), Batterieprognose in der Liste.
+- **Zwei-Sensor-Bestätigung:** Bewegungsmelder können vor dem Auslösen einen zweiten Sensor verlangen, gegen Fehlalarm.
+- **Codes pro Person:** eigener Code pro Person, auf Wunsch mit einem Benutzer von Home Assistant verknüpft; "geändert von" zeigt die Person.
+- **Sicherung:** alle Einstellungen als Datei, ohne Codes.
 
 ## Installation
 
@@ -41,7 +43,7 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
    - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht" (dasselbe wie im Seitenpanel). Ein Sensor kann in mehreren Zonen sein.
    - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür), Alarmdauer.
    - **Verhalten:** Modus "Nacht", offener Sensor beim Scharfschalten (verhindern oder umgehen), Code zum Scharfschalten.
-   - **Code:** neuen Code setzen oder entfernen.
+   - **Code:** neuen Hauptcode setzen oder entfernen. Persönliche Codes: siehe "Codes pro Person".
 
 Nur ein echter Wechsel von "zu" auf "offen" löst aus. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 
@@ -72,6 +74,23 @@ Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
 - **Kritische Alarmmeldung:** ertönt auch im Lautlos- und Nicht-stören-Modus. iOS nutzt die hier eingestellte Lautstärke, Android den Alarmkanal (`alarm_stream`).
 - **Ereignisse:** Alarm, Eingangsverzögerung, scharf, deaktiviert, Scharfschalten nicht möglich, Sensor im scharfen Zustand nicht erreichbar.
 - **Knopf "Deaktivieren" in der Meldung:** standardmässig aus. iOS fragt nach Face ID oder dem Code des Geräts, Android nicht: Wer das entsperrte Handy hält, kann deaktivieren.
+- **Wartung:** schwache Batterie (Schwelle, Standard 20 %) und Sensoren, die länger als eine eingestellte Zeit nicht erreichbar sind (Standard 60 Minuten), gehen an die Wartungs-Empfänger. Jedes Problem einmal, mehrere in einer Meldung; erneut nach Batteriewechsel oder wenn der Sensor wieder antwortet.
+
+## Wartung und Batterieprognose
+
+Die Sensorliste auf der Übersicht zeigt eine Batterieprognose ("~3 Monate"): die Zeit, bis die Batterie unter die Schwelle fällt, aus dem Verlauf des Recorders der letzten 90 Tage seit dem letzten Batteriewechsel. Ohne genug Verlauf (weniger als drei Tage oder kein Abfall) bleibt die Spalte leer. Braucht den Recorder (in Home Assistant standardmässig an).
+
+## Codes pro Person
+
+Seitenpanel › Konfiguration › Anlage › "Codes pro Person": Jede Person bekommt einen eigenen Code (4 bis 8 Ziffern), auf Wunsch mit einem Benutzer von Home Assistant verknüpft. Wer mit diesem Code scharf schaltet oder deaktiviert, steht als "geändert von", in den letzten Ereignissen und in den Meldungen. Aktionen eines verknüpften Benutzers ohne Code zeigen denselben Namen. Der Hauptcode aus den Optionen gilt weiter. Codes werden nur als Hash gespeichert und nie angezeigt. Falsche Codes zählen gemeinsam: Nach fünf falschen Codes ist die Anlage eine Minute gesperrt.
+
+## Zwei-Sensor-Bestätigung
+
+Option pro Sensor "Braucht einen zweiten Sensor" (Seitenblatt des Sensors oder Voreinstellungen je Sensorart). Im scharfen Zustand löst ein solcher Sensor nur aus, wenn ein weiterer Sensor mit dieser Option innerhalb des Bestätigungsfensters anspricht (Konfiguration › Anlage, Standard 60 Sekunden). Derselbe Sensor zweimal zählt nicht. Sensoren ohne die Option lösen wie bisher allein aus; während der Eingangsverzögerung gilt die Option nicht, und "Ausfall gilt als Alarm" löst weiterhin sofort aus. Standardmässig aus: Eine Alarmanlage soll im Zweifel alarmieren.
+
+## Sicherung
+
+Seitenpanel › Konfiguration › Anlage › "Sicherung": "Exportieren" speichert alle Einstellungen aller Alarmanlagen als JSON-Datei (Zonen, Verzögerungen, Optionen pro Sensor, Aktionen, Voreinstellungen, Benachrichtigungen). "Importieren" zeigt zuerst, welche Alarmanlagen gefunden werden (Zuordnung über den Namen), und ersetzt deren Einstellungen nach Bestätigung. Codes sind nie Teil einer Sicherung, und die Codes der Zielanlage bleiben, wie sie sind. Die Sicherung von Home Assistant enthält ohnehin alle Einstellungen samt Codes.
 
 ## Apple HomeKit
 

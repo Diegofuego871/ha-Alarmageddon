@@ -2,11 +2,11 @@
 // Sortierung; zeigt Zustand, Batterie, Empfang, Firmware und mehr. Ansicht pro Browser gemerkt (localStorage).
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, DC, GONE, LOW_BATTERY } = await import(`./common.js${V}`);
+const { ic, esc, DC, GONE } = await import(`./common.js${V}`);
 
-const COLUMNS = ["area", "systems", "state", "battery", "signal", "firmware", "model", "integration", "changed"];
-const DEFAULT_VIEW = { cols: ["area", "systems", "state", "battery", "signal", "firmware", "changed"], group: "area", sort: "name" };
-const COL_LABEL = { area: "colArea", systems: "colSystems", state: "colState", battery: "colBattery", signal: "colSignal", firmware: "colFirmware", model: "colModel", integration: "colIntegration", changed: "colChanged" };
+const COLUMNS = ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "model", "integration", "changed"];
+const DEFAULT_VIEW = { cols: ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "changed"], group: "area", sort: "name" };
+const COL_LABEL = { area: "colArea", systems: "colSystems", state: "colState", battery: "colBattery", forecast: "colForecast", signal: "colSignal", firmware: "colFirmware", model: "colModel", integration: "colIntegration", changed: "colChanged" };
 const MOTION_CLASSES = new Set(["motion", "occupancy", "presence", "moving"]);
 const ZONE_SHORT = { home: "modeHome", away: "modeAway", night: "modeNight" };
 
@@ -71,7 +71,7 @@ export class ListUi {
         area: info.area || this._t("noArea"),
         state: st?.state,
         open: st?.state === "on",
-        low: battery !== null && battery < LOW_BATTERY,
+        low: battery !== null && battery < h._lowBattery(),
         signal: Number.isFinite(sigVal) ? { value: sigVal, unit: sigState.attributes.unit_of_measurement || "" } : null,
         changed: st?.last_changed || null,
       };
@@ -160,6 +160,7 @@ export class ListUi {
       case "systems": return r.systems.map((s) => `<span class="ag-ztag" title="${esc(s.title)}">${h._systems().length > 1 ? `${esc(s.title)}: ` : ""}${s.modes.length ? s.modes.map((m) => esc(this._t(ZONE_SHORT[m]))).join(" · ") : esc(this._t("optAlways"))}</span>`).join(" ");
       case "state": return this._stateHtml(r);
       case "battery": return this._batteryHtml(r);
+      case "forecast": return this._forecastHtml(r) || `<span class="ag-t2">–</span>`;
       case "signal": return this._signalHtml(r);
       case "firmware": return esc(r.info.sw_version || "–");
       case "model": return `${esc(r.info.manufacturer || "–")}<div class="ag-t2 ag-small">${esc(r.info.model || "")}</div>`;
@@ -174,6 +175,18 @@ export class ListUi {
     const motion = MOTION_CLASSES.has(r.info.device_class);
     if (r.open) return `<span class="ag-tag warn">${esc(this._t(motion ? "stDetected" : "stOpen"))}</span>`;
     return `<span class="ag-tag ok">${esc(this._t(motion ? "stClear" : "stClosed"))}</span>`;
+  }
+
+  // Prognose aus alarmageddon/battery_forecast (kommt nach der Liste); ohne genug Verlauf nichts
+  _forecastHtml(r) {
+    const days = r.info.battery ? this.host._forecast?.[r.info.battery] : null;
+    if (days === null || days === undefined) return "";
+    let text;
+    if (days < 1) text = this._t("fcNow");
+    else if (days < 60) text = this._t("fcDays", { count: Math.round(days) });
+    else if (days < 365) text = this._t("fcMonths", { count: Math.round(days / 30) });
+    else text = this._t("fcYear");
+    return `<span class="ag-fc ${days < 30 ? "warn" : ""}" title="${esc(this._t("fcHint"))}">${ic("timer", 14)} ${esc(text)}</span>`;
   }
 
   _batteryHtml(r) {
@@ -206,7 +219,7 @@ export class ListUi {
   _cards(groups) {
     return `<div class="ag-mcards">${groups.map(([g, rows]) => `${g !== null ? `<div class="ag-group-label">${esc(g)}</div>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
-      const meta = [this._batteryHtml(r), this.view.cols.includes("signal") ? this._signalHtml(r) : "", r.info.sw_version && this.view.cols.includes("firmware") ? `<span class="ag-t2">${ic("chip", 14)} ${esc(r.info.sw_version)}</span>` : ""].filter(Boolean).join("");
+      const meta = [this._batteryHtml(r), this.view.cols.includes("forecast") ? this._forecastHtml(r) : "", this.view.cols.includes("signal") ? this._signalHtml(r) : "", r.info.sw_version && this.view.cols.includes("firmware") ? `<span class="ag-t2">${ic("chip", 14)} ${esc(r.info.sw_version)}</span>` : ""].filter(Boolean).join("");
       return `<div class="ag-card ag-mcard ag-lcard" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
         <div style="flex:1;min-width:0">${esc(r.name)}<div class="ag-t2 ag-small">${esc(r.area)} · ${this._cell("systems", r)}</div></div>${this._stateHtml(r)}</div><div class="ag-lmeta">${meta}</div></div>`;
     }).join("")}`).join("")}</div>`;

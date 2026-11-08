@@ -26,9 +26,12 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.event import async_track_point_in_utc_time, async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
-from .code import verify_code
+from .code import match_code
 from .const import (
     ARM_ON_CLOSE_SETTLE,
+    CONF_CONFIRM_WINDOW,
+    DEFAULT_CONFIRM_WINDOW,
+    OPT_CONFIRM,
     CONF_SENSOR_OPTIONS,
     DEFAULT_PRESETS,
     OPT_ALWAYS,
@@ -39,6 +42,7 @@ from .const import (
     CODE_MAX_ATTEMPTS,
     CONF_CODE_ARM_REQUIRED,
     CONF_CODE_HASH,
+    CONF_CODES,
     CONF_CODE_SALT,
     CONF_ENTRY_DELAY,
     CONF_ENTRY_SENSORS,
@@ -104,6 +108,8 @@ class AlarmController:
         self._unsub_sensors: CALLBACK_TYPE | None = None
         self._failed_codes = 0
         self._locked_until: datetime | None = None
+        # Sensoren mit "braucht Bestätigung", die angesprochen haben, und wann (Zwei-Sensor-Bestätigung)
+        self._unconfirmed: dict[str, datetime] = {}
 
     # ----- Einstellungen (immer frisch aus den Optionen) -----
 
@@ -140,8 +146,27 @@ class AlarmController:
         return int(self.options.get(CONF_TRIGGER_TIME, DEFAULT_TRIGGER_TIME))
 
     @property
+    def confirm_window(self) -> int:
+        return int(self.options.get(CONF_CONFIRM_WINDOW, DEFAULT_CONFIRM_WINDOW))
+
+    @property
+    def codes(self) -> list[dict[str, Any]]:
+        return [c for c in self.options.get(CONF_CODES, []) or [] if isinstance(c, dict) and c.get("hash")]
+
+    @property
     def has_code(self) -> bool:
-        return bool(self.options.get(CONF_CODE_HASH))
+        return bool(self.options.get(CONF_CODE_HASH)) or bool(self.codes)
+
+    def person_for_user(self, user_id: str | None) -> str | None:
+        """Name der Person, deren Code mit diesem HA-Benutzer verknüpft ist (für "geändert von")."""
+        return next((c["name"] for c in self.codes if user_id and c.get("user_id") == user_id), None)
+
+    def _candidates(self) -> list[tuple[tuple[str, str], str | None]]:
+        out: list[tuple[tuple[str, str], str | None]] = []
+        if self.options.get(CONF_CODE_HASH):
+            out.append(((self.options[CONF_CODE_HASH], self.options[CONF_CODE_SALT]), None))
+        out.extend(((c["hash"], c["salt"]), c.get("name")) for c in self.codes)
+        return out
 
     @property
     def code_arm_required(self) -> bool:
@@ -308,6 +333,8 @@ class AlarmController:
             return
         if not went_on:
             return
+        if self.state != AlarmControlPanelState.PENDING and not self._confirmed(entity):
+            return
 
         delayed = entity in self.entry_sensors and self.entry_delay > 0
         if self.state == AlarmControlPanelState.PENDING:
@@ -321,6 +348,26 @@ class AlarmController:
             self._go_pending(self.entry_delay)
         else:
             self._go_triggered()
+
+    @callback
+    def _confirmed(self, entity: str) -> bool:
+        """
+        Zwei-Sensor-Bestätigung: Ein Sensor mit dieser Option löst nur aus,
+        wenn ein anderer Sensor mit derselben Option innerhalb des Zeitfensters
+        angesprochen hat. Sensoren ohne die Option lösen wie immer allein aus.
+        Während der Eingangsverzögerung gilt sie nicht (die Tür war der erste Sensor).
+        """
+        if not self.option(entity, OPT_CONFIRM):
+            return True
+        now = dt_util.utcnow()
+        window = timedelta(seconds=self.confirm_window)
+        self._unconfirmed = {e: t for e, t in self._unconfirmed.items() if now - t <= window}
+        if any(e != entity for e in self._unconfirmed):
+            self._unconfirmed.clear()
+            return True
+        self._unconfirmed[entity] = now
+        self._emit("unconfirmed", sensor=entity)
+        return False
 
     @callback
     def _on_arming_change(self, entity: str, went_on: bool, went_off: bool) -> None:
@@ -345,14 +392,14 @@ class AlarmController:
 
     # ----- Code -----
 
-    async def _async_check_code(self, code: str | None) -> None:
+    async def _async_check_code(self, code: str | None) -> str | None:
+        """Prüft den Code; gibt den Namen der Person zurück, wenn es ein persönlicher Code ist."""
         now = dt_util.utcnow()
         if self._locked_until and now < self._locked_until:
             raise _error("code_locked", seconds=str(int((self._locked_until - now).total_seconds()) + 1))
-        ok = bool(code) and await self.hass.async_add_executor_job(
-            verify_code, str(code), self.options[CONF_CODE_HASH], self.options[CONF_CODE_SALT]
-        )
-        if not ok:
+        candidates = self._candidates()
+        index = await self.hass.async_add_executor_job(match_code, str(code), [c for c, _ in candidates]) if code else None
+        if index is None:
             self._failed_codes += 1
             if self._failed_codes >= CODE_MAX_ATTEMPTS:
                 self._failed_codes = 0
@@ -360,6 +407,7 @@ class AlarmController:
             raise _error("invalid_code")
         self._failed_codes = 0
         self._locked_until = None
+        return candidates[index][1]
 
     # ----- Befehle -----
 
@@ -369,7 +417,7 @@ class AlarmController:
         if self.state in (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED):
             raise _error("disarm_first")
         if self.code_arm_required:
-            await self._async_check_code(code)
+            changed_by = await self._async_check_code(code) or changed_by
         open_now = self.blocking_sensors(mode)
         bypassed: set[str] = set()
         if open_now:
@@ -380,6 +428,7 @@ class AlarmController:
         self._cancel_timer()
         self.mode = mode
         self._arming_deadline = None
+        self._unconfirmed.clear()
         self.bypassed = bypassed
         self.triggered_by = None
         self.changed_by = changed_by
@@ -393,11 +442,12 @@ class AlarmController:
     async def async_disarm(self, code: str | None, changed_by: str | None = None, skip_code: bool = False) -> None:
         # skip_code nur für die Push-Aktion "Deaktivieren", die der Nutzer ausdrücklich eingeschaltet hat
         if self.has_code and not skip_code:
-            await self._async_check_code(code)
+            changed_by = await self._async_check_code(code) or changed_by
         self._cancel_timer()
         self.mode = None
         self.deadline = None
         self._arming_deadline = None
+        self._unconfirmed.clear()
         self.bypassed = set()
         self.triggered_by = None
         self.changed_by = changed_by

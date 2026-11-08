@@ -15,7 +15,9 @@ from homeassistant.helpers.storage import Store
 
 from .const import (
     DATA_SETTINGS,
+    BATTERY_THRESHOLD_RANGE,
     DEFAULT_NOTIFY,
+    OFFLINE_MINUTES_RANGE,
     NOTIFY_EVENTS,
     DEFAULT_PRESETS,
     DEVICE_CLASS_TYPE,
@@ -56,6 +58,9 @@ def valid_notify(value: Any) -> dict[str, Any]:
     for key in ("critical", "disarm_action"):
         if isinstance(value.get(key), bool):
             out[key] = value[key]
+    for key, (low, high) in (("battery_threshold", BATTERY_THRESHOLD_RANGE), ("offline_minutes", OFFLINE_MINUTES_RANGE)):
+        if isinstance(value.get(key), (int, float)) and not isinstance(value.get(key), bool):
+            out[key] = max(low, min(high, int(value[key])))
     if isinstance(value.get("volume"), (int, float)):
         out["volume"] = max(0.0, min(1.0, float(value["volume"])))
     if isinstance(value.get("events"), dict):

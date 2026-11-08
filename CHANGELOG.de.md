@@ -7,11 +7,35 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.5.0] - 2026-11-08
+
+Wartungsmeldungen und Batterieprognose, Zwei-Sensor-Bestätigung gegen Fehlalarm, Codes pro Person und eine Sicherung aller Einstellungen.
+
+Enthält die Änderungen aus 0.3.0 und 0.4.0.
+
+### Hinzugefügt
+
+- **Wartungsmeldungen:** schwache Batterien und dauerhaft nicht erreichbare Sensoren gehen an die Wartungs-Empfänger, für alle Alarmanlagen. Jedes Problem wird einmal gemeldet, mehrere gesammelt in einer Meldung; erneut erst, wenn die Batterie gewechselt wurde oder der Sensor wieder antwortet. Schwelle (Standard 20 %) und Zeit bis "nicht erreichbar" (Standard 60 Minuten) unter Konfiguration › Benachrichtigungen. Geprüft wird alle 15 Minuten.
+- **Batterieprognose:** Die Sensorliste zeigt, wann eine Batterie schwach wird, berechnet aus dem Verlauf seit dem letzten Batteriewechsel (Recorder, letzte 90 Tage). Ohne genug Verlauf erscheint keine Prognose.
+- **Zwei-Sensor-Bestätigung:** neue Option pro Sensor "Braucht einen zweiten Sensor". Im scharfen Zustand löst ein solcher Sensor nur aus, wenn ein weiterer Sensor mit dieser Option innerhalb des Bestätigungsfensters anspricht (Standard 60 Sekunden, Konfiguration › Anlage). Gegen Fehlalarm durch Haustiere oder Sonnenlicht. Standardmässig aus; Sensoren ohne diese Option lösen weiterhin allein aus, und während der Eingangsverzögerung gilt sie nicht. Eine nicht bestätigte Auslösung steht in den letzten Ereignissen.
+- **Codes pro Person:** beliebig viele persönliche Codes pro Alarmanlage unter Konfiguration › Anlage, auf Wunsch mit einem Benutzer von Home Assistant verknüpft. "Geändert von", die letzten Ereignisse und die Meldungen zeigen die Person. Zwei Personen können nicht denselben Code haben. Codes werden nur als Hash gespeichert und nie angezeigt; der Hauptcode aus den Optionen gilt weiter.
+- **Sicherung:** alle Einstellungen als Datei exportieren (Zonen, Verzögerungen, Optionen pro Sensor, Aktionen, Voreinstellungen, Benachrichtigungen) und wiederherstellen, mit Vorschau, welche Alarmanlagen gefunden werden (Zuordnung über den Namen). Codes sind nie Teil einer Sicherung.
+
+### Geändert
+
+- **Schwelle "Batterie schwach"** kommt aus den Benachrichtigungen und gilt gleich für Liste, Statuskachel und Wartungsmeldung.
+
+### Behoben
+
+- **Letzte Ereignisse:** "Scharfschalten nicht möglich" erschien als "deaktiviert".
+- **Handy:** Die Auswahl "Offener Sensor beim Scharfschalten" wurde abgeschnitten.
+
 ## [0.4.0] - 2026-11-08
+
+Nicht veröffentlicht; enthalten in 0.5.0.
 
 Alarmaktionen als grafischer Ablauf pro Alarm, eigene Alarmtöne für Medienplayer und Benachrichtigungen mit kritischen Push-Meldungen.
 
-Enthält die Änderungen aus 0.3.0.
 
 ### Hinzugefügt
 
@@ -25,7 +49,7 @@ Enthält die Änderungen aus 0.3.0.
 
 ## [0.3.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.4.0.
+Nicht veröffentlicht; enthalten in 0.5.0.
 
 Neue Startseite mit einer Liste der Sensoren wie in Device Panel, ein Bereich Konfiguration mit Optionen pro Sensor und "Bereit zum Scharfschalten".
 
@@ -75,5 +99,5 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.4.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.4.0
+[0.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.5.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

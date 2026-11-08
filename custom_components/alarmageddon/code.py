@@ -20,6 +20,18 @@ def hash_code(code: str, salt: str | None = None) -> tuple[str, str]:
     return digest.hex(), salt
 
 
+def match_code(code: str, candidates: list[tuple[str, str]]) -> int | None:
+    """
+    Index des passenden Codes oder None. Prüft immer alle, damit die
+    Antwortzeit nicht verrät, der wievielte Code passt.
+    """
+    found = None
+    for index, (code_hash, salt) in enumerate(candidates):
+        if verify_code(code, code_hash, salt) and found is None:
+            found = index
+    return found
+
+
 def verify_code(code: str, code_hash: str, salt: str) -> bool:
     """Vergleich in konstanter Zeit, damit die Antwortzeit nichts über den Code verrät."""
     digest, _ = hash_code(code, salt)

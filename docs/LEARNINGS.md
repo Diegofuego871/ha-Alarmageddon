@@ -42,6 +42,16 @@ zuoberst.
 - **Tags vor dem CHANGELOG prüfen, nicht erst vor dem Push:** 0.2.0 wurde veröffentlicht, während 0.3.0 entstand;
   der CHANGELOG markierte 0.2.0 kurz als "nicht veröffentlicht". Vor dem Schreiben eines neuen Abschnitts die Tags und
   Releases auf GitHub ansehen.
+- **Recorder im Test:** Die Fixture `recorder_mock` muss vor `hass` aufgebaut werden; autouse-Fixtures, die `hass`
+  anfordern (`skip_frontend`), stehen sonst davor und der Recorder bricht ab (`assert not hass_fixture_setup`). Lösung:
+  eigene Testdatei, die diese Fixtures gleichnamig überschreibt und zuerst `recorder_db_url` anfordert
+  (`tests/test_forecast_recorder.py`). Verlauf lesen mit `history.get_significant_states(...,
+  significant_changes_only=False, minimal_response=True, no_attributes=True)` im Executor des Recorders; ab dem zweiten
+  Eintrag kommen dann dicts statt `State`.
+- **Regelmässige Prüfungen im Test:** Vorspulen (`advance`) löst auch `async_track_time_interval` aus. Ein Test, der
+  danach selbst prüft, findet das Problem schon gemeldet; an den gesendeten Meldungen zählen, nicht am Rückgabewert.
+- **Datei wählen im Panel:** Ein verstecktes `<input type="file">` hinter einem echten Knopf (Tastatur), die Wahl kommt
+  über das Ereignis `input`; danach `value = ""`, damit dieselbe Datei noch einmal gewählt werden kann.
 - **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
   Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
 

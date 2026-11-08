@@ -9,6 +9,8 @@ Texte liefert der Server keine: Fehler kommen als Schlüssel
 
 from __future__ import annotations
 
+import re
+import secrets
 from typing import Any
 
 import voluptuous as vol
@@ -18,13 +20,24 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_integrations
 
+from . import backup
+from .code import hash_code, match_code
 from .const import (
+    BATTERY_THRESHOLD_RANGE,
+    OFFLINE_MINUTES_RANGE,
+    CODE_PATTERN,
+    CONF_CODE_ARM_REQUIRED,
+    CONF_CODE_HASH,
+    CONF_CODE_SALT,
+    CONF_CODES,
+    MAX_CODES,
+    CONF_CONFIRM_WINDOW,
     CONF_ENTRY_DELAY,
+    MAX_CONFIRM_WINDOW,
     CONF_ENTRY_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
     CONF_NIGHT_ENABLED,
@@ -39,13 +52,15 @@ from .const import (
     SOUNDS_URL_PATH,
     WORKFLOW_TRIGGERS,
     DOMAIN,
-    MAX_DELAY,
     MODES,
     OPEN_SENSOR_MODES,
     SENSOR_CLASSES,
     SENSOR_OPTIONS,
     SENSOR_TYPES,
 )
+from .devices import battery_of, device_sensors
+from .forecast import async_forecasts
+from .schemas import SECONDS as _SECONDS, valid_step
 from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
@@ -68,6 +83,11 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_workflows)
     websocket_api.async_register_command(hass, ws_test_workflow)
     websocket_api.async_register_command(hass, ws_stop_workflow)
+    websocket_api.async_register_command(hass, ws_battery_forecast)
+    websocket_api.async_register_command(hass, ws_export)
+    websocket_api.async_register_command(hass, ws_import)
+    websocket_api.async_register_command(hass, ws_add_code)
+    websocket_api.async_register_command(hass, ws_remove_code)
 
 
 def _entry(hass: HomeAssistant, connection, msg: dict[str, Any]) -> ConfigEntry | None:
@@ -91,17 +111,7 @@ async def _sensor_info(hass: HomeAssistant, extra: set[str]) -> dict[str, dict[s
     ent_reg = er.async_get(hass)
     dev_reg = dr.async_get(hass)
     area_reg = ar.async_get(hass)
-    batteries: dict[str, str] = {}
-    signals: dict[str, str] = {}
-    for entry in ent_reg.entities.values():
-        if entry.domain != "sensor" or not entry.device_id or entry.disabled_by:
-            continue
-        device_class = entry.device_class or entry.original_device_class
-        if device_class == "battery":
-            batteries.setdefault(entry.device_id, entry.entity_id)
-        # Empfang: Signalstärke (dBm) oder Verbindungsqualität (LQI), je nach Integration; nur wenn vorhanden
-        elif device_class == "signal_strength" or any(k in entry.entity_id for k in ("_lqi", "linkquality", "_rssi")):
-            signals.setdefault(entry.device_id, entry.entity_id)
+    batteries, signals = device_sensors(hass)
 
     out: dict[str, dict[str, Any]] = {}
     for state in hass.states.async_all("binary_sensor"):
@@ -161,11 +171,15 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "trigger_time": ctl.trigger_time,
                 "open_sensors": entry.options.get(CONF_OPEN_SENSORS, "block"),
                 "night_enabled": ctl.night_enabled,
+                "confirm_window": ctl.confirm_window,
                 "sensor_options": ctl.sensor_overrides,
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
                 "workflow_running": (entry.runtime_data.workflow.running or {}).get("trigger") if entry.runtime_data.workflow else None,
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
                 "has_code": ctl.has_code,
+                # Codes nie zum Panel: nur Name und verknüpfter Benutzer
+                "codes": [{"id": c["id"], "name": c["name"], "user_id": c.get("user_id")} for c in ctl.codes],
+                "main_code": bool(entry.options.get(CONF_CODE_HASH)),
                 "code_arm_required": ctl.code_arm_required,
                 "events": entry.runtime_data.events.events[:20],
             }
@@ -185,6 +199,10 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "presets": settings.presets,
         "notify": settings.notify,
         "notify_services": notify_services,
+        "users": sorted(
+            ({"id": u.id, "name": u.name} for u in await hass.auth.async_get_users() if not u.system_generated and u.is_active and u.name),
+            key=lambda u: u["name"].lower(),
+        ),
         "sounds": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in SOUNDS.items()],
     })
 
@@ -277,9 +295,6 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     connection.send_result(msg["id"], {"presets": settings.presets})
 
 
-_SECONDS = vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))
-
-
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/save_system",
@@ -289,6 +304,7 @@ _SECONDS = vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))
         vol.Optional("trigger_time"): _SECONDS,
         vol.Optional("night_enabled"): bool,
         vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),
+        vol.Optional("confirm_window"): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
     }
 )
 @websocket_api.require_admin
@@ -300,7 +316,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     options = dict(entry.options)
     for mode, seconds in msg.get("exit_delay", {}).items():
         options[f"{CONF_EXIT_DELAY_PREFIX}{mode}"] = seconds
-    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("trigger_time", CONF_TRIGGER_TIME), ("night_enabled", CONF_NIGHT_ENABLED), ("open_sensors", CONF_OPEN_SENSORS)):
+    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("trigger_time", CONF_TRIGGER_TIME), ("night_enabled", CONF_NIGHT_ENABLED), ("open_sensors", CONF_OPEN_SENSORS), ("confirm_window", CONF_CONFIRM_WINDOW)):
         if key in msg:
             options[conf] = msg[key]
     hass.config_entries.async_update_entry(entry, options=options)
@@ -317,6 +333,8 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
             vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             vol.Optional("events"): {vol.In(NOTIFY_EVENTS): bool},
             vol.Optional("disarm_action"): bool,
+            vol.Optional("battery_threshold"): vol.All(vol.Coerce(int), vol.Range(min=BATTERY_THRESHOLD_RANGE[0], max=BATTERY_THRESHOLD_RANGE[1])),
+            vol.Optional("offline_minutes"): vol.All(vol.Coerce(int), vol.Range(min=OFFLINE_MINUTES_RANGE[0], max=OFFLINE_MINUTES_RANGE[1])),
         },
     }
 )
@@ -344,39 +362,13 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     connection.send_result(msg["id"], {"targets": targets})
 
 
-_ENTITY_LIST = [cv.entity_id]
-STEP_SCHEMAS = {
-    "notify": vol.Schema({vol.Required("type"): "notify"}),
-    "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
-    "action": vol.Schema({
-        vol.Required("type"): "action",
-        vol.Required("action"): cv.service,
-        vol.Optional("target", default=[]): _ENTITY_LIST,
-        vol.Optional("data", default={}): dict,
-        vol.Optional("restore", default=False): bool,
-    }),
-    "sound": vol.Schema({
-        vol.Required("type"): "sound",
-        vol.Required("players"): vol.All(_ENTITY_LIST, vol.Length(min=1)),
-        vol.Required("sound"): vol.In(list(SOUNDS)),
-        vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
-        vol.Optional("repeat", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=50)),
-        vol.Optional("restore", default=True): bool,
-    }),
-}
-
-
-def _valid_step(value: Any) -> dict[str, Any]:
-    if not isinstance(value, dict) or value.get("type") not in STEP_SCHEMAS:
-        raise vol.Invalid("unknown step type")
-    return STEP_SCHEMAS[value["type"]](value)
 
 
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/save_workflows",
         vol.Required("entry_id"): str,
-        vol.Required("workflows"): {vol.In(WORKFLOW_TRIGGERS): vol.All([_valid_step], vol.Length(max=MAX_STEPS))},
+        vol.Required("workflows"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
     }
 )
 @websocket_api.require_admin
@@ -423,3 +415,119 @@ async def ws_stop_workflow(hass: HomeAssistant, connection, msg: dict[str, Any])
         return
     await runner.async_stop()
     connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/add_code",
+        vol.Required("entry_id"): str,
+        vol.Required("name"): vol.All(str, vol.Strip, vol.Length(min=1, max=40)),
+        vol.Required("code"): str,
+        vol.Optional("user_id"): vol.Any(None, str),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_add_code(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Persönlicher Code. Der Code kommt nur hier herein und wird sofort als
+    Hash gespeichert; nie geloggt, nie zurückgegeben. Gleiche Codes für zwei
+    Personen sind verboten, sonst wäre "geändert von" nicht eindeutig.
+    """
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    ctl = entry.runtime_data.controller
+    code = msg["code"].strip()
+    if not re.fullmatch(CODE_PATTERN, code):
+        connection.send_error(msg["id"], "invalid_code_format", "4 to 8 digits")
+        return
+    if len(ctl.codes) >= MAX_CODES:
+        connection.send_error(msg["id"], "too_many", "Too many codes")
+        return
+    if any(c["name"].casefold() == msg["name"].casefold() for c in ctl.codes):
+        connection.send_error(msg["id"], "name_taken", "Name already used")
+        return
+    user_id = msg.get("user_id") or None
+    if user_id and (await hass.auth.async_get_user(user_id) is None or any(c.get("user_id") == user_id for c in ctl.codes)):
+        connection.send_error(msg["id"], "user_taken", "User unknown or already linked")
+        return
+    existing = [(c["hash"], c["salt"]) for c in ctl.codes]
+    if entry.options.get(CONF_CODE_HASH):
+        existing.append((entry.options[CONF_CODE_HASH], entry.options[CONF_CODE_SALT]))
+    if await hass.async_add_executor_job(match_code, code, existing) is not None:
+        connection.send_error(msg["id"], "code_taken", "Code already used")
+        return
+    code_hash, salt = await hass.async_add_executor_job(hash_code, code)
+    new = {"id": secrets.token_hex(6), "name": msg["name"], "user_id": user_id, "hash": code_hash, "salt": salt}
+    options = dict(entry.options)
+    options[CONF_CODES] = [*(entry.options.get(CONF_CODES) or []), new]
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"id": new["id"]})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/remove_code", vol.Required("entry_id"): str, vol.Required("code_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_remove_code(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Persönlichen Code entfernen. Ist danach kein Code mehr da, entfällt auch "Code zum Scharfschalten"."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    codes = entry.options.get(CONF_CODES) or []
+    rest = [c for c in codes if c.get("id") != msg["code_id"]]
+    if len(rest) == len(codes):
+        connection.send_error(msg["id"], "not_found", "Unknown code")
+        return
+    options = dict(entry.options)
+    options[CONF_CODES] = rest
+    if not rest and not options.get(CONF_CODE_HASH):
+        # Ohne Code kann "Code zum Scharfschalten" nicht gelten
+        options[CONF_CODE_ARM_REQUIRED] = False
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/battery_forecast"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_battery_forecast(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Tage bis "Batterie schwach" je Batteriesensor der gewählten Sensoren.
+    Eigener Befehl, weil der Verlauf dauern kann: die Liste erscheint sofort,
+    die Prognose kommt nach.
+    """
+    sensors: set[str] = set()
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.state is ConfigEntryState.LOADED:
+            sensors |= entry.runtime_data.controller.all_sensors()
+    batteries = sorted(set(battery_of(hass, sensors).values()))
+    settings = await async_get_settings(hass)
+    result = await async_forecasts(hass, batteries, settings.notify["battery_threshold"])
+    connection.send_result(msg["id"], {"forecast": result})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/export"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_export(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Sicherung aller Einstellungen ohne Codes; das Panel speichert sie als Datei."""
+    entries = backup.loaded_entries(hass)
+    version = entries[0].runtime_data.version if entries else None
+    connection.send_result(msg["id"], await backup.async_export(hass, version))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/import", vol.Required("data"): dict, vol.Optional("dry_run", default=False): bool}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Sicherung einlesen. Mit dry_run nur prüfen und zeigen, welche Anlagen gefunden werden."""
+    try:
+        data = backup.validate(msg["data"])
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], str(err.msg), "Invalid backup")
+        return
+    result = backup.plan(hass, data) if msg["dry_run"] else await backup.async_restore(hass, data)
+    connection.send_result(msg["id"], result)

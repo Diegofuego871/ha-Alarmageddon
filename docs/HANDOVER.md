@@ -3,6 +3,17 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.5.0, Wartung und Härtung)
+
+- 0.3.0 und 0.4.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.5.0 enthalten. Letzter veröffentlichter Tag: `v0.2.0` (Vorabversion).
+- Wartung: `maintenance.py` (eine Instanz für alle Anlagen in `hass.data`, Prüfung alle 15 Minuten, erste nach 5 Minuten; gemeldet wird einmal pro Problem, gemerkt im Store `alarmageddon.maintenance`; Batterie erst wieder nach Schwelle + 5 Punkte). Einstellungen in `notify` (`battery_threshold`, `offline_minutes`, Ereignisse `battery_low`, `sensor_unavailable`). Senden über `notify.async_send`.
+- Prognose: `forecast.py` (Regression ab letztem Sprung nach oben, mindestens 3 Tage), WebSocket `battery_forecast`, Spalte "Prognose" in `list.js`, höchstens einmal pro Stunde abgerufen. `recorder` in `after_dependencies`.
+- Zwei-Sensor-Bestätigung: Sensoroption `confirm` (nie voreingestellt), Fenster `confirm_window` pro Anlage, `controller._confirmed`, Ereignis `unconfirmed` im Protokoll. Tests `test_confirm.py` inkl. der Pflichtfälle (Deaktivieren in Verzögerung, Neustart im Alarm, Ausfall im scharfen Zustand).
+- Codes pro Person: `options["codes"]` (Hash, Salz, Name, Benutzer), `code.match_code` prüft alle, `controller._async_check_code` gibt den Namen zurück; WebSocket `add_code`/`remove_code`; Panel `system.js` (Dialog `ag-codes`). Der Hauptcode bleibt im Optionsdialog.
+- Sicherung: `backup.py` (nur Schlüssel aus `schemas.SYSTEM_OPTIONS_SCHEMA`, nie Codes; Zuordnung über den Namen, Vorschau mit `dry_run`), WebSocket `export`/`import`. Schrittprüfung jetzt in `schemas.py` (auch für das Panel).
+- Panel-Suite `hardening-e2e` (Bestätigung, Fenster, Codes, Sicherung, Wartung, Ereignistexte).
+- Nicht im echten HA geprüft: Download/Upload der Sicherung in der Companion App, Prognose mit echtem Verlauf.
+
 ## Stand (0.4.0, Aktionen und Benachrichtigungen)
 
 - 0.3.0 hat keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.4.0 enthalten. Letzter veröffentlichter Tag: `v0.2.0` (Vorabversion).
@@ -55,13 +66,15 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Nächste Schritte
 
-1. 0.5.0: Wartung (Batterieprognose aus dem Verlauf, Wartungsmeldungen bei
-   schwacher Batterie und Ausfall an die Wartungs-Empfänger, mit Ruhe gegen
-   Wiederholungen), Zwei-Sensor-Bestätigung gegen Fehlalarm, mehrere Codes
-   pro Person (verknüpft mit HA-Benutzern), Export/Import der Einstellungen.
-2. Offene Rückfrage an den Nutzer: Ebenen der Sensor-Optionen (Voreinstellung
-   je Sensorart › Wert pro Sensor) wurden ohne ausdrückliche Bestätigung
-   gebaut.
+Backlog leer (Stand 0.5.0). Offen:
+
+1. Rückfrage an den Nutzer: Ebenen der Sensor-Optionen. Gebaut sind
+   Voreinstellung je Sensorart (global) › Wert pro Sensor. Die Regel in
+   CLAUDE.md nennt global › Alarmanlage › Bereich › Gerät; ob Alarmanlage
+   und Bereich als eigene Ebenen nötig sind, entscheidet der Nutzer.
+2. Prüfung im echten HA und mit echten Geräten (Sonos, iPhone, Android,
+   HomeKit), siehe "Nicht im echten HA geprüft" in den Abschnitten oben.
+3. Optional: PR an home-assistant/brands, Logo (Entscheid: vorerst so).
 
 ## Zweisprachigkeit EN/DE (verbindlich)
 

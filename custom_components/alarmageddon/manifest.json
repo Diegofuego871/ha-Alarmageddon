@@ -1,6 +1,9 @@
 {
   "domain": "alarmageddon",
   "name": "Alarmageddon",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@Diegofuego871"
   ],
@@ -15,5 +18,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/Diegofuego871/ha-Alarmageddon/issues",
   "requirements": [],
-  "version": "0.4.0"
+  "version": "0.5.0"
 }

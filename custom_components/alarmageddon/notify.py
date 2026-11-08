@@ -50,6 +50,11 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Away",
         "mode_night": "Night",
         "by_push": "push notification",
+        "maint_title_one": "Maintenance: {name}",
+        "maint_title": "Maintenance: {count} sensors",
+        "maint_battery": "{sensor}: battery {value} %",
+        "maint_offline": "{sensor}: unreachable since {time}",
+        "time_format": "%m/%d %H:%M",
     },
     "de": {
         "triggered_title": "Alarm: {name}",
@@ -78,6 +83,11 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Abwesend",
         "mode_night": "Nacht",
         "by_push": "Push-Meldung",
+        "maint_title_one": "Wartung: {name}",
+        "maint_title": "Wartung: {count} Sensoren",
+        "maint_battery": "{sensor}: Batterie {value} %",
+        "maint_offline": "{sensor}: nicht erreichbar seit {time}",
+        "time_format": "%d.%m. %H:%M",
     },
 }
 
@@ -85,6 +95,32 @@ TEXTS: dict[str, dict[str, str]] = {
 def language(hass: HomeAssistant) -> str:
     lang = (hass.config.language or "").lower()
     return "de" if lang == "de" or lang.startswith("de-") else "en"
+
+
+def text(hass: HomeAssistant, key: str, **values: Any) -> str:
+    return TEXTS[language(hass)][key].format(**values)
+
+
+@callback
+def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any]) -> list[str]:
+    """An jeden Empfänger einzeln und nicht blockierend; gibt die erreichbaren Dienste zurück."""
+    sent = []
+    for target in targets:
+        domain, _, service = target.partition(".")
+        if not hass.services.has_service(domain, service):
+            _LOGGER.warning("Notification service %s not found", target)
+            continue
+        # Nicht blockierend: eine langsame oder fehlerhafte App darf den Alarm nie aufhalten
+        hass.async_create_task(_async_call(hass, domain, service, payload))
+        sent.append(target)
+    return sent
+
+
+async def _async_call(hass: HomeAssistant, domain: str, service: str, payload: dict[str, Any]) -> None:
+    try:
+        await hass.services.async_call(domain, service, payload, blocking=True)
+    except Exception:  # noqa: BLE001 - jede Meldung einzeln, ein Fehler stoppt die anderen nicht
+        _LOGGER.exception("Notification via %s.%s failed", domain, service)
 
 
 class Notifier:
@@ -105,8 +141,7 @@ class Notifier:
         return self._settings.notify
 
     def _t(self, key: str, **values: Any) -> str:
-        text = TEXTS[language(self.hass)][key]
-        return text.format(**values)
+        return text(self.hass, key, **values)
 
     def _name(self, entity_id: str | None) -> str:
         state = self.hass.states.get(entity_id) if entity_id else None
@@ -222,17 +257,4 @@ class Notifier:
 
     @callback
     def _send(self, targets: list[str], title: str, message: str, critical: bool, tag: str | None = None, actions: list | None = None) -> None:
-        payload = self.payload(title, message, critical, tag, actions)
-        for target in targets:
-            domain, _, service = target.partition(".")
-            if not self.hass.services.has_service(domain, service):
-                _LOGGER.warning("Notification service %s not found", target)
-                continue
-            # Nicht blockierend: eine langsame oder fehlerhafte App darf den Alarm nie aufhalten
-            self.hass.async_create_task(self._call(domain, service, payload))
-
-    async def _call(self, domain: str, service: str, payload: dict[str, Any]) -> None:
-        try:
-            await self.hass.services.async_call(domain, service, payload, blocking=True)
-        except Exception:  # noqa: BLE001 - jede Meldung einzeln, ein Fehler stoppt die anderen nicht
-            _LOGGER.exception("Notification via %s.%s failed", domain, service)
+        async_send(self.hass, targets, self.payload(title, message, critical, tag, actions))

@@ -12,7 +12,10 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 9, String(await count()));
     if (!mobile) {
       const head = await s.ev("return [...r.querySelectorAll('.ag-ltable th')].map((th) => th.textContent.trim())");
-      check(`${tag}: Spalten mit Batterie, Empfang, Firmware`, head.length === 9, JSON.stringify(head));
+      check(`${tag}: Spalten mit Batterie, Prognose, Empfang, Firmware`, head.length === 10, JSON.stringify(head));
+      // Prognose kommt nach der Liste (eigener Befehl): Fenster Bad "jetzt", Bewegung Flur in Monaten, Haustür über ein Jahr
+      check(`${tag}: Batterieprognose`, await s.waitFor(`const t=r.querySelector('.ag-ltable').innerText; return t.includes('${lang === "de" ? "~3 Monate" : "~3 months"}') && t.includes('${lang === "de" ? "> 1 Jahr" : "> 1 year"}') && t.includes('${lang === "de" ? "jetzt" : "now"}')`));
+      check(`${tag}: Prognose unter 30 Tagen hervorgehoben`, await s.ev("return [...r.querySelectorAll('.ag-fc.warn')].length === 2"));
       check(`${tag}: Empfang als dBm und LQI`, await s.ev("const t=r.querySelector('.ag-ltable').innerText; return t.includes('-58 dBm') && t.includes('LQI 92')"));
     }
     // Warnkachel: Tipp filtert auf "Batterie schwach"

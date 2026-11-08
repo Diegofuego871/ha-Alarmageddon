@@ -26,6 +26,10 @@ CONF_OPEN_SENSORS: Final = "open_sensors"  # Verhalten bei offenem Sensor beim S
 CONF_CODE_ARM_REQUIRED: Final = "code_arm_required"
 CONF_CODE_HASH: Final = "code_hash"
 CONF_CODE_SALT: Final = "code_salt"
+# Weitere Codes, je einer Person zugeordnet (0.5.0): [{"id", "name", "user_id", "hash", "salt"}].
+# Der Hauptcode (code_hash/code_salt aus dem Optionsdialog) gilt weiter, ohne Namen.
+CONF_CODES: Final = "codes"
+MAX_CODES: Final = 20
 
 # Felder im Formular (nicht gespeichert, nur Eingabe)
 FIELD_CODE: Final = "code"
@@ -51,7 +55,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 3  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 4  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -79,7 +83,13 @@ OPT_ALWAYS: Final = "always"  # löst auch unscharf aus (Rauch, Wasser, Gas)
 OPT_OPEN_OK: Final = "open_ok"  # darf beim Scharfschalten offen sein
 OPT_ARM_ON_CLOSE: Final = "arm_on_close"  # Schliessen während der Ausgangsverzögerung schaltet sofort scharf
 OPT_OFFLINE_ALARM: Final = "offline_alarm"  # nicht erreichbar im scharfen Zustand löst aus
-SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM)
+# Löst im scharfen Zustand erst aus, wenn ein zweiter Sensor innerhalb des Zeitfensters anspricht (gegen Fehlalarm
+# durch Haustiere, Sonnenlicht). Nie voreingestellt: im Zweifel alarmieren (0.5.0)
+OPT_CONFIRM: Final = "confirm"
+SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM)
+CONF_CONFIRM_WINDOW: Final = "confirm_window"
+DEFAULT_CONFIRM_WINDOW: Final = 60
+MAX_CONFIRM_WINDOW: Final = 600
 # Zeit nach dem Schliessen, bevor "scharf, sobald geschlossen" greift: eine zufallende Tür prellt (wie Alarmo: Kontakt-Prellen)
 ARM_ON_CLOSE_SETTLE: Final = 3
 
@@ -119,11 +129,24 @@ DEFAULT_NOTIFY: Final = {
     "maintenance_targets": [],
     "critical": True,
     "volume": 0.8,  # Lautstärke der kritischen Meldung (iOS), 0 bis 1
-    "events": {"triggered": True, "pending": False, "armed": False, "disarmed": False, "arm_failed": True, "sensor_offline": True},
+    "events": {"triggered": True, "pending": False, "armed": False, "disarmed": False, "arm_failed": True, "sensor_offline": True,
+               "battery_low": True, "sensor_unavailable": True},
+    # Wartung (0.5.0): Batterie schwach unter dieser Schwelle (%), nicht erreichbar ab so vielen Minuten
+    "battery_threshold": 20,
+    "offline_minutes": 60,
     # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
     "disarm_action": False,
 }
-NOTIFY_EVENTS: Final = ("triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline")
+NOTIFY_EVENTS: Final = ("triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline", "battery_low", "sensor_unavailable")
+BATTERY_THRESHOLD_RANGE: Final = (5, 50)
+OFFLINE_MINUTES_RANGE: Final = (5, 1440)
+# Wartung: Prüfung alle 15 Minuten, die erste 5 Minuten nach dem Start (Geräte verbinden sich erst)
+MAINTENANCE_STORE_KEY: Final = f"{DOMAIN}.maintenance"
+DATA_MAINTENANCE: Final = f"{DOMAIN}_maintenance"
+MAINTENANCE_INTERVAL: Final = 15 * 60
+MAINTENANCE_START_DELAY: Final = 5 * 60
+# Erst wieder melden, wenn die Batterie so viele Prozentpunkte über der Schwelle war (gewechselt)
+BATTERY_HYSTERESIS: Final = 5
 PUSH_ACTION_DISARM: Final = "ALARMAGEDDON_DISARM_"  # + entry_id
 PUSH_ACTION_OPEN: Final = "ALARMAGEDDON_OPEN"
 

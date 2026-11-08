@@ -51,6 +51,7 @@ button { font: inherit; color: inherit; }
 .ag-btn:hover { background: var(--ag-hover); }
 .ag-btn.primary { background: var(--ag-primary); border-color: var(--ag-primary); color: #fff; }
 .ag-btn.primary:hover { background: color-mix(in srgb, var(--ag-primary) 88%, #000); }
+.ag-btn.danger { background: var(--ag-error); border-color: var(--ag-error); color: #fff; }
 .ag-btn:disabled { opacity: .5; cursor: default; }
 .ag-btn:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 2px; }
 .ag-tag { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
@@ -286,4 +287,18 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 :host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; }
 :host([narrow]) .ag-wf-line::before { left: 29px; }
 :host([narrow]) .ag-wf-start, :host([narrow]) .ag-wf-plus { padding-left: 16px; }
+
+/* 0.5.0: Codes pro Person, Sicherung, Prognose */
+.ag-fc { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.ag-fc.warn { color: var(--ag-warning-text); }
+.ag-codes { margin-top: 16px; }
+.ag-coderow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--ag-divider); }
+.ag-coderow small { display: block; font-size: 12.5px; }
+.ag-btnrow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+/* Lange Texte in der Auswahl "Offener Sensor" auf dem Handy: volle Breite, Text darf umbrechen statt abgeschnitten zu werden */
+:host([narrow]) [data-seg="sys-open"] { display: flex; width: 100%; }
+:host([narrow]) [data-seg="sys-open"] > button { flex: 1 1 0; min-width: 0; white-space: normal; line-height: 1.25; text-align: center; }
+select.ag-input { appearance: auto; }
+#ag-codes .ag-dlg-body { gap: 14px; }
+#ag-codes .ag-fld small { font-size: 12.5px; }
 `;

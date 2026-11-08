@@ -57,7 +57,8 @@
                away: ["binary_sensor.haustuer", "binary_sensor.fenster_kueche", "binary_sensor.terrassentuer", "binary_sensor.bewegung_flur", "binary_sensor.fenster_bad", "binary_sensor.bewegung_wohnzimmer"],
                night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
       entry_sensors: ["binary_sensor.haustuer"], exit_delay: { home: 0, away: 60, night: 0 }, entry_delay: 30, has_code: true, code_arm_required: false, code: "1234",
-      trigger_time: 180, open_sensors: "block", night_enabled: true, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
+      main_code: true, codes: [{ id: "c_anna", name: "Anna", user_id: "u_anna" }], pcodes: { c_anna: "2468" },
+      trigger_time: 180, open_sensors: "block", night_enabled: true, confirm_window: 60, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
       workflow_running: null, workflow_test: false,
       workflows: { away: [
         { type: "notify" },
@@ -69,8 +70,8 @@
       events: [ { t: iso(3 * 3600e3), state: "armed_away", mode: "away", by: "Diego" }, { t: iso(3.3 * 3600e3), state: "disarmed", mode: null, by: "Wandtablet" } ] },
     { entry_id: "e_garage", title: "Garage", entity_id: "alarm_control_panel.garage", modes: ["home", "away"],
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
-      entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false,
-      trigger_time: 180, open_sensors: "block", night_enabled: false, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
+      entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {},
+      trigger_time: 180, open_sensors: "block", night_enabled: false, confirm_window: 60, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
       events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
   ];
 
@@ -96,7 +97,8 @@
 
   window.__presets = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
   window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], critical: true, volume: 0.8,
-    events: { triggered: true, pending: false, armed: false, disarmed: false, arm_failed: true, sensor_offline: true }, disarm_action: false };
+    events: { triggered: true, pending: false, armed: false, disarmed: false, arm_failed: true, sensor_offline: true, battery_low: true, sensor_unavailable: true },
+    disarm_action: false, battery_threshold: 20, offline_minutes: 60 };
   window.__calls = [];
   window.__wsDelay = 0;
   window.__wsFail = null;
@@ -128,10 +130,31 @@
       const sensors = {};
       for (const [id, info] of Object.entries(SENSORS)) sensors[id] = { ...info };
       return JSON.parse(JSON.stringify({
-        systems: window.__systems.map(({ code, ...s }) => s), sensors, presets: window.__presets, notify: window.__notify,
+        systems: window.__systems.map(({ code, pcodes, ...s }) => s), sensors,
+        users: [{ id: "u_anna", name: "Anna" }, { id: "u_diego", name: "Diego" }, { id: "u_gast", name: "Gast" }], presets: window.__presets, notify: window.__notify,
         notify_services: ["notify.mobile_app_diego", "notify.mobile_app_partnerin", "notify.mobile_app_tablet"],
         sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["warning", 2], ["chime", 2]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
       }));
+    }
+    if (msg.type === "alarmageddon/export") {
+      return { format: "alarmageddon", version: 1, integration_version: "0.5.0", created: new Date().toISOString(), settings: { presets: window.__presets, notify: window.__notify },
+        systems: window.__systems.map((s) => ({ title: s.title, options: { workflows: s.workflows, sensor_options: s.sensor_options } })) };
+    }
+    if (msg.type === "alarmageddon/import") {
+      const d = msg.data;
+      if (!d || d.format !== "alarmageddon") throw err("not_a_backup");
+      if (d.version > 1) throw err("newer_version");
+      const titles = new Map(window.__systems.map((s) => [s.title.toLowerCase(), s]));
+      const found = (d.systems || []).filter((s) => titles.has(s.title.toLowerCase())).map((s) => s.title);
+      const missing = (d.systems || []).filter((s) => !titles.has(s.title.toLowerCase())).map((s) => s.title);
+      if (!msg.dry_run) {
+        for (const s of d.systems || []) if (titles.has(s.title.toLowerCase()) && s.options?.workflows) titles.get(s.title.toLowerCase()).workflows = s.options.workflows;
+        window.__imported = true;
+      }
+      return { systems: found, missing, settings: !!d.settings };
+    }
+    if (msg.type === "alarmageddon/battery_forecast") {
+      return { forecast: { "sensor.haustuer_batterie": 410, "sensor.bewegung_flur_batterie": 95, "sensor.fenster_bad_batterie": 0, "sensor.fenster_kueche_batterie": 21, "sensor.terrassentuer_batterie": null } };
     }
     if (msg.type === "alarmageddon/save_notify") {
       window.__notify = { ...window.__notify, ...JSON.parse(JSON.stringify(msg.notify)) };
@@ -167,9 +190,27 @@
       sys.workflow_test = false;
       return { ok: true };
     }
+    if (msg.type === "alarmageddon/add_code") {
+      if (!/^\d{4,8}$/.test(msg.code)) throw err("invalid_code_format");
+      if (sys.codes.some((c) => c.name.toLowerCase() === msg.name.toLowerCase())) throw err("name_taken");
+      if (msg.code === sys.code || Object.values(sys.pcodes).includes(msg.code)) throw err("code_taken");
+      if (msg.user_id && sys.codes.some((c) => c.user_id === msg.user_id)) throw err("user_taken");
+      const id = `c_${Date.now()}`;
+      sys.codes.push({ id, name: msg.name, user_id: msg.user_id || null });
+      sys.pcodes[id] = msg.code;
+      sys.has_code = true;
+      return { id };
+    }
+    if (msg.type === "alarmageddon/remove_code") {
+      if (!sys.codes.some((c) => c.id === msg.code_id)) throw err("not_found");
+      sys.codes = sys.codes.filter((c) => c.id !== msg.code_id);
+      delete sys.pcodes[msg.code_id];
+      sys.has_code = sys.main_code || sys.codes.length > 0;
+      return { ok: true };
+    }
     if (msg.type === "alarmageddon/save_system") {
       for (const [m, v] of Object.entries(msg.exit_delay || {})) sys.exit_delay[m] = v;
-      for (const k of ["entry_delay", "trigger_time", "open_sensors"]) if (k in msg) sys[k] = msg[k];
+      for (const k of ["entry_delay", "trigger_time", "open_sensors", "confirm_window"]) if (k in msg) sys[k] = msg[k];
       if ("night_enabled" in msg) {
         sys.night_enabled = msg.night_enabled;
         sys.modes = msg.night_enabled ? ["home", "away", "night"] : ["home", "away"];
@@ -178,7 +219,7 @@
     }
     if (msg.type === "alarmageddon/arm") {
       const needCode = sys.has_code && (msg.mode === "off" || sys.code_arm_required);
-      if (needCode && msg.code !== sys.code) throw err("invalid_code", "Wrong code");
+      if (needCode && msg.code !== sys.code && !Object.values(sys.pcodes).includes(msg.code)) throw err("invalid_code", "Wrong code");
       if (msg.mode === "off") {
         window.__setState(sys.entity_id, "disarmed", { arm_mode: null, changed_by: "Diego", deadline: null, triggered_by: null });
         sys.events.unshift({ t: new Date().toISOString(), state: "disarmed", mode: null, by: "Diego" });

@@ -7,11 +7,35 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-11-08
+
+Maintenance notifications and battery forecast, two-sensor confirmation against false alarms, codes per person and a backup of all settings.
+
+Includes the changes from 0.3.0 and 0.4.0.
+
+### Added
+
+- **Maintenance notifications:** low battery and sensors that stay unreachable go to the maintenance recipients, for all alarm systems. Each problem is reported once, several at a time in one notification; again only after the battery was replaced or the sensor responded again. Threshold (default 20 %) and time until "unreachable" (default 60 minutes) in Configuration › Notifications. Checked every 15 minutes.
+- **Battery forecast:** the sensor list shows when a battery will be low, calculated from the history since the last battery change (recorder, last 90 days). Without enough history no forecast is shown.
+- **Two-sensor confirmation:** new option per sensor "Needs a second sensor". While armed such a sensor triggers only if another sensor with this option responds within the confirmation window (default 60 seconds, Configuration › Alarm system). Against false alarms from pets or sunlight. Off by default; sensors without this option still trigger alone, and during the entry delay it does not apply. An unconfirmed trigger appears in the recent events.
+- **Codes per person:** any number of personal codes per alarm system in Configuration › Alarm system, optionally linked to a Home Assistant user. "Changed by", the recent events and the notifications show the person. Two persons cannot have the same code. Codes are stored only as a hash and never shown; the main code from the options keeps working.
+- **Backup:** export all settings as a file (zones, delays, options per sensor, actions, defaults, notifications) and restore them, with a preview of which alarm systems are found (matched by name). Codes are never part of a backup.
+
+### Changed
+
+- **Low battery threshold** comes from the notifications setting and applies equally to the list, the status tile and the maintenance notification.
+
+### Fixed
+
+- **Recent events:** "arming not possible" was shown as "disarmed".
+- **Phone:** the choice "Open sensor when arming" was cut off.
+
 ## [0.4.0] - 2026-11-08
+
+Not released; included in 0.5.0.
 
 Alarm actions as a graphical workflow per alarm, own alarm sounds for media players and notifications with critical push messages.
 
-Includes the changes from 0.3.0.
 
 ### Added
 
@@ -25,7 +49,7 @@ Includes the changes from 0.3.0.
 
 ## [0.3.0] - 2026-11-08
 
-Not released; included in 0.4.0.
+Not released; included in 0.5.0.
 
 New start page with a sensor list like Device Panel, a configuration area with options per sensor and "ready to arm".
 
@@ -75,5 +99,5 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.4.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.4.0
+[0.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.5.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0
