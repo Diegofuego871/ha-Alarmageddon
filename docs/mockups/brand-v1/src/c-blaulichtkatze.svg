@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="g" x1="40" y1="40" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#E5304A"/></linearGradient>
+    <linearGradient id="b" x1="0" y1="24" x2="0" y2="70" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7DB6FF"/><stop offset="1" stop-color="#2F6BFF"/></linearGradient>
+  </defs>
+  <!-- Katzenkopf als Linie, wie die Logos von Device Panel und UniFi Dynamic -->
+  <path d="M60 122 L66 52 L106 88 Q128 80 150 88 L190 52 L196 122 C204 176 168 214 128 214 C88 214 52 176 60 122 Z" fill="none" stroke="url(#g)" stroke-width="20" stroke-linejoin="round"/>
+  <path d="M90 142 Q106 124 122 142 Q106 158 90 142 Z M134 142 Q150 124 166 142 Q150 158 134 142 Z" fill="url(#g)"/>
+  <path d="M120 168 L136 168 L128 177 Z" fill="#E5304A" stroke="#E5304A" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Blaulicht auf dem Kopf -->
+  <path d="M110 70 Q110 40 128 40 Q146 40 146 70 Z" fill="url(#b)"/>
+  <rect x="104" y="68" width="48" height="10" rx="4" fill="#1F3F99"/>
+  <path d="M92 40 L80 30 M164 40 L176 30 M128 26 L128 12" stroke="#2F6BFF" stroke-width="7" stroke-linecap="round"/>
+</svg>

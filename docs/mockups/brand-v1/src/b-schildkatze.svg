@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="s" x1="50" y1="30" x2="210" y2="230" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4C8DFF"/><stop offset="1" stop-color="#1638A8"/></linearGradient>
+  </defs>
+  <!-- Schild, dessen obere Ecken Katzenohren sind -->
+  <path d="M58 30 L102 66 L154 66 L198 30 L202 122 C202 178 168 216 128 232 C88 216 54 178 54 122 Z" fill="url(#s)" stroke="url(#s)" stroke-width="10" stroke-linejoin="round"/>
+  <!-- wachsame Augen -->
+  <path d="M74 132 Q100 104 126 132 Q100 156 74 132 Z M130 132 Q156 104 182 132 Q156 156 130 132 Z" fill="#FFD34D"/>
+  <ellipse cx="100" cy="132" rx="5.5" ry="15" fill="#0E1B45"/><ellipse cx="156" cy="132" rx="5.5" ry="15" fill="#0E1B45"/>
+  <path d="M119 168 L137 168 L128 178 Z" fill="#BFD3FF"/>
+</svg>

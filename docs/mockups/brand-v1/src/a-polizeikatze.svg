@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="fur" x1="60" y1="40" x2="200" y2="230" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset="1" stop-color="#F0662E"/></linearGradient>
+    <linearGradient id="cap" x1="0" y1="40" x2="0" y2="110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2D4F9E"/><stop offset="1" stop-color="#16295C"/></linearGradient>
+  </defs>
+  <!-- Ohren und Kopf -->
+  <path d="M58 118 L66 34 L116 82 Z M198 118 L190 34 L140 82 Z" fill="url(#fur)" stroke="url(#fur)" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M76 52 L80 96 L102 80 Z M180 52 L176 96 L154 80 Z" fill="#FFD9C2" opacity=".8"/>
+  <ellipse cx="128" cy="154" rx="82" ry="70" fill="url(#fur)"/>
+  <!-- Polizeimütze -->
+  <path d="M84 92 C80 70 76 58 74 50 C110 36 146 36 182 50 C180 58 176 70 172 92 Z" fill="url(#cap)"/>
+  <rect x="82" y="82" width="92" height="16" rx="5" fill="#0F1E45"/>
+  <path d="M74 98 C100 110 156 110 182 98 C176 108 160 116 128 116 C96 116 80 108 74 98 Z" fill="#0B1533"/>
+  <path d="M128 52 L133 63 L145 64 L136 72 L139 84 L128 78 L117 84 L120 72 L111 64 L123 63 Z" fill="#FFCF4A"/>
+  <!-- Gesicht -->
+  <path d="M80 150 Q99 130 118 150 Q99 168 80 150 Z M138 150 Q157 130 176 150 Q157 168 138 150 Z" fill="#fff"/>
+  <ellipse cx="99" cy="150" rx="5" ry="12" fill="#1B1B1F"/><ellipse cx="157" cy="150" rx="5" ry="12" fill="#1B1B1F"/>
+  <path d="M120 172 L136 172 L128 181 Z" fill="#7A2E1D"/>
+  <path d="M128 181 Q122 192 112 188 M128 181 Q134 192 144 188" fill="none" stroke="#7A2E1D" stroke-width="4" stroke-linecap="round"/>
+  <path d="M74 170 L40 164 M74 180 L42 186 M182 170 L216 164 M182 180 L214 186" stroke="#7A2E1D" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+</svg>

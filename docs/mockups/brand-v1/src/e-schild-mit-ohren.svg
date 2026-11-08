@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="g" x1="40" y1="24" x2="216" y2="236" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#E5304A"/></linearGradient>
+  </defs>
+  <!-- Ohren ragen aus dem Schild -->
+  <path d="M62 78 L70 26 L104 56 Z M194 78 L186 26 L152 56 Z" fill="url(#g)" stroke="url(#g)" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Schild als Linie -->
+  <path d="M128 50 L200 74 V126 C200 176 170 210 128 228 C86 210 56 176 56 126 V74 Z" fill="none" stroke="url(#g)" stroke-width="20" stroke-linejoin="round"/>
+  <!-- wachsame Augen und Nase -->
+  <path d="M86 134 Q104 114 122 134 Q104 152 86 134 Z M134 134 Q152 114 170 134 Q152 152 134 134 Z" fill="url(#g)"/>
+  <path d="M120 164 L136 164 L128 173 Z" fill="#E5304A" stroke="#E5304A" stroke-width="6" stroke-linejoin="round"/>
+</svg>
