@@ -7,9 +7,22 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.14.0] - 2026-11-08
+
+You choose which sensors appear in the configuration.
+
+Includes the changes from 0.13.0.
+
+### Changed
+
+- **Sensor list is a choice** (Configuration › Sensors): the list no longer shows every sensor Home Assistant knows, which kept sensors in view that have nothing to do with an alarm system. "Add sensors" opens a window with all sensors Alarmageddon recognises (search, grouped by area); you tick the ones that belong to this alarm system and add them. Each alarm system has its own list.
+- **Remove from list:** per sensor with the bin button (or in the sensor sheet). Zones, entry delay and own options of that sensor are cleared; it can be added again at any time.
+- **Existing alarm systems:** sensors that are already in a zone or have own options stay in the list; all other sensors have to be added once. Nothing changes for alarm, zones or the overview.
+- The list is part of the backup.
+
 ## [0.13.0] - 2026-11-08
 
-Actions and sent notifications appear in the timeline of an alarm.
+Not released; included in 0.14.0.
 
 ### Added
 
@@ -218,7 +231,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.13.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.13.0
+[0.14.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.14.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

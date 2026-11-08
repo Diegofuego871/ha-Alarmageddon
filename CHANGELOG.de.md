@@ -7,9 +7,22 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.14.0] - 2026-11-08
+
+Du wählst, welche Sensoren in der Konfiguration erscheinen.
+
+Enthält die Änderungen aus 0.13.0.
+
+### Geändert
+
+- **Sensorliste ist eine Auswahl** (Konfiguration › Sensoren): Die Liste zeigt nicht mehr jeden Sensor, den Home Assistant kennt; so blieben Sensoren sichtbar, die mit einer Alarmanlage nichts zu tun haben. "Sensoren hinzufügen" öffnet ein Fenster mit allen Sensoren, die Alarmageddon erkennt (Suche, nach Bereich gruppiert); du wählst die, die zu dieser Alarmanlage gehören, und nimmst sie auf. Jede Alarmanlage hat ihre eigene Liste.
+- **Aus der Liste entfernen:** je Sensor mit dem Papierkorb-Knopf (oder im Seitenblatt des Sensors). Zonen, Eingangsverzögerung und eigene Optionen dieses Sensors werden gelöscht; er lässt sich jederzeit wieder aufnehmen.
+- **Bestehende Alarmanlagen:** Sensoren, die schon in einer Zone stehen oder eigene Optionen haben, bleiben in der Liste; alle anderen müssen einmal hinzugefügt werden. Für Alarm, Zonen und Übersicht ändert sich nichts.
+- Die Liste ist Teil der Sicherung.
+
 ## [0.13.0] - 2026-11-08
 
-Aktionen und gesendete Meldungen erscheinen in der Zeitachse eines Alarms.
+Nicht veröffentlicht; enthalten in 0.14.0.
 
 ### Hinzugefügt
 
@@ -218,7 +231,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.13.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.13.0
+[0.14.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.14.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

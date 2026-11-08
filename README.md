@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.13.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.14.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -40,7 +40,7 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
 ## Setup
 
 1. **New alarm system:** name, night mode and an optional code.
-2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): Configuration › Sensors assigns sensors to the zones "Home", "Away" and "Night"; the arrow at the end of a row opens the options of the sensor. Configuration › Alarm system sets the modes, delays, behaviour and the schedule. Changes apply with "Save".
+2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): Configuration › Sensors: "Add sensors" lists everything Alarmageddon recognises and you choose the sensors of this alarm system (the bin button removes one again); then assign them to the zones "Home", "Away" and "Night"; the arrow at the end of a row opens the options of the sensor. Configuration › Alarm system sets the modes, delays, behaviour and the schedule. Changes apply with "Save".
 3. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
    - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
    - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door), alarm duration.

@@ -56,6 +56,7 @@
       zones: { home: ["binary_sensor.haustuer", "binary_sensor.fenster_kueche", "binary_sensor.terrassentuer"],
                away: ["binary_sensor.haustuer", "binary_sensor.fenster_kueche", "binary_sensor.terrassentuer", "binary_sensor.bewegung_flur", "binary_sensor.fenster_bad", "binary_sensor.bewegung_wohnzimmer"],
                night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
+      sensors: params.get("sensors") === "few" ? [] : Object.keys(SENSORS),
       entry_sensors: ["binary_sensor.haustuer"],
       mode_settings: { home: { exit_delay: 0, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 }, away: { exit_delay: 60, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 },
         night: { exit_delay: 0, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 }, always: { trigger_time: 180 } }, has_code: true, code_arm_required: false, code: "1234",
@@ -73,6 +74,7 @@
       events: [ { t: iso(3 * 3600e3), state: "armed_away", mode: "away", by: "Diego" }, { t: iso(3.3 * 3600e3), state: "disarmed", mode: null, by: "Wandtablet" } ] },
     { entry_id: "e_garage", title: "Garage", entity_id: "alarm_control_panel.garage", modes: ["home", "away"],
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
+      sensors: params.get("sensors") === "few" ? [] : Object.keys(SENSORS),
       entry_sensors: [],
       mode_settings: { home: { exit_delay: 0, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 }, away: { exit_delay: 0, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 }, always: { trigger_time: 180 } }, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [],
       night_enabled: false, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
@@ -251,6 +253,7 @@
       if (msg.entry_sensors.some((e) => !active.has(e))) throw err("entry_not_in_zone");
       for (const m of ["home", "away", "night"]) sys.zones[m] = [...new Set(msg.zones[m] || [])];
       sys.entry_sensors = [...msg.entry_sensors];
+      if (msg.sensors) sys.sensors = [...msg.sensors];
       if (msg.sensor_options) sys.sensor_options = JSON.parse(JSON.stringify(msg.sensor_options));
       return { ok: true };
     }

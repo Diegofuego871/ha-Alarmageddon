@@ -20,6 +20,7 @@ CONF_NIGHT_ENABLED: Final = "night_enabled"
 CONF_HOME_ENABLED: Final = "home_enabled"
 CONF_AWAY_ENABLED: Final = "away_enabled"
 CONF_ZONE_PREFIX: Final = "zone_"  # zone_home, zone_away, zone_night: Liste von Entitäten
+CONF_SENSORS: Final = "sensors"  # vom Nutzer für diese Anlage ausgewählte Sensoren (Liste im Panel); Zonen und eigene Werte zählen immer dazu
 CONF_ENTRY_SENSORS: Final = "entry_sensors"  # Sensoren mit Eingangsverzögerung, alle anderen lösen sofort aus
 CONF_EXIT_DELAY_PREFIX: Final = "exit_delay_"  # exit_delay_home usw., Sekunden
 CONF_ENTRY_DELAY: Final = "entry_delay"
@@ -57,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 12  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 13  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"

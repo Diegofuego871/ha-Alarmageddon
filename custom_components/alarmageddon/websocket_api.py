@@ -39,6 +39,7 @@ from .const import (
     CONF_ENTRY_DELAY,
     MAX_CONFIRM_WINDOW,
     CONF_ENTRY_SENSORS,
+    CONF_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
     CONF_NIGHT_ENABLED,
     ALWAYS_FIELDS,
@@ -166,7 +167,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             continue
         ctl = entry.runtime_data.controller
         zones = {mode: ctl.zone(mode) for mode in ctl.modes}
-        chosen |= {e for members in zones.values() for e in members} | set(ctl.sensor_overrides)
+        chosen |= {e for members in zones.values() for e in members} | set(ctl.sensor_overrides) | set(entry.options.get(CONF_SENSORS) or [])
         systems.append(
             {
                 "entry_id": entry.entry_id,
@@ -175,6 +176,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "modes": list(ctl.modes),
                 "zones": zones,
                 "entry_sensors": sorted(ctl.entry_sensors),
+                "sensors": list(entry.options.get(CONF_SENSORS) or []),
                 # Einstellungen je Modus (0.10.0); "always": Alarm durch einen immer aktiven Sensor bei deaktivierter Anlage
                 "mode_settings": {
                     **{mode: {"exit_delay": ctl.exit_delay(mode), "entry_delay": ctl.entry_delay_for(mode), "trigger_time": ctl.trigger_time_for(mode),
@@ -224,6 +226,8 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         vol.Required("entry_id"): str,
         vol.Required("zones"): {vol.In(MODES): [str]},
         vol.Required("entry_sensors"): [str],
+        # Sensoren, die in der Liste der Konfiguration stehen sollen (Auswahl über "+")
+        vol.Optional("sensors"): [str],
         # Eigene Werte der Optionen pro Sensor; fehlt ein Sensor, gilt die Voreinstellung seiner Art
         vol.Optional("sensor_options"): {str: {vol.In(SENSOR_OPTIONS): bool}},
     }
@@ -248,6 +252,11 @@ async def ws_save_zones(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
     for mode in MODES:
         options[f"{CONF_ZONE_PREFIX}{mode}"] = zones[mode]
     options[CONF_ENTRY_SENSORS] = sorted(set(msg["entry_sensors"]))
+    if "sensors" in msg:
+        if any(not e.startswith("binary_sensor.") for e in msg["sensors"]):
+            connection.send_error(msg["id"], "invalid_entity", "Only binary sensors can be listed")
+            return
+        options[CONF_SENSORS] = sorted(set(msg["sensors"]))
     if "sensor_options" in msg:
         if any(not e.startswith("binary_sensor.") for e in msg["sensor_options"]):
             connection.send_error(msg["id"], "invalid_entity", "Only binary sensors can have sensor options")

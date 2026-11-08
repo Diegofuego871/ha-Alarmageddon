@@ -170,3 +170,23 @@ async def test_events_removed_with_entry(hass: HomeAssistant, hass_storage) -> N
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert key not in hass_storage
+
+
+async def test_chosen_sensors_saved_and_listed(hass: HomeAssistant, hass_ws_client) -> None:
+    """Auswahl der Sensoren (0.14.0): wird gespeichert, kommt in "data" zurück und ist Teil der Sicherung."""
+    hass.states.async_set("binary_sensor.wasser_keller", "off", {"device_class": "moisture"})
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_zones", "entry_id": entry.entry_id, "zones": {"home": [], "away": []}, "entry_sensors": [],
+                            "sensors": ["binary_sensor.wasser_keller", "binary_sensor.wasser_keller"]})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    await client.send_json({"id": 2, "type": "alarmageddon/data"})
+    data = (await client.receive_json())["result"]
+    assert data["systems"][0]["sensors"] == ["binary_sensor.wasser_keller"]
+    assert "binary_sensor.wasser_keller" in data["sensors"]
+    await client.send_json({"id": 3, "type": "alarmageddon/save_zones", "entry_id": entry.entry_id, "zones": {"home": [], "away": []}, "entry_sensors": [], "sensors": ["light.flur"]})
+    assert (await client.receive_json())["error"]["code"] == "invalid_entity"
+    await client.send_json({"id": 4, "type": "alarmageddon/export"})
+    exported = (await client.receive_json())["result"]
+    assert exported["systems"][0]["options"]["sensors"] == ["binary_sensor.wasser_keller"]

@@ -17,6 +17,7 @@ from .const import (
     SCHEDULE_ACTIONS,
     CONF_ENTRY_DELAY,
     CONF_ENTRY_SENSORS,
+    CONF_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
     CONF_NIGHT_ENABLED,
     CONF_OPEN_SENSORS,
@@ -96,6 +97,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         **{vol.Optional(f"{CONF_ZONE_PREFIX}{m}"): _binary_sensors for m in MODES},
         **{vol.Optional(f"{CONF_EXIT_DELAY_PREFIX}{m}"): SECONDS for m in MODES},
         vol.Optional(CONF_ENTRY_SENSORS): _binary_sensors,
+        vol.Optional(CONF_SENSORS): _binary_sensors,
         vol.Optional(CONF_ENTRY_DELAY): SECONDS,
         vol.Optional(CONF_TRIGGER_TIME): SECONDS,
         # Einstellungen je Modus (0.10.0)

@@ -47,14 +47,21 @@ export class SensorsUi {
         entry: s.entry_id,
         zones: Object.fromEntries(ALL_MODES.map((m) => [m, new Set(s.zones?.[m] || [])])),
         entrySensors: new Set(s.entry_sensors || []),
+        // Liste der Konfiguration: Auswahl des Nutzers plus alles, was schon in einer Zone steht oder eigene Werte hat
+        sensors: new Set(this.baseSensors(s)),
         opts: JSON.parse(JSON.stringify(s.sensor_options || {})),
       };
     }
     return this.draft;
   }
 
+  baseSensors(s) {
+    return [...new Set([...(s.sensors || []), ...Object.values(s.zones || {}).flat(), ...Object.keys(s.sensor_options || {})])];
+  }
+
   reset() {
     this.draft = null;
+    this.pick = null;
     this.saveState = null;
     this.detail = null;
   }
@@ -69,6 +76,9 @@ export class SensorsUi {
       for (const id of d.zones[m]) if (!base.has(id)) out.add(id);
       for (const id of base) if (!d.zones[m].has(id)) out.add(id);
     }
+    const baseList = new Set(this.baseSensors(s));
+    for (const id of d.sensors) if (!baseList.has(id)) out.add(id);
+    for (const id of baseList) if (!d.sensors.has(id)) out.add(id);
     const baseEntry = new Set(s.entry_sensors || []);
     for (const id of d.entrySensors) if (!baseEntry.has(id)) out.add(id);
     for (const id of baseEntry) if (!d.entrySensors.has(id)) out.add(id);
@@ -138,14 +148,14 @@ export class SensorsUi {
     const d = this.ensureDraft();
     if (!d) return [];
     const q = this.q.trim().toLowerCase();
-    const chosen = new Set([...this.modes().flatMap((m) => [...d.zones[m]]), ...Object.keys(d.opts)]);
     return Object.entries(h._data?.sensors || {})
       .filter(([id, info]) => {
+        // Nur Sensoren, die der Nutzer für diese Anlage gewählt hat (Plus); sonst wäre alles drin, was HA kennt
+        if (!d.sensors.has(id)) return false;
         const dc = info.device_class;
         if (this.filter === "openings" && !OPENINGS.has(dc)) return false;
         if (this.filter === "motion" && !MOTION.has(dc)) return false;
         if (this.filter === "other" && (OPENINGS.has(dc) || MOTION.has(dc))) return false;
-        if (info.missing && !chosen.has(id)) return false;
         if (!q) return true;
         return [h._name(id), id, info.area, info.integration].some((v) => String(v || "").toLowerCase().includes(q));
       })
@@ -164,6 +174,7 @@ export class SensorsUi {
         <label class="list-search">${ic("search", 18)}<input type="search" data-sen="search" placeholder="${esc(this._t("search"))}" value="${esc(this.q)}" aria-label="${esc(this._t("search"))}">
           <button class="ag-clear" data-sen="clear" aria-label="${esc(this._t("clearSearch"))}" ${this.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
         ${filters}<span class="ag-grow"></span>${narrow ? "" : `<span class="ag-hint">${ic("hand", 16)}${esc(this._t("dragHint"))}</span>`}
+        <button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>
         <button class="ag-btn" data-sen="presets">${ic("tune", 18)}${esc(this._t("presets"))}</button></div>
       <div class="ag-sen-layout"><div class="ag-gbody"></div><div class="ag-side"></div></div><div class="ag-foot"></div>`;
   }
@@ -175,7 +186,10 @@ export class SensorsUi {
     const rows = this.rows();
     const narrow = this.host.hasAttribute("narrow");
     const changed = this.changedIds();
-    if (!rows.length) this.host._setHtml(body, `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t("noSensors"))}</span></div>`);
+    if (!rows.length) {
+      const none = !this.draft.sensors.size;
+      this.host._setHtml(body, `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(none ? "noSensorsChosen" : "noSensors"))}</span>${none ? `<button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>` : ""}</div>`);
+    }
     else this.host._setHtml(body, narrow ? this._cards(rows) : this._table(rows, changed));
     this.renderSide();
     this.renderFoot();
@@ -216,7 +230,7 @@ export class SensorsUi {
           return `<td class="z"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
         }).join("")}
         <td class="z">${this._entryToggle(r)}</td><td>${esc(r.info.integration || "")}</td><td>${bits.batt}</td>
-        <td style="width:44px"><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></td></tr>`);
+        <td style="width:92px;white-space:nowrap"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></td></tr>`);
     }
     return `<div class="ag-card ag-table-wrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
   }
@@ -239,7 +253,7 @@ export class SensorsUi {
       }
       const bits = this._bits(r);
       out.push(`<div class="ag-card ag-mcard"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>${bits.batt}
-          <button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
+          <button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
         <div class="ag-zbtns" style="--n:${modes.length}">${modes.map((m) => {
           const on = d.zones[m].has(r.id);
           return `<button class="ag-zbtn ${on ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`;
@@ -272,7 +286,9 @@ export class SensorsUi {
         <div style="flex:1;min-width:0"><h3>${esc(r.name)}</h3><div class="ag-t2 ag-small">${esc(meta)}</div></div>
         <button class="ag-iconbtn" data-sen="close-detail" aria-label="${esc(this._t("cancel"))}">${ic("close", 22)}</button></div>
       <div class="ag-side-body"><div class="ag-label">${esc(this._t("zones"))}</div><div class="ag-zline">${zones}</div>
-        <div class="ag-label">${esc(this._t("behaviour"))}</div>${entryRow}${opts}</div>`;
+        <div class="ag-label">${esc(this._t("behaviour"))}</div>${entryRow}${opts}
+        <button class="ag-btn" data-sen="remove" data-ent="${esc(id)}" style="margin-top:16px">${ic("trash", 18)}${esc(this._t("removeSensor"))}</button>
+        <div class="ag-t2 ag-small" style="margin-top:6px">${esc(this._t("removeSensorHint"))}</div></div>`;
   }
 
   renderSide() {
@@ -324,11 +340,12 @@ export class SensorsUi {
     this.saving = true;
     this.renderFoot();
     try {
-      await h._hass.callWS({ type: "alarmageddon/save_zones", entry_id: s.entry_id, zones, entry_sensors: [...d.entrySensors].sort(), sensor_options: d.opts });
+      await h._hass.callWS({ type: "alarmageddon/save_zones", entry_id: s.entry_id, zones, entry_sensors: [...d.entrySensors].sort(), sensor_options: d.opts, sensors: [...d.sensors].sort() });
       // Sofort als gespeichert zeigen; die Anlage lädt neu, die Daten kommen gleich nach
       s.zones = zones;
       s.entry_sensors = [...d.entrySensors].sort();
       s.sensor_options = JSON.parse(JSON.stringify(d.opts));
+      s.sensors = [...d.sensors].sort();
       this.draft = null;
       this.saveState = "saved";
       h._fetch();
@@ -338,6 +355,84 @@ export class SensorsUi {
       this.saving = false;
       this.render();
     }
+  }
+
+  // ----- Sensoren auswählen ("+") und entfernen -----
+
+  removeSensor(id) {
+    const d = this.ensureDraft();
+    d.sensors.delete(id);
+    for (const m of ALL_MODES) d.zones[m].delete(id);
+    d.entrySensors.delete(id);
+    delete d.opts[id];
+    if (this.detail === id) this.detail = null;
+    this.saveState = null;
+    this.render();
+  }
+
+  // Alle Sensoren, die Alarmageddon erkennt und die noch nicht in der Liste stehen
+  pickCandidates() {
+    const h = this.host;
+    const q = (this.pick?.q || "").trim().toLowerCase();
+    return Object.entries(h._data?.sensors || {})
+      .filter(([id, info]) => !info.missing && !this.draft.sensors.has(id)
+        && (!q || [h._name(id), id, info.area, info.integration].some((v) => String(v || "").toLowerCase().includes(q))))
+      .map(([id, info]) => ({ id, info, name: h._name(id), area: info.area || this._t("noArea") }))
+      .sort((a, b) => Number(!a.info.area) - Number(!b.info.area) || a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
+  }
+
+  openPick() {
+    if (!this.ensureDraft()) return;
+    this.pick = { q: "", sel: new Set() };
+    this.renderPick();
+    const dlg = this.host._root.getElementById("ag-pick");
+    if (!dlg.open) dlg.showModal();
+  }
+
+  _pickListHtml() {
+    const rows = this.pickCandidates();
+    if (!rows.length) return `<div class="ag-t2 ag-small" style="padding:14px">${esc(this._t("pickNone"))}</div>`;
+    let area = null;
+    return rows.map((r) => {
+      const on = this.pick.sel.has(r.id);
+      const [icon, label] = DC[r.info.device_class] || ["sensor", "dcOther"];
+      const head = r.area !== area ? `<div class="ag-group-label" style="padding:8px 10px 2px">${esc((area = r.area))}</div>` : "";
+      return `${head}<button class="ag-erow ${on ? "on" : ""}" data-sen="pick-toggle" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}">
+        <span class="ag-box ${on ? "on" : ""}">${on ? ic("check", 18) : ""}</span><span class="ag-av">${ic(icon, 18)}</span>
+        <span style="flex:1;min-width:0"><b style="font-weight:500">${esc(r.name)}</b><small class="ag-t2">${esc([this._t(label), r.info.integration].filter(Boolean).join(" · "))}</small></span></button>`;
+    }).join("");
+  }
+
+  renderPickList() {
+    const list = this.host._root.querySelector("#ag-pick .ag-elist");
+    if (list) list.innerHTML = this._pickListHtml();
+    this._pickFoot();
+  }
+
+  _pickFoot() {
+    const btn = this.host._root.querySelector('#ag-pick [data-sen="pick-add"]');
+    if (!btn) return;
+    btn.disabled = !this.pick.sel.size;
+    btn.lastChild.textContent = this._t("pickAdd", { count: this.pick.sel.size });
+  }
+
+  renderPick() {
+    const dlg = this.host._root.getElementById("ag-pick");
+    this.host._setHtml(dlg, `<div class="ag-dlg-body"><h3>${esc(this._t("pickTitle"))}</h3><div class="ag-t2">${esc(this._t("pickHint"))}</div>
+      <label class="list-search" style="margin-top:12px">${ic("search", 18)}<input type="search" data-sen="pick-q" placeholder="${esc(this._t("search"))}" value="${esc(this.pick.q)}" aria-label="${esc(this._t("search"))}">
+        <button class="ag-clear" data-sen="pick-clear" aria-label="${esc(this._t("clearSearch"))}" ${this.pick.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
+      <div class="ag-elist" style="margin-top:10px;max-height:min(46vh,380px)">${this._pickListHtml()}</div>
+      <div class="ag-dlg-btns"><button class="ag-btn" data-sen="pick-close">${esc(this._t("cancel"))}</button>
+        <button class="ag-btn primary" data-sen="pick-add" ${this.pick.sel.size ? "" : "disabled"}>${ic("plus", 18)}${esc(this._t("pickAdd", { count: this.pick.sel.size }))}</button></div></div>`);
+  }
+
+  addPicked() {
+    const d = this.ensureDraft();
+    for (const id of this.pick.sel) d.sensors.add(id);
+    this.pick = null;
+    this.saveState = null;
+    this.host._closeDialog("ag-pick");
+    this.render();
   }
 
   // ----- Voreinstellungen je Sensorart -----
@@ -439,6 +534,24 @@ export class SensorsUi {
       this.render();
     } else if (act === "save") {
       this.save();
+    } else if (act === "add") {
+      this.openPick();
+    } else if (act === "remove") {
+      this.removeSensor(id);
+    } else if (act === "pick-toggle") {
+      if (this.pick.sel.has(id)) this.pick.sel.delete(id);
+      else this.pick.sel.add(id);
+      this.renderPick();
+    } else if (act === "pick-clear") {
+      const input = this.host._root.querySelector('[data-sen="pick-q"]');
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    } else if (act === "pick-close") {
+      this.pick = null;
+      this.host._closeDialog("ag-pick");
+    } else if (act === "pick-add") {
+      this.addPicked();
     } else if (act === "presets") {
       this.openPresets();
     } else if (act === "preset") {
@@ -461,6 +574,12 @@ export class SensorsUi {
   }
 
   onInput(el) {
+    if (el.dataset.sen === "pick-q" && this.pick) {
+      this.pick.q = el.value;
+      this.host._root.querySelector('[data-sen="pick-clear"]').hidden = !el.value;
+      this.renderPickList(); // nur die Liste, das Suchfeld behält den Fokus
+      return true;
+    }
     if (el.dataset.sen !== "search") return false;
     this.q = el.value;
     this.host._view.querySelector('[data-sen="clear"]').hidden = !this.q;
