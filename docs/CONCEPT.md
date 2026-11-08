@@ -39,6 +39,11 @@ eingerichtet in einem automatisch angelegten Seitenpanel.
 - Batterie-Prognose erst ab rund 14 Tagen Verlauf, als Schätzung
   gekennzeichnet.
 
+## Entscheide zum Panel und zu Alarmo (Nutzer, 2026-11-08)
+
+- Übersicht: Variante A (Karten). Sensorgruppen: Variante B (Tabelle, Handy: Karten). Reiter auf dem Handy: Symbol mit kurzem Text.
+- Aus Alarmo in den Plan: Optionen pro Sensor (nach dem Panel, mit Mockup), "Bereit zum Scharfschalten", Zwei-Sensor-Bestätigung, mehrere Codes pro Person. Keine gemeinsame Steuerung aller Anlagen.
+
 ## Lehren aus Alarmo
 
 Analyse in `docs/reference/alarmo-analyse.md`. Ziel: alles, was Alarmo kann,
@@ -83,7 +88,8 @@ beliebigen Aktionen, Testknopf, Wartung und Protokoll.
 | Phase | Inhalt |
 | --- | --- |
 | 1 · Kern | Config Flow (mehrere Anlagen), Gerät und `alarm_control_panel` pro Anlage, Zustandsautomat mit Ein- und Ausgangsverzögerung, optional Nacht, Zonen als Entitäten, Prüfung HomeKit-Bridge, HACS-Gerüst (Actions, hacs.json, Brand), Tests |
-| 2 · Panel | Automatisches Panel, Drag-and-Drop-Zonen, WebSocket-API, Übersicht |
+| 2 · Panel | Automatisches Panel, Übersicht (Variante A, Karten), Sensorgruppen (Variante B, Tabelle; Handy: Karten mit Zonen-Knöpfen), Reiter auf dem Handy mit Symbol und kurzem Text, WebSocket-API, Ereignisprotokoll (0.2.0) |
+| 2b · Sensoroptionen | Mockup, dann: Optionen pro Sensor (Immer aktiv, Darf beim Scharfschalten offen sein, Scharf sobald geschlossen, Ausfall gilt als Alarm), Voreinstellungen nach Sensortyp, "Bereit zum Scharfschalten" pro Modus in der Übersicht und als Entität (0.3.0) |
 | 3 · Szenarien | Szenario-Engine mit Verzögerungen, Gegenaktionen, Wiederherstellung nach Neustart, Editor |
 | 4 · Wartung | Überwachung, Kacheln nach Bereich, Prognose, Meldungen und Ruhezeiten |
-| 5 · Härtung | Sensorausfall im scharfen Zustand, Sabotage, Bypass, Testmeldung, HACS |
+| 5 · Härtung | Sensorausfall im scharfen Zustand, Sabotage, Zwei-Sensor-Bestätigung gegen Fehlalarme, mehrere Codes pro Person (mit HA-Benutzer verknüpft), Testmeldung |

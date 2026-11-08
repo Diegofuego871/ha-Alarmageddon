@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.1.0). Der Kern der Alarmanlage funktioniert. Die grafische Einrichtung im Seitenpanel, Alarmszenarien und Wartung folgen in späteren Versionen.
+> **Status:** frühe Vorabversion (0.2.0). Kern der Alarmanlage und Seitenpanel mit Übersicht und Sensorgruppen funktionieren. Alarmszenarien und Wartung folgen in späteren Versionen.
 
 ## Funktionen
 
@@ -16,7 +16,9 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Code:** optional, 4 bis 8 Ziffern, nur als Hash gespeichert. Nach fünf falschen Codes eine Minute gesperrt.
 - **Jede Funktechnik:** Alarmageddon nutzt nur Entitäten von Home Assistant. WLAN, Thread/Matter, Zigbee, Z-Wave und Bluetooth funktionieren gleichermassen.
 
-Geplant: grafische Einrichtung mit Drag and Drop im Seitenpanel, Alarmszenarien (Sirene, Rollläden, Medienplayer, kritische Push-Meldungen mit Aktionen), Wartungsübersicht und Überwachung.
+- **Seitenpanel:** Übersicht aller Alarmanlagen mit Umschalten des Modus, offenen Sensoren, schwachen Batterien und letzten Ereignissen; Sensorgruppen als Tabelle mit Ziehen über Felder, auf dem Handy als Karten mit Zonen-Knöpfen.
+
+Geplant: Optionen pro Sensor (immer aktiv, darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm), Anzeige "bereit zum Scharfschalten", Alarmszenarien (Sirene, Rollläden, Medienplayer, kritische Push-Meldungen mit Aktionen), Wartungsübersicht und Überwachung.
 
 ## Installation
 
@@ -29,8 +31,9 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
 ## Einrichtung
 
 1. **Neue Alarmanlage:** Name, Modus "Nacht" und optional ein Code.
-2. **Optionen** (Einstellungen → Geräte & Dienste → Alarmageddon → "Konfigurieren"):
-   - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht". Ein Sensor kann in mehreren Zonen sein.
+2. **Seitenpanel "Alarmageddon"** (erscheint für Administratoren in der Seitenleiste): Reiter "Sensorgruppen" ordnet Sensoren den Zonen "Anwesend", "Abwesend" und "Nacht" zu und setzt die Eingangsverzögerung. Änderungen gelten mit "Speichern".
+3. **Optionen** (Einstellungen → Geräte & Dienste → Alarmageddon → "Konfigurieren"):
+   - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht" (dasselbe wie im Seitenpanel). Ein Sensor kann in mehreren Zonen sein.
    - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür), Alarmdauer.
    - **Verhalten:** Modus "Nacht", offener Sensor beim Scharfschalten (verhindern oder umgehen), Code zum Scharfschalten.
    - **Code:** neuen Code setzen oder entfernen.

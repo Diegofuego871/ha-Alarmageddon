@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.1.0). The alarm core works. The graphical setup in the side panel, alarm scenarios and maintenance follow in later versions.
+> **Status:** early pre-release (0.2.0). Alarm core, side panel with overview and sensor groups work. Alarm scenarios and maintenance follow in later versions.
 
 ## Features
 
@@ -16,7 +16,9 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Code:** optional, 4 to 8 digits, stored only as a hash. Locked for one minute after five wrong codes.
 - **Any radio technology:** Alarmageddon only uses Home Assistant entities. Wi-Fi, Thread/Matter, Zigbee, Z-Wave and Bluetooth all work.
 
-Planned: graphical setup with drag and drop in a side panel, alarm scenarios (siren, covers, media players, critical push notifications with actions), maintenance overview and monitoring.
+- **Side panel:** overview of all alarm systems with mode switch, open sensors, low batteries and recent events; sensor groups as a table with drag across boxes, on the phone as cards with zone buttons.
+
+Planned: options per sensor (always active, may be open when arming, arm when closed, failure counts as alarm), ready-to-arm indicator, alarm scenarios (siren, covers, media players, critical push notifications with actions), maintenance overview and monitoring.
 
 ## Installation
 
@@ -29,8 +31,9 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
 ## Setup
 
 1. **New alarm system:** name, night mode and an optional code.
-2. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
-   - **Zones:** sensors for "Home", "Away" and "Night". A sensor can be in several zones.
+2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): tab "Sensor groups" assigns sensors to the zones "Home", "Away" and "Night" and sets the entry delay. Changes apply with "Save".
+3. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
+   - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
    - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door), alarm duration.
    - **Behaviour:** night mode, open sensor when arming (block or bypass), code required to arm.
    - **Code:** set a new code or remove it.

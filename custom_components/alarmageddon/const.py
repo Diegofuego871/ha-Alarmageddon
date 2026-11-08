@@ -49,3 +49,25 @@ CODE_MAX_ATTEMPTS: Final = 5
 CODE_LOCKOUT_SECONDS: Final = 60
 
 MANUFACTURER: Final = "Alarmageddon"
+
+# Panel (eingebautes iframe-Panel, siehe LEARNINGS)
+PANEL_VERSION: Final = 1  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_URL_PATH: Final = "alarmageddon"
+PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
+PANEL_DIR: Final = "panel"
+PANEL_HTML_FILE: Final = "panel.html"
+PANEL_TITLE: Final = "Alarmageddon"
+PANEL_ICON: Final = "mdi:shield-home"
+DATA_PANEL: Final = f"{DOMAIN}_panel_registered"
+DATA_STATIC: Final = f"{DOMAIN}_static_registered"
+
+# Ereignisprotokoll pro Anlage (Übersicht "Letzte Ereignisse")
+EVENTS_STORE_KEY: Final = f"{DOMAIN}.events"
+EVENTS_KEEP: Final = 50
+
+# Sensoren, die das Panel als Kandidaten für Zonen anbietet (Geräteklassen von binary_sensor)
+SENSOR_CLASSES: Final = (
+    "door", "window", "opening", "garage_door", "motion", "occupancy", "presence",
+    "smoke", "gas", "moisture", "vibration", "tamper", "safety", "sound", "carbon_monoxide",
+    "glass_break",  # neu seit HA 2026.10
+)

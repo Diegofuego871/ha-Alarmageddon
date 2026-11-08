@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 
 import pytest
 
@@ -65,7 +67,7 @@ def test_every_option_and_error_is_translated() -> None:
 
 
 def test_no_sharp_s() -> None:
-    files = [*INTEGRATION.glob("*.py"), *INTEGRATION.glob("translations/*.json"), INTEGRATION / "strings.json"]
+    files = [*INTEGRATION.glob("*.py"), *INTEGRATION.glob("translations/*.json"), INTEGRATION / "strings.json", *INTEGRATION.glob("panel/*")]
     files += [ROOT / name for name in ("README.md", "README.de.md", "CHANGELOG.md", "CHANGELOG.de.md")]
     offenders = [str(f.relative_to(ROOT)) for f in files if "ß" in f.read_text(encoding="utf-8")]
     assert not offenders, f"Eszett statt ss in: {offenders}"
@@ -104,3 +106,50 @@ def test_docs_bilingual(en: str, de: str) -> None:
     assert _structure(ROOT / en) == _structure(ROOT / de)
     assert re.search(rf"\]\((\S*/)?{re.escape(de)}\)", (ROOT / en).read_text(encoding="utf-8"))
     assert re.search(rf"\]\((\S*/)?{re.escape(en)}\)", (ROOT / de).read_text(encoding="utf-8"))
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js fehlt")
+def test_panel_strings_complete() -> None:
+    """Panel-Texte: Englisch und Deutsch mit denselben Schlüsseln und denselben Platzhaltern."""
+    script = (
+        "import(process.argv[1]).then(({ STRINGS }) => {"
+        " const ph = (s) => [...s.matchAll(/\\{(\\w+)\\}/g)].map((m) => m[1]).sort().join();"
+        " const de = STRINGS.de, en = STRINGS.en;"
+        " const onlyDe = Object.keys(de).filter((k) => !(k in en)), onlyEn = Object.keys(en).filter((k) => !(k in de));"
+        " const ph_diff = Object.keys(en).filter((k) => k in de && ph(en[k]) !== ph(de[k]));"
+        " console.log(JSON.stringify({ onlyDe, onlyEn, ph_diff }));"
+        "})"
+    )
+    result = subprocess.run(
+        ["node", "-e", script, (INTEGRATION / "panel" / "strings.js").as_uri()], capture_output=True, text=True, check=True
+    )
+    assert json.loads(result.stdout) == {"onlyDe": [], "onlyEn": [], "ph_diff": []}
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js fehlt")
+def test_panel_language_selection() -> None:
+    """Deutsch für de und de-*, sonst Englisch (Vorgabe des Nutzers)."""
+    cases = {"de": "de", "de-CH": "de", "DE-at": "de", "en": "en", "en-GB": "en", "fr": "en", "dev": "en", "": "en"}
+    script = (
+        "import(process.argv[1]).then(({ pickLang }) => {"
+        " const cases = JSON.parse(process.argv[2]); const out = {};"
+        " for (const lang of Object.keys(cases)) out[lang] = [pickLang({ locale: { language: lang } }), pickLang({ language: lang })];"
+        " out.none = [pickLang(null), pickLang({})];"
+        " console.log(JSON.stringify(out));"
+        "})"
+    )
+    result = subprocess.run(
+        ["node", "-e", script, (INTEGRATION / "panel" / "strings.js").as_uri(), json.dumps(cases)],
+        capture_output=True, text=True, check=True,
+    )
+    expected = {lang: [want, want] for lang, want in cases.items()} | {"none": ["en", "en"]}
+    assert json.loads(result.stdout) == expected
+
+
+def test_panel_uses_only_known_strings() -> None:
+    """Jeder Schlüssel, den das Panel mit _t(...) nutzt, steht in strings.js."""
+    js = (INTEGRATION / "panel" / "alarmageddon-panel.js").read_text(encoding="utf-8")
+    strings = (INTEGRATION / "panel" / "strings.js").read_text(encoding="utf-8")
+    used = set(re.findall(r'_t\("(\w+)"', js)) | set(re.findall(r'"(mode(?:Off|Home|Away|Night)|state\w+|dc\w+|filter\w+)"', js))
+    missing = sorted(k for k in used if f"    {k}:" not in strings)
+    assert not missing, missing

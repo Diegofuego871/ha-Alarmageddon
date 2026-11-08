@@ -7,7 +7,24 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-08
+
+Side panel with an overview of all alarm systems and graphical sensor groups.
+
+Includes the changes from 0.1.0.
+
+### Added
+
+- **Side panel "Alarmageddon":** added automatically with the first alarm system, removed with the last one. Only for administrators. Works on a desktop monitor and in the companion app on the phone.
+- **Overview:** one card per alarm system with state, mode switch (Off, Home, Away, Night), open sensors, unreachable sensors and low batteries (below 20 %). A countdown shows the remaining exit or entry delay. During an alarm a red band with "Disarm" stands at the top. The panel asks for the code only when needed (a default code in Home Assistant works without input).
+- **Recent events:** who armed or disarmed which alarm system and which sensor triggered, stored per alarm system (last 50).
+- **Sensor groups:** a table with one column per zone and a switch for the entry delay. Drag across several boxes to set them all at once, "All" sets a whole column, with search and filters (doors & windows, motion, other). Sensors are grouped by area, with integration and battery. On the phone: one card per sensor with zone buttons. Changes are a draft with "Cancel" and "Save"; leaving with unsaved changes asks first.
+- **Sensors of any integration:** the panel offers all binary sensors of a fitting device class (door, window, motion, smoke, water, glass break and more). The battery comes from the battery sensor of the same device.
+- **Glass break:** binary sensors with the new device class "glass break" (Home Assistant 2026.10) are offered as well.
+
 ## [0.1.0] - 2026-11-08
+
+Not released; included in 0.2.0.
 
 First pre-release: the alarm core with Apple HomeKit support. The graphical setup in the side panel follows in a later version.
 
@@ -22,4 +39,4 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.1.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.1.0
+[0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

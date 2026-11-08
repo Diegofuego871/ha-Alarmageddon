@@ -25,6 +25,13 @@ zuoberst.
   `alarm_arm_night` ohne ARM_NIGHT), lehnt HA ihn selbst ab (`service_not_supported`); die Entität sieht den Aufruf nie.
 - **Eigenschaften, die von Optionen abhängen:** `supported_features`, `code_format` und `code_arm_required` sind in
   der Basisklasse `cached_property`; als eigene `@property` überschreiben, sonst bleibt der erste Wert stehen.
+- **Gleitende Kapsel nach Neuaufbau:** Eine neu gezeichnete Kapsel beginnt bei Breite 0 und gleitet sichtbar von links
+  heran. Beim ersten Setzen die Übergangsanimation kurz abschalten (`transition: none`, Reflow, zurück), nur Wechsel gleiten.
+- **Optimistische Änderung und `setHtml`:** Wer Klassen im DOM vorab umstellt (Kapsel sofort beim Antippen), muss nach
+  einem Fehler den gemerkten Text verwerfen (`_lastHtml.delete`), sonst überspringt `setHtml` den Neuaufbau, weil der
+  Text gleich ist, und die falsche Auswahl bleibt stehen. Gleiches beim Schliessen eines Dialogs (Ereignis `close`).
+- **`innerText` und Grossbuchstaben:** `text-transform: uppercase` wirkt sich auf `innerText` aus ("LETZTE EREIGNISSE");
+  in Tests ohne Gross-/Kleinschreibung vergleichen oder `textContent` nehmen.
 - **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
   Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
 

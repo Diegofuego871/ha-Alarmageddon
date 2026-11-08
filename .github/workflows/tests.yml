@@ -24,6 +24,11 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Node.js (für die Prüfung der Panel-Texte)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
       - name: Abhängigkeiten
         # Die Kamera-Komponente (Abhängigkeit der HomeKit-Bridge) meldet ohne libturbojpeg nur eine Warnung; nicht nötig
         run: pip install -r requirements_test.txt
@@ -33,3 +38,39 @@ jobs:
 
       - name: Tests
         run: python -m pytest -q
+
+  panel:
+    name: Panel (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tests/panel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Syntax der Panel-Dateien
+        # node --check allein findet in Modulen keine Syntaxfehler (LEARNINGS)
+        run: for f in ../../custom_components/alarmageddon/panel/*.js; do node --input-type=module --check < "$f"; done
+
+      - name: Abhängigkeiten
+        run: npm ci
+
+      - name: Chromium
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Suiten
+        run: node run.mjs
+
+      - name: Bildschirmfotos bei Fehlern
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: panel-screenshots
+          path: tests/panel/output

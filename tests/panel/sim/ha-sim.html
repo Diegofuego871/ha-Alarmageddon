@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HA-Nachbau Alarmageddon</title>
+<style>
+  /* Nachbau des Rahmens von HA: Kopf mit Titel, darunter das iframe-Panel mit fester Höhe */
+  :root { --primary-background-color: #f4f6f9; --card-background-color: #fff; --primary-text-color: #1f2328; --secondary-text-color: #6b7280;
+    --disabled-text-color: #a3a9b3; --divider-color: rgba(15,23,42,.09); --primary-color: #03a9f4; --success-color: #2e9e4f; --warning-color: #f59e0b; --error-color: #e5484d; color-scheme: light; }
+  :root.dark { --primary-background-color: #111111; --card-background-color: #1c1c1c; --primary-text-color: #e6e6e6; --secondary-text-color: #9ba1a8;
+    --disabled-text-color: #666b72; --divider-color: rgba(255,255,255,.08); --error-color: #ef5350; --success-color: #4caf50; color-scheme: dark; }
+  html, body { margin: 0; height: 100%; font-family: Roboto, system-ui, sans-serif; background: var(--primary-background-color); color: var(--primary-text-color); }
+  home-assistant { display: flex; flex-direction: column; height: 100%; }
+  .hahead { height: 56px; flex: none; display: flex; align-items: center; padding: 0 16px; font-size: 20px; background: var(--card-background-color); border-bottom: 1px solid var(--divider-color); }
+  iframe { flex: 1; border: 0; width: 100%; display: block; }
+</style>
+</head>
+<body>
+<home-assistant><div class="hahead">Alarmageddon</div><iframe id="panel-frame"></iframe></home-assistant>
+<script>
+  // Erfundene Daten (CLAUDE.md). Sprache über ?lang=de|en, Design über ?theme=dark, leer über ?empty=1.
+  const params = new URLSearchParams(location.search);
+  if (params.get("theme") === "dark") document.documentElement.classList.add("dark");
+  const lang = params.get("lang") || "de";
+  const now = Date.now();
+  const iso = (msAgo) => new Date(now - msAgo).toISOString();
+
+  const SENSORS = {
+    "binary_sensor.haustuer": { name: "Haustür", device_class: "door", area: "Flur", platform: "matter", integration: "Matter", battery: "sensor.haustuer_batterie" },
+    "binary_sensor.bewegung_flur": { name: "Bewegung Flur", device_class: "motion", area: "Flur", platform: "matter", integration: "Matter", battery: "sensor.bewegung_flur_batterie" },
+    "binary_sensor.rauchmelder_flur": { name: "Rauchmelder Flur", device_class: "smoke", area: "Flur", platform: "matter", integration: "Matter", battery: "sensor.rauchmelder_flur_batterie" },
+    "binary_sensor.fenster_kueche": { name: "Fenster Küche", device_class: "window", area: "Küche", platform: "matter", integration: "Matter", battery: "sensor.fenster_kueche_batterie" },
+    "binary_sensor.fenster_wohnzimmer": { name: "Fenster Wohnzimmer", device_class: "window", area: "Wohnzimmer", platform: "shelly", integration: "Shelly", battery: "sensor.fenster_wohnzimmer_batterie" },
+    "binary_sensor.terrassentuer": { name: "Terrassentür", device_class: "door", area: "Wohnzimmer", platform: "matter", integration: "Matter", battery: "sensor.terrassentuer_batterie" },
+    "binary_sensor.bewegung_wohnzimmer": { name: "Bewegung Wohnzimmer", device_class: "motion", area: "Wohnzimmer", platform: "esphome", integration: "ESPHome", battery: null },
+    "binary_sensor.fenster_bad": { name: "Fenster Bad", device_class: "window", area: "Bad", platform: "zha", integration: "Zigbee Home Automation", battery: "sensor.fenster_bad_batterie" },
+    "binary_sensor.garagentor": { name: "Garagentor", device_class: "garage_door", area: "Garage", platform: "shelly", integration: "Shelly", battery: null },
+    "binary_sensor.bewegung_garage": { name: "Bewegung Garage", device_class: "motion", area: "Garage", platform: "zha", integration: "Zigbee Home Automation", battery: "sensor.bewegung_garage_batterie" },
+    "binary_sensor.wasser_keller": { name: "Wassermelder Keller", device_class: "moisture", area: null, platform: "matter", integration: "Matter", battery: "sensor.wasser_keller_batterie" },
+  };
+  const BATT = { haustuer: 72, bewegung_flur: 83, rauchmelder_flur: 88, fenster_kueche: 78, fenster_wohnzimmer: 64, terrassentuer: 55, fenster_bad: 19, bewegung_garage: 44, wasser_keller: 91 };
+
+  window.__systems = params.get("empty") ? [] : [
+    { entry_id: "e_haus", title: "Haus", entity_id: "alarm_control_panel.haus", modes: ["home", "away", "night"],
+      zones: { home: ["binary_sensor.haustuer", "binary_sensor.fenster_kueche", "binary_sensor.terrassentuer"],
+               away: ["binary_sensor.haustuer", "binary_sensor.fenster_kueche", "binary_sensor.terrassentuer", "binary_sensor.bewegung_flur", "binary_sensor.fenster_bad", "binary_sensor.bewegung_wohnzimmer"],
+               night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
+      entry_sensors: ["binary_sensor.haustuer"], exit_delay: { home: 0, away: 60, night: 0 }, entry_delay: 30, has_code: true, code_arm_required: false, code: "1234",
+      events: [ { t: iso(3 * 3600e3), state: "armed_away", mode: "away", by: "Diego" }, { t: iso(3.3 * 3600e3), state: "disarmed", mode: null, by: "Wandtablet" } ] },
+    { entry_id: "e_garage", title: "Garage", entity_id: "alarm_control_panel.garage", modes: ["home", "away"],
+      zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
+      entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false,
+      events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
+  ];
+
+  const states = {};
+  const set = (id, state, attributes = {}, changed = now) => {
+    states[id] = { entity_id: id, state, attributes: { friendly_name: SENSORS[id]?.name, ...attributes }, last_changed: new Date(changed).toISOString() };
+  };
+  for (const id of Object.keys(SENSORS)) set(id, "off", { device_class: SENSORS[id].device_class });
+  set("binary_sensor.garagentor", "on", { device_class: "garage_door" }, now - 12 * 60e3);
+  for (const [k, v] of Object.entries(BATT)) set(`sensor.${k}_batterie`, String(v), { device_class: "battery", unit_of_measurement: "%" });
+  set("alarm_control_panel.haus", "armed_away", { friendly_name: "Haus", arm_mode: "away", changed_by: "Diego", code_format: "number" }, now - 3 * 3600e3);
+  set("alarm_control_panel.garage", "disarmed", { friendly_name: "Garage", arm_mode: null, changed_by: "Automation", code_format: null }, now - 20 * 60e3);
+
+  window.__calls = [];
+  window.__wsDelay = 0;
+  window.__wsFail = null;
+
+  function panel() {
+    return document.getElementById("panel-frame").contentDocument?.querySelector("alarmageddon-panel");
+  }
+  // HA ersetzt sein hass-Objekt bei jeder Änderung; das Panel bekommt das neue sofort
+  function publish() {
+    window.hass = makeHass();
+    document.querySelector("home-assistant").hass = window.hass;
+    const el = panel();
+    if (el && el.hass) el.hass = window.hass;
+  }
+  window.__setState = (id, state, attrs = {}) => {
+    const old = states[id] || { attributes: {} };
+    set(id, state, { ...old.attributes, ...attrs }, Date.now());
+    publish();
+  };
+
+  const err = (code, message) => Object.assign(new Error(message || code), { code });
+  const ARM_STATE = { home: "armed_home", away: "armed_away", night: "armed_night" };
+
+  async function callWS(msg) {
+    window.__calls.push(JSON.parse(JSON.stringify(msg)));
+    if (window.__wsDelay) await new Promise((r) => setTimeout(r, window.__wsDelay));
+    if (window.__wsFail) { const f = window.__wsFail; window.__wsFail = null; throw f; }
+    if (msg.type === "alarmageddon/data") {
+      const sensors = {};
+      for (const [id, info] of Object.entries(SENSORS)) sensors[id] = { ...info };
+      return JSON.parse(JSON.stringify({ systems: window.__systems.map(({ code, ...s }) => s), sensors }));
+    }
+    const sys = window.__systems.find((s) => s.entry_id === msg.entry_id);
+    if (!sys) throw err("not_found");
+    if (msg.type === "alarmageddon/save_zones") {
+      const active = new Set(sys.modes.flatMap((m) => msg.zones[m] || []));
+      if (msg.entry_sensors.some((e) => !active.has(e))) throw err("entry_not_in_zone");
+      for (const m of ["home", "away", "night"]) sys.zones[m] = [...new Set(msg.zones[m] || [])];
+      sys.entry_sensors = [...msg.entry_sensors];
+      return { ok: true };
+    }
+    if (msg.type === "alarmageddon/arm") {
+      const needCode = sys.has_code && (msg.mode === "off" || sys.code_arm_required);
+      if (needCode && msg.code !== sys.code) throw err("invalid_code", "Wrong code");
+      if (msg.mode === "off") {
+        window.__setState(sys.entity_id, "disarmed", { arm_mode: null, changed_by: "Diego", deadline: null, triggered_by: null });
+        sys.events.unshift({ t: new Date().toISOString(), state: "disarmed", mode: null, by: "Diego" });
+        return { ok: true };
+      }
+      if ((sys.zones[msg.mode] || []).some((id) => states[id]?.state === "on")) throw err("open_sensors", "Open sensors");
+      const delay = sys.exit_delay[msg.mode] || 0;
+      if (delay) window.__setState(sys.entity_id, "arming", { arm_mode: msg.mode, changed_by: "Diego", deadline: new Date(Date.now() + delay * 1000).toISOString() });
+      else window.__setState(sys.entity_id, ARM_STATE[msg.mode], { arm_mode: msg.mode, changed_by: "Diego", deadline: null });
+      sys.events.unshift({ t: new Date().toISOString(), state: delay ? "arming" : ARM_STATE[msg.mode], mode: msg.mode, by: "Diego" });
+      return { ok: true };
+    }
+    throw err("unknown_command");
+  }
+
+  function makeHass() {
+    return { states: { ...states }, language: lang, locale: { language: lang }, user: { name: "Diego", is_admin: true }, themes: { darkMode: params.get("theme") === "dark" }, callWS };
+  }
+  window.hass = makeHass();
+  document.querySelector("home-assistant").hass = window.hass;
+  document.getElementById("panel-frame").src = "/alarmageddon_panel/panel.html?v=sim";
+</script>
+</body>
+</html>

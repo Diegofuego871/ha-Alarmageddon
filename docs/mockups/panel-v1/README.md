@@ -2,8 +2,11 @@
 
 Entwürfe für das Seitenpanel (Phase 2) im Design von ha-device-panel
 (`docs/DESIGN.md`), mit erfundenen Daten. Zwei Ansichten mit Varianten,
-Desktop (1440 px) und Handy (390 × 844, Companion App). **Noch kein
-Entscheid des Nutzers.**
+Desktop (1440 px) und Handy (390 × 844, Companion App).
+
+**Entscheid des Nutzers (2026-11-08):** Übersicht **A** (Karten),
+Sensorgruppen **B** (Tabelle, auf dem Handy Karten mit Zonen-Knöpfen),
+Reiter auf dem Handy mit Symbol und kurzem Text.
 
 ## Übersicht (Startseite des Panels)
 

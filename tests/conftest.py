@@ -26,6 +26,13 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     yield
 
 
+@pytest.fixture(autouse=True)
+def skip_frontend(hass):
+    """Das Testpaket bringt das HA-Frontend nicht mit: als geladen markieren (LEARNINGS)."""
+    hass.config.components.add("frontend")
+    yield
+
+
 def options(**overrides: Any) -> dict[str, Any]:
     """Typische Anlage: Haustür mit Eingangsverzögerung, Fenster in beiden Zonen, Bewegung nur abwesend."""
     data = default_options()
