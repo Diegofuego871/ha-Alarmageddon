@@ -148,8 +148,8 @@ def test_panel_language_selection() -> None:
 
 def test_panel_uses_only_known_strings() -> None:
     """Jeder Schlüssel, den das Panel mit _t(...) nutzt, steht in strings.js."""
-    js = (INTEGRATION / "panel" / "alarmageddon-panel.js").read_text(encoding="utf-8")
+    js = "".join(p.read_text(encoding="utf-8") for p in (INTEGRATION / "panel").glob("*.js") if p.name != "strings.js")
     strings = (INTEGRATION / "panel" / "strings.js").read_text(encoding="utf-8")
-    used = set(re.findall(r'_t\("(\w+)"', js)) | set(re.findall(r'"(mode(?:Off|Home|Away|Night)|state\w+|dc\w+|filter\w+)"', js))
+    used = set(re.findall(r'_t\("(\w+)"', js)) | set(re.findall(r'"((?:mode|state|dc|filter|opt|type|col|sort|group|sys|warn)[A-Z]\w*)"', js))
     missing = sorted(k for k in used if f"    {k}:" not in strings)
     assert not missing, missing

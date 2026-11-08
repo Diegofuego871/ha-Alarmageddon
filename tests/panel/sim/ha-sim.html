@@ -39,6 +39,16 @@
     "binary_sensor.bewegung_garage": { name: "Bewegung Garage", device_class: "motion", area: "Garage", platform: "zha", integration: "Zigbee Home Automation", battery: "sensor.bewegung_garage_batterie" },
     "binary_sensor.wasser_keller": { name: "Wassermelder Keller", device_class: "moisture", area: null, platform: "matter", integration: "Matter", battery: "sensor.wasser_keller_batterie" },
   };
+  const TYPE = { door: "door", garage_door: "door", window: "window", motion: "motion", smoke: "environment", moisture: "environment" };
+  const DEV = {
+    matter: ["Alpenfunk", "Contact M2", "1.4.2"], shelly: ["Voltix", "Door Plus", "1.6.2"], esphome: ["Eigenbau", "mmWave", "2026.10.1"], zha: ["Nordlicht", "DW-10", "2.0.9"],
+  };
+  const SIGNAL = { haustuer: -58, bewegung_flur: -66, fenster_kueche: -72, fenster_wohnzimmer: -81, terrassentuer: -63, bewegung_wohnzimmer: -55, fenster_bad: 92, bewegung_garage: 140, garagentor: -77 };
+  for (const [id, info] of Object.entries(SENSORS)) {
+    const key = id.split(".")[1];
+    const [manufacturer, model, sw] = DEV[info.platform] || [null, null, null];
+    Object.assign(info, { type: TYPE[info.device_class] || "other", manufacturer, model, sw_version: sw, signal: key in SIGNAL ? `sensor.${key}_signal` : null });
+  }
   const BATT = { haustuer: 72, bewegung_flur: 83, rauchmelder_flur: 88, fenster_kueche: 78, fenster_wohnzimmer: 64, terrassentuer: 55, fenster_bad: 19, bewegung_garage: 44, wasser_keller: 91 };
 
   window.__systems = params.get("empty") ? [] : [
@@ -47,10 +57,12 @@
                away: ["binary_sensor.haustuer", "binary_sensor.fenster_kueche", "binary_sensor.terrassentuer", "binary_sensor.bewegung_flur", "binary_sensor.fenster_bad", "binary_sensor.bewegung_wohnzimmer"],
                night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
       entry_sensors: ["binary_sensor.haustuer"], exit_delay: { home: 0, away: 60, night: 0 }, entry_delay: 30, has_code: true, code_arm_required: false, code: "1234",
+      trigger_time: 180, open_sensors: "block", night_enabled: true, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
       events: [ { t: iso(3 * 3600e3), state: "armed_away", mode: "away", by: "Diego" }, { t: iso(3.3 * 3600e3), state: "disarmed", mode: null, by: "Wandtablet" } ] },
     { entry_id: "e_garage", title: "Garage", entity_id: "alarm_control_panel.garage", modes: ["home", "away"],
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
       entry_sensors: [], exit_delay: { home: 0, away: 0 }, entry_delay: 30, has_code: false, code_arm_required: false,
+      trigger_time: 180, open_sensors: "block", night_enabled: false, sensor_options: {},
       events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
   ];
 
@@ -61,9 +73,11 @@
   for (const id of Object.keys(SENSORS)) set(id, "off", { device_class: SENSORS[id].device_class });
   set("binary_sensor.garagentor", "on", { device_class: "garage_door" }, now - 12 * 60e3);
   for (const [k, v] of Object.entries(BATT)) set(`sensor.${k}_batterie`, String(v), { device_class: "battery", unit_of_measurement: "%" });
+  for (const [k, v] of Object.entries(SIGNAL)) set(`sensor.${k}_signal`, String(v), v < 0 ? { device_class: "signal_strength", unit_of_measurement: "dBm" } : { unit_of_measurement: "lqi" });
   set("alarm_control_panel.haus", "armed_away", { friendly_name: "Haus", arm_mode: "away", changed_by: "Diego", code_format: "number" }, now - 3 * 3600e3);
   set("alarm_control_panel.garage", "disarmed", { friendly_name: "Garage", arm_mode: null, changed_by: "Automation", code_format: null }, now - 20 * 60e3);
 
+  window.__presets = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
   window.__calls = [];
   window.__wsDelay = 0;
   window.__wsFail = null;
@@ -94,7 +108,11 @@
     if (msg.type === "alarmageddon/data") {
       const sensors = {};
       for (const [id, info] of Object.entries(SENSORS)) sensors[id] = { ...info };
-      return JSON.parse(JSON.stringify({ systems: window.__systems.map(({ code, ...s }) => s), sensors }));
+      return JSON.parse(JSON.stringify({ systems: window.__systems.map(({ code, ...s }) => s), sensors, presets: window.__presets }));
+    }
+    if (msg.type === "alarmageddon/save_presets") {
+      window.__presets = { ...window.__presets, ...msg.presets };
+      return { presets: window.__presets };
     }
     const sys = window.__systems.find((s) => s.entry_id === msg.entry_id);
     if (!sys) throw err("not_found");
@@ -103,6 +121,16 @@
       if (msg.entry_sensors.some((e) => !active.has(e))) throw err("entry_not_in_zone");
       for (const m of ["home", "away", "night"]) sys.zones[m] = [...new Set(msg.zones[m] || [])];
       sys.entry_sensors = [...msg.entry_sensors];
+      if (msg.sensor_options) sys.sensor_options = JSON.parse(JSON.stringify(msg.sensor_options));
+      return { ok: true };
+    }
+    if (msg.type === "alarmageddon/save_system") {
+      for (const [m, v] of Object.entries(msg.exit_delay || {})) sys.exit_delay[m] = v;
+      for (const k of ["entry_delay", "trigger_time", "open_sensors"]) if (k in msg) sys[k] = msg[k];
+      if ("night_enabled" in msg) {
+        sys.night_enabled = msg.night_enabled;
+        sys.modes = msg.night_enabled ? ["home", "away", "night"] : ["home", "away"];
+      }
       return { ok: true };
     }
     if (msg.type === "alarmageddon/arm") {
@@ -113,7 +141,8 @@
         sys.events.unshift({ t: new Date().toISOString(), state: "disarmed", mode: null, by: "Diego" });
         return { ok: true };
       }
-      if ((sys.zones[msg.mode] || []).some((id) => states[id]?.state === "on")) throw err("open_sensors", "Open sensors");
+      const openOk = (id) => sys.sensor_options[id]?.open_ok ?? (window.__presets[SENSORS[id]?.type] || []).includes("open_ok");
+      if ((sys.zones[msg.mode] || []).some((id) => states[id]?.state === "on" && !openOk(id))) throw err("open_sensors", "Open sensors");
       const delay = sys.exit_delay[msg.mode] || 0;
       if (delay) window.__setState(sys.entity_id, "arming", { arm_mode: msg.mode, changed_by: "Diego", deadline: new Date(Date.now() + delay * 1000).toISOString() });
       else window.__setState(sys.entity_id, ARM_STATE[msg.mode], { arm_mode: msg.mode, changed_by: "Diego", deadline: null });

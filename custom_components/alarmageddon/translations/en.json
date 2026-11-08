@@ -118,6 +118,15 @@
       },
       "zone_night": {
         "name": "Zone night"
+      },
+      "ready_home": {
+        "name": "Ready to arm home"
+      },
+      "ready_away": {
+        "name": "Ready to arm away"
+      },
+      "ready_night": {
+        "name": "Ready to arm night"
       }
     }
   },

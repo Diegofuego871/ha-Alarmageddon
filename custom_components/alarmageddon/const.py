@@ -51,7 +51,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 1  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 2  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -69,5 +69,46 @@ EVENTS_KEEP: Final = 50
 SENSOR_CLASSES: Final = (
     "door", "window", "opening", "garage_door", "motion", "occupancy", "presence",
     "smoke", "gas", "moisture", "vibration", "tamper", "safety", "sound", "carbon_monoxide",
-    "glass_break",  # neu seit HA 2026.10
+    "glass_break", "heat", "lock", "moving",  # glass_break neu seit HA 2026.10
 )
+
+# Optionen pro Sensor (0.3.0). Gespeichert nur als eigene Werte in den Optionen der Anlage (CONF_SENSOR_OPTIONS),
+# sonst gilt die Voreinstellung der Sensorart (globale Einstellungen).
+CONF_SENSOR_OPTIONS: Final = "sensor_options"
+OPT_ALWAYS: Final = "always"  # löst auch unscharf aus (Rauch, Wasser, Gas)
+OPT_OPEN_OK: Final = "open_ok"  # darf beim Scharfschalten offen sein
+OPT_ARM_ON_CLOSE: Final = "arm_on_close"  # Schliessen während der Ausgangsverzögerung schaltet sofort scharf
+OPT_OFFLINE_ALARM: Final = "offline_alarm"  # nicht erreichbar im scharfen Zustand löst aus
+SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM)
+# Zeit nach dem Schliessen, bevor "scharf, sobald geschlossen" greift: eine zufallende Tür prellt (wie Alarmo: Kontakt-Prellen)
+ARM_ON_CLOSE_SETTLE: Final = 3
+
+# Sensorarten (aus der Geräteklasse) und ihre Voreinstellungen
+TYPE_DOOR: Final = "door"
+TYPE_WINDOW: Final = "window"
+TYPE_MOTION: Final = "motion"
+TYPE_ENVIRONMENT: Final = "environment"
+TYPE_TAMPER: Final = "tamper"
+TYPE_OTHER: Final = "other"
+SENSOR_TYPES: Final = (TYPE_DOOR, TYPE_WINDOW, TYPE_MOTION, TYPE_ENVIRONMENT, TYPE_TAMPER, TYPE_OTHER)
+DEVICE_CLASS_TYPE: Final = {
+    "door": TYPE_DOOR, "garage_door": TYPE_DOOR, "opening": TYPE_DOOR, "lock": TYPE_DOOR,
+    "window": TYPE_WINDOW,
+    "motion": TYPE_MOTION, "occupancy": TYPE_MOTION, "presence": TYPE_MOTION, "moving": TYPE_MOTION,
+    "smoke": TYPE_ENVIRONMENT, "gas": TYPE_ENVIRONMENT, "moisture": TYPE_ENVIRONMENT, "carbon_monoxide": TYPE_ENVIRONMENT,
+    "heat": TYPE_ENVIRONMENT,
+    "glass_break": TYPE_TAMPER, "vibration": TYPE_TAMPER, "tamper": TYPE_TAMPER, "sound": TYPE_TAMPER, "safety": TYPE_TAMPER,
+}
+# Vorschlag aus dem Mockup 0.3.0 (angelehnt an Alarmo; Eingangsverzögerung bewusst nie voreingestellt)
+DEFAULT_PRESETS: Final = {
+    TYPE_DOOR: [OPT_ARM_ON_CLOSE],
+    TYPE_WINDOW: [],
+    TYPE_MOTION: [OPT_OPEN_OK],
+    TYPE_ENVIRONMENT: [OPT_ALWAYS],
+    TYPE_TAMPER: [OPT_OFFLINE_ALARM],
+    TYPE_OTHER: [],
+}
+
+# Globale Einstellungen (für alle Anlagen gleich)
+SETTINGS_STORE_KEY: Final = f"{DOMAIN}.settings"
+DATA_SETTINGS: Final = f"{DOMAIN}_settings"

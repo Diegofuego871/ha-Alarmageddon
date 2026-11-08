@@ -118,6 +118,15 @@
       },
       "zone_night": {
         "name": "Zone Nacht"
+      },
+      "ready_home": {
+        "name": "Bereit für Anwesend"
+      },
+      "ready_away": {
+        "name": "Bereit für Abwesend"
+      },
+      "ready_night": {
+        "name": "Bereit für Nacht"
       }
     }
   },

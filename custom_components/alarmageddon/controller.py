@@ -20,7 +20,7 @@ from typing import Any
 
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.event import async_track_point_in_utc_time, async_track_state_change_event
@@ -28,6 +28,13 @@ from homeassistant.util import dt as dt_util
 
 from .code import verify_code
 from .const import (
+    ARM_ON_CLOSE_SETTLE,
+    CONF_SENSOR_OPTIONS,
+    DEFAULT_PRESETS,
+    OPT_ALWAYS,
+    OPT_ARM_ON_CLOSE,
+    OPT_OFFLINE_ALARM,
+    OPT_OPEN_OK,
     CODE_LOCKOUT_SECONDS,
     CODE_MAX_ATTEMPTS,
     CONF_CODE_ARM_REQUIRED,
@@ -63,6 +70,7 @@ STATE_MODE = {state: mode for mode, state in ARMED_STATE.items()}
 
 # Zustände, in denen Sensoren überwacht werden
 WATCHING = {*ARMED_STATE.values(), AlarmControlPanelState.PENDING}
+GONE = {STATE_UNAVAILABLE, STATE_UNKNOWN}
 
 
 def _error(key: str, **placeholders: str) -> ServiceValidationError:
@@ -74,9 +82,11 @@ def _error(key: str, **placeholders: str) -> ServiceValidationError:
 class AlarmController:
     """Zustand, Zeitgeber und Sensorüberwachung einer Anlage."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, settings: Any = None) -> None:
         self.hass = hass
         self.entry = entry
+        # Globale Einstellungen (Voreinstellungen je Sensorart); ohne sie gelten die Grundeinstellungen
+        self.settings = settings
         self.state: AlarmControlPanelState = AlarmControlPanelState.DISARMED
         # Modus, der scharf ist oder scharf wird. Bleibt bei Verzögerung und Alarm erhalten,
         # damit die Anlage nach dem Alarm in denselben Modus zurückkehrt.
@@ -86,6 +96,10 @@ class AlarmController:
         self.triggered_by: str | None = None
         self.changed_by: str | None = None
         self._listeners: list[Callable[[], None]] = []
+        # Ereignisse ohne Zustandswechsel (Sensor ausgefallen) für Protokoll und später Meldungen
+        self._event_listeners: list[Callable[[str, dict[str, Any]], None]] = []
+        # Ursprüngliches Ende der Ausgangsverzögerung, falls "scharf, sobald geschlossen" sie verkürzt hat
+        self._arming_deadline: datetime | None = None
         self._unsub_timer: CALLBACK_TYPE | None = None
         self._unsub_sensors: CALLBACK_TYPE | None = None
         self._failed_codes = 0
@@ -133,11 +147,57 @@ class AlarmController:
     def code_arm_required(self) -> bool:
         return self.has_code and bool(self.options.get(CONF_CODE_ARM_REQUIRED, False))
 
+    # ----- Optionen pro Sensor -----
+
+    @property
+    def sensor_overrides(self) -> dict[str, dict[str, bool]]:
+        return self.options.get(CONF_SENSOR_OPTIONS, {}) or {}
+
+    def preset(self, entity_id: str) -> list[str]:
+        from .settings import sensor_type  # noqa: PLC0415 - vermeidet Kreisimport beim Laden
+
+        presets = self.settings.presets if self.settings else DEFAULT_PRESETS
+        return presets.get(sensor_type(self.hass, entity_id), [])
+
+    def option(self, entity_id: str, key: str) -> bool:
+        """Eigener Wert des Sensors, sonst Voreinstellung seiner Sensorart."""
+        own = self.sensor_overrides.get(entity_id, {}).get(key)
+        if own is not None:
+            return bool(own)
+        return key in self.preset(entity_id)
+
+    def always_sensors(self) -> set[str]:
+        """
+        Immer aktiv sind Sensoren einer Zone mit dieser Option und alle, bei
+        denen der Nutzer sie ausdrücklich eingeschaltet hat (Rauchmelder
+        müssen dafür in keiner Zone sein).
+        """
+        zoned = {e for mode in self.modes for e in self.zone(mode)}
+        explicit = {e for e, opts in self.sensor_overrides.items() if opts.get(OPT_ALWAYS)}
+        return {e for e in zoned | explicit if self.option(e, OPT_ALWAYS)}
+
     def all_sensors(self) -> set[str]:
-        return {entity for mode in self.modes for entity in self.zone(mode)}
+        return {entity for mode in self.modes for entity in self.zone(mode)} | self.always_sensors()
 
     def open_sensors(self, mode: str) -> list[str]:
         return [entity for entity in self.zone(mode) if (s := self.hass.states.get(entity)) and s.state == STATE_ON]
+
+    def blocking_sensors(self, mode: str) -> list[str]:
+        """Offene Sensoren, die das Scharfschalten verhindern ("darf offen sein" zählt nicht)."""
+        return [e for e in self.open_sensors(mode) if not self.option(e, OPT_OPEN_OK)]
+
+    def ready(self, mode: str) -> bool:
+        return not self.blocking_sensors(mode)
+
+    @callback
+    def add_event_listener(self, listener: Callable[[str, dict[str, Any]], None]) -> CALLBACK_TYPE:
+        self._event_listeners.append(listener)
+        return partial(self._event_listeners.remove, listener)
+
+    @callback
+    def _emit(self, kind: str, **data: Any) -> None:
+        for listener in list(self._event_listeners):
+            listener(kind, data)
 
     # ----- Lebenszyklus -----
 
@@ -192,6 +252,7 @@ class AlarmController:
     def _go_armed(self, _now: Any = None) -> None:
         self._unsub_timer = None
         self.deadline = None
+        self._arming_deadline = None
         self.triggered_by = None
         if self.mode is None:
             # Alarm von Hand aus "deaktiviert" ausgelöst: danach wieder deaktiviert
@@ -214,16 +275,40 @@ class AlarmController:
 
     @callback
     def _on_sensor(self, event: Event[EventStateChangedData]) -> None:
-        if self.state not in WATCHING or self.mode is None:
-            return
         old, new = event.data["old_state"], event.data["new_state"]
-        # Nur ein echter Wechsel von "zu" auf "offen" zählt. "nicht verfügbar" -> "offen" kommt nach jedem
-        # Neustart und jeder Neuverbindung vor und wäre ein Fehlalarm; Sensorausfall behandelt Phase 5.
-        if old is None or new is None or old.state != STATE_OFF or new.state != STATE_ON:
+        if old is None or new is None:
             return
         entity = event.data["entity_id"]
+        # Nur ein echter Wechsel von "zu" auf "offen" zählt. "nicht verfügbar" -> "offen" kommt nach jedem
+        # Neustart und jeder Neuverbindung vor und wäre ein Fehlalarm.
+        went_on = old.state == STATE_OFF and new.state == STATE_ON
+        went_off = old.state == STATE_ON and new.state == STATE_OFF
+        went_away = old.state in (STATE_ON, STATE_OFF) and new.state in GONE
+
+        # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort
+        if went_on and entity in self.always_sensors() and self.state != AlarmControlPanelState.TRIGGERED:
+            self.triggered_by = entity
+            self._go_triggered()
+            return
+
+        if self.state == AlarmControlPanelState.ARMING and self.mode and entity in self.zone(self.mode):
+            self._on_arming_change(entity, went_on, went_off)
+            return
+
+        if self.state not in WATCHING or self.mode is None:
+            return
         if entity not in self.zone(self.mode) or entity in self.bypassed:
             return
+
+        if went_away:
+            self._emit("sensor_offline", sensor=entity)
+            if self.option(entity, OPT_OFFLINE_ALARM):
+                self.triggered_by = entity
+                self._go_triggered()
+            return
+        if not went_on:
+            return
+
         delayed = entity in self.entry_sensors and self.entry_delay > 0
         if self.state == AlarmControlPanelState.PENDING:
             if delayed:
@@ -236,6 +321,27 @@ class AlarmController:
             self._go_pending(self.entry_delay)
         else:
             self._go_triggered()
+
+    @callback
+    def _on_arming_change(self, entity: str, went_on: bool, went_off: bool) -> None:
+        """
+        "Scharf, sobald geschlossen": Wer die Tür hinter sich zuzieht, muss
+        nicht die ganze Ausgangsverzögerung abwarten. Kurze Wartezeit gegen
+        Prellen; geht die Tür wieder auf, gilt die ursprüngliche Verzögerung.
+        """
+        if not self.option(entity, OPT_ARM_ON_CLOSE):
+            return
+        if went_off:
+            if self._arming_deadline is None:
+                self._arming_deadline = self.deadline
+            settle = dt_util.utcnow() + timedelta(seconds=ARM_ON_CLOSE_SETTLE)
+            if self._arming_deadline and settle < self._arming_deadline:
+                self._schedule(settle, self._go_armed)
+                self._notify()
+        elif went_on and self._arming_deadline:
+            self._schedule(self._arming_deadline, self._go_armed)
+            self._arming_deadline = None
+            self._notify()
 
     # ----- Code -----
 
@@ -264,7 +370,7 @@ class AlarmController:
             raise _error("disarm_first")
         if self.code_arm_required:
             await self._async_check_code(code)
-        open_now = self.open_sensors(mode)
+        open_now = self.blocking_sensors(mode)
         bypassed: set[str] = set()
         if open_now:
             if self.options.get(CONF_OPEN_SENSORS, DEFAULT_OPEN_SENSORS) != OPEN_BYPASS:
@@ -272,6 +378,7 @@ class AlarmController:
             bypassed = set(open_now)
         self._cancel_timer()
         self.mode = mode
+        self._arming_deadline = None
         self.bypassed = bypassed
         self.triggered_by = None
         self.changed_by = changed_by
@@ -288,6 +395,7 @@ class AlarmController:
         self._cancel_timer()
         self.mode = None
         self.deadline = None
+        self._arming_deadline = None
         self.bypassed = set()
         self.triggered_by = None
         self.changed_by = changed_by

@@ -40,6 +40,7 @@ class EventLog:
         # Erst nach der Wiederherstellung: der wiederhergestellte Zustand ist kein neues Ereignis
         self._last_state = str(self._ctl.state)
         self._unsub = self._ctl.add_listener(self._on_change)
+        self._unsub_events = self._ctl.add_event_listener(self._on_event)
 
     @callback
     def _on_change(self) -> None:
@@ -50,15 +51,26 @@ class EventLog:
         event = {"t": dt_util.utcnow().isoformat(), "state": state, "mode": self._ctl.mode, "by": self._ctl.changed_by}
         if state in ("pending", "triggered") and self._ctl.triggered_by:
             event["sensor"] = self._ctl.triggered_by
+        self._add(event)
+
+    @callback
+    def _on_event(self, kind: str, data: dict[str, Any]) -> None:
+        """Ereignisse ohne Zustandswechsel, zum Beispiel ein Sensor fällt im scharfen Zustand aus."""
+        self._add({"t": dt_util.utcnow().isoformat(), "kind": kind, "state": str(self._ctl.state), "mode": self._ctl.mode, **data})
+
+    @callback
+    def _add(self, event: dict[str, Any]) -> None:
         self.events.insert(0, event)
         del self.events[EVENTS_KEEP:]
         # Selten (nur bei Zustandswechseln): verzögertes Speichern genügt, es wird nie dauernd verschoben
         self._store.async_delay_save(lambda: self.events, 1)
 
     async def async_stop(self) -> None:
-        if self._unsub:
-            self._unsub()
-            self._unsub = None
+        for unsub in (self._unsub, getattr(self, "_unsub_events", None)):
+            if unsub:
+                unsub()
+        self._unsub = None
+        self._unsub_events = None
         # Sofort schreiben verwirft den geplanten Termin; sonst legte er die Datei nach dem Entfernen neu an (LEARNINGS)
         await self._store.async_save(self.events)
 

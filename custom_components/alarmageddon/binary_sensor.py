@@ -22,7 +22,10 @@ from .entity import AlarmageddonEntity
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     controller: AlarmController = entry.runtime_data.controller
-    async_add_entities(ZoneSensor(entry, controller, mode) for mode in controller.modes)
+    async_add_entities([
+        *(ZoneSensor(entry, controller, mode) for mode in controller.modes),
+        *(ReadySensor(entry, controller, mode) for mode in controller.modes),
+    ])
 
 
 class ZoneSensor(AlarmageddonEntity, BinarySensorEntity):
@@ -55,5 +58,38 @@ class ZoneSensor(AlarmageddonEntity, BinarySensorEntity):
     def _on_member(self, event: Event[EventStateChangedData]) -> None:
         old, new = event.data["old_state"], event.data["new_state"]
         # Nur schreiben, wenn sich "offen" ändert; Attribute der Sensoren (Batterie, Signal) ändern oft
+        if (old is not None and old.state == STATE_ON) != (new is not None and new.state == STATE_ON):
+            self.async_write_ha_state()
+
+
+class ReadySensor(AlarmageddonEntity, BinarySensorEntity):
+    """
+    "Bereit zum Scharfschalten" je Modus (aus Alarmo übernommen, Entscheid des
+    Nutzers): ein, wenn kein offener Sensor das Scharfschalten verhindert.
+    Für Automationen, Wandtablets und die Übersicht im Panel.
+    """
+
+    def __init__(self, entry: ConfigEntry, controller: AlarmController, mode: str) -> None:
+        super().__init__(entry, f"ready_{mode}")
+        self._ctl = controller
+        self._mode = mode
+        self._attr_translation_key = f"ready_{mode}"
+
+    @property
+    def is_on(self) -> bool:
+        return self._ctl.ready(self._mode)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"blocking_sensors": self._ctl.blocking_sensors(self._mode)}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if members := self._ctl.zone(self._mode):
+            self.async_on_remove(async_track_state_change_event(self.hass, members, self._on_member))
+
+    @callback
+    def _on_member(self, event: Event[EventStateChangedData]) -> None:
+        old, new = event.data["old_state"], event.data["new_state"]
         if (old is not None and old.state == STATE_ON) != (new is not None and new.state == STATE_ON):
             self.async_write_ha_state()

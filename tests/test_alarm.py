@@ -44,7 +44,13 @@ async def test_device_and_entities(hass: HomeAssistant) -> None:
     device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, entry.entry_id)})
     assert device is not None and device.name == "Haus"
     entities = {e.entity_id for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)}
-    assert entities == {ALARM, "binary_sensor.haus_zone_home", "binary_sensor.haus_zone_away"}
+    assert entities == {
+        ALARM,
+        "binary_sensor.haus_zone_home",
+        "binary_sensor.haus_zone_away",
+        "binary_sensor.haus_ready_to_arm_home",
+        "binary_sensor.haus_ready_to_arm_away",
+    }
     assert all(e.device_id == device.id for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id))
     assert state(hass) == AlarmControlPanelState.DISARMED
 

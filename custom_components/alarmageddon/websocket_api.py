@@ -23,12 +23,23 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_integrations
 
 from .const import (
+    CONF_ENTRY_DELAY,
     CONF_ENTRY_SENSORS,
+    CONF_EXIT_DELAY_PREFIX,
+    CONF_NIGHT_ENABLED,
+    CONF_OPEN_SENSORS,
+    CONF_SENSOR_OPTIONS,
+    CONF_TRIGGER_TIME,
     CONF_ZONE_PREFIX,
     DOMAIN,
+    MAX_DELAY,
     MODES,
+    OPEN_SENSOR_MODES,
     SENSOR_CLASSES,
+    SENSOR_OPTIONS,
+    SENSOR_TYPES,
 )
+from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
     "off": "alarm_disarm",
@@ -43,6 +54,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_data)
     websocket_api.async_register_command(hass, ws_save_zones)
     websocket_api.async_register_command(hass, ws_arm)
+    websocket_api.async_register_command(hass, ws_save_presets)
+    websocket_api.async_register_command(hass, ws_save_system)
 
 
 def _entry(hass: HomeAssistant, connection, msg: dict[str, Any]) -> ConfigEntry | None:
@@ -67,10 +80,16 @@ async def _sensor_info(hass: HomeAssistant, extra: set[str]) -> dict[str, dict[s
     dev_reg = dr.async_get(hass)
     area_reg = ar.async_get(hass)
     batteries: dict[str, str] = {}
+    signals: dict[str, str] = {}
     for entry in ent_reg.entities.values():
-        if entry.domain == "sensor" and entry.device_id and not entry.disabled_by:
-            if (entry.device_class or entry.original_device_class) == "battery":
-                batteries.setdefault(entry.device_id, entry.entity_id)
+        if entry.domain != "sensor" or not entry.device_id or entry.disabled_by:
+            continue
+        device_class = entry.device_class or entry.original_device_class
+        if device_class == "battery":
+            batteries.setdefault(entry.device_id, entry.entity_id)
+        # Empfang: Signalstärke (dBm) oder Verbindungsqualität (LQI), je nach Integration; nur wenn vorhanden
+        elif device_class == "signal_strength" or any(k in entry.entity_id for k in ("_lqi", "linkquality", "_rssi")):
+            signals.setdefault(entry.device_id, entry.entity_id)
 
     out: dict[str, dict[str, Any]] = {}
     for state in hass.states.async_all("binary_sensor"):
@@ -87,13 +106,20 @@ async def _sensor_info(hass: HomeAssistant, extra: set[str]) -> dict[str, dict[s
         out[state.entity_id] = {
             "name": state.name,
             "device_class": device_class,
+            "type": sensor_type(hass, state.entity_id),
             "area": area.name if area else None,
             "platform": reg.platform if reg else None,
             "battery": batteries.get(reg.device_id) if reg and reg.device_id else None,
+            "signal": signals.get(reg.device_id) if reg and reg.device_id else None,
+            "manufacturer": device.manufacturer if device else None,
+            "model": device.model if device else None,
+            "sw_version": device.sw_version if device else None,
+            "device_id": device.id if device else None,
         }
     # Gewählte Sensoren, die es (gerade) nicht gibt, trotzdem zeigen: der Nutzer soll sie entfernen können
     for entity_id in extra - out.keys():
-        out[entity_id] = {"name": entity_id, "device_class": None, "area": None, "platform": None, "battery": None, "missing": True}
+        out[entity_id] = {"name": entity_id, "device_class": None, "type": "other", "area": None, "platform": None, "battery": None,
+                          "signal": None, "manufacturer": None, "model": None, "sw_version": None, "device_id": None, "missing": True}
     return out
 
 
@@ -109,7 +135,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             continue
         ctl = entry.runtime_data.controller
         zones = {mode: ctl.zone(mode) for mode in ctl.modes}
-        chosen |= {e for members in zones.values() for e in members}
+        chosen |= {e for members in zones.values() for e in members} | set(ctl.sensor_overrides)
         systems.append(
             {
                 "entry_id": entry.entry_id,
@@ -120,6 +146,10 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "entry_sensors": sorted(ctl.entry_sensors),
                 "exit_delay": {mode: ctl.exit_delay(mode) for mode in ctl.modes},
                 "entry_delay": ctl.entry_delay,
+                "trigger_time": ctl.trigger_time,
+                "open_sensors": entry.options.get(CONF_OPEN_SENSORS, "block"),
+                "night_enabled": ctl.night_enabled,
+                "sensor_options": ctl.sensor_overrides,
                 "has_code": ctl.has_code,
                 "code_arm_required": ctl.code_arm_required,
                 "events": entry.runtime_data.events.events[:20],
@@ -132,7 +162,8 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     names = {p: (i.name if not isinstance(i, Exception) else p) for p, i in integrations.items()}
     for info in sensors.values():
         info["integration"] = names.get(info["platform"], info["platform"])
-    connection.send_result(msg["id"], {"systems": systems, "sensors": sensors})
+    settings = await async_get_settings(hass)
+    connection.send_result(msg["id"], {"systems": systems, "sensors": sensors, "presets": settings.presets})
 
 
 @websocket_api.websocket_command(
@@ -141,6 +172,8 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         vol.Required("entry_id"): str,
         vol.Required("zones"): {vol.In(MODES): [str]},
         vol.Required("entry_sensors"): [str],
+        # Eigene Werte der Optionen pro Sensor; fehlt ein Sensor, gilt die Voreinstellung seiner Art
+        vol.Optional("sensor_options"): {str: {vol.In(SENSOR_OPTIONS): bool}},
     }
 )
 @websocket_api.require_admin
@@ -163,6 +196,11 @@ async def ws_save_zones(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
     for mode in MODES:
         options[f"{CONF_ZONE_PREFIX}{mode}"] = zones[mode]
     options[CONF_ENTRY_SENSORS] = sorted(set(msg["entry_sensors"]))
+    if "sensor_options" in msg:
+        if any(not e.startswith("binary_sensor.") for e in msg["sensor_options"]):
+            connection.send_error(msg["id"], "invalid_entity", "Only binary sensors can have sensor options")
+            return
+        options[CONF_SENSOR_OPTIONS] = {e: dict(o) for e, o in msg["sensor_options"].items() if o}
     # Neuladen übernimmt der Update-Listener; der Zustand der Anlage übersteht es (RestoreEntity)
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
@@ -199,3 +237,48 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         return
     connection.send_result(msg["id"], {"ok": True})
 
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/save_presets",
+        vol.Required("presets"): {vol.In(SENSOR_TYPES): [vol.In(SENSOR_OPTIONS)]},
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Voreinstellungen je Sensorart, für alle Anlagen. Die Anlagen laden danach neu."""
+    settings = await async_get_settings(hass)
+    await settings.async_set_presets(msg["presets"])
+    connection.send_result(msg["id"], {"presets": settings.presets})
+
+
+_SECONDS = vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/save_system",
+        vol.Required("entry_id"): str,
+        vol.Optional("exit_delay"): {vol.In(MODES): _SECONDS},
+        vol.Optional("entry_delay"): _SECONDS,
+        vol.Optional("trigger_time"): _SECONDS,
+        vol.Optional("night_enabled"): bool,
+        vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Verzögerungen und Verhalten einer Anlage (dieselben Schlüssel wie der Optionsdialog). Code bleibt im Optionsdialog."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    options = dict(entry.options)
+    for mode, seconds in msg.get("exit_delay", {}).items():
+        options[f"{CONF_EXIT_DELAY_PREFIX}{mode}"] = seconds
+    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("trigger_time", CONF_TRIGGER_TIME), ("night_enabled", CONF_NIGHT_ENABLED), ("open_sensors", CONF_OPEN_SENSORS)):
+        if key in msg:
+            options[conf] = msg[key]
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"ok": True})

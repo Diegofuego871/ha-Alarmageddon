@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.2.0). Alarm core, side panel with overview and sensor groups work. Alarm scenarios and maintenance follow in later versions.
+> **Status:** early pre-release (0.3.0). Alarm core, side panel with overview, sensor list and configuration work. Alarm actions, notifications and maintenance follow in later versions.
 
 ## Features
 
@@ -16,9 +16,12 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Code:** optional, 4 to 8 digits, stored only as a hash. Locked for one minute after five wrong codes.
 - **Any radio technology:** Alarmageddon only uses Home Assistant entities. Wi-Fi, Thread/Matter, Zigbee, Z-Wave and Bluetooth all work.
 
-- **Side panel:** overview of all alarm systems with mode switch, open sensors, low batteries and recent events; sensor groups as a table with drag across boxes, on the phone as cards with zone buttons.
+- **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change.
+- **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (delays, night mode, behaviour for open sensors). On the phone as cards and sheets from the bottom.
+- **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm. Defaults per sensor type, own values per sensor.
+- **Ready to arm:** one entity per mode with the blocking sensors.
 
-Planned: options per sensor (always active, may be open when arming, arm when closed, failure counts as alarm), ready-to-arm indicator, alarm scenarios (siren, covers, media players, critical push notifications with actions), maintenance overview and monitoring.
+Planned: alarm actions (siren, covers, media players, critical push notifications with actions), maintenance overview and monitoring.
 
 ## Installation
 
@@ -31,7 +34,7 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
 ## Setup
 
 1. **New alarm system:** name, night mode and an optional code.
-2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): tab "Sensor groups" assigns sensors to the zones "Home", "Away" and "Night" and sets the entry delay. Changes apply with "Save".
+2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): Configuration › Sensors assigns sensors to the zones "Home", "Away" and "Night"; the arrow at the end of a row opens the options of the sensor. Configuration › Alarm system sets delays and behaviour. Changes apply with "Save".
 3. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
    - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
    - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door), alarm duration.
@@ -59,6 +62,7 @@ Known behaviour of the HomeKit Bridge:
 | `binary_sensor.<name>_zone_home` | On when a sensor of the zone "Home" is open |
 | `binary_sensor.<name>_zone_away` | On when a sensor of the zone "Away" is open |
 | `binary_sensor.<name>_zone_night` | Only with night mode |
+| "Ready to arm home/away/night" | On when no open sensor blocks arming in this mode. Attribute: `blocking_sensors` |
 
 ## Languages
 

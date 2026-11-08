@@ -32,6 +32,9 @@ zuoberst.
   Text gleich ist, und die falsche Auswahl bleibt stehen. Gleiches beim Schliessen eines Dialogs (Ereignis `close`).
 - **`innerText` und Grossbuchstaben:** `text-transform: uppercase` wirkt sich auf `innerText` aus ("LETZTE EREIGNISSE");
   in Tests ohne Gross-/Kleinschreibung vergleichen oder `textContent` nehmen.
+- **Zustand setzen im Test behält keine Attribute:** `hass.states.async_set(entity, "on")` ohne Attribute entfernt
+  die Geräteklasse. Logik, die die Sensorart aus dem Zustand liest (Voreinstellungen), greift dann nicht mehr; echte
+  Sensoren behalten ihre Attribute. In Tests die bisherigen Attribute mitgeben (`open_sensor` in `test_sensor_options.py`).
 - **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
   Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
 

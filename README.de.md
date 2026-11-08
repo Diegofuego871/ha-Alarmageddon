@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.2.0). Kern der Alarmanlage und Seitenpanel mit Übersicht und Sensorgruppen funktionieren. Alarmszenarien und Wartung folgen in späteren Versionen.
+> **Status:** frühe Vorabversion (0.3.0). Kern der Alarmanlage und Seitenpanel mit Übersicht, Sensorliste und Konfiguration funktionieren. Alarmaktionen, Benachrichtigungen und Wartung folgen in späteren Versionen.
 
 ## Funktionen
 
@@ -16,9 +16,12 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Code:** optional, 4 bis 8 Ziffern, nur als Hash gespeichert. Nach fünf falschen Codes eine Minute gesperrt.
 - **Jede Funktechnik:** Alarmageddon nutzt nur Entitäten von Home Assistant. WLAN, Thread/Matter, Zigbee, Z-Wave und Bluetooth funktionieren gleichermassen.
 
-- **Seitenpanel:** Übersicht aller Alarmanlagen mit Umschalten des Modus, offenen Sensoren, schwachen Batterien und letzten Ereignissen; Sensorgruppen als Tabelle mit Ziehen über Felder, auf dem Handy als Karten mit Zonen-Knöpfen.
+- **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung.
+- **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Verzögerungen, Modus "Nacht", Verhalten bei offenen Sensoren). Auf dem Handy als Karten und Blätter von unten.
+- **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
+- **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
 
-Geplant: Optionen pro Sensor (immer aktiv, darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm), Anzeige "bereit zum Scharfschalten", Alarmszenarien (Sirene, Rollläden, Medienplayer, kritische Push-Meldungen mit Aktionen), Wartungsübersicht und Überwachung.
+Geplant: Alarmaktionen (Sirene, Rollläden, Medienplayer, kritische Push-Meldungen mit Aktionen), Wartungsübersicht und Überwachung.
 
 ## Installation
 
@@ -31,7 +34,7 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
 ## Einrichtung
 
 1. **Neue Alarmanlage:** Name, Modus "Nacht" und optional ein Code.
-2. **Seitenpanel "Alarmageddon"** (erscheint für Administratoren in der Seitenleiste): Reiter "Sensorgruppen" ordnet Sensoren den Zonen "Anwesend", "Abwesend" und "Nacht" zu und setzt die Eingangsverzögerung. Änderungen gelten mit "Speichern".
+2. **Seitenpanel "Alarmageddon"** (erscheint für Administratoren in der Seitenleiste): Konfiguration › Sensoren ordnet Sensoren den Zonen "Anwesend", "Abwesend" und "Nacht" zu; der Pfeil am Ende einer Zeile öffnet die Optionen des Sensors. Konfiguration › Anlage setzt Verzögerungen und Verhalten. Änderungen gelten mit "Speichern".
 3. **Optionen** (Einstellungen → Geräte & Dienste → Alarmageddon → "Konfigurieren"):
    - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht" (dasselbe wie im Seitenpanel). Ein Sensor kann in mehreren Zonen sein.
    - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür), Alarmdauer.
@@ -59,6 +62,7 @@ Bekanntes Verhalten der HomeKit-Bridge:
 | `binary_sensor.<name>_zone_home` | Ein, wenn ein Sensor der Zone "Anwesend" offen ist |
 | `binary_sensor.<name>_zone_away` | Ein, wenn ein Sensor der Zone "Abwesend" offen ist |
 | `binary_sensor.<name>_zone_night` | Nur mit Modus "Nacht" |
+| "Bereit für Anwesend/Abwesend/Nacht" | Ein, wenn kein offener Sensor das Scharfschalten in diesem Modus verhindert. Attribut: `blocking_sensors` |
 
 ## Sprachen
 

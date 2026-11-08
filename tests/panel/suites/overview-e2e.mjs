@@ -3,9 +3,9 @@
 import { check, done, launch, open, outDir } from "../lib.mjs";
 
 const T = {
-  de: { armedAway: "Abwesend scharf", disarmed: "Deaktiviert", away: "Abwesend", off: "Aus", open: "1 offen", allClosed: "alle zu", battery: "Fenster Bad: Batterie 19 %",
+  de: { armedAway: "Abwesend scharf", disarmed: "Deaktiviert", away: "Abwesend", off: "Aus", readyFor: "Bereit für", battery: "1 Batterie schwach",
     garageOpen: "Garagentor ist offen", events: "Letzte Ereignisse", openErr: "Scharfschalten nicht möglich, offen: Garagentor.", wrongCode: "Falscher Code.", alarm: "Alarm: Haus", disarm: "Deaktivieren", armedHome: "Anwesend scharf" },
-  en: { armedAway: "Armed away", disarmed: "Disarmed", away: "Away", off: "Off", open: "1 open", allClosed: "all closed", battery: "Fenster Bad: battery 19 %",
+  en: { armedAway: "Armed away", disarmed: "Disarmed", away: "Away", off: "Off", readyFor: "Ready for", battery: "1 low battery",
     garageOpen: "Garagentor is open", events: "Recent events", openErr: "Cannot arm, open: Garagentor.", wrongCode: "Wrong code.", alarm: "Alarm: Haus", disarm: "Disarm", armedHome: "Armed home" },
 };
 
@@ -20,9 +20,11 @@ for (const lang of ["de", "en"]) {
 
     const haus = await card("e_haus");
     check(`${tag}: Haus zeigt Zustand`, haus.includes(t.armedAway), haus);
-    check(`${tag}: Hinweis Batterie`, haus.includes(t.battery), haus);
+    const tile = await s.ev("return r.querySelector('.ag-status').innerText");
+    check(`${tag}: Warnkachel Batterie`, tile.includes(t.battery), tile);
     const garage = await card("e_garage");
-    check(`${tag}: Garage zeigt offenen Sensor`, garage.includes(t.disarmed) && garage.includes(t.open) && garage.includes(t.garageOpen), garage);
+    check(`${tag}: Garage zeigt offenen Sensor`, garage.includes(t.disarmed) && garage.includes(t.readyFor) && garage.includes(t.garageOpen), garage);
+    check(`${tag}: Garage nicht bereit`, await s.ev(`return r.querySelectorAll('[data-system="e_garage"] .ag-rchip.no').length === 2`));
     check(`${tag}: Ereignisse`, (await text()).toLowerCase().includes(t.events.toLowerCase()));
     const nightOnlyHaus = await s.ev(`return [r.querySelectorAll('[data-system="e_haus"] [data-mode]').length, r.querySelectorAll('[data-system="e_garage"] [data-mode]').length]`);
     check(`${tag}: Nacht nur bei Haus`, nightOnlyHaus[0] === 4 && nightOnlyHaus[1] === 3, JSON.stringify(nightOnlyHaus));
@@ -39,7 +41,7 @@ for (const lang of ["de", "en"]) {
 
     // Tor zu: jetzt klappt es ohne Code
     await s.sim(`window.__setState("binary_sensor.garagentor", "off")`);
-    check(`${tag}: Garage jetzt alle zu`, await s.waitFor(`return r.querySelector('[data-system="e_garage"]').innerText.includes(${JSON.stringify(t.allClosed)})`));
+    check(`${tag}: Garage jetzt bereit`, await s.waitFor(`return r.querySelectorAll('[data-system="e_garage"] .ag-rchip.ok').length === 2`));
     await s.tap('[data-system="e_garage"] [data-mode="home"]');
     check(`${tag}: Garage scharf`, await s.waitFor(`return r.querySelector('[data-system="e_garage"]').innerText.includes(${JSON.stringify(t.armedHome)})`));
 
@@ -60,7 +62,8 @@ for (const lang of ["de", "en"]) {
     // Alarm: rotes Band zuoberst mit Deaktivieren
     await s.sim(`window.__setState("alarm_control_panel.haus", "triggered", { arm_mode: "home", triggered_by: "binary_sensor.fenster_kueche" })`);
     check(`${tag}: Alarm-Band`, await s.waitFor(`const a=r.querySelector('.ag-alarm'); return a && a.innerText.includes(${JSON.stringify(t.alarm)}) && a.innerText.includes("Fenster Küche") && a.innerText.includes(${JSON.stringify(t.disarm)})`));
-    check(`${tag}: Alarm-Band vor den Karten`, await s.ev(`return r.querySelector('.ag-view').firstElementChild.classList.contains('ag-alarm')`));
+    check(`${tag}: Alarm-Band vor den Karten`, await s.ev(`return r.querySelector('.ag-ov-top').firstElementChild.classList.contains('ag-alarm')`));
+    check(`${tag}: Alarm in der Warnkachel`, await s.waitFor(`return r.querySelector('.ag-status').innerText.includes("Haus")`));
 
     if (mobile) {
       // Reiter mit Symbol und kurzem Text über die ganze Breite (Entscheid des Nutzers)

@@ -17,6 +17,7 @@ from .const import DOMAIN, MODES
 from .controller import AlarmController
 from .events import EventLog, async_remove_events
 from .panel import async_register_panel, async_remove_panel
+from .settings import async_get_settings
 
 PLATFORMS: list[Platform] = [Platform.ALARM_CONTROL_PANEL, Platform.BINARY_SENSOR]
 
@@ -41,7 +42,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> bool:
     integration = await async_get_integration(hass, DOMAIN)
-    controller = AlarmController(hass, entry)
+    settings = await async_get_settings(hass)
+    controller = AlarmController(hass, entry, settings)
     events = EventLog(hass, entry.entry_id, controller)
     await events.async_load()
     entry.runtime_data = RuntimeData(controller, events, str(integration.version) if integration.version else None)
@@ -54,6 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     # Zonen, Modi und Verzögerungen bestimmen, welche Entitäten es gibt und wem zugehört wird: neu laden.
     # Der Zustand (scharf, Verzögerung, Alarm) übersteht das über die Wiederherstellung der Entität.
     entry.async_on_unload(entry.add_update_listener(_async_reload))
+    # Neue Voreinstellungen ändern, welche Sensoren immer aktiv sind und wem zugehört wird: neu laden
+    entry.async_on_unload(settings.add_listener(lambda: hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))))
     await async_register_panel(hass)
     return True
 
@@ -64,8 +68,9 @@ def _remove_unused_zones(hass: HomeAssistant, entry: ConfigEntry, controller: Al
     for mode in MODES:
         if mode in controller.modes:
             continue
-        if entity_id := registry.async_get_entity_id(Platform.BINARY_SENSOR, DOMAIN, f"{entry.entry_id}_zone_{mode}"):
-            registry.async_remove(entity_id)
+        for key in (f"zone_{mode}", f"ready_{mode}"):
+            if entity_id := registry.async_get_entity_id(Platform.BINARY_SENSOR, DOMAIN, f"{entry.entry_id}_{key}"):
+                registry.async_remove(entity_id)
 
 
 async def _async_reload(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> None:

@@ -3,6 +3,16 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.3.0, Optionen pro Sensor, neues Panel)
+
+- Wunsch des Nutzers (2026-11-08): ohne Mockups weiterarbeiten, bis der Backlog leer ist. Für die offenen Fragen aus `docs/mockups/sensor-options-v1` gelten die Empfehlungen (Optionen im Seitenblatt A, "Bereit" als Zeile B); Ebenen der Sensor-Optionen: Voreinstellung je Sensorart (global, `settings.py`) › eigener Wert pro Sensor und Anlage (`options["sensor_options"]`). Eine Rückfrage an den Nutzer dazu steht noch aus.
+- Aufbau des Panels nach Vorgabe des Nutzers: Übersicht (Steuerung der Anlagen + Warnkachel, darunter Liste wie Device Panel in `list.js`, Ansicht in `localStorage`), Konfiguration mit Reitern Sensoren (`sensors.js`, Raster + Seitenblatt + Voreinstellungen) und Anlage (`system.js`). Gemeinsames in `common.js`.
+- Controller: `option()`, `always_sensors()`, `blocking_sensors()`, `ready()`, "Scharf, sobald geschlossen" mit `ARM_ON_CLOSE_SETTLE` (3 s) und Rückfall auf die ursprüngliche Verzögerung, Sensorausfall im scharfen Zustand als Ereignis (`add_event_listener`) und optional Alarm.
+- Entitäten "Bereit für …" (`binary_sensor`, unique_id `<entry>_ready_<mode>`).
+- WebSocket: `data` liefert `presets`, Sensorart, Empfang, Gerätedaten; `save_zones` nimmt `sensor_options`; neu `save_presets`, `save_system`.
+- Tests: `tests/test_sensor_options.py`; Panel-Suiten `overview-e2e`, `groups-e2e` (jetzt Konfiguration › Sensoren), `list-e2e` (Liste, Seitenblatt, Voreinstellungen, Anlage).
+- Offen für 0.4.0/0.5.0: siehe "Nächste Schritte".
+
 ## Stand (0.2.0, Phase 2: Panel)
 
 - Panel: `panel/panel.html` (aus ha-device-panel, holt hass aus dem Elternfenster, überträgt Theme-Variablen), `panel/alarmageddon-panel.js` (Vanilla Web Component), `panel/strings.js` (en/de, `pickLang`, `translate`), `panel/styles.js`. `PANEL_VERSION` in `const.py` (Cache-Buster) bei jeder Änderung unter `panel/` erhöhen.
@@ -34,10 +44,12 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Nächste Schritte
 
-1. Phase 2b (0.3.0): Mockup für die Optionen pro Sensor (Immer aktiv, Darf
-   beim Scharfschalten offen sein, Scharf sobald geschlossen, Ausfall gilt
-   als Alarm, Voreinstellungen nach Sensortyp) und "Bereit zum
-   Scharfschalten". Danach umsetzen. Siehe `docs/CONCEPT.md`.
+1. 0.4.0: Konfiguration › Benachrichtigungen (Empfänger Alarm/Wartung,
+   kritisch mit Lautstärke) und Konfiguration › Aktionen (Ablauf je Modus:
+   Schalten, Warten, Alarmton auf Medienplayer mit mitgelieferten Tönen,
+   Schnappschuss und Wiederherstellung samt Lautstärke, Push, HA-Aktion).
+2. 0.5.0: Wartung (Prognose, Meldungen), Sensorausfall melden,
+   Zwei-Sensor-Bestätigung, mehrere Codes pro Person.
 
 ## Zweisprachigkeit EN/DE (verbindlich)
 
