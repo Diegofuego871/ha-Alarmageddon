@@ -1,4 +1,5 @@
 <title>Alarmageddon Konzept</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -129,7 +130,7 @@ th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute
 .trig .tag{font-size:12.5px}
 .steps{display:flex;flex-direction:column;position:relative;gap:8px}
 .step{display:grid;grid-template-columns:64px 30px minmax(0,1fr) auto;gap:10px;align-items:start}
-@media(max-width:560px){.step{grid-template-columns:48px 28px minmax(0,1fr)}.step .tg{grid-column:3}}
+@media(max-width:560px){.step{grid-template-columns:48px 28px minmax(0,1fr)}.step .tgl{grid-column:3;justify-self:start;margin-top:0}}
 .step .t{font-family:var(--mono);font-size:12.5px;text-align:right;padding-top:7px;color:var(--muted);font-variant-numeric:tabular-nums}
 .step .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);position:relative;z-index:1}
 .step .ic svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -177,6 +178,7 @@ th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute
 .box{flex:1;min-width:200px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px}
 .box .mono{display:block;margin-top:6px;color:var(--muted)}
 .arrow{align-self:center;color:var(--muted);font-family:var(--mono)}
+@media(max-width:600px){.ha{grid-template-columns:1fr}.ha .rail{display:none}.steps::before{left:72px}.body{padding:12px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -244,7 +246,7 @@ th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute
       <ul class="clean">
         <li>Sollen "Anwesend" und "Abwesend" die einzigen Modi sein, oder zusätzlich "Nacht"? Das Datenmodell könnte beliebig viele Modi unterstützen, die UI bliebe bei zwei festen Standardmodi.</li>
         <li>Mehrere Alarmanlagen pro HA (zum Beispiel Haus und Garage)? Ich plane es als mehrere Config Entries ein, ein Panel zeigt dann alle.</li>
-        <li>Soll das Panel Deutsch und Englisch können? Ich würde von Anfang an Übersetzungsdateien nutzen.</li>
+        <li><s>Sprache</s> Entschieden: Integration Englisch, Deutsch wenn HA auf Deutsch läuft. README und Release Notes zweisprachig, Mockups Deutsch.</li>
         <li>Lizenz und Zielgruppe: nur privat, oder später HACS-Veröffentlichung? Das beeinflusst Doku und Tests.</li>
         <li>Welche Geräte nutzt du real (Zigbee2MQTT, ZHA, Z-Wave)? Das bestimmt, welche Attribute für Batterie und "zuletzt gesehen" bereitstehen.</li>
       </ul>
@@ -428,7 +430,7 @@ th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute
         <span class="arrow">→</span>
         <div class="box"><b>Entitäten</b><p class="note" style="margin:4px 0 0">alarm_control_panel, binary_sensor je Zone, sensor für Problemanzahl.</p><span class="mono">alarm_control_panel.py</span></div>
         <span class="arrow">↔</span>
-        <div class="box"><b>Panel (Frontend)</b><p class="note" style="margin:4px 0 0">Web Component mit Drag and Drop. Spricht über WebSocket-API.</p><span class="mono">frontend/ · websocket_api.py</span></div>
+        <div class="box"><b>Panel (Frontend)</b><p class="note" style="margin:4px 0 0">iframe-Panel (Vanilla Web Component) mit Drag and Drop. Spricht über WebSocket-API.</p><span class="mono">frontend/ · websocket_api.py</span></div>
       </div>
     </div>
     <div class="grid2">
@@ -458,7 +460,7 @@ monitoring: {battery_pct: 20, offline_h: 12, …}</pre>
           <li><b>Eigene Entitäten statt HA-Gruppen:</b> volle Kontrolle über Zustand und Lebenszyklus.</li>
           <li><b>Szenarien im Config Entry, nicht als HA-Automationen:</b> eine Quelle der Wahrheit, saubere Stopp-Logik, nichts im Automationseditor, das der User kaputt macht.</li>
           <li><b>Aktionen als Service-Calls:</b> jedes Gerät in HA ist ansteuerbar, ohne dass die Integration es kennen muss.</li>
-          <li><b>Frontend ohne Build-Zwang am Anfang:</b> Lit-Web-Component, später Bundle für HACS.</li>
+          <li><b>Panel wie in ha-device-panel:</b> eingebautes iframe-Panel, Vanilla Web Component ohne Build und ohne CDN. Texte Englisch und Deutsch in <span class="mono">strings.js</span>, Sprache nach HA.</li>
           <li><b>Tests:</b> Zustandsautomat und Szenario-Engine mit <span class="mono">pytest-homeassistant-custom-component</span>. Besonders: Deaktivieren während Verzögerung, Neustart während Alarm.</li>
         </ul>
       </div>
