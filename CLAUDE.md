@@ -110,11 +110,12 @@ Umsetzung:
 
 - Eine Einstellung, die sich mehr als global ändern lässt, bekommt alle
   Ebenen zugleich, mit Anzeige der Herkunft, Zurücksetzen, Übersicht der
-  eigenen Werte, Sicherung und Wiederherstellung und Tests. Nie nur eine
-  oder zwei Ebenen bauen und die anderen später nachreichen.
-- Ebenen für Alarmageddon (Entscheid des Nutzers, 2026-11-08): global ›
-  Alarmanlage › Bereich › Gerät (Wirksam: Gerät > Bereich > Alarmanlage >
-  global).
+  eigenen Werte, Sicherung und Wiederherstellung und Tests. Nie nur einen
+  Teil der Ebenen bauen und den Rest später nachreichen.
+- Ebenen für Alarmageddon (Entscheid des Nutzers, 2026-11-08, ersetzt den
+  früheren Entscheid für vier Ebenen): zwei Ebenen, Voreinstellung je
+  Sensorart (global, für alle Anlagen) › eigener Wert pro Sensor (Wirksam:
+  Sensor > Sensorart). Keine eigenen Ebenen für Alarmanlage und Bereich.
 
 ## HACS
 

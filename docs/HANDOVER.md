@@ -5,7 +5,7 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Stand (0.6.0, Zeitplan und Modi)
 
-- 0.3.0, 0.4.0 und 0.5.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.6.0 enthalten. Letzter veröffentlichter Tag: `v0.2.0` (Vorabversion).
+- 0.3.0, 0.4.0 und 0.5.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.6.0 enthalten. 0.6.0 ist als Vorabversion veröffentlicht (Tag `v0.6.0`, Commit e45a617); davor `v0.2.0`.
 - Modi frei wählbar (Wunsch des Nutzers, ändert die frühere Vorgabe "Anwesend und Abwesend immer da", CLAUDE.md nachgeführt): Optionen `home_enabled`, `away_enabled`, `night_enabled` (`MODE_ENABLED_KEY`/`MODE_ENABLED_DEFAULT`), `controller.modes` daraus, `supported_features` nur für eingeschaltete Modi. `save_system` lehnt "kein Modus" (`no_mode`) und das Abschalten des aktiven Modus (`mode_active`) ab. Panel: Chips "Modi" in `system.js`.
 - Zeitplan: `scheduler.py` (`async_track_time_change` pro aktiver Regel, Wochentag lokal, nie während `pending`/`triggered`, ohne Code, `changed_by` "Zeitplan"/"Schedule", Ereignis `schedule_skipped`). Regeln in `options["schedules"]`, Prüfung `schemas.SCHEDULES`, in der Sicherung enthalten. Panel: Karte "Zeitplan" in `system.js` (Teil des Entwurfs).
 - Tests: `tests/test_schedule.py`, HomeKit (`test_only_chosen_modes_in_apple_home`, `test_scheduled_arm_shows_in_apple_home`), Panel-Suite `schedule-e2e`.
@@ -35,7 +35,7 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 ## Stand (0.3.0, Optionen pro Sensor, neues Panel)
 
-- Wunsch des Nutzers (2026-11-08): ohne Mockups weiterarbeiten, bis der Backlog leer ist. Für die offenen Fragen aus `docs/mockups/sensor-options-v1` gelten die Empfehlungen (Optionen im Seitenblatt A, "Bereit" als Zeile B); Ebenen der Sensor-Optionen: Voreinstellung je Sensorart (global, `settings.py`) › eigener Wert pro Sensor und Anlage (`options["sensor_options"]`). Eine Rückfrage an den Nutzer dazu steht noch aus.
+- Wunsch des Nutzers (2026-11-08): ohne Mockups weiterarbeiten, bis der Backlog leer ist. Für die offenen Fragen aus `docs/mockups/sensor-options-v1` gelten die Empfehlungen (Optionen im Seitenblatt A, "Bereit" als Zeile B); Ebenen der Sensor-Optionen: Voreinstellung je Sensorart (global, `settings.py`) › eigener Wert pro Sensor und Anlage (`options["sensor_options"]`). Vom Nutzer bestätigt (2026-11-08): zwei Ebenen reichen.
 - Aufbau des Panels nach Vorgabe des Nutzers: Übersicht (Steuerung der Anlagen + Warnkachel, darunter Liste wie Device Panel in `list.js`, Ansicht in `localStorage`), Konfiguration mit Reitern Sensoren (`sensors.js`, Raster + Seitenblatt + Voreinstellungen) und Anlage (`system.js`). Gemeinsames in `common.js`.
 - Controller: `option()`, `always_sensors()`, `blocking_sensors()`, `ready()`, "Scharf, sobald geschlossen" mit `ARM_ON_CLOSE_SETTLE` (3 s) und Rückfall auf die ursprüngliche Verzögerung, Sensorausfall im scharfen Zustand als Ereignis (`add_event_listener`) und optional Alarm.
 - Entitäten "Bereit für …" (`binary_sensor`, unique_id `<entry>_ready_<mode>`).
@@ -76,13 +76,9 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 Backlog leer (Stand 0.6.0). Offen:
 
-1. Rückfrage an den Nutzer: Ebenen der Sensor-Optionen. Gebaut sind
-   Voreinstellung je Sensorart (global) › Wert pro Sensor. Die Regel in
-   CLAUDE.md nennt global › Alarmanlage › Bereich › Gerät; ob Alarmanlage
-   und Bereich als eigene Ebenen nötig sind, entscheidet der Nutzer.
-2. Prüfung im echten HA und mit echten Geräten (Sonos, iPhone, Android,
+1. Prüfung im echten HA und mit echten Geräten (Sonos, iPhone, Android,
    HomeKit), siehe "Nicht im echten HA geprüft" in den Abschnitten oben.
-3. Optional: PR an home-assistant/brands, Logo (Entscheid: vorerst so).
+2. Optional: PR an home-assistant/brands, Logo (Entscheid: vorerst so).
 
 ## Zweisprachigkeit EN/DE (verbindlich)
 
