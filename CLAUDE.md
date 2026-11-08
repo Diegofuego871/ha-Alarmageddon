@@ -126,8 +126,9 @@ Umsetzung:
 - Brand-Bilder lokal unter `custom_components/alarmageddon/brand/`
   (`icon.png` 256 × 256, `icon@2x.png`, `logo.png`, `logo@2x.png`, Test
   der Masse), optional PR an home-assistant/brands.
-- GitHub: Beschreibung und Topics (`home-assistant`, `hacs`, `integration`,
-  `home-assistant-custom`), Issues aktiviert.
+- GitHub: Beschreibung, Topics und Issues sind gesetzt (geprüft 2026-11-08:
+  `hacs`, `hacs-integration`, `home-assistant`, `homeassistant`,
+  `integration`, `marketplace`; Lizenz MIT). Die HACS-Action prüft das mit.
 - Actions `validate.yml` (HACS-Action und hassfest) und `tests.yml` müssen
   grün sein; Actions mit fester Commit-Version.
 - Releases als GitHub-Release mit Tag (siehe "Git und Releases").
