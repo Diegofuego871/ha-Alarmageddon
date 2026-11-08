@@ -1,0 +1,680 @@
+<title>Alarmageddon Konzept</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: Konzept-Seite mit Tabs; jeder Tab zeigt entweder Text oder einen interaktiven Panel-Mockup. */
+:root{
+  --bg:#eceff2; --surface:#ffffff; --surface2:#f4f6f8; --ink:#141a22; --muted:#5b6674; --line:#d6dbe1;
+  --accent:#0f7b8a; --accent-ink:#ffffff; --accent-soft:#d9eef1;
+  --ok:#1b8a57; --ok-soft:#dcf1e6; --warn:#a96300; --warn-soft:#fbebc9; --crit:#c8312f; --crit-soft:#f9dedd;
+  --font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1319; --surface:#171e27; --surface2:#1d2630; --ink:#e7ebf0; --muted:#97a3b2; --line:#2b3644;
+  --accent:#4cc3d3; --accent-ink:#06242a; --accent-soft:#16363c;
+  --ok:#4cc790; --ok-soft:#173528; --warn:#e8b04a; --warn-soft:#3a2d12; --crit:#ff7673; --crit-soft:#3d1c1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1319; --surface:#171e27; --surface2:#1d2630; --ink:#e7ebf0; --muted:#97a3b2; --line:#2b3644;
+  --accent:#4cc3d3; --accent-ink:#06242a; --accent-soft:#16363c;
+  --ok:#4cc790; --ok-soft:#173528; --warn:#e8b04a; --warn-soft:#3a2d12; --crit:#ff7673; --crit-soft:#3d1c1c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:28px;line-height:1.15;margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:19px;margin:0 0 8px;font-weight:600;text-wrap:balance}
+h3{font-size:15px;margin:0 0 4px;font-weight:600}
+p{margin:0 0 10px;max-width:68ch}
+.lead{color:var(--muted);max-width:70ch}
+.mono{font-family:var(--mono);font-size:12.5px}
+.eyebrow{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header.top{display:flex;flex-direction:column;gap:6px}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap}
+nav.tabs button{font:inherit;font-size:14px;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,[draggable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.view{display:none;flex-direction:column;gap:18px}
+section.view.on{display:flex}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.card.plain{background:transparent;border-style:dashed}
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.tag.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.tag.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag.crit{background:var(--crit-soft);color:var(--crit);border-color:transparent}
+.tag.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.scroll{overflow-x:auto}
+.note{font-size:13px;color:var(--muted)}
+
+/* Mockup-Rahmen: imitiert Home Assistant mit Seitenleiste */
+.ha{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);display:grid;grid-template-columns:56px minmax(0,1fr);min-height:420px}
+.ha .rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 0}
+.ha .rail i{width:28px;height:28px;border-radius:8px;background:var(--surface2);display:block}
+.ha .rail i.cur{background:var(--accent)}
+.ha .main{min-width:0;display:flex;flex-direction:column}
+.ha .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.ha .bar b{font-weight:600}
+.state{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;padding:5px 11px;border:0;background:var(--surface);color:var(--ink);cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.sub{display:flex;gap:2px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto}
+.sub span{padding:9px 12px;font-size:13.5px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent}
+.sub span.cur{color:var(--ink);border-color:var(--accent);font-weight:600}
+.body{padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.mock-label{font-size:12px;color:var(--muted)}
+
+/* Gruppen-Editor */
+.dnd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px}
+@media(max-width:760px){.dnd{grid-template-columns:1fr}}
+.pool,.zone{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font:inherit;font-size:12.5px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer}
+.chip.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.sens{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:grab;margin-bottom:6px;font-size:13.5px;min-width:0}
+.sens:active{cursor:grabbing}
+.sens .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.sens small{color:var(--muted);display:block;font-size:11.5px}
+.ico{width:26px;height:26px;border-radius:7px;background:var(--surface2);display:grid;place-items:center;flex:none}
+.ico svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mem{display:flex;gap:4px;flex:none}
+.mem button{font:inherit;font-size:11px;padding:2px 7px;border-radius:6px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);cursor:pointer}
+.mem button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.zones{display:flex;flex-direction:column;gap:12px}
+.zone h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.zone .drop{min-height:86px;border:1.5px dashed var(--line);border-radius:8px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;transition:background .15s,border-color .15s}
+.zone.over .drop{background:var(--accent-soft);border-color:var(--accent)}
+.zone .hint{color:var(--muted);font-size:13px;align-self:center;margin:auto}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 4px 3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--ink);border:1px solid var(--accent)}
+.pill button{font:inherit;border:0;background:transparent;color:var(--muted);cursor:pointer;width:20px;height:20px;border-radius:50%;line-height:1}
+.pill button:hover{background:var(--surface)}
+.ent{font-family:var(--mono);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+
+/* Wartung */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.tile>header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tile>header b{font-weight:600}
+.dev{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:4px 10px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
+.dev:last-child{border-bottom:0}
+.dev .nm{font-size:13.5px;overflow-wrap:anywhere}
+.dev .meta{grid-column:2 / 4;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.dev .meta b{color:var(--ink);font-weight:500}
+.batt{display:flex;align-items:center;gap:6px;font-size:12px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.batt i{display:block;width:34px;height:8px;border-radius:3px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.batt i s{display:block;height:100%;background:var(--ok)}
+.batt.warn i s{background:var(--warn)}.batt.crit i s{background:var(--crit)}
+.spark{width:56px;height:16px;flex:none}
+.spark polyline{fill:none;stroke:var(--muted);stroke-width:1.5}
+.sum{display:flex;gap:10px;flex-wrap:wrap}
+.sum div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:120px}
+.sum b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.sum span{font-size:12px;color:var(--muted)}
+
+/* Szenarien */
+.scn{display:grid;grid-template-columns:240px minmax(0,1fr);gap:14px}
+@media(max-width:820px){.scn{grid-template-columns:1fr}}
+.slist{display:flex;flex-direction:column;gap:6px}
+.slist button{font:inherit;text-align:left;padding:10px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.slist button small{color:var(--muted);font-size:12px}
+.slist button.on{border-color:var(--accent);background:var(--accent-soft)}
+.editor{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.trig{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13.5px}
+.trig .tag{font-size:12.5px}
+.steps{display:flex;flex-direction:column;position:relative;gap:8px}
+.step{display:grid;grid-template-columns:64px 30px minmax(0,1fr) auto;gap:10px;align-items:start}
+@media(max-width:560px){.step{grid-template-columns:48px 28px minmax(0,1fr)}.step .tg{grid-column:3}}
+.step .t{font-family:var(--mono);font-size:12.5px;text-align:right;padding-top:7px;color:var(--muted);font-variant-numeric:tabular-nums}
+.step .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);position:relative;z-index:1}
+.step .ic svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.step .bd{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface2);min-width:0}
+.step .bd b{font-weight:600;font-size:13.5px}
+.step .bd p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.step.off .bd,.step.off .ic{opacity:.45}
+.tgl{width:38px;height:22px;border-radius:99px;border:0;background:var(--line);position:relative;cursor:pointer;margin-top:4px}
+.tgl::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:transform .15s}
+.tgl[aria-pressed="true"]{background:var(--accent)}
+.tgl[aria-pressed="true"]::after{transform:translateX(16px)}
+.steps::before{content:"";position:absolute;left:88px;top:14px;bottom:14px;width:2px;background:var(--line)}
+.addrow{display:flex;gap:6px;flex-wrap:wrap}
+.addrow button{font:inherit;font-size:13px;padding:6px 11px;border-radius:8px;border:1px dashed var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.addrow button:hover{border-color:var(--accent);color:var(--accent)}
+.stopbox{border:1px solid var(--ok);background:var(--ok-soft);border-radius:8px;padding:10px 12px;font-size:13.5px}
+.stopbox b{font-weight:600}
+
+/* Einstellungen */
+.set{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.row:last-child{border-bottom:0}
+.row .tx{flex:1;min-width:200px}
+.row .tx small{display:block;color:var(--muted);font-size:12.5px}
+.row input[type=number],.row select{font:inherit;font-size:13.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface2);color:var(--ink);width:auto;max-width:100%}
+.row input[type=number]{width:76px;font-family:var(--mono)}
+.sethead{padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;border-radius:10px 10px 0 0}
+
+/* Telefon */
+.phones{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start}
+.phone{background:#10151b;border-radius:28px;padding:14px 12px 18px;max-width:340px;width:100%;margin:0 auto;border:1px solid #2b3644;color:#e8edf2}
+.phone .clock{text-align:center;font-size:13px;color:#9aa6b4;padding:4px 0 12px}
+.notif{background:#222c38;border-radius:16px;padding:12px;margin-bottom:10px}
+.notif .h{display:flex;gap:6px;align-items:center;font-size:12px;color:#9aa6b4;margin-bottom:6px}
+.notif .h b{color:#ff8582;font-weight:600}
+.notif strong{display:block;font-size:14.5px;font-weight:600}
+.notif p{font-size:13.5px;margin:2px 0 8px;color:#cbd4de}
+.notif .acts{display:flex;gap:6px;flex-wrap:wrap}
+.notif .acts span{flex:1;min-width:90px;text-align:center;font-size:13px;padding:7px 8px;border-radius:9px;background:#33404f}
+.notif .acts span.d{background:#6b2523;color:#ffd3d1}
+.notif .acts span.ok{background:#1f4a37;color:#c5f0da}
+
+/* Architektur */
+.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.box{flex:1;min-width:200px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px}
+.box .mono{display:block;margin-top:6px;color:var(--muted)}
+.arrow{align-self:center;color:var(--muted);font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Konzept · Entwurf v0.1 · Repo ha-Alarmageddon</span>
+    <h1>Alarmageddon: Alarmanlage für Home Assistant mit grafischer Einrichtung</h1>
+    <p class="lead">Eine <span class="mono">alarm_control_panel</span>-Entität, ein automatisch angelegtes Seitenpanel und eine Wartungsübersicht für alle Sensoren. Die Mockups unten sind bedienbar: Sensoren ziehen, Szenarien umschalten, Einstellungen ändern. Alle Sensoren, Namen und Werte sind Beispieldaten.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-v="konzept">Einschätzung</button>
+    <button role="tab" data-v="gruppen">1 · Sensorgruppen</button>
+    <button role="tab" data-v="wartung">2 · Wartung</button>
+    <button role="tab" data-v="szenarien">3 · Szenarien</button>
+    <button role="tab" data-v="einstellungen">4 · Überwachung</button>
+    <button role="tab" data-v="push">5 · Push &amp; Stopp</button>
+    <button role="tab" data-v="technik">Technik &amp; Plan</button>
+  </nav>
+
+  <!-- ===== Einschätzung ===== -->
+  <section class="view" id="v-konzept">
+    <div class="card">
+      <h2>Kurzfazit</h2>
+      <p>Das Konzept trägt. Die Trennung in "Einrichten mit Drag and Drop", "Betrieb und Wartung" und "Szenarien" ist stimmig, und die zwei festen Zonen "Anwesend" und "Abwesend" passen genau zu den Zuständen <span class="mono">armed_home</span> und <span class="mono">armed_away</span> der HA-Alarmpanel-Entität. Ich würde fünf Dinge anders lösen als beschrieben.</p>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Was ich übernehme</h2>
+        <ul class="clean">
+          <li><b>Zwei feste Zonen.</b> Ein Sensor darf in beiden liegen (Fenster) oder nur in einer (Bewegungsmelder nur abwesend).</li>
+          <li><b>Drag and Drop</b> mit Tipp-Alternative für Touch (zwei Schalter pro Sensor).</li>
+          <li><b>Seitenpanel</b> wird beim Anlegen der Integration automatisch registriert.</li>
+          <li><b>Wartungsübersicht</b> nach Bereich in Kacheln, mit Batterie, letzter Aktivität und Prognose.</li>
+          <li><b>Szenarien frei zusammenstellbar</b>, pro Zone und Zustand unterschiedlich.</li>
+          <li><b>Kritische Push-Meldung mit Aktionen</b>, inklusive "Deaktivieren".</li>
+          <li><b>Manuelles Deaktivieren stoppt alles</b>, was das Szenario gestartet hat.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Was ich anders machen würde</h2>
+        <ul class="clean">
+          <li><b>Keine HA-Helfergruppen.</b> Die Integration hält Zonen intern und stellt pro Zone eine eigene <span class="mono">binary_sensor</span>-Entität bereit ("Zone Anwesend ausgelöst"). Vorteil: Der User kann sie nicht versehentlich löschen oder umbauen, und sie sind sauber an das Gerät "Alarmanlage" gebunden. Nachteil: Sie erscheinen nicht in der Helfer-Liste.</li>
+          <li><b>Nur die Alarmanlage läuft über den Config Flow.</b> Name, Code, Verzögerungen. Alles Grafische läuft im Panel über eine WebSocket-API. Der Standard-Config-Flow kann kein Drag and Drop.</li>
+          <li><b>Szenario-Schritte als generische HA-Aktionen.</b> Statt je einen Baustein für Sirene, Sonos und Rollladen zu programmieren, nutzt der Editor den HA-Aktionsauswahldialog. Dazu kommen Vorlagen mit Komfort-Maske für die häufigsten Fälle. So bleibt wirklich alles möglich.</li>
+          <li><b>Stoppen über Gegenaktionen.</b> Jeder Schritt kennt sein Gegenstück (<span class="mono">siren.turn_off</span>, <span class="mono">media_player.media_stop</span>, Lautstärke zurücksetzen). Die Integration führt das serverseitig aus, nicht über eine Automation, damit es auch nach einem HA-Neustart greift.</li>
+          <li><b>Prognose als Schätzung kennzeichnen.</b> Batterieverläufe sind nicht linear (CR2032 bricht am Ende ein). Die Anzeige braucht mindestens 14 Tage Verlauf und zeigt "noch ca. 5 Monate" mit Konfidenz, sonst "zu wenig Daten".</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Risiken und Grenzen</h2>
+      <div class="scroll"><table>
+        <tr><th>Thema</th><th>Problem</th><th>Vorschlag</th></tr>
+        <tr><td>Keine zertifizierte Anlage</td><td>Kein VdS/EN 50131. Fällt HA, WLAN oder Zigbee-Koordinator aus, gibt es keinen Alarm.</td><td>Hinweis im Setup. Sirene mit eigenem Akku und eigener Logik empfohlen. Optionaler Heartbeat-Check auf Koordinator-Ausfall.</td></tr>
+        <tr><td>Deaktivieren per Push-Aktion</td><td>Wer das entsperrte Handy hat, kann entschärfen. Android prüft die Aktion nicht zusätzlich, iOS kann Authentifizierung verlangen.</td><td>Aktion "Deaktivieren" optional, mit Code-Eingabe (Texteingabe-Aktion) oder nur mit iOS-Authentifizierung. Standard: aus.</td></tr>
+        <tr><td>Kritische Push-Meldungen</td><td>iOS braucht <span class="mono">push.sound.critical</span>, Android einen Kanal <span class="mono">alarm_stream</span>. Beides setzt die Companion-App und erteilte Rechte voraus.</td><td>Beim Einrichten eine Testmeldung auslösen und Rückmeldung abfragen.</td></tr>
+        <tr><td>Sensor "hält ewig" den Zustand</td><td>Ein Fenster, das offen ist, verhindert das Scharfschalten.</td><td>Beim Scharfschalten pro Fall wählbar: blockieren, umgehen (bypass) oder nur warnen. Umgangene Sensoren stehen in der Wartungsansicht.</td></tr>
+        <tr><td>Sensor fällt im scharfen Zustand aus</td><td>Ein Offline-Melder ist ein blinder Fleck.</td><td>Einstellbare Reaktion: kritische Meldung, Alarm auslösen oder nur Hinweis. Siehe Tab "Überwachung".</td></tr>
+        <tr><td>Wartung ohne Verlauf</td><td>Batterie-Prognose benötigt Historie aus dem Recorder.</td><td>Die Integration liest Langzeitstatistiken und speichert nichts doppelt.</td></tr>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Offene Fragen an dich</h2>
+      <ul class="clean">
+        <li>Sollen "Anwesend" und "Abwesend" die einzigen Modi sein, oder zusätzlich "Nacht"? Das Datenmodell könnte beliebig viele Modi unterstützen, die UI bliebe bei zwei festen Standardmodi.</li>
+        <li>Mehrere Alarmanlagen pro HA (zum Beispiel Haus und Garage)? Ich plane es als mehrere Config Entries ein, ein Panel zeigt dann alle.</li>
+        <li>Soll das Panel Deutsch und Englisch können? Ich würde von Anfang an Übersetzungsdateien nutzen.</li>
+        <li>Lizenz und Zielgruppe: nur privat, oder später HACS-Veröffentlichung? Das beeinflusst Doku und Tests.</li>
+        <li>Welche Geräte nutzt du real (Zigbee2MQTT, ZHA, Z-Wave)? Das bestimmt, welche Attribute für Batterie und "zuletzt gesehen" bereitstehen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Gruppen ===== -->
+  <section class="view" id="v-gruppen">
+    <p class="lead">Beim Anlegen der Alarmanlage erkennt die Integration alle passenden Sensoren (Tür/Fenster, Bewegung, Rauch, Glasbruch, Erschütterung). Der User zieht sie in die zwei Zonen oder wählt ganze Gruppen per Klick.</p>
+    <div class="ha">
+      <div class="rail"><i></i><i></i><i class="cur"></i><i></i></div>
+      <div class="main">
+        <div class="bar"><b>Alarmageddon</b><span class="tag">Haus Muster</span><span class="state"><span class="tag ok">Deaktiviert</span></span></div>
+        <div class="sub"><span>Übersicht</span><span class="cur">Sensorgruppen</span><span>Szenarien</span><span>Wartung</span><span>Einstellungen</span></div>
+        <div class="body">
+          <div class="dnd">
+            <div class="pool">
+              <h3>Verfügbare Sensoren</h3>
+              <div class="chips" id="g-filter"></div>
+              <div id="g-pool"></div>
+            </div>
+            <div class="zones">
+              <div class="zone" data-zone="home" id="zone-home">
+                <h3>Anwesend <span class="tag acc">armed_home</span><span class="tag" id="cnt-home">0</span></h3>
+                <p class="note" style="margin-bottom:8px">Schutz der Hülle, während jemand zuhause ist.</p>
+                <div class="chips"><button class="chip" data-add="home" data-type="window">+ alle Fenster</button><button class="chip" data-add="home" data-type="door">+ alle Türen</button></div>
+                <div class="drop" id="drop-home"></div>
+              </div>
+              <div class="zone" data-zone="away" id="zone-away">
+                <h3>Abwesend <span class="tag acc">armed_away</span><span class="tag" id="cnt-away">0</span></h3>
+                <p class="note" style="margin-bottom:8px">Volle Überwachung, inklusive Bewegungsmelder im Innenraum.</p>
+                <div class="chips"><button class="chip" data-add="away" data-type="window">+ alle Fenster</button><button class="chip" data-add="away" data-type="door">+ alle Türen</button><button class="chip" data-add="away" data-type="motion">+ alle Bewegungsmelder</button></div>
+                <div class="drop" id="drop-away"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:10px 12px">
+            <span class="mock-label">Wird angelegt (Vorschau)</span>
+            <div class="ent" id="g-ent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Bedienung: Sensor aus der linken Liste in eine Zone ziehen, oder rechts neben dem Sensor "Z" (Zuhause) und "A" (Abwesend) antippen. Das × entfernt einen Sensor aus der Zone.</p>
+  </section>
+
+  <!-- ===== Wartung ===== -->
+  <section class="view" id="v-wartung">
+    <p class="lead">Im Betrieb zeigt das Panel jeden Sensor nach Bereich. Geräte, die Aufmerksamkeit brauchen, stehen zuerst. Die Prognose kommt aus dem Batterieverlauf der letzten Wochen.</p>
+    <div class="ha">
+      <div class="rail"><i></i><i></i><i class="cur"></i><i></i></div>
+      <div class="main">
+        <div class="bar"><b>Alarmageddon</b><span class="tag">Haus Muster</span>
+          <span class="state"><span class="seg" id="w-seg"><button data-f="all" class="on">Alle</button><button data-f="attn">Achtung</button><button data-f="off">Offline</button></span></span></div>
+        <div class="sub"><span>Übersicht</span><span>Sensorgruppen</span><span>Szenarien</span><span class="cur">Wartung</span><span>Einstellungen</span></div>
+        <div class="body">
+          <div class="sum" id="w-sum"></div>
+          <div class="tiles" id="w-tiles"></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="card"><h3>Angezeigt pro Gerät</h3><p class="note">Batteriestand und Verlauf (Sparkline), voraussichtliche Restlaufzeit, letzte Aktivität (Bewegung oder Öffnung), "zuletzt gesehen", Zonenzugehörigkeit, Signalstärke wo vorhanden.</p></div>
+      <div class="card"><h3>Statuslogik</h3><p class="note"><span class="tag crit">Offline</span> nicht erreichbar oder länger als X Stunden ohne Meldung. <span class="tag warn">Achtung</span> Batterie unter Schwelle, Prognose unter Warnschwelle oder ungewöhnlich lange ohne Aktivität.</p></div>
+      <div class="card"><h3>Aus Device Panel übernommen</h3><p class="note">Schwellenwerte pro Gerät überschreibbar, Gerät "ignorieren" oder "stummschalten", Wiederholungsintervall für Meldungen, Ruhezeiten. Details im Tab "Überwachung".</p></div>
+    </div>
+  </section>
+
+  <!-- ===== Szenarien ===== -->
+  <section class="view" id="v-szenarien">
+    <p class="lead">Ein Szenario besteht aus einem Auslöser (Zone und Zustand) und einer Kette von Schritten mit Verzögerung. Szenarien für "Anwesend" und "Abwesend" dürfen völlig unterschiedlich sein.</p>
+    <div class="ha">
+      <div class="rail"><i></i><i></i><i class="cur"></i><i></i></div>
+      <div class="main">
+        <div class="bar"><b>Alarmageddon</b><span class="tag">Haus Muster</span><span class="state"><span class="tag ok">Deaktiviert</span></span></div>
+        <div class="sub"><span>Übersicht</span><span>Sensorgruppen</span><span class="cur">Szenarien</span><span>Wartung</span><span>Einstellungen</span></div>
+        <div class="body">
+          <div class="scn">
+            <div class="slist" id="s-list"></div>
+            <div class="editor" id="s-editor"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Einstellungen ===== -->
+  <section class="view" id="v-einstellungen">
+    <p class="lead">Die Überwachung übernimmt die Logik aus Device Panel. Zusätzlich gibt es Einstellungen, die nur im scharfen Zustand gelten.</p>
+    <div class="ha">
+      <div class="rail"><i></i><i></i><i class="cur"></i><i></i></div>
+      <div class="main">
+        <div class="bar"><b>Alarmageddon</b><span class="tag">Haus Muster</span></div>
+        <div class="sub"><span>Übersicht</span><span>Sensorgruppen</span><span>Szenarien</span><span>Wartung</span><span class="cur">Einstellungen</span></div>
+        <div class="body">
+          <div class="set">
+            <div class="sethead">Gerätezustand (immer aktiv)</div>
+            <div class="row"><div class="tx">Batterie niedrig melden<small>Meldung, sobald ein Gerät unter die Schwelle fällt.</small></div><input type="number" value="20" min="1" max="90" id="st-batt" aria-label="Schwelle Batterie in Prozent"> <span class="note">%</span><button class="tgl" aria-pressed="true" aria-label="Batterie niedrig melden"></button></div>
+            <div class="row"><div class="tx">Restlaufzeit-Warnung<small>Warnt, wenn die Prognose unter diesen Wert fällt.</small></div><input type="number" value="30" min="1" max="365" aria-label="Restlaufzeit in Tagen"> <span class="note">Tage</span><button class="tgl" aria-pressed="true" aria-label="Restlaufzeit-Warnung"></button></div>
+            <div class="row"><div class="tx">Offline erkennen<small>Gerät gilt als offline, wenn es so lange nichts gemeldet hat oder "nicht verfügbar" ist.</small></div><input type="number" value="12" min="1" max="168" aria-label="Offline nach Stunden"> <span class="note">Stunden</span><button class="tgl" aria-pressed="true" aria-label="Offline erkennen"></button></div>
+            <div class="row"><div class="tx">Bewegungsmelder ohne Aktivität<small>Hinweis auf möglichen Defekt oder Verdeckung.</small></div><input type="number" value="7" min="1" max="60" aria-label="Tage ohne Aktivität"> <span class="note">Tage</span><button class="tgl" aria-pressed="false" aria-label="Inaktivität melden"></button></div>
+            <div class="row"><div class="tx">Meldung wiederholen<small>Bis das Problem behoben oder das Gerät stummgeschaltet ist.</small></div><select aria-label="Wiederholung"><option>täglich</option><option>alle 3 Tage</option><option>wöchentlich</option><option>nie</option></select></div>
+            <div class="row"><div class="tx">Ruhezeit für normale Meldungen<small>Kritische Meldungen ignorieren die Ruhezeit.</small></div><select aria-label="Ruhezeit"><option>22:00 – 07:00</option><option>keine</option></select></div>
+          </div>
+          <div class="set">
+            <div class="sethead">Nur im scharfen Zustand</div>
+            <div class="row"><div class="tx">Sensor fällt aus<small>Reaktion, wenn ein Melder einer aktiven Zone offline geht.</small></div><select aria-label="Reaktion bei Sensorausfall"><option>Kritische Meldung</option><option>Alarm auslösen</option><option>Nur Hinweis</option></select></div>
+            <div class="row"><div class="tx">Batterie kritisch (unter 5 %)<small>Eigene, dringendere Stufe für aktive Zonen.</small></div><select aria-label="Reaktion bei kritischer Batterie"><option>Kritische Meldung</option><option>Normale Meldung</option></select></div>
+            <div class="row"><div class="tx">Sabotage (Gehäuse offen, Signal gestört)<small>Nur bei Geräten, die das melden.</small></div><select aria-label="Reaktion Sabotage"><option>Alarm auslösen</option><option>Kritische Meldung</option></select></div>
+            <div class="row"><div class="tx">Koordinator-Ausfall (Zigbee, Z-Wave)<small>Alle Sensoren dieser Integration gleichzeitig offline.</small></div><select aria-label="Reaktion Koordinator"><option>Kritische Meldung</option><option>Alarm auslösen</option></select></div>
+          </div>
+          <div class="set">
+            <div class="sethead">Scharfschalten</div>
+            <div class="row"><div class="tx">Sensor beim Scharfschalten offen<small>Zum Beispiel gekipptes Fenster.</small></div><select aria-label="Offener Sensor"><option>Fragen: umgehen oder abbrechen</option><option>Immer blockieren</option><option>Automatisch umgehen und melden</option></select></div>
+            <div class="row"><div class="tx">Ausgangsverzögerung (abwesend)</div><input type="number" value="45" aria-label="Ausgangsverzögerung"> <span class="note">Sekunden</span></div>
+            <div class="row"><div class="tx">Eingangsverzögerung<small>Zeit bis zum Alarm nach Auslösung an der Haustür.</small></div><input type="number" value="30" aria-label="Eingangsverzögerung"> <span class="note">Sekunden</span></div>
+            <div class="row"><div class="tx">Code zum Deaktivieren</div><select aria-label="Code"><option>Kein Code</option><option>PIN (4–8 Stellen)</option></select></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Pro Gerät lassen sich diese Werte in der Wartungsansicht überschreiben, zum Beispiel für einen Sensor mit Netzteil oder einen Melder im Keller mit anderem Offline-Intervall.</p>
+  </section>
+
+  <!-- ===== Push ===== -->
+  <section class="view" id="v-push">
+    <div class="phones">
+      <div class="phone">
+        <div class="clock">23:41 · Gesperrter Bildschirm</div>
+        <div class="notif"><div class="h"><b>⚠ Alarmageddon</b><span>· jetzt</span></div>
+          <strong>Einbruchalarm: Fenster Küche</strong>
+          <p>Abwesend scharf seit 08:12. Sirene startet in 30 s. Rollläden sind hochgefahren.</p>
+          <div class="acts"><span class="d">Deaktivieren</span><span>Sirene verzögern</span><span class="ok">Ist okay</span></div></div>
+        <div class="notif"><div class="h"><span>Alarmageddon · vor 2 Min.</span></div>
+          <strong>Alarm ausgelöst: Bewegung Flur</strong>
+          <p>Zweite Zone betroffen.</p></div>
+      </div>
+      <div class="phone">
+        <div class="clock">Wartung · normale Meldung</div>
+        <div class="notif"><div class="h"><span>Alarmageddon · 09:05</span></div>
+          <strong>Batterie niedrig: Bewegung Keller</strong>
+          <p>14 % · Prognose: noch ca. 3 Wochen. Zone: Abwesend.</p>
+          <div class="acts"><span>Stummschalten 7 Tage</span><span>Im Panel öffnen</span></div></div>
+        <div class="notif"><div class="h"><b>⚠ Alarmageddon</b><span>· 02:14 · kritisch</span></div>
+          <strong>Sensor ausgefallen: Tür Garage</strong>
+          <p>Anlage ist abwesend scharf. Diese Zone ist nicht mehr überwacht.</p>
+          <div class="acts"><span>Zone umgehen</span><span>Im Panel öffnen</span></div></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Ablauf bei manuellem Deaktivieren</h2>
+        <div class="flow" style="flex-direction:column;gap:6px">
+          <div class="box">1. Alarmanlage wird deaktiviert (Panel, Wandtablet, Automation, Push-Aktion, Sprachassistent).</div>
+          <div class="box">2. Szenario-Engine bricht alle ausstehenden Schritte ab (Verzögerungen laufen nicht weiter).</div>
+          <div class="box">3. Für jeden bereits ausgeführten Schritt läuft die Gegenaktion: Sirene aus, Sonos stoppen und Lautstärke zurück, Blitzlicht aus.</div>
+          <div class="box">4. Offene kritische Meldungen werden auf dem Handy ersetzt durch "Alarm beendet von &lt;Name&gt;" (gleicher <span class="mono">tag</span>).</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Technische Eckpunkte</h2>
+        <ul class="clean">
+          <li>Aktion "Deaktivieren" kommt als <span class="mono">mobile_app_notification_action</span>-Event zurück. Die Integration wertet es selbst aus, keine Automation nötig.</li>
+          <li>iOS: <span class="mono">push.sound.critical: 1</span>, <span class="mono">interruption-level: critical</span>. Android: <span class="mono">channel: alarm_stream</span>, <span class="mono">ttl: 0</span>, <span class="mono">priority: high</span>.</li>
+          <li>Empfänger sind frei wählbar (mehrere Handys). Jeder Empfänger kann eigene Aktionen haben.</li>
+          <li>Laufender Szenario-Zustand wird gespeichert, damit nach einem HA-Neustart mitten im Alarm nichts verloren geht. Beim Start gilt: Zustand wiederherstellen und Sirene sicher abschalten, falls inzwischen deaktiviert.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">Meldungstexte und Aktionen sind im Szenario-Editor frei einstellbar. Die Bilder zeigen Vorgaben.</p>
+  </section>
+
+  <!-- ===== Technik ===== -->
+  <section class="view" id="v-technik">
+    <div class="card">
+      <h2>Aufbau</h2>
+      <div class="flow">
+        <div class="box"><b>Config Flow</b><p class="note" style="margin:4px 0 0">Legt Alarmanlage an: Name, Code, Verzögerungen. Öffnet danach das Panel.</p><span class="mono">config_flow.py</span></div>
+        <span class="arrow">→</span>
+        <div class="box"><b>Kern (Python)</b><p class="note" style="margin:4px 0 0">Zustandsautomat, Zonen, Szenario-Engine, Überwachung, Prognose.</p><span class="mono">core/ · state.py · scenarios.py · health.py</span></div>
+        <span class="arrow">→</span>
+        <div class="box"><b>Entitäten</b><p class="note" style="margin:4px 0 0">alarm_control_panel, binary_sensor je Zone, sensor für Problemanzahl.</p><span class="mono">alarm_control_panel.py</span></div>
+        <span class="arrow">↔</span>
+        <div class="box"><b>Panel (Frontend)</b><p class="note" style="margin:4px 0 0">Web Component mit Drag and Drop. Spricht über WebSocket-API.</p><span class="mono">frontend/ · websocket_api.py</span></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Datenmodell (Config Entry)</h2>
+        <pre class="mono" style="margin:0;overflow-x:auto">zones:
+  home: [binary_sensor.fenster_kueche, …]
+  away: [… + binary_sensor.bewegung_flur]
+bypass: [binary_sensor.fenster_bad]
+scenarios:
+  - id: einbruch_abwesend
+    trigger: {zone: away, mode: armed_away}
+    steps:
+      - at: 0
+        action: notify.mobile_app_pixel
+        data: {…, critical: true}
+        undo: replace_notification
+      - at: 30
+        action: siren.turn_on
+        target: {entity_id: siren.flur}
+        undo: {action: siren.turn_off}
+monitoring: {battery_pct: 20, offline_h: 12, …}</pre>
+      </div>
+      <div class="card">
+        <h2>Warum diese Entscheidungen</h2>
+        <ul class="clean">
+          <li><b>Eigene Entitäten statt HA-Gruppen:</b> volle Kontrolle über Zustand und Lebenszyklus.</li>
+          <li><b>Szenarien im Config Entry, nicht als HA-Automationen:</b> eine Quelle der Wahrheit, saubere Stopp-Logik, nichts im Automationseditor, das der User kaputt macht.</li>
+          <li><b>Aktionen als Service-Calls:</b> jedes Gerät in HA ist ansteuerbar, ohne dass die Integration es kennen muss.</li>
+          <li><b>Frontend ohne Build-Zwang am Anfang:</b> Lit-Web-Component, später Bundle für HACS.</li>
+          <li><b>Tests:</b> Zustandsautomat und Szenario-Engine mit <span class="mono">pytest-homeassistant-custom-component</span>. Besonders: Deaktivieren während Verzögerung, Neustart während Alarm.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Umsetzungsplan</h2>
+      <div class="scroll"><table>
+        <tr><th>Phase</th><th>Inhalt</th><th>Ergebnis</th></tr>
+        <tr><td><b>1 · Kern</b></td><td>Config Flow, <span class="mono">alarm_control_panel</span>, Zustandsautomat mit Ein- und Ausgangsverzögerung, Zonen als Entitäten, Tests.</td><td>Funktionierende Anlage ohne UI-Komfort, Zonen per Dienst setzbar.</td></tr>
+        <tr><td><b>2 · Panel</b></td><td>Automatisches Panel, Drag-and-Drop-Zonen, WebSocket-API, Übersicht mit Scharfschalten.</td><td>Einrichtung komplett grafisch.</td></tr>
+        <tr><td><b>3 · Szenarien</b></td><td>Szenario-Engine mit Verzögerungen, Gegenaktionen, Wiederherstellung nach Neustart, Editor im Panel.</td><td>Sirene, Rollläden, Medien, Push mit Stopp bei Deaktivierung.</td></tr>
+        <tr><td><b>4 · Wartung</b></td><td>Überwachung (Batterie, Offline, Inaktivität), Kacheln nach Bereich, Prognose, Meldungen und Ruhezeiten.</td><td>Wartungsübersicht inklusive Benachrichtigungen.</td></tr>
+        <tr><td><b>5 · Härtung</b></td><td>Sensorausfall im scharfen Zustand, Sabotage, Koordinator-Ausfall, Bypass, Testmeldung beim Setup, Übersetzungen, HACS.</td><td>Alltagstauglich und veröffentlichbar.</td></tr>
+      </table></div>
+      <p class="note" style="margin-top:10px">Ich würde mit Phase 1 und 2 starten, weil sich daran das Datenmodell prüfen lässt, bevor die Szenario-Engine darauf aufbaut.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  /* ---------- Tabs ---------- */
+  var tabs=document.getElementById('tabs');
+  var names=['konzept','gruppen','wartung','szenarien','einstellungen','push','technik'];
+  function show(v){
+    if(names.indexOf(v)<0)v='konzept';
+    document.querySelectorAll('section.view').forEach(function(s){s.classList.toggle('on',s.id==='v-'+v)});
+    tabs.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.v===v?'true':'false')});
+  }
+  tabs.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;try{location.hash=b.dataset.v}catch(x){}show(b.dataset.v)});
+  window.addEventListener('hashchange',function(){show(location.hash.slice(1))});
+  show(location.hash.slice(1));
+
+  /* ---------- Icons ---------- */
+  var IC={
+    window:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M12 3v18M4 12h16"/></svg>',
+    door:'<svg viewBox="0 0 24 24"><path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M4 21h16"/><circle cx="15" cy="12.5" r=".8"/></svg>',
+    motion:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.7 4.7a10.4 10.4 0 0 0 0 14.6M19.3 4.7a10.4 10.4 0 0 1 0 14.6"/></svg>',
+    smoke:'<svg viewBox="0 0 24 24"><path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-4 3-6 6-10z"/></svg>',
+    notify:'<svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/></svg>',
+    cover:'<svg viewBox="0 0 24 24"><path d="M4 4h16M6 8h12M6 12h12M6 16h12M12 20v-2"/></svg>',
+    siren:'<svg viewBox="0 0 24 24"><path d="M7 19v-6a5 5 0 0 1 10 0v6M5 19h14M12 3v2M4.5 6.5l1.5 1.5M19.5 6.5L18 8"/></svg>',
+    media:'<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
+    light:'<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+    lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    wait:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+  };
+
+  /* ---------- Beispieldaten ---------- */
+  var S=[
+    {id:'w1',n:'Fenster Küche',t:'window',a:'Küche',b:78,ls:'vor 2 Min.',act:'Geöffnet gestern 18:20',est:'ca. 14 Mt.',st:'ok',h:[88,86,84,83,81,80,78]},
+    {id:'w2',n:'Fenster Wohnzimmer links',t:'window',a:'Wohnzimmer',b:64,ls:'vor 9 Min.',act:'Geöffnet heute 07:55',est:'ca. 10 Mt.',st:'ok',h:[80,77,74,71,69,66,64]},
+    {id:'w3',n:'Fenster Wohnzimmer rechts',t:'window',a:'Wohnzimmer',b:61,ls:'vor 4 Min.',act:'Geöffnet heute 07:55',est:'ca. 9 Mt.',st:'ok',h:[77,74,71,69,66,63,61]},
+    {id:'w4',n:'Fenster Bad',t:'window',a:'Bad',b:19,ls:'vor 21 Min.',act:'Gekippt seit 3 Tagen',est:'ca. 5 Wo.',st:'warn',h:[40,36,33,29,26,22,19]},
+    {id:'w5',n:'Fenster Schlafzimmer',t:'window',a:'Schlafzimmer',b:90,ls:'vor 6 Min.',act:'Geöffnet heute 06:40',est:'ca. 20 Mt.',st:'ok',h:[96,95,94,93,92,91,90]},
+    {id:'d1',n:'Haustür',t:'door',a:'Flur',b:72,ls:'vor 1 Min.',act:'Geöffnet heute 08:12',est:'ca. 12 Mt.',st:'ok',h:[86,83,81,78,76,74,72]},
+    {id:'d2',n:'Terrassentür',t:'door',a:'Wohnzimmer',b:55,ls:'vor 12 Min.',act:'Geöffnet gestern 20:03',est:'ca. 8 Mt.',st:'ok',h:[70,68,65,62,60,57,55]},
+    {id:'d3',n:'Garagentür',t:'door',a:'Garage',b:42,ls:'vor 3 Std.',act:'Geöffnet vor 2 Tagen',est:'ca. 6 Mt.',st:'ok',h:[60,57,54,51,48,45,42]},
+    {id:'m1',n:'Bewegung Flur',t:'motion',a:'Flur',b:83,ls:'vor 1 Min.',act:'Bewegung vor 14 Min.',est:'ca. 16 Mt.',st:'ok',h:[92,91,89,88,86,85,83]},
+    {id:'m2',n:'Bewegung Wohnzimmer',t:'motion',a:'Wohnzimmer',b:47,ls:'vor 2 Min.',act:'Bewegung vor 3 Min.',est:'ca. 7 Mt.',st:'ok',h:[66,63,60,57,54,51,47]},
+    {id:'m3',n:'Bewegung Keller',t:'motion',a:'Keller',b:14,ls:'vor 38 Min.',act:'Bewegung vor 9 Tagen',est:'ca. 3 Wo.',st:'warn',h:[34,30,27,24,21,18,14]},
+    {id:'m4',n:'Bewegung Garage',t:'motion',a:'Garage',b:0,ls:'vor 2 Tagen',act:'Letzte Bewegung vor 2 Tagen',est:'unbekannt',st:'off',h:[30,24,18,11,6,3,0]},
+    {id:'s1',n:'Rauchmelder Flur',t:'smoke',a:'Flur',b:88,ls:'vor 5 Min.',act:'Selbsttest OK vor 6 Tagen',est:'ca. 4 J.',st:'ok',h:[91,91,90,90,89,89,88]}
+  ];
+  var TL={window:'Fenster',door:'Tür',motion:'Bewegung',smoke:'Rauch'};
+  var zones={home:{},away:{}};
+  ['w1','w2','w3','w4','w5','d1','d2','d3'].forEach(function(i){zones.home[i]=1;zones.away[i]=1});
+  zones.away.m1=1;zones.away.m2=1;
+
+  /* ---------- Gruppen-Editor ---------- */
+  var gType='all';
+  var gFilter=document.getElementById('g-filter');
+  var gPool=document.getElementById('g-pool');
+  function chips(){
+    var h='<button class="chip'+(gType==='all'?' on':'')+'" data-t="all">Alle</button>';
+    Object.keys(TL).forEach(function(k){h+='<button class="chip'+(gType===k?' on':'')+'" data-t="'+k+'">'+TL[k]+'</button>'});
+    gFilter.innerHTML=h;
+  }
+  function byId(i){return S.filter(function(s){return s.id===i})[0]}
+  function row(s){
+    return '<div class="sens" draggable="true" data-id="'+s.id+'" tabindex="0"><span class="ico">'+IC[s.t]+'</span>'+
+      '<span class="nm">'+s.n+'<small>'+s.a+'</small></span>'+
+      '<span class="mem"><button data-m="home" class="'+(zones.home[s.id]?'on':'')+'" title="Anwesend" aria-label="Anwesend: '+s.n+'">Z</button>'+
+      '<button data-m="away" class="'+(zones.away[s.id]?'on':'')+'" title="Abwesend" aria-label="Abwesend: '+s.n+'">A</button></span></div>';
+  }
+  function renderG(){
+    chips();
+    gPool.innerHTML=S.filter(function(s){return gType==='all'||s.t===gType}).map(row).join('');
+    ['home','away'].forEach(function(z){
+      var ids=S.filter(function(s){return zones[z][s.id]});
+      document.getElementById('cnt-'+z).textContent=ids.length+' Sensoren';
+      document.getElementById('drop-'+z).innerHTML=ids.length?ids.map(function(s){
+        return '<span class="pill"><span class="ico" style="width:20px;height:20px">'+IC[s.t]+'</span>'+s.n+'<button data-rm="'+z+':'+s.id+'" aria-label="Entfernen: '+s.n+'">×</button></span>';
+      }).join(''):'<span class="hint">Sensoren hierher ziehen</span>';
+    });
+    document.getElementById('g-ent').innerHTML=
+      'binary_sensor.alarmageddon_haus_muster_zone_anwesend  ('+Object.keys(zones.home).length+' Quellen)<br>'+
+      'binary_sensor.alarmageddon_haus_muster_zone_abwesend  ('+Object.keys(zones.away).length+' Quellen)<br>'+
+      'alarm_control_panel.alarmageddon_haus_muster';
+  }
+  var dragId=null;
+  document.getElementById('v-gruppen').addEventListener('dragstart',function(e){
+    var s=e.target.closest('.sens');if(!s)return;dragId=s.dataset.id;
+    try{e.dataTransfer.setData('text/plain',dragId);e.dataTransfer.effectAllowed='copy'}catch(x){}
+  });
+  document.getElementById('v-gruppen').addEventListener('dragend',function(){
+    dragId=null;document.querySelectorAll('.zone').forEach(function(z){z.classList.remove('over')});
+  });
+  document.querySelectorAll('.zone').forEach(function(z){
+    z.addEventListener('dragover',function(e){e.preventDefault();z.classList.add('over')});
+    z.addEventListener('dragleave',function(e){if(!z.contains(e.relatedTarget))z.classList.remove('over')});
+    z.addEventListener('drop',function(e){
+      e.preventDefault();z.classList.remove('over');
+      var id=dragId;try{id=e.dataTransfer.getData('text/plain')||id}catch(x){}
+      if(id&&byId(id)){zones[z.dataset.zone][id]=1;renderG()}
+    });
+  });
+  document.getElementById('v-gruppen').addEventListener('click',function(e){
+    var b;
+    if((b=e.target.closest('#g-filter .chip'))){gType=b.dataset.t;renderG();return}
+    if((b=e.target.closest('.mem button'))){var id=b.closest('.sens').dataset.id,z=b.dataset.m;if(zones[z][id])delete zones[z][id];else zones[z][id]=1;renderG();return}
+    if((b=e.target.closest('[data-rm]'))){var p=b.dataset.rm.split(':');delete zones[p[0]][p[1]];renderG();return}
+    if((b=e.target.closest('[data-add]'))){S.forEach(function(s){if(s.t===b.dataset.type)zones[b.dataset.add][s.id]=1});renderG();return}
+  });
+  renderG();
+
+  /* ---------- Wartung ---------- */
+  var wf='all';
+  function spark(h,st){
+    var w=56,hh=16,mx=100,pts=h.map(function(v,i){return (i*(w-2)/(h.length-1)+1).toFixed(1)+','+(hh-1-(v/mx)*(hh-2)).toFixed(1)}).join(' ');
+    return '<svg class="spark" viewBox="0 0 56 16" aria-hidden="true"><polyline points="'+pts+'" style="stroke:'+(st==='off'?'var(--crit)':st==='warn'?'var(--warn)':'var(--muted)')+'"/></svg>';
+  }
+  function dev(s){
+    var cls=s.b<=10?'crit':s.b<=25?'warn':'';
+    var tag=s.st==='off'?'<span class="tag crit">Offline</span>':s.st==='warn'?'<span class="tag warn">Achtung</span>':'<span class="tag ok">OK</span>';
+    var z=(zones.home[s.id]?'Z':'')+(zones.away[s.id]?(zones.home[s.id]?' · A':'A'):'');
+    return '<div class="dev"><span class="ico">'+IC[s.t]+'</span><span class="nm">'+s.n+'</span>'+tag+
+      '<div class="meta"><span class="batt '+cls+'"><i><s style="width:'+s.b+'%"></s></i>'+s.b+'%</span>'+spark(s.h,s.st)+
+      '<span>Rest: <b>'+s.est+'</b></span><span>Aktiv: <b>'+s.act+'</b></span><span>Gesehen: <b>'+s.ls+'</b></span><span>Zone: <b>'+(z||'–')+'</b></span></div></div>';
+  }
+  function renderW(){
+    var list=S.filter(function(s){return wf==='all'||(wf==='attn'&&s.st!=='ok')||(wf==='off'&&s.st==='off')});
+    var areas={};list.forEach(function(s){(areas[s.a]=areas[s.a]||[]).push(s)});
+    var order=Object.keys(areas).sort(function(a,b){
+      function sc(k){return areas[k].reduce(function(m,s){return Math.max(m,s.st==='off'?2:s.st==='warn'?1:0)},0)}
+      return sc(b)-sc(a)||a.localeCompare(b);
+    });
+    var off=S.filter(function(s){return s.st==='off'}).length,warn=S.filter(function(s){return s.st==='warn'}).length;
+    document.getElementById('w-sum').innerHTML=
+      '<div><b>'+S.length+'</b><span>Sensoren</span></div>'+
+      '<div><b style="color:var(--warn)">'+warn+'</b><span>Achtung</span></div>'+
+      '<div><b style="color:var(--crit)">'+off+'</b><span>Offline</span></div>'+
+      '<div><b>'+Math.round(S.reduce(function(a,s){return a+s.b},0)/S.length)+' %</b><span>Ø Batterie</span></div>';
+    document.getElementById('w-tiles').innerHTML=order.map(function(a){
+      var items=areas[a].slice().sort(function(x,y){var r={off:0,warn:1,ok:2};return r[x.st]-r[y.st]});
+      var bad=items.filter(function(s){return s.st!=='ok'}).length;
+      return '<div class="tile"><header><b>'+a+'</b>'+(bad?'<span class="tag '+(items.some(function(s){return s.st==='off'})?'crit':'warn')+'">'+bad+' Hinweis'+(bad>1?'e':'')+'</span>':'<span class="tag ok">alles OK</span>')+'</header>'+items.map(dev).join('')+'</div>';
+    }).join('')||'<p class="note">Keine Geräte in dieser Ansicht.</p>';
+  }
+  document.getElementById('w-seg').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;wf=b.dataset.f;
+    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});renderW();
+  });
+  renderW();
+
+  /* ---------- Szenarien ---------- */
+  var SC=[
+    {id:'a',n:'Einbruch, abwesend',sub:'Zone Abwesend · armed_away',trig:['Zone: Abwesend','Zustand: Abwesend scharf','Eingangsverzögerung 30 s'],
+     steps:[
+      {t:'0 s',ic:'notify',h:'Kritische Push-Meldung',p:'An: Diego (Pixel), Partnerin (iPhone). Aktionen: Deaktivieren, Sirene verzögern.',undo:'Meldung ersetzen durch "Alarm beendet"',on:1},
+      {t:'0 s',ic:'cover',h:'Rollläden Erdgeschoss hochfahren',p:'cover.open_cover · 6 Rollläden',undo:'keine',on:1},
+      {t:'0 s',ic:'light',h:'Alle Lichter an, Flur blinkt',p:'light.turn_on · Gruppe "Erdgeschoss"',undo:'Zustand vor Alarm wiederherstellen',on:1},
+      {t:'30 s',ic:'siren',h:'Sirene einschalten',p:'siren.turn_on · Flur-Sirene · Dauer max. 3 Min.',undo:'siren.turn_off',on:1},
+      {t:'30 s',ic:'media',h:'Sonos: Warnton und Ansage',p:'media_player.play_media · Wohnzimmer, Küche · Lautstärke 70 %',undo:'media_player.media_stop, Lautstärke zurück',on:1},
+      {t:'5 Min.',ic:'notify',h:'Zweite kritische Meldung, falls noch aktiv',p:'Nur wenn nicht deaktiviert.',undo:'Meldung ersetzen',on:0}
+     ]},
+    {id:'b',n:'Einbruch, anwesend (Nacht)',sub:'Zone Anwesend · armed_home',trig:['Zone: Anwesend','Zustand: Anwesend scharf','Eingangsverzögerung 0 s'],
+     steps:[
+      {t:'0 s',ic:'notify',h:'Kritische Push-Meldung',p:'An: Diego, Partnerin. Aktionen: Ist okay, Sirene sofort.',undo:'Meldung ersetzen',on:1},
+      {t:'0 s',ic:'light',h:'Flurlicht gedimmt einschalten',p:'light.turn_on · Flur · 30 %, warmweiss',undo:'Zustand wiederherstellen',on:1},
+      {t:'20 s',ic:'media',h:'Leiser Warnton im Schlafzimmer',p:'media_player.play_media · Schlafzimmer · 25 %',undo:'media_player.media_stop',on:1},
+      {t:'60 s',ic:'siren',h:'Sirene einschalten',p:'siren.turn_on · nur wenn nicht quittiert',undo:'siren.turn_off',on:1}
+     ]},
+    {id:'c',n:'Rauch',sub:'Immer aktiv, unabhängig vom Modus',trig:['Zone: Rauchmelder','Zustand: jeder','Keine Verzögerung'],
+     steps:[
+      {t:'0 s',ic:'notify',h:'Kritische Push-Meldung',p:'An: alle. Aktion: Quittieren.',undo:'Meldung ersetzen',on:1},
+      {t:'0 s',ic:'cover',h:'Alle Rollläden hoch, Türen entriegeln',p:'cover.open_cover · lock.unlock (Fluchtweg)',undo:'keine',on:1},
+      {t:'0 s',ic:'light',h:'Alle Lichter an',p:'light.turn_on · alle',undo:'Zustand wiederherstellen',on:1},
+      {t:'5 s',ic:'siren',h:'Sirene einschalten',p:'siren.turn_on',undo:'siren.turn_off',on:1}
+     ]},
+    {id:'d',n:'Sabotage / Sensorausfall',sub:'Nur wenn scharf',trig:['Zone: Wie betroffener Sensor','Ereignis: Offline oder Gehäuse offen','Karenz 5 Min.'],
+     steps:[
+      {t:'0 s',ic:'notify',h:'Kritische Push-Meldung',p:'"Sensor ausgefallen: {Name}". Aktionen: Zone umgehen, Im Panel öffnen.',undo:'Meldung ersetzen, wenn Sensor wieder da',on:1}
+     ]}
+  ];
+  var cur=0,sl=document.getElementById('s-list'),se=document.getElementById('s-editor');
+  function renderS(){
+    sl.innerHTML=SC.map(function(s,i){return '<button data-i="'+i+'" class="'+(i===cur?'on':'')+'"><b>'+s.n+'</b><small>'+s.sub+'</small></button>'}).join('')+
+      '<button data-new="1" style="border-style:dashed;color:var(--muted)">+ Neues Szenario</button>';
+    var s=SC[cur];
+    se.innerHTML='<div><h2 style="margin-bottom:6px">'+s.n+'</h2><div class="trig"><span class="eyebrow">Auslöser</span>'+s.trig.map(function(t){return '<span class="tag acc">'+t+'</span>'}).join('')+'</div></div>'+
+      '<div class="steps">'+s.steps.map(function(x,j){
+        return '<div class="step'+(x.on?'':' off')+'"><span class="t">'+x.t+'</span><span class="ic">'+IC[x.ic]+'</span>'+
+          '<div class="bd"><b>'+x.h+'</b><p>'+x.p+'</p><p>Beim Deaktivieren: <b style="color:var(--ink);font-weight:500">'+x.undo+'</b></p></div>'+
+          '<button class="tgl" data-j="'+j+'" aria-pressed="'+(x.on?'true':'false')+'" aria-label="Schritt aktiv: '+x.h+'"></button></div>';
+      }).join('')+'</div>'+
+      '<div class="addrow"><span class="eyebrow" style="align-self:center">Schritt hinzufügen</span><button>Sirene</button><button>Rollläden</button><button>Medien / Sonos</button><button>Licht</button><button>Push kritisch</button><button>Schloss</button><button>Beliebige HA-Aktion</button><button>Warten</button></div>'+
+      '<div class="stopbox"><b>Wird die Anlage von Hand deaktiviert:</b> offene Verzögerungen werden abgebrochen, alle bereits gestarteten Schritte laufen rückwärts in ihre Gegenaktion (Sirene aus, Medien stoppen, Lichter zurück).</div>';
+  }
+  sl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.dataset.i===undefined)return;cur=+b.dataset.i;renderS()});
+  se.addEventListener('click',function(e){var b=e.target.closest('.tgl');if(!b)return;var st=SC[cur].steps[+b.dataset.j];st.on=st.on?0:1;renderS()});
+  renderS();
+
+  /* ---------- Schalter in Einstellungen ---------- */
+  document.getElementById('v-einstellungen').addEventListener('click',function(e){
+    var b=e.target.closest('.tgl');if(!b)return;b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true');
+  });
+})();
+</script>
