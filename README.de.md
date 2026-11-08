@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.16.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.17.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -62,6 +62,7 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 | Szene oder Skript | Startet eine Szene oder ein Skript |
 | Eigene Aktion | Jede Aktion von Home Assistant mit ihren Feldern (kein JSON) |
 
+- **Nicht abwarten:** Ein Schritt kann nebenher laufen, der nächste startet dann sofort (langer Alarmton, träges Gerät). Deaktivieren stoppt ihn ebenfalls; nach einem Neustart mitten im Alarm laufen nur die Schritte danach weiter.
 - **Test pro Schritt:** Der Abspielknopf an einem Schritt führt nur diesen Schritt auf den echten Geräten aus, nach einer Rückfrage. Schritte verschiebt man am Griff links (mit Finger oder Maus ziehen, oder Pfeiltasten am Griff).
 - **Zurück in den Zustand davor:** Geräte mit dem Pfeil-Symbol kehren beim Deaktivieren oder am Ende der Alarmdauer in den Zustand vor dem Alarm zurück (ein/aus, Helligkeit, Position, Lautstärke, Quelle; Sonos mit eigenem Schnappschuss samt Gruppen). Bei Alarmtönen standardmässig an.
 - **Deaktivieren stoppt alles,** auch nach einem Neustart von Home Assistant mitten im Alarm. Ein fehlerhafter Schritt hält die übrigen nicht auf.

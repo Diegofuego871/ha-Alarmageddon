@@ -59,6 +59,7 @@ class WorkflowRunner:
         self._notifier = notifier
         self._store = _store(hass, entry.entry_id)
         self._task: asyncio.Task | None = None
+        self._side_tasks: set[asyncio.Task] = set()  # Schritte "nicht abwarten", laufen nebenher
         self._run: dict[str, Any] | None = None  # laufender Ablauf: Auslöser, Schritt, Schnappschuss, Test
         self._last_state: str | None = None
         self._unsubs: list[Any] = []
@@ -174,12 +175,27 @@ class WorkflowRunner:
             self._run["index"] = index
             self._store.async_delay_save(lambda: self._run or {}, 0)
             self._record(steps[index], test)
+            if steps[index].get("detach") and steps[index].get("type") in ("action", "sound"):
+                # Nicht abwarten: läuft nebenher, der nächste Schritt startet sofort (langer Alarmton, träges Gerät)
+                task = self._background(self._side(steps[index], test, index))
+                self._side_tasks.add(task)
+                task.add_done_callback(self._side_tasks.discard)
+                continue
             try:
                 await self._step(steps[index], test)
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 - Sicherheitsregel: ein fehlerhafter Schritt stoppt die anderen nicht
                 _LOGGER.exception("%s: step %s of the alarm actions failed", self.entry.title, index + 1)
+
+    async def _side(self, step: dict[str, Any], test: bool, index: int) -> None:
+        """Schritt ohne Abwarten: Fehler werden nur protokolliert, sie halten nichts auf."""
+        try:
+            await self._step(step, test)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - Sicherheitsregel: ein fehlerhafter Schritt stoppt die anderen nicht
+            _LOGGER.exception("%s: step %s of the alarm actions (not awaited) failed", self.entry.title, index + 1)
 
     def _record(self, step: dict[str, Any], test: bool) -> None:
         """Zeitachse des Alarms: welcher Schritt wann gestartet ist (ohne Daten, nur Art, Aktion und Ziele)."""
@@ -236,6 +252,14 @@ class WorkflowRunner:
             _LOGGER.exception("%s: %s.%s failed", self.entry.title, domain, service)
 
     async def _cancel_task(self) -> None:
+        side, self._side_tasks = list(self._side_tasks), set()
+        for t in side:
+            t.cancel()
+        for t in side:
+            try:
+                await t
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001 - nur das Ende abwarten
+                pass
         task, self._task = self._task, None
         if task and not task.done():
             task.cancel()

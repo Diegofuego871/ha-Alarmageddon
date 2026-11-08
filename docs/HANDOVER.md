@@ -5,6 +5,11 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.17.0, Schritt "nicht abwarten")
+
+- Schritt-Schlüssel `detach` (nur `action` und `sound`, optional, in `schemas.STEP_SCHEMAS`). `workflow._execute` startet solche Schritte als Hintergrund-Task (`_side`, Menge `_side_tasks`) und macht sofort weiter; `_cancel_task` bricht sie mit ab (Deaktivieren, Alarmende). Nach einem Neustart laufen sie nicht weiter (nur der Index des Hauptablaufs wird gespeichert). Panel: `fromStep/toStep` ergänzen `detach`, Schalter `fldDetach` im Editor, Hinweis "läuft nebenher" auf der Karte.
+- Fehler: ein Schritt hält die anderen schon immer nicht auf (`_execute` und `_side` fangen Fehler ab); die Option ändert daran nichts.
+
 ## Stand (0.16.0, Knöpfe der Alarmmeldung)
 
 - Einstellungen `open_action` (an), `silence_action` (aus), `disarm_action` (aus) in `settings.notify`. `notify.py`: Aktionen werden je nach Schalter aufgebaut (`PUSH_ACTION_SILENCE` + entry_id). "Sirene stumm" ruft `workflow.async_silence` (stoppt Schritte, stellt Geräte zurück, nur bei laufendem echtem Ablauf), Zustand bleibt `triggered`; Ereignis `silenced` im Protokoll und in der Zeitachse. Panel: `BUTTONS` in `notify.js`.

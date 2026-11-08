@@ -347,3 +347,34 @@ async def test_silence_from_push_stops_steps_keeps_alarm(hass: HomeAssistant, ha
     assert entry.runtime_data.events.events[0]["kind"] == "silenced"
     await call(hass, "alarm_disarm")
     assert state(hass) == AlarmControlPanelState.DISARMED
+
+
+async def test_detached_step_does_not_block_next_step(hass: HomeAssistant, freezer) -> None:
+    """Nicht abwarten (0.17.0): der nächste Schritt startet sofort, der Ton läuft nebenher; Deaktivieren stoppt ihn."""
+    _entry, s = await _setup_workflow(hass, [
+        {"type": "sound", "players": [PLAYER], "sound": "siren", "repeat": 3, "detach": True},
+        {"type": "action", "action": "switch.turn_on", "target": [SIREN]},
+    ])
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert len(s["switch.turn_on"]) == 1  # ohne "nicht abwarten" käme der Schalter erst nach dem Ton
+    assert len(s["media_player.play_media"]) == 1
+    await advance(hass, freezer, 5)
+    assert len(s["media_player.play_media"]) == 2  # der Ton läuft nebenher weiter
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    count = len(s["media_player.play_media"])
+    await advance(hass, freezer, 30)
+    assert len(s["media_player.play_media"]) == count  # Deaktivieren hat auch den nebenher laufenden Schritt gestoppt
+
+
+async def test_without_detach_next_step_waits(hass: HomeAssistant, freezer) -> None:
+    _entry, s = await _setup_workflow(hass, [
+        {"type": "sound", "players": [PLAYER], "sound": "siren", "repeat": 3},
+        {"type": "action", "action": "switch.turn_on", "target": [SIREN]},
+    ])
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert not s["switch.turn_on"]

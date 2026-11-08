@@ -47,6 +47,8 @@ STEP_SCHEMAS = {
         vol.Optional("target", default=[]): ENTITY_LIST,
         vol.Optional("data", default={}): dict,
         vol.Optional("restore", default=False): bool,
+        # Nicht abwarten: der nächste Schritt startet sofort, dieser läuft nebenher (0.17.0)
+        vol.Optional("detach"): bool,
     }),
     "sound": vol.Schema({
         vol.Required("type"): "sound",
@@ -55,6 +57,7 @@ STEP_SCHEMAS = {
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
         vol.Optional("repeat", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=50)),
         vol.Optional("restore", default=True): bool,
+        vol.Optional("detach"): bool,
     }),
 }
 

@@ -38,9 +38,13 @@ const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["p
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
+  return { ...fromStepBase(step), detach: !!step.detach };
+}
+
+function fromStepBase(step) {
   const f = blank();
   if (step.type === "notify") return { ...f, kind: "notify" };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
@@ -68,6 +72,13 @@ export function fromStep(step) {
 }
 
 export function toStep(f) {
+  const step = toStepBase(f);
+  // Nicht abwarten gilt nur für Schritte, die etwas ausführen (nicht für Warten und Meldung)
+  if (f.detach && (step.type === "action" || step.type === "sound")) step.detach = true;
+  return step;
+}
+
+function toStepBase(f) {
   if (f.kind === "notify") return { type: "notify" };
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
   if (f.kind === "sound") {
@@ -229,6 +240,11 @@ export class ActionsUi {
 
   // Kurzfassung eines Schritts für die Karte
   _summary(f) {
+    const text = this._summaryBase(f);
+    return f.detach && ["device", "sound", "scene", "custom"].includes(f.kind) ? `${text} · ${this._t("wfDetachedMark")}` : text;
+  }
+
+  _summaryBase(f) {
     const names = f.targets.map((id) => this.host._name(id)).join(", ") || this._t("stepNoTargets");
     if (f.kind === "notify") return this._t("stepNotifyHint");
     if (f.kind === "wait") return this._t("stepWaitSummary", { seconds: f.seconds });
@@ -413,8 +429,14 @@ export class ActionsUi {
     return `<button class="ag-toggle ${on ? "on" : ""}" ${attr} role="switch" aria-checked="${on}" aria-label="${esc(this._t(label))}"></button>`;
   }
 
+  // Nicht abwarten: der nächste Schritt startet sofort; sinnvoll für lange Töne und träge Geräte
+  _detachRow(f) {
+    if (!["device", "sound", "scene", "custom"].includes(f.kind)) return "";
+    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldDetach"))}</b><small>${esc(this._t("fldDetachHint"))}</small></div>${this._toggle('data-wf="detach"', f.detach, "fldDetach")}</div>`;
+  }
+
   _restoreRow(f) {
-    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestore"))}</b>${f.kind === "sound" ? `<small>${esc(this._t("fldRestoreSoundHint"))}</small>` : ""}</div>${this._toggle('data-wf="restore"', f.restore, "fldRestore")}</div>`;
+    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestore"))}</b>${f.kind === "sound" ? `<small>${esc(this._t("fldRestoreSoundHint"))}</small>` : ""}</div>${this._toggle('data-wf="restore"', f.restore, "fldRestore")}</div>${this._detachRow(f)}`;
   }
 
   _rangeRow(attr, label, value, min, max, step, text) {
@@ -818,6 +840,9 @@ export class ActionsUi {
       this.renderEditor();
     } else if (act === "setvol") {
       form.setVolume = !form.setVolume;
+      this.renderEditor();
+    } else if (act === "detach") {
+      form.detach = !form.detach;
       this.renderEditor();
     } else if (act === "restore") {
       form.restore = !form.restore;

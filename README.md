@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.16.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.17.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -62,6 +62,7 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 | Scene or script | Starts a scene or script |
 | Own action | Any Home Assistant action with its fields (no JSON) |
 
+- **Do not wait for this step:** a step can run alongside, so the next one starts right away (long alarm sound, slow device). Disarming stops it too; after a restart in the middle of an alarm only the steps after it continue.
 - **Test per step:** the play button on a step runs only this step on the real devices, after a confirmation. Move steps with the handle on the left (drag with finger or mouse, or arrow keys on the handle).
 - **Back to the previous state:** devices with the arrow symbol return to their state before the alarm when you disarm or the alarm duration ends (on/off, brightness, position, volume, source; Sonos with its own snapshot including groups). On by default for alarm sounds.
 - **Disarming stops everything,** also after a restart of Home Assistant in the middle of an alarm. A failing step does not stop the other steps.

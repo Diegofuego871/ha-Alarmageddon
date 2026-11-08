@@ -2,8 +2,8 @@
 import { check, done, launch, open, outDir } from "../lib.mjs";
 
 const T = {
-  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
-  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", coverDesc: "Moves the cover to the chosen position." },
+  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", detached: "läuft nebenher", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
+  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", detached: "runs alongside", coverDesc: "Moves the cover to the chosen position." },
 };
 
 const browser = await launch();
@@ -115,6 +115,18 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Beschreibung und Feldname übersetzt, unbekanntes Feld lesbar`, await s.waitFor(`const d=r.getElementById('ag-step').textContent; return d.includes('${t.coverDesc}') && d.includes('Position') && d.includes('Speed') && !d.includes('speed')`));
     await s.tap('#ag-step [data-wf="close"]');
 
+    // Nicht abwarten: Schalter im Editor eines Alarmtons, nicht bei "Warten"
+    await s.tap('.ag-wf-step[data-index="4"] [data-wf="edit"]');
+    await s.waitFor("return r.getElementById('ag-step').open && !!r.querySelector('#ag-step .ag-tone')");
+    check(`${tag}: Option "Nicht abwarten" im Alarmton, aus`, await s.ev("const b=r.querySelector('#ag-step [data-wf=\"detach\"]'); return !!b && b.getAttribute('aria-checked') === 'false'"));
+    await s.tap('#ag-step [data-wf="detach"]');
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Karte zeigt "läuft nebenher"`, await s.waitFor(`return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[4].innerText.includes('${t.detached}')`));
+    await s.tap('.ag-wf-step[data-index="2"] [data-wf="edit"]');
+    await s.waitFor("return r.getElementById('ag-step').open");
+    check(`${tag}: keine Option bei "Warten"`, await s.ev("return !r.querySelector('#ag-step [data-wf=\"detach\"]')"));
+    await s.tap('#ag-step [data-wf="close"]');
+
     // Szene
     await s.tap('[data-wf="add"][data-at="8"]');
     await s.tap('#ag-step [data-wf="kind"][data-kind="scene"]');
@@ -147,7 +159,7 @@ for (const lang of ["de", "en"]) {
     const away = saved?.workflows?.away || [];
     check(`${tag}: alle Auslöser gesendet`, JSON.stringify(Object.keys(saved?.workflows || {}).sort()) === JSON.stringify(["always", "away", "home", "night"]), JSON.stringify(Object.keys(saved?.workflows || {})));
     check(`${tag}: Schritte im Serverformat`, away.length === 8 && away[1].type === "wait" && away[1].seconds === 45
-      && away[3].type === "sound" && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
+      && away[3].type === "sound" && away[3].detach === true && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
       && away[4].type === "action" && away[4].action === "switch.turn_on" && JSON.stringify(away[4].target) === JSON.stringify(["switch.steckdose_flur"])
       && away[5].action === "light.turn_on" && typeof away[5].data.color_temp_kelvin === "number"
       && away[6].action === "persistent_notification.create" && away[6].data.message === "Alarm im Haus"

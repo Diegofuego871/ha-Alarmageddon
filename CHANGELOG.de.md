@@ -7,11 +7,19 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.17.0] - 2026-11-08
+
+Ein Schritt der Alarmaktionen kann nebenher laufen.
+
+Enthält die Änderungen aus 0.13.0, 0.14.0, 0.15.0 und 0.16.0.
+
+### Hinzugefügt
+
+- **"Nicht abwarten"** (Konfiguration › Aktionen, je Schritt der Art Gerät schalten, Alarmton, Szene oder Skript, Eigene Aktion): Der nächste Schritt startet sofort und nicht erst, wenn dieser zu Ende ist. Für einen sehr langen Alarmton oder ein träges Gerät, damit die folgenden Schritte nicht aufgehalten werden. Deaktivieren stoppt auch Schritte, die nebenher laufen. Ein fehlerhafter Schritt hält die anderen nie auf, mit oder ohne die Option (wie bisher). Schritte, die nebenher laufen, werden nach einem Neustart von Home Assistant mitten im Alarm nicht fortgesetzt; die Schritte danach schon.
+
 ## [0.16.0] - 2026-11-08
 
-Du wählst die Knöpfe unter der Alarmmeldung.
-
-Enthält die Änderungen aus 0.13.0, 0.14.0 und 0.15.0.
+Nicht veröffentlicht; enthalten in 0.17.0.
 
 ### Hinzugefügt
 
@@ -25,7 +33,7 @@ Enthält die Änderungen aus 0.13.0, 0.14.0 und 0.15.0.
 
 ## [0.15.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.16.0.
+Nicht veröffentlicht; enthalten in 0.17.0.
 
 ### Geändert
 
@@ -34,7 +42,7 @@ Nicht veröffentlicht; enthalten in 0.16.0.
 
 ## [0.14.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.16.0.
+Nicht veröffentlicht; enthalten in 0.17.0.
 
 ### Geändert
 
@@ -45,7 +53,7 @@ Nicht veröffentlicht; enthalten in 0.16.0.
 
 ## [0.13.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.16.0.
+Nicht veröffentlicht; enthalten in 0.17.0.
 
 ### Hinzugefügt
 
@@ -254,7 +262,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.16.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.16.0
+[0.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.17.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

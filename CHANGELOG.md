@@ -7,11 +7,19 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.17.0] - 2026-11-08
+
+A step of the alarm actions can run alongside.
+
+Includes the changes from 0.13.0, 0.14.0, 0.15.0 and 0.16.0.
+
+### Added
+
+- **"Do not wait for this step"** (Configuration › Actions, per step of type switch device, alarm sound, scene or script, own action): the next step starts right away instead of after this one has ended. For a very long alarm sound or a slow device, so the following steps are not held up. Disarming stops steps that run alongside as well. A failing step never stops the others, with or without the option (as before). Steps that run alongside are not resumed after a restart of Home Assistant in the middle of an alarm; the steps after them are.
+
 ## [0.16.0] - 2026-11-08
 
-You choose the buttons under the alarm message.
-
-Includes the changes from 0.13.0, 0.14.0 and 0.15.0.
+Not released; included in 0.17.0.
 
 ### Added
 
@@ -25,7 +33,7 @@ Includes the changes from 0.13.0, 0.14.0 and 0.15.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.16.0.
+Not released; included in 0.17.0.
 
 ### Changed
 
@@ -34,7 +42,7 @@ Not released; included in 0.16.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.16.0.
+Not released; included in 0.17.0.
 
 ### Changed
 
@@ -45,7 +53,7 @@ Not released; included in 0.16.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.16.0.
+Not released; included in 0.17.0.
 
 ### Added
 
@@ -254,7 +262,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.16.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.16.0
+[0.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.17.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0
