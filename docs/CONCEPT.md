@@ -39,6 +39,12 @@ eingerichtet in einem automatisch angelegten Seitenpanel.
 - Batterie-Prognose erst ab rund 14 Tagen Verlauf, als Schätzung
   gekennzeichnet.
 
+## Lehren aus Alarmo
+
+Analyse in `docs/reference/alarmo-analyse.md`. Ziel: alles, was Alarmo kann,
+verständlicher und robuster, dazu Stopp beim Deaktivieren, Zeitachse mit
+beliebigen Aktionen, Testknopf, Wartung und Protokoll.
+
 ## Risiken
 
 - Keine zertifizierte Anlage; Ausfall von HA, WLAN oder Koordinator heisst
