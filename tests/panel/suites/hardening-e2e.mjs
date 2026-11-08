@@ -88,7 +88,9 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: wiederhergestellt`, await s.waitFor("return !r.getElementById('ag-codes').open") && await s.sim("return window.__imported === true"));
     writeFileSync(file, JSON.stringify({ hello: "world" }));
     await (await s.el('[data-sys="import-file"]')).setInputFiles(file);
-    check(`${tag}: fremde Datei abgelehnt`, await s.waitFor("return !r.getElementById('ag-codes').open") && (await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/import').length")) === 3);
+    // Die Datei wird asynchron gelesen: auf den dritten Aufruf warten, nicht sofort zählen
+    const thirdCall = await s.page.waitForFunction(() => window.__calls.filter((c) => c.type === "alarmageddon/import").length === 3, null, { timeout: 5000 }).then(() => true, () => false);
+    check(`${tag}: fremde Datei abgelehnt`, thirdCall && await s.waitFor("return !r.getElementById('ag-codes').open"));
 
     // ----- Wartungsmeldungen -----
     await s.tap('[data-sub="notify"]');
