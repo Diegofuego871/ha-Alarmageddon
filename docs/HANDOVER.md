@@ -8,6 +8,7 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 ## Stand (0.16.0, Knöpfe der Alarmmeldung)
 
 - Einstellungen `open_action` (an), `silence_action` (aus), `disarm_action` (aus) in `settings.notify`. `notify.py`: Aktionen werden je nach Schalter aufgebaut (`PUSH_ACTION_SILENCE` + entry_id). "Sirene stumm" ruft `workflow.async_silence` (stoppt Schritte, stellt Geräte zurück, nur bei laufendem echtem Ablauf), Zustand bleibt `triggered`; Ereignis `silenced` im Protokoll und in der Zeitachse. Panel: `BUTTONS` in `notify.js`.
+- Eigene Aktion: Namen kommen über `frontend/get_translations` (Kategorien services, title, entity_component, selector; `ActionsUi.loadTranslations`, Schlüssel `component.<domain>.services.<dienst>.name` usw.), Rückfall `hass.services`, dann lesbar gemachte Kennung.
 - Ideen, nicht gebaut: "Wieder scharf schalten" in der Meldung "Alarm beendet", Knopf im Panel-Alarmband für "Sirene stumm".
 
 ## Stand (0.15.0, Meldungen: nicht erreichbare Sensoren in einer Karte)

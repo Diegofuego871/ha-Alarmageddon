@@ -202,6 +202,7 @@ export class ActionsUi {
 
   render() {
     const h = this.host;
+    this.loadTranslations();
     const head = h._view?.querySelector(".ag-wf-head");
     const body = h._view?.querySelector(".ag-wf");
     const s = this.system;
@@ -288,9 +289,61 @@ export class ActionsUi {
     return this.host._hass?.services || {};
   }
 
+  // Übersetzungen der Dienste: HA liefert in hass.services nur Rohdaten; Namen, Beschreibungen und Feldnamen holt das Panel
+  // wie die HA-Oberfläche über frontend/get_translations (einmal je Sprache, danach im Speicher)
+  async loadTranslations() {
+    const lang = this.host._hass?.locale?.language || this.host._lang;
+    if (this._trLang === lang || this._trLoading) return;
+    this._trLoading = true;
+    const res = {};
+    try {
+      for (const category of ["services", "title", "entity_component", "selector"]) {
+        const out = await this.host._hass.callWS({ type: "frontend/get_translations", language: lang, category });
+        Object.assign(res, out?.resources || {});
+      }
+      this.tr = res;
+      this._trLang = lang;
+      if (this.host._tab === "config" && this.host._sub === "actions") {
+        this.render();
+        if (this.edit?.form && this._dlg()?.open) this.renderEditor();
+      }
+    } catch {
+      this._trLang = lang; // ohne Übersetzungen bleibt es bei den Namen von HA; nicht dauernd neu versuchen
+    } finally {
+      this._trLoading = false;
+    }
+  }
+
+  _tr(key) {
+    return this.tr?.[key] || this.host._hass?.localize?.(key) || "";
+  }
+
+  // "set_cover_position" -> "Set cover position": besser lesbar als die Kennung, falls HA nichts liefert
+  _human(id) {
+    const s = String(id || "").replace(/_/g, " ").trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+  }
+
+  _domainName(d) {
+    return this._tr(`component.${d}.title`) || this._tr(`component.${d}.entity_component._.name`) || this._human(d);
+  }
+
   _serviceName(domain, service) {
+    if (!domain || !service) return this._t("stepCustom");
     const meta = this._services()[domain]?.[service];
-    return meta?.name || (domain && service ? `${domain}.${service}` : this._t("stepCustom"));
+    return this._tr(`component.${domain}.services.${service}.name`) || meta?.name || this._human(service);
+  }
+
+  _serviceDesc(domain, service) {
+    return this._tr(`component.${domain}.services.${service}.description`) || this._services()[domain]?.[service]?.description || "";
+  }
+
+  _fieldName(f, key, fd) {
+    return this._tr(`component.${f.domain}.services.${f.service}.fields.${key}.name`) || fd.name || this._human(key);
+  }
+
+  _fieldDesc(f, key, fd) {
+    return this._tr(`component.${f.domain}.services.${f.service}.fields.${key}.description`) || fd.description || "";
   }
 
   _entitiesAll(domains) {
@@ -438,12 +491,12 @@ export class ActionsUi {
     const services = this._services();
     const domains = Object.keys(services).filter((d) => Object.keys(services[d] || {}).length).sort();
     if (!domains.length) return `<div class="ag-t2">${esc(this._t("fldNoServices"))}</div>`;
-    const label = (d) => this.host._hass?.localize?.(`component.${d}.title`) || d;
+    const label = (d) => this._domainName(d);
     const dom = `<select class="ag-input" data-wf="f" data-key="domain" aria-label="${esc(this._t("fldKind"))}"><option value="">${esc(this._t("fldChoose"))}</option>${domains.map((d) => `<option value="${esc(d)}" ${d === f.domain ? "selected" : ""}>${esc(label(d))}</option>`).join("")}</select>`;
     const list = f.domain ? Object.keys(services[f.domain] || {}).sort((a, b) => this._serviceName(f.domain, a).localeCompare(this._serviceName(f.domain, b))) : [];
     const srv = `<select class="ag-input" data-wf="f" data-key="service" aria-label="${esc(this._t("fldAction"))}" ${list.length ? "" : "disabled"}><option value="">${esc(this._t("fldChoose"))}</option>${list.map((s) => `<option value="${esc(s)}" ${s === f.service ? "selected" : ""}>${esc(this._serviceName(f.domain, s))}</option>`).join("")}</select>`;
     const meta = services[f.domain]?.[f.service];
-    let html = this._field("fldKind", dom) + this._field("fldAction", srv + (meta?.description ? `<div class="ag-ef-h" style="margin-top:6px">${esc(meta.description)}</div>` : ""));
+    let html = this._field("fldKind", dom) + this._field("fldAction", srv + (this._serviceDesc(f.domain, f.service) ? `<div class="ag-ef-h" style="margin-top:6px">${esc(this._serviceDesc(f.domain, f.service))}</div>` : ""));
     if (!meta) return html + this._restoreRow(f);
     if (meta.target) html += this._field("fldDevices", this._combo(this._domainsOf(f), f, "fldSearchDevice"));
     const fields = Object.entries(flatFields(meta.fields));
@@ -462,13 +515,14 @@ export class ActionsUi {
     const type = selectorType(fd);
     const val = f.data[key];
     const sel = fd.selector?.[type] || {};
-    const name = fd.name || key;
+    const name = this._fieldName(f, key, fd);
+    const desc = this._fieldDesc(f, key, fd);
     const attr = `data-wf="df" data-key="${esc(key)}" data-type="${type}"`;
     let control;
     if (!SIMPLE_SELECTORS.includes(type) || (type === "select" && sel.multiple) || (type === "entity" && sel.multiple)) {
       control = `<div class="ag-t2 ag-small">${ic("info", 14)} ${esc(this._t("fldUnsupported"))}</div>`;
     } else if (type === "boolean") {
-      control = `<div class="ag-ef-row"><span class="ag-t2">${esc(fd.description || "")}</span>${this._toggle(`${attr} data-bool`, !!val, "fldValue")}</div>`;
+      control = `<div class="ag-ef-row"><span class="ag-t2">${esc(desc)}</span>${this._toggle(`${attr} data-bool`, !!val, "fldValue")}</div>`;
     } else if (type === "number" || type === "color_temp") {
       const min = sel.min ?? sel.min_kelvin ?? "";
       const max = sel.max ?? sel.max_kelvin ?? "";
@@ -478,7 +532,7 @@ export class ActionsUi {
         ? this._rangeRow(attr, name, shown, min, max, sel.step || 1, `${shown}${sel.unit_of_measurement ? ` ${sel.unit_of_measurement}` : ""}`)
         : `<span class="ag-num"><input type="number" ${attr} min="${min}" max="${max}" step="${sel.step || "any"}" value="${esc(val ?? "")}" placeholder="${esc(fd.default ?? "")}" aria-label="${esc(name)}"><span class="ag-t2">${esc(sel.unit_of_measurement || "")}</span></span>`;
     } else if (type === "select") {
-      control = `<select class="ag-input" ${attr} aria-label="${esc(name)}"><option value="">${esc(this._t("fldChoose"))}</option>${normalizeOptions(sel.options).map((o) => `<option value="${esc(o.value)}" ${String(val) === o.value ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`;
+      control = `<select class="ag-input" ${attr} aria-label="${esc(name)}"><option value="">${esc(this._t("fldChoose"))}</option>${normalizeOptions(sel.options).map((o) => `<option value="${esc(o.value)}" ${String(val) === o.value ? "selected" : ""}>${esc((sel.translation_key && this._tr(`component.${f.domain}.selector.${sel.translation_key}.options.${o.value}`)) || o.label)}</option>`).join("")}</select>`;
     } else if (type === "entity") {
       const list = this._entitiesAll([].concat(sel.domain || []));
       control = list.length <= 250
@@ -487,7 +541,7 @@ export class ActionsUi {
     } else {
       control = `<input class="ag-input" ${attr} value="${esc(val ?? "")}" placeholder="${esc(fd.example ?? "")}" aria-label="${esc(name)}">`;
     }
-    return `<div class="ag-ef"><div class="ag-ef-l">${esc(name)}${fd.required ? ` <span class="ag-req">${esc(this._t("fldRequired"))}</span>` : ""}</div>${fd.description && type !== "boolean" ? `<div class="ag-ef-h">${esc(fd.description)}</div>` : ""}${control}</div>`;
+    return `<div class="ag-ef"><div class="ag-ef-l">${esc(name)}${fd.required ? ` <span class="ag-req">${esc(this._t("fldRequired"))}</span>` : ""}</div>${desc && type !== "boolean" ? `<div class="ag-ef-h">${esc(desc)}</div>` : ""}${control}</div>`;
   }
 
   renderEditor() {
@@ -514,7 +568,7 @@ export class ActionsUi {
       const fields = flatFields(meta?.fields);
       const empty = (k) => f.data[k] === undefined || f.data[k] === "" || Number.isNaN(f.data[k]);
       const missing = Object.entries(fields).find(([k, fd]) => fd.required && selectorType(fd) !== "boolean" && SIMPLE_SELECTORS.includes(selectorType(fd)) && empty(k) && !f.extra[k]);
-      if (missing) return this._editError(null, this._t("fldMissing", { name: missing[1].name || missing[0] }));
+      if (missing) return this._editError(null, this._t("fldMissing", { name: this._fieldName(f, missing[0], missing[1]) }));
       if (meta?.target && !f.targets.length && !("entity_id" in fields)) return this._editError("stepNoTargets");
     }
     let step;

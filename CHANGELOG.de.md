@@ -17,6 +17,11 @@ Enthält die Änderungen aus 0.13.0, 0.14.0 und 0.15.0.
 
 - **Knöpfe der Alarmmeldung mit eigenen Schaltern** (Konfiguration › Benachrichtigungen, Kapitel "Knöpfe in der Meldung"): "Öffnen" (standardmässig an), "Deaktivieren" (standardmässig aus, wie bisher) und neu "Sirene stumm" (standardmässig aus). "Sirene stumm" stoppt alle Schritte der Alarmaktionen und stellt die Geräte zurück; die Alarmanlage bleibt im Alarm, bis jemand deaktiviert. Es wirkt nur bei einem echten Alarm mit laufenden Aktionen, die letzten Ereignisse und die Zeitachse des Alarms zeigen es.
 
+### Behoben
+
+- **Eigene Aktion im Aktionen-Editor** zeigte die technischen Namen von Home Assistant (`cover.set_cover_position`, Feld `speed`). Arten, Aktionen, Beschreibungen, Feldnamen und Auswahlwerte erscheinen jetzt in deiner Sprache, geholt bei Home Assistant wie in dessen eigener Oberfläche; wo Home Assistant keine Übersetzung hat, wird der Name lesbar gemacht ("Set cover position").
+
+
 ## [0.15.0] - 2026-11-08
 
 Nicht veröffentlicht; enthalten in 0.16.0.

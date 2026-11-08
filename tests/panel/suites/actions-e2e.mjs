@@ -2,8 +2,8 @@
 import { check, done, launch, open, outDir } from "../lib.mjs";
 
 const T = {
-  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung" },
-  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change" },
+  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
+  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", coverDesc: "Moves the cover to the chosen position." },
 };
 
 const browser = await launch();
@@ -104,6 +104,16 @@ for (const lang of ["de", "en"]) {
     await (await s.el('#ag-step [data-wf="df"][data-key="message"]')).fill("Alarm im Haus");
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: eigene Aktion angehängt`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step').length === 8"));
+
+    // Eigene Aktion mit übersetzten Namen (Dienst, Beschreibung, Feld), nicht mit den Kennungen von HA
+    await s.tap('[data-wf="add"][data-at="8"]');
+    await s.tap('#ag-step [data-wf="kind"][data-kind="custom"]');
+    check(`${tag}: Art mit übersetztem Namen`, await s.waitFor(`return [...r.querySelectorAll('#ag-step [data-key="domain"] option')].some((o) => o.value === 'cover' && o.textContent === '${t.coverDomain}')`));
+    await (await s.el('#ag-step [data-key="domain"]')).selectOption("cover");
+    check(`${tag}: Aktion mit übersetztem Namen statt cover.set_cover_position`, await s.ev(`const o=[...r.querySelectorAll('#ag-step [data-key="service"] option')].map((x) => x.textContent); return o.includes('${t.coverService}') && !o.some((x) => x.includes('set_cover_position'))`));
+    await (await s.el('#ag-step [data-key="service"]')).selectOption("set_cover_position");
+    check(`${tag}: Beschreibung und Feldname übersetzt, unbekanntes Feld lesbar`, await s.waitFor(`const d=r.getElementById('ag-step').textContent; return d.includes('${t.coverDesc}') && d.includes('Position') && d.includes('Speed') && !d.includes('speed')`));
+    await s.tap('#ag-step [data-wf="close"]');
 
     // Szene
     await s.tap('[data-wf="add"][data-at="8"]');

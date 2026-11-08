@@ -17,6 +17,11 @@ Includes the changes from 0.13.0, 0.14.0 and 0.15.0.
 
 - **Buttons in the alarm message with their own switches** (Configuration › Notifications, chapter "Buttons in the message"): "Open" (on by default), "Disarm" (off by default, as before) and new "Silence siren" (off by default). "Silence siren" stops all steps of the alarm actions and returns the devices to their previous state; the alarm system stays in alarm until someone disarms it. It only works during a real alarm with running actions, and the recent events and the alarm timeline show it.
 
+### Fixed
+
+- **Own action in the action editor** showed the technical names of Home Assistant (`cover.set_cover_position`, field `speed`). Types, actions, descriptions, field names and choices are now shown in your language, fetched from Home Assistant like its own interface; where Home Assistant has no translation, the name is made readable ("Set cover position").
+
+
 ## [0.15.0] - 2026-11-08
 
 Not released; included in 0.16.0.

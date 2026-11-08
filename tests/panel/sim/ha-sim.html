@@ -123,6 +123,7 @@
   const SERVICES = {
     light: { turn_on: { name: "Einschalten", target: { entity: [{ domain: "light" }] }, fields: { brightness_pct: { name: "Helligkeit", selector: { number: { min: 0, max: 100, unit_of_measurement: "%" } } } } } },
     persistent_notification: { create: { name: "Mitteilung erstellen", fields: { message: { name: "Nachricht", required: true, selector: { text: {} } }, title: { name: "Titel", selector: { text: {} } } } } },
+    cover: { set_cover_position: { fields: { position: { selector: { number: { min: 0, max: 100, mode: "slider", unit_of_measurement: "%" } } }, speed: { selector: { object: {} } } }, target: { entity: [{ domain: "cover" }] } } },
     homeassistant: { turn_on: { name: "Einschalten" }, turn_off: { name: "Ausschalten" } },
   };
   window.__updateSettings = { check: true, prerelease: null, auto_update: false };
@@ -185,6 +186,17 @@
       ] };
       const open = params.get("alarm") === "open";
       return { systems: window.__systems.map((s) => ({ entry_id: s.entry_id, title: s.title, events: s.events, recordings: s.entry_id === "e_haus" ? (open ? [running, closed] : [closed]) : [], recording: s.entry_id === "e_haus" && open })) };
+    }
+    if (msg.type === "frontend/get_translations") {
+      // Wie HA: Namen der Dienste und Felder je Sprache, flach mit Pfad als Schlüssel
+      const de = lang.startsWith("de");
+      const resources = msg.category === "services" ? {
+        "component.cover.services.set_cover_position.name": de ? "Abdeckung auf Position fahren" : "Move cover to position",
+        "component.cover.services.set_cover_position.description": de ? "Fährt die Abdeckung auf die gewählte Position." : "Moves the cover to the chosen position.",
+        "component.cover.services.set_cover_position.fields.position.name": de ? "Position" : "Position",
+        "component.cover.services.set_cover_position.fields.position.description": de ? "Zielposition in Prozent." : "Target position in percent.",
+      } : msg.category === "entity_component" ? { "component.cover.entity_component._.name": de ? "Abdeckung" : "Cover" } : {};
+      return { resources };
     }
     if (msg.type === "alarmageddon/version") {
       if (window.__versionError) throw err("fail", window.__versionError);
