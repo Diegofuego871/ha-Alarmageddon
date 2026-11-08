@@ -189,6 +189,12 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
     changes from X and Y" / "Enthält die Änderungen aus X und Y".
   - **Übersprungene Versionen:** Die Notes fassen alles seit dem letzten
     Release zusammen (Abschnitte zusammengeführt), mit demselben Satz.
+- **Vorgabe des Nutzers (2026-11-08):** Immer wenn ein Release fertig ist und
+  Claude auf den Nutzer wartet, gibt Claude die kompletten Release Notes
+  (Englisch und Deutsch) seit dem letzten vom Nutzer veröffentlichten Tag
+  aus, nicht nur die der letzten Version. Vorher auf GitHub prüfen, welches
+  der letzte veröffentlichte Tag ist. Aktuell sind alle Releases
+  Vorabversionen ("Vorabversion: ja").
 - Im CHANGELOG (beide Sprachen) bleiben übersprungene Versionen mit eigenem
   Abschnitt stehen, mit dem Vermerk "Not released" / "Nicht veröffentlicht"
   und ohne Link-Fussnote.
