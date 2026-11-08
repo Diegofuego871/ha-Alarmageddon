@@ -7,11 +7,19 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.19.0] - 2026-11-08
+
+Title and text of the push notification can be changed.
+
+Includes the changes from 0.13.0, 0.14.0, 0.15.0, 0.16.0, 0.17.0 and 0.18.0.
+
+### Added
+
+- **Own title and text for the alarm notification** (Configuration › Actions, step "Push notification", open with the pencil): the default text is in the fields and can be changed as you like. Placeholders `{name}` (alarm system), `{sensor}` (triggering sensor), `{time}` and `{mode}` are inserted with one tap and filled in when the alarm goes off; a preview shows the message with real names. "Restore default text" brings the default back. An unchanged text is not saved, so it keeps following the language of Home Assistant. Buttons, critical and volume come from Configuration › Notifications as before.
+
 ## [0.18.0] - 2026-11-08
 
-The alarm sound has a duration in seconds, or sounds until disarmed.
-
-Includes the changes from 0.13.0, 0.14.0, 0.15.0, 0.16.0 and 0.17.0.
+Not released; included in 0.19.0.
 
 ### Changed
 
@@ -20,7 +28,7 @@ Includes the changes from 0.13.0, 0.14.0, 0.15.0, 0.16.0 and 0.17.0.
 
 ## [0.17.0] - 2026-11-08
 
-Not released; included in 0.18.0.
+Not released; included in 0.19.0.
 
 ### Added
 
@@ -33,7 +41,7 @@ Not released; included in 0.18.0.
 
 ## [0.16.0] - 2026-11-08
 
-Not released; included in 0.18.0.
+Not released; included in 0.19.0.
 
 ### Added
 
@@ -47,7 +55,7 @@ Not released; included in 0.18.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.18.0.
+Not released; included in 0.19.0.
 
 ### Changed
 
@@ -56,7 +64,7 @@ Not released; included in 0.18.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.18.0.
+Not released; included in 0.19.0.
 
 ### Changed
 
@@ -67,7 +75,7 @@ Not released; included in 0.18.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.18.0.
+Not released; included in 0.19.0.
 
 ### Added
 
@@ -276,7 +284,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.18.0
+[0.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.19.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

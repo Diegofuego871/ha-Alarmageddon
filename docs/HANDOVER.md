@@ -5,6 +5,10 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.19.0, eigener Text der Push-Meldung)
+
+- Schritt `notify` mit optionalen `title` (100) und `message` (300). `Notifier.send_alarm(test, title, message)` füllt nur `{name} {sensor} {time} {mode}` (`_fill`, kein `str.format`, Unbekanntes bleibt stehen); leer = Standardtext des Servers. Panel: `_notifyFields` mit Standardtext in den Feldern (Standard wird nicht gespeichert: `ntTitle`/`ntMessage` bleiben leer), Platzhalterknöpfe, Vorschau (`_ntPreview`). Die automatische Alarmmeldung (ohne Push-Schritt) bleibt beim Standardtext.
+
 ## Stand (0.18.0, Alarmton mit Dauer)
 
 - Sound-Schritt: `duration` (Sekunden, 0 = bis Deaktivieren) ersetzt `repeat`; ohne `duration` gilt die alte Form (`repeat`). `workflow._play` wiederholt den Ton in Abständen der Tonlänge bis zum Ende der Dauer (Zeit über `dt_util.utcnow`, in Tests schrittweise `advance`), dann und bei jedem Abbruch `media_stop` (finally). `async_silence` stoppt ohne laufenden Ablauf die Player der Sound-Schritte des aktuellen Auslösers, solange `triggered`.

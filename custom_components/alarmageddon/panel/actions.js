@@ -39,7 +39,7 @@ const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["p
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
   return { ...fromStepBase(step), detach: !!step.detach };
@@ -47,7 +47,7 @@ export function fromStep(step) {
 
 function fromStepBase(step) {
   const f = blank();
-  if (step.type === "notify") return { ...f, kind: "notify" };
+  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "" };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
@@ -79,8 +79,18 @@ export function toStep(f) {
   return step;
 }
 
+// Leer = Standardtext des Servers (folgt der Sprache); der Editor zeigt den Standard, speichert ihn aber nicht
+export const NOTIFY_TOKENS = ["{name}", "{sensor}", "{time}", "{mode}"];
+
 function toStepBase(f) {
-  if (f.kind === "notify") return { type: "notify" };
+  if (f.kind === "notify") {
+    const out = { type: "notify" };
+    const title = String(f.ntTitle || "").trim();
+    const message = String(f.ntMessage || "").trim();
+    if (title) out.title = title;
+    if (message) out.message = message;
+    return out;
+  }
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
   if (f.kind === "sound") {
     return { type: "sound", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: f.until ? 0 : Math.min(3600, Math.max(1, Math.round(Number(f.playSeconds) || 1))), restore: !!f.restore };
@@ -247,7 +257,7 @@ export class ActionsUi {
 
   _summaryBase(f) {
     const names = f.targets.map((id) => this.host._name(id)).join(", ") || this._t("stepNoTargets");
-    if (f.kind === "notify") return this._t("stepNotifyHint");
+    if (f.kind === "notify") return f.ntTitle || f.ntMessage ? [f.ntTitle, f.ntMessage].filter(Boolean).join(" – ") : this._t("stepNotifyHint");
     if (f.kind === "wait") return this._t("stepWaitSummary", { seconds: f.seconds });
     if (f.kind === "sound") return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${Math.round(f.volume * 100)} %` : ""}· ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`;
     if (f.kind === "scene") return names;
@@ -506,6 +516,33 @@ export class ActionsUi {
       <div class="ag-zline">${quick}</div><div class="ag-ef-h">${esc(this._t("fldPlayForHint"))}</div>${until}`;
   }
 
+  // Titel und Text der Push-Meldung: der Standardtext steht im Feld und lässt sich ändern; Platzhalter füllt der Server beim Alarm
+  _notifyFields(f) {
+    const dt = this._t("ntDefaultTitle");
+    const dm = this._t("ntDefaultMessage");
+    const chips = NOTIFY_TOKENS.map((tok) => `<button type="button" class="ag-chip" data-wf="ins" data-token="${esc(tok)}">${esc(tok)}<small>${esc(this._t(`ntTok_${tok.slice(1, -1)}`))}</small></button>`).join("");
+    return `<div class="ag-t2">${esc(this._t("stepNotifyHint"))}</div>
+      ${this._field("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
+      ${this._field("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
+      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtTokens"))}</div><div class="ag-ef-h">${esc(this._t("fldNtTokensHint"))}</div><div class="ag-zline">${chips}</div></div>
+      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtPreview"))}</div><div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
+        <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div></div>`;
+  }
+
+  // Vorschau mit echten Namen der Anlage und eines Sensors, so wie die Meldung aussähe
+  _ntPreview(f) {
+    const s = this.system;
+    const sensorId = Object.values(s?.zones || {}).flat()[0];
+    const fill = (text) => text
+      .replaceAll("{name}", s?.title || "")
+      .replaceAll("{sensor}", sensorId ? this.host._name(sensorId) : "")
+      .replaceAll("{time}", new Date().toLocaleTimeString(this.host._hass?.locale?.language || this.host._lang, { hour: "2-digit", minute: "2-digit" }))
+      .replaceAll("{mode}", this._t(MODE_KEY[this.trigger] || "modeAway"));
+    const title = fill(f.ntTitle || this._t("ntDefaultTitle")).trim();
+    const message = fill(f.ntMessage || this._t("ntDefaultMessage")).trim();
+    return `<b>${esc(title)}</b><div>${esc(message)}</div>`;
+  }
+
   _waitFields(f) {
     const quick = [10, 30, 60, 300].map((s) => `<button class="ag-chip ${Number(f.seconds) === s ? "on" : ""}" data-wf="secs" data-value="${s}">${esc(s >= 60 ? this._t("durMin", { n: s / 60 }) : this._t("durS", { n: s }))}</button>`).join("");
     return this._field("fldDuration", `<span class="ag-num"><input type="number" min="0" max="3600" data-wf="f" data-key="seconds" value="${esc(f.seconds)}" aria-label="${esc(this._t("fldSeconds"))}"><span class="ag-t2">s</span></span><div class="ag-zline" style="margin-top:10px">${quick}</div>`);
@@ -580,7 +617,7 @@ export class ActionsUi {
     const f = this.edit.form;
     const k = KINDS.find((x) => x.kind === f.kind);
     let fields;
-    if (f.kind === "notify") fields = `<div class="ag-t2">${esc(this._t("stepNotifyHint"))}</div>`;
+    if (f.kind === "notify") fields = this._notifyFields(f);
     else if (f.kind === "device") fields = this._deviceFields(f);
     else if (f.kind === "sound") fields = this._soundFields(f);
     else if (f.kind === "wait") fields = this._waitFields(f);
@@ -787,6 +824,10 @@ export class ActionsUi {
 
   // Suchfeld: Liste nur zeigen, solange es den Fokus hat oder darin getippt wird
   onFocus(el, inside) {
+    if (inside && ["ntTitle", "ntMessage"].includes(el?.dataset?.key)) {
+      this.ntField = el;
+      return true;
+    }
     if (el?.dataset?.wf !== "eq" || !this.edit) return false;
     const combo = this._dlg().querySelector(".ag-combo");
     this.edit.open = inside;
@@ -836,6 +877,18 @@ export class ActionsUi {
       this.renderEditor();
     } else if (act === "action") {
       form.action = el.dataset.value;
+      this.renderEditor();
+    } else if (act === "ins") {
+      // Platzhalter an der Schreibmarke des zuletzt benutzten Textfelds einfügen
+      const field = this.ntField && this._dlg().contains(this.ntField) ? this.ntField : this._dlg().querySelector('[data-key="ntTitle"]');
+      const pos = field.selectionStart ?? field.value.length;
+      field.value = field.value.slice(0, pos) + el.dataset.token + field.value.slice(field.selectionEnd ?? pos);
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      field.focus();
+      field.setSelectionRange(pos + el.dataset.token.length, pos + el.dataset.token.length);
+    } else if (act === "nt-default") {
+      form.ntTitle = "";
+      form.ntMessage = "";
       this.renderEditor();
     } else if (act === "until") {
       form.until = !form.until;
@@ -920,6 +973,12 @@ export class ActionsUi {
         f.sound = el.value;
         this._stopPreview();
         this.renderEditor();
+      } else if (key === "ntTitle" || key === "ntMessage") {
+        // Entspricht der Text dem Standard, bleibt das Feld leer (folgt der Sprache)
+        const def = this._t(key === "ntTitle" ? "ntDefaultTitle" : "ntDefaultMessage");
+        f[key] = el.value.trim() === def ? "" : el.value;
+        const prev = this._dlg().querySelector("#ag-ntprev");
+        if (prev) prev.innerHTML = this._ntPreview(f);
       } else f[key] = el.value;
       return true;
     }

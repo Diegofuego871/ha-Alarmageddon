@@ -286,14 +286,29 @@ class Notifier:
     def _tag(self) -> str:
         return f"alarmageddon_{self.entry.entry_id}"
 
+    def _fill(self, template: str, sensor: str | None, time: str) -> str:
+        """Platzhalter eines eigenen Texts füllen; nur diese vier, alles andere bleibt wie geschrieben (kein str.format)."""
+        values = {"{name}": self.entry.title, "{sensor}": self._name(sensor) if sensor else "", "{time}": time, "{mode}": self._mode(self._ctl.mode)}
+        for key, value in values.items():
+            template = template.replace(key, value)
+        return template.strip()
+
     @callback
-    def send_alarm(self, test: bool = False) -> None:
+    def send_alarm(self, test: bool = False, title: str | None = None, message: str | None = None) -> None:
         """Alarmmeldung mit Aktionen (auch als Schritt im Ablauf); kritisch und Lautstärke nach den Einstellungen der Art "Alarm"."""
         name = self.entry.title
         sensor = self._ctl.triggered_by
         time = dt_util.as_local(dt_util.utcnow()).strftime("%H:%M")
-        title = self._t("triggered_title", name=name)
-        message = self._t("triggered", sensor=self._name(sensor), time=time) if sensor else self._t("triggered_manual", time=time)
+        default_message = self._t("triggered", sensor=self._name(sensor), time=time) if sensor else self._t("triggered_manual", time=time)
+        # Eigener Text aus dem Schritt der Alarmaktionen ersetzt den Standardtext
+        if custom_title := (title or "").strip():
+            title = self._fill(custom_title, sensor, time) or self._t("triggered_title", name=name)
+        else:
+            title = self._t("triggered_title", name=name)
+        if custom_message := (message or "").strip():
+            message = self._fill(custom_message, sensor, time) or default_message
+        else:
+            message = default_message
         if test:
             title = self._t("test_title", name=title)
         actions = []

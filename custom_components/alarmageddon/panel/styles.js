@@ -337,6 +337,8 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-seq-item time small { color: var(--ag-text2); font-size: 11.5px; }
 :host([narrow]) .ag-lg-row { grid-template-columns: 1fr; gap: 4px; }
 :host([narrow]) .ag-lg-axisrow .ag-lg-name { display: none; }
+.ag-ntprev { padding: 12px 14px; border-radius: 12px; background: var(--ag-subtle); display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; font-size: 13.5px; }
+.ag-chip small { margin-left: 6px; color: var(--ag-text2); font-size: 11.5px; }
 .ag-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .ag-kind { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: left; padding: 12px; border: 1px solid var(--ag-divider); border-radius: 14px; background: var(--ag-card); cursor: pointer; font: inherit; color: inherit; }
 .ag-kind:hover { border-color: var(--ag-primary); }

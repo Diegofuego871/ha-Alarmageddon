@@ -39,7 +39,12 @@ from .const import (
 SECONDS = vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))
 ENTITY_LIST = [cv.entity_id]
 STEP_SCHEMAS = {
-    "notify": vol.Schema({vol.Required("type"): "notify"}),
+    # Eigener Titel und Text der Alarmmeldung (0.19.0); fehlt eine Angabe, gilt der Standardtext. Platzhalter: {name} {sensor} {time} {mode}
+    "notify": vol.Schema({
+        vol.Required("type"): "notify",
+        vol.Optional("title"): vol.All(str, vol.Length(max=100)),
+        vol.Optional("message"): vol.All(str, vol.Length(max=300)),
+    }),
     "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
     "action": vol.Schema({
         vol.Required("type"): "action",

@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.18.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.19.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -55,7 +55,7 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 
 | Step | Does |
 | --- | --- |
-| Push notification | Alarm notification to the alarm recipients (see Notifications) |
+| Push notification | Alarm notification to the alarm recipients (see Notifications). Title and text can be changed with the pencil, with the placeholders `{name}`, `{sensor}`, `{time}`, `{mode}` |
 | Switch device | Lights, sockets, covers, locks, fans, sirens and more. You choose the devices and see only what they can do (on, off, toggle, open, close, lock) and, when turning on, the settings they support (brightness, colour temperature, position, speed, temperature) |
 | Play alarm sound | One of five sounds on media players: tone as a dropdown with a preview on this phone or computer (not on the real system), volume, duration in seconds or until disarmed |
 | Wait | Pauses the following steps |

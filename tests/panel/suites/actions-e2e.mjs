@@ -115,6 +115,24 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Beschreibung und Feldname übersetzt, unbekanntes Feld lesbar`, await s.waitFor(`const d=r.getElementById('ag-step').textContent; return d.includes('${t.coverDesc}') && d.includes('Position') && d.includes('Speed') && !d.includes('speed')`));
     await s.tap('#ag-step [data-wf="close"]');
 
+    // Push-Meldung: Standardtext steht im Feld und lässt sich ändern, Platzhalter und Vorschau
+    await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
+    check(`${tag}: Push-Meldung mit Standardtext in den Feldern`, await s.waitFor(`const d=r.getElementById('ag-step'); return d.open && d.querySelector('[data-key="ntTitle"]').value === 'Alarm: {name}' && d.querySelector('[data-key="ntMessage"]').value.startsWith('{sensor}') && d.querySelectorAll('[data-wf="ins"]').length === 4`));
+    check(`${tag}: Vorschau mit echten Namen`, await s.ev("const p=r.querySelector('#ag-ntprev').innerText; return p.includes('Alarm: Haus') && !p.includes('{')"));
+    const ntField = await s.el('#ag-step [data-key="ntTitle"]');
+    await ntField.fill("ALARM im {name}");
+    await s.tap('#ag-step [data-wf="ins"][data-token="{mode}"]');
+    check(`${tag}: Platzhalter eingefügt, Vorschau folgt`, await s.waitFor("const v=r.querySelector('#ag-step [data-key=\"ntTitle\"]').value; const p=r.querySelector('#ag-ntprev').innerText; return v === 'ALARM im {name}{mode}' && p.includes('ALARM im Haus')"));
+    await (await s.el('#ag-step [data-key="ntMessage"]')).fill("Achtung: {sensor} um {time}");
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Karte zeigt den eigenen Text`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[0].innerText.includes('ALARM im {name}{mode}')"));
+    check(`${tag}: Titel und Text im Schritt`, await s.ev("const st=r.host.actions.draft.wf.away[0]; return st.type === 'notify' && st.title === 'ALARM im {name}{mode}' && st.message === 'Achtung: {sensor} um {time}'"));
+    await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
+    await s.waitFor("return r.getElementById('ag-step').open");
+    await s.tap('#ag-step [data-wf="nt-default"]');
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Standardtext wiederhergestellt, nichts gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && st.type === 'notify' && !('title' in st) && !('message' in st)"));
+
     // Nicht abwarten: Schalter im Editor eines Alarmtons, nicht bei "Warten"
     await s.tap('.ag-wf-step[data-index="4"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open && !!r.querySelector('#ag-step .ag-tone')");

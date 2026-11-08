@@ -423,3 +423,29 @@ async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_cli
     hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"})
     await hass.async_block_till_done()
     assert len(s["media_player.media_stop"]) == stops + 1
+
+
+async def test_custom_alarm_message_text(hass: HomeAssistant, hass_ws_client) -> None:
+    """Eigener Titel und Text im Schritt "Push-Meldung" (0.19.0) mit Platzhaltern; ohne Angabe der Standardtext."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass, workflows={"home": [{"type": "notify", "title": "ALARM bei {name}!", "message": "{sensor} hat um {time} ausgelöst ({mode}). {unbekannt}"}]})
+    await _notify_settings(hass, hass_ws_client)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert len(pushes) == 1
+    assert pushes[0].data["title"] == "ALARM bei Haus!"
+    assert pushes[0].data["message"].startswith(f"{hass.states.get(WINDOW).name} hat um ") and "(Home)" in pushes[0].data["message"] and "{unbekannt}" in pushes[0].data["message"]
+    # Nur Titel eigen: der Text bleibt der Standard
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    pushes.clear()
+    entry = hass.config_entries.async_entries("alarmageddon")[0]
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "workflows": {"home": [{"type": "notify", "title": "Nur Titel"}]}})
+    await hass.async_block_till_done()
+    hass.states.async_set(WINDOW, "off")
+    await hass.async_block_till_done()
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert pushes[-1].data["title"] == "Nur Titel" and pushes[-1].data["message"].startswith(f"{hass.states.get(WINDOW).name} at ")

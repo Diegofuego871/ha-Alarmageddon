@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.18.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.19.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -55,7 +55,7 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 
 | Schritt | Macht |
 | --- | --- |
-| Push-Meldung | Alarmmeldung an die Empfänger für Alarme (siehe Benachrichtigungen) |
+| Push-Meldung | Alarmmeldung an die Empfänger für Alarme (siehe Benachrichtigungen). Titel und Text lassen sich mit dem Stift ändern, mit den Platzhaltern `{name}`, `{sensor}`, `{time}`, `{mode}` |
 | Gerät schalten | Lichter, Steckdosen, Rollläden, Schlösser, Ventilatoren, Sirenen und mehr. Man wählt die Geräte und sieht nur, was sie können (ein, aus, umschalten, öffnen, schliessen, verriegeln) und beim Einschalten die Einstellungen, die sie unterstützen (Helligkeit, Farbtemperatur, Position, Stufe, Temperatur) |
 | Alarmton abspielen | Einer von fünf Tönen auf Medienplayern: Ton als Dropdown mit Vorschau auf diesem Handy oder Computer (nicht auf der echten Anlage), Lautstärke, Dauer in Sekunden oder bis zum Deaktivieren |
 | Warten | Hält die folgenden Schritte an |
