@@ -5,7 +5,7 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, errText } = await import(`./common.js${V}`);
 
 const EVENTS = [["triggered", "evtTriggered"], ["pending", "evtPending"], ["armed", "evtArmed"], ["disarmed", "evtDisarmed"], ["arm_failed", "evtArmFailed"], ["sensor_offline", "evtSensorOffline"]];
-const MAINT_EVENTS = [["battery_low", "evtBatteryLow"], ["sensor_unavailable", "evtUnavailable"]];
+const MAINT_EVENTS = [["battery_low", "evtBatteryLow"], ["sensor_unavailable", "evtUnavailable"], ["update_available", "evtUpdate"]];
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
 
 export class NotifyUi {

@@ -24,7 +24,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_CODE_ARM_REQUIRED, DOMAIN
 from .schemas import SYSTEM_OPTIONS_SCHEMA
-from .settings import async_get_settings, valid_notify, valid_presets
+from .settings import async_get_settings, valid_notify, valid_presets, valid_update
 
 FORMAT = "alarmageddon"
 VERSION = 1
@@ -47,7 +47,7 @@ async def async_export(hass: HomeAssistant, integration_version: str | None) -> 
         "version": VERSION,
         "integration_version": integration_version,
         "created": dt_util.utcnow().isoformat(),
-        "settings": {"presets": settings.presets, "notify": settings.notify},
+        "settings": {"presets": settings.presets, "notify": settings.notify, "update": settings.update},
         "systems": systems,
     }
 
@@ -72,6 +72,7 @@ def validate(data: Any) -> dict[str, Any]:
         "systems": systems,
         "presets": valid_presets(settings["presets"]) if "presets" in settings else None,
         "notify": valid_notify(settings["notify"]) if "notify" in settings else None,
+        "update": valid_update(settings["update"]) if "update" in settings else None,
     }
 
 
@@ -80,7 +81,7 @@ def plan(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str, Any]:
     by_title = {e.title.casefold(): e for e in loaded_entries(hass)}
     found = [s["title"] for s in backup["systems"] if s["title"].casefold() in by_title]
     missing = [s["title"] for s in backup["systems"] if s["title"].casefold() not in by_title]
-    return {"systems": found, "missing": missing, "settings": backup["presets"] is not None or backup["notify"] is not None}
+    return {"systems": found, "missing": missing, "settings": any(backup[k] is not None for k in ("presets", "notify", "update"))}
 
 
 async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str, Any]:
@@ -89,6 +90,8 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str
     settings = await async_get_settings(hass)
     if backup["notify"] is not None:
         await settings.async_set_notify(backup["notify"])
+    if backup["update"] is not None:
+        await settings.async_set_update(backup["update"])
     for item in backup["systems"]:
         entry = by_title.get(item["title"].casefold())
         if entry is None:

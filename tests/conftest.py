@@ -3,16 +3,48 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 # Beim Sammeln importieren: später zeigt custom_components je nach Reihenfolge auf das Testpaket von HA (LEARNINGS).
+from custom_components.alarmageddon import update_check
 from custom_components.alarmageddon.config_flow import default_options
 from custom_components.alarmageddon.const import CONF_NAME, DOMAIN
 
 pytest_plugins = "pytest_homeassistant_custom_component"
+
+# Echte Abfragen (vor dem Patch), für Tests der Netzfunktionen mit aioclient_mock
+REAL_GET_JSON = update_check._async_get_json
+REAL_GET_TEXT = update_check._async_get_text
+
+# Antworten von GitHub in Tests: ohne Eintrag eine leere Liste der Releases und 404 für alles andere.
+# Tests setzen eigene Werte in GITHUB (URL -> (Daten, Fehler)); TEXTS: URL -> Text der Datei.
+GITHUB: dict[str, tuple[Any, str | None]] = {}
+TEXTS: dict[str, str] = {}
+
+
+@pytest.fixture(autouse=True)
+def github_offline():
+    """
+    Nie echtes Netz: die tägliche Versionsprüfung läuft sonst beim Vorspulen der Zeit und beim Aufräumen von hass an. Steht
+    vor allen anderen Fixtures, damit der Patch beim Aufräumen noch da ist (LEARNINGS).
+    """
+    GITHUB.clear()
+    TEXTS.clear()
+
+    async def fake_json(_hass, url):
+        if url in GITHUB:
+            return GITHUB[url]
+        return ([], None) if url == update_check.RELEASES_URL else (None, "HTTP 404")
+
+    async def fake_text(_hass, url):
+        return (TEXTS[url], None) if url in TEXTS else (None, "HTTP 404")
+
+    with patch.object(update_check, "_async_get_json", fake_json), patch.object(update_check, "_async_get_text", fake_text):
+        yield GITHUB
 
 ALARM = "alarm_control_panel.haus"
 FRONT_DOOR = "binary_sensor.haustuer"

@@ -96,11 +96,24 @@
   set("alarm_control_panel.haus", "armed_away", { friendly_name: "Haus", arm_mode: "away", changed_by: "Diego", code_format: "number" }, now - 3 * 3600e3);
   set("alarm_control_panel.garage", "disarmed", { friendly_name: "Garage", arm_mode: null, changed_by: "Automation", code_format: null }, now - 20 * 60e3);
 
+  // Update-Entität von HACS (Plattform "hacs") mit dem Link auf dieses Repository; Seite ?hacs=0 simuliert "HACS fehlt"
+  window.__hacs = params.get("hacs") !== "0";
+  window.__version = { installed: "0.6.0", latest: params.get("latest") || "0.7.0", prerelease: params.get("pre") === "1", hacsLatest: params.get("hacslatest") || params.get("latest") || "0.7.0" };
+  const entities = {};
+  const setHacs = () => {
+    if (!window.__hacs) return;
+    entities["update.alarmageddon"] = { entity_id: "update.alarmageddon", platform: "hacs", device_id: "dev_hacs" };
+    set("update.alarmageddon", "on", { latest_version: window.__version.hacsLatest, installed_version: window.__version.hacsInstalled || window.__version.installed, release_url: `https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v${window.__version.hacsLatest}`, in_progress: false });
+  };
+  setHacs();
   window.__presets = { door: ["arm_on_close"], window: [], motion: ["open_ok"], environment: ["always"], tamper: ["offline_alarm"], other: [] };
   window.__notify = { alarm_targets: ["notify.mobile_app_diego"], maintenance_targets: [], critical: true, volume: 0.8,
-    events: { triggered: true, pending: false, armed: false, disarmed: false, arm_failed: true, sensor_offline: true, battery_low: true, sensor_unavailable: true },
+    events: { triggered: true, pending: false, armed: false, disarmed: false, arm_failed: true, sensor_offline: true, battery_low: true, sensor_unavailable: true, update_available: true },
     disarm_action: false, battery_threshold: 20, offline_minutes: 60 };
   window.__calls = [];
+  window.__services = [];
+  window.__updateSettings = { check: true, prerelease: null, auto_update: false };
+  window.__callsVersion = () => callWS({ type: "alarmageddon/version" });
   window.__wsDelay = 0;
   window.__wsFail = null;
 
@@ -136,6 +149,32 @@
         notify_services: ["notify.mobile_app_diego", "notify.mobile_app_partnerin", "notify.mobile_app_tablet"],
         sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["warning", 2], ["chime", 2]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
       }));
+    }
+    if (msg.type === "alarmageddon/version") {
+      if (window.__versionError) throw err("fail", window.__versionError);
+      const v = window.__version;
+      const info = { installed: v.installed, installed_prerelease: v.prerelease || null, latest: v.latest === v.installed ? null : v.latest, latest_url: `https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v${v.latest}`,
+        latest_prerelease: v.prerelease, checked_at: Math.floor(Date.now() / 1000) - 120, error: null, settings: { ...window.__updateSettings, prerelease: window.__updateSettings.prerelease ?? v.prerelease } };
+      return JSON.parse(JSON.stringify(info));
+    }
+    if (msg.type === "alarmageddon/set_update") {
+      for (const k of ["check", "prerelease", "auto_update"]) if (k in msg) window.__updateSettings[k] = msg[k];
+      return window.__callsVersion();
+    }
+    if (msg.type === "alarmageddon/release_notes") {
+      return { entries: [{ version: msg.latest, date: "2026-11-08", notes: "### Added\n\n- **Neu:** erfundene Funktion mit `Code`.\n- Zweite Zeile\n  mit Fortsetzung." }, { version: "0.6.5", date: "2026-11-01", notes: "### Fixed\n\n- Fehler behoben." }], language: msg.language, error: null };
+    }
+    if (msg.type === "call_service") {
+      window.__services.push({ domain: msg.domain, service: msg.service, data: msg.service_data });
+      if (msg.domain === "update" && msg.service === "install") {
+        const e = states["update.alarmageddon"];
+        window.__setState("update.alarmageddon", "on", { in_progress: true });
+        await new Promise((r) => setTimeout(r, window.__installMs ?? 400));
+        window.__setState("update.alarmageddon", "on", { in_progress: false, installed_version: e.attributes.latest_version });
+        return {};
+      }
+      if (msg.domain === "homeassistant" && msg.service === "restart") return {};
+      return {};
     }
     if (msg.type === "alarmageddon/export") {
       return { format: "alarmageddon", version: 1, integration_version: "0.5.0", created: new Date().toISOString(), settings: { presets: window.__presets, notify: window.__notify },
@@ -244,7 +283,7 @@
   }
 
   function makeHass() {
-    return { states: { ...states }, language: lang, locale: { language: lang }, user: { name: "Diego", is_admin: true }, themes: { darkMode: params.get("theme") === "dark" }, callWS };
+    return { states: { ...states }, entities: { ...entities }, language: lang, locale: { language: lang }, user: { name: "Diego", is_admin: true }, themes: { darkMode: params.get("theme") === "dark" }, callWS };
   }
   window.hass = makeHass();
   document.querySelector("home-assistant").hass = window.hass;

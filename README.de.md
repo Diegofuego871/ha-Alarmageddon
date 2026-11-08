@@ -4,7 +4,7 @@
 
 Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartung der Sensoren.
 
-> **Status:** frühe Vorabversion (0.6.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
+> **Status:** frühe Vorabversion (0.7.0). Kern der Alarmanlage, Seitenpanel, Alarmaktionen, Benachrichtigungen, Wartung, Zeitplan und Sicherung funktionieren. Noch von wenigen Nutzern geprüft: Probleme bitte als Issue melden.
 
 ## Funktionen
 
@@ -88,6 +88,18 @@ Seitenpanel › Konfiguration › Anlage › "Codes pro Person": Jede Person bek
 ## Zwei-Sensor-Bestätigung
 
 Option pro Sensor "Braucht einen zweiten Sensor" (Seitenblatt des Sensors oder Voreinstellungen je Sensorart). Im scharfen Zustand löst ein solcher Sensor nur aus, wenn ein weiterer Sensor mit dieser Option innerhalb des Bestätigungsfensters anspricht (Konfiguration › Anlage, Standard 60 Sekunden). Derselbe Sensor zweimal zählt nicht. Sensoren ohne die Option lösen wie bisher allein aus; während der Eingangsverzögerung gilt die Option nicht, und "Ausfall gilt als Alarm" löst weiterhin sofort aus. Standardmässig aus: Eine Alarmanlage soll im Zweifel alarmieren.
+
+## Updates
+
+Seitenpanel › Konfiguration › Updates (wie in Device Panel):
+
+- Zeigt die installierte und die neueste Version (bei GitHub erfragt, höchstens alle 6 Stunden, "Nach Updates suchen" höchstens einmal pro Minute), die Release Notes aller Versionen dazwischen (aus dem CHANGELOG, in deiner Sprache) und "Aktualisieren".
+- **Installiert wird immer über HACS** (die Update-Entität dieses Repositorys, erkannt am Link des Releases; eine andere Integration wird nie angefasst). Ohne HACS verweist das Panel auf die Installation von Hand.
+- **Home Assistant startet nie von selbst neu.** Sobald die neue Version auf der Platte liegt, erscheint "Jetzt neu starten" (mit Rückfrage). Bis dahin läuft die alte Version weiter.
+- **Tägliche Prüfung** (standardmässig an): meldet eine neue Version unter Einstellungen › Reparaturen und, als Ereignis "Update verfügbar" unter Benachrichtigungen, an die Wartungs-Empfänger (einmal pro Version).
+- **Updates automatisch installieren** (standardmässig aus): lädt die neue Version nach der täglichen Prüfung über HACS herunter. Der Neustart bleibt bei dir.
+- **Vorabversionen:** auf Wunsch angeboten. HACS installiert sie nur, wenn sein eigener Schalter "Pre-release" bei dieser Integration an ist (Entität im HACS-Gerät aktivieren und einschalten); das Panel erklärt das.
+- Die Einstellungen gehören zur Sicherung.
 
 ## Modi
 

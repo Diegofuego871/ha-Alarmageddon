@@ -3,6 +3,16 @@
 Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 `CLAUDE.md`, `docs/CONCEPT.md`, `docs/LEARNINGS.md`, `docs/DESIGN.md`.
 
+## Stand (0.7.0, Updates)
+
+- 0.6.0 ist veröffentlicht (Tag `v0.6.0`, Vorabversion). 0.7.0 ist die Update-Funktion nach dem Vorbild von ha-device-panel (`update_check.py`, `http_limit.py` aus dort, Panel `updates.js`).
+- Server: eine Abfrage der GitHub-Releases (stabil und Vorabversion), 6 Stunden Zwischenspeicher, auf Knopfdruck frühestens nach 1 Minute, Fehler → letzter guter Stand. Tägliche Prüfung mit zufälligem ersten Lauf (5 bis 65 Minuten nach dem Start), Reparatur-Meldung `update_available`, Push "Update verfügbar" (einmal pro Version, Ereignis `update_available` unter Benachrichtigungen, an die Wartungs-Empfänger), Auto-Update über `update.install` der HACS-Entität (erkannt am `release_url`), danach Reparatur `restart_required`. Nie ein Neustart von Home Assistant durch die Integration.
+- Einstellungen `settings.update` (`check`, `prerelease` mit None = folgt der installierten Version, `auto_update`), in der Sicherung; `update_notified` intern, nicht in der Sicherung.
+- WebSocket: `version`, `release_notes`, `set_update`. Release Notes aus `CHANGELOG(.de).md` am Tag (mit und ohne "v"), Rückfall Text des GitHub-Releases.
+- Tests: `tests/test_update_check.py`; in `tests/conftest.py` patcht die autouse-Fixture `github_offline` das Netz (nie echte Abfragen); Panel-Suite `updates-e2e`.
+- Nicht im echten HA geprüft: Installation über echtes HACS (`update.install`), Verhalten der HACS-Entität bei Vorabversionen, Neustart aus dem Panel.
+- Neue Wünsche des Nutzers (offen, in dieser Reihenfolge geplant): Design wie Device Panel (Kapitel mit Titelstrich, gleitende Reiter, Änderungen gehen beim Reiterwechsel nie verloren), Meldungen neu (je Art kritisch/Lautstärke, Empfänger als Dropdown mit Pillen), Sensor-Option "nur melden statt auslösen", Einstellungen je Modus, Aktionen-Editor ohne JSON mit Geräte-Fähigkeiten, Testknopf je Aktion, Greifer, Protokoll-Reiter mit Alarm-Aufzeichnung als Zeitachse.
+
 ## Stand (0.6.0, Zeitplan und Modi)
 
 - 0.3.0, 0.4.0 und 0.5.0 haben keinen Tag bekommen: im CHANGELOG "Nicht veröffentlicht", in 0.6.0 enthalten. 0.6.0 ist als Vorabversion veröffentlicht (Tag `v0.6.0`, Commit e45a617); davor `v0.2.0`.

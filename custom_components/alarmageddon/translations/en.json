@@ -146,5 +146,15 @@
     "mode_not_enabled": {
       "message": "The mode \"{mode}\" is not enabled for this alarm system."
     }
+  },
+  "issues": {
+    "update_available": {
+      "title": "Alarmageddon update available",
+      "description": "Version {latest} is available, installed is {installed}. Update in the Alarmageddon panel under Configuration › Updates or in HACS."
+    },
+    "restart_required": {
+      "title": "Restart required for Alarmageddon",
+      "description": "Version {latest} was installed. Home Assistant has to be restarted for it to run (running: {installed}). Restart when nobody depends on the alarm system."
+    }
   }
 }

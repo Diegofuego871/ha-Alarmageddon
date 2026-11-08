@@ -52,6 +52,12 @@ zuoberst.
   danach selbst prüft, findet das Problem schon gemeldet; an den gesendeten Meldungen zählen, nicht am Rückgabewert.
 - **Datei wählen im Panel:** Ein verstecktes `<input type="file">` hinter einem echten Knopf (Tastatur), die Wahl kommt
   über das Ereignis `input`; danach `value = ""`, damit dieselbe Datei noch einmal gewählt werden kann.
+- **Eingefrorene Uhr und Zeitgeber der Anlage:** Wird die Anlage vor der Fixture `freezer` aufgebaut, haben ihre Zeitgeber
+  die echte Monotonic-Uhr; friert `freezer` die Zeit danach auf die Wanduhr ein (viel grösser), gelten sie als fällig und
+  feuern sofort. Tests mit `freezer` fordern ihn deshalb vor `entry` an (`test_update_check.py`). Folge im Test: eine
+  Prüfung lief schon und der Zwischenspeicher blockierte die nächste.
+- **Zwischenspeicher im Test:** Ein Aufruf, der Einstellungen setzt (`set_update`), prüft sofort und füllt den
+  Zwischenspeicher; die Antwort der "GitHub"-Attrappe muss vorher stehen.
 - **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
   Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
 

@@ -13,7 +13,8 @@ const { SensorsUi } = await import(`./sensors.js${V}`);
 const { SystemUi } = await import(`./system.js${V}`);
 const { ActionsUi } = await import(`./actions.js${V}`);
 const { NotifyUi } = await import(`./notify.js${V}`);
-const SUBS = ["sensors", "actions", "notify", "system"];
+const { UpdatesUi } = await import(`./updates.js${V}`);
+const SUBS = ["sensors", "actions", "notify", "system", "updates"];
 
 class AlarmageddonPanel extends HTMLElement {
   constructor() {
@@ -34,11 +35,12 @@ class AlarmageddonPanel extends HTMLElement {
     this.systemUi = new SystemUi(this);
     this.actions = new ActionsUi(this);
     this.notify = new NotifyUi(this);
+    this.updates = new UpdatesUi(this);
   }
 
   // Ansicht des gewählten Reiters unter Konfiguration
   get _cfgUi() {
-    return { sensors: this.sensors, system: this.systemUi, actions: this.actions, notify: this.notify }[this._sub];
+    return { sensors: this.sensors, system: this.systemUi, actions: this.actions, notify: this.notify, updates: this.updates }[this._sub];
   }
 
   // ----- Lebenszyklus -----
@@ -68,10 +70,11 @@ class AlarmageddonPanel extends HTMLElement {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
       <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
-      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog></div>`;
+      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg ag-wide" id="ag-notes"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
     // Wie auch immer der Code-Dialog schliesst (Abbrechen, Escape, Erfolg): Auswahl wieder nach dem echten Zustand
     this._root.getElementById("ag-code").addEventListener("close", () => this._renderTop(true));
+    this._root.getElementById("ag-notes").addEventListener("close", () => (this.updates.notes = null));
     // Blatt von unten mit Escape oder Hintergrund geschlossen: Seitenblatt ebenfalls zu
     this._root.getElementById("ag-sheet").addEventListener("close", () => {
       if (this.sensors.detail && this.hasAttribute("narrow")) {
@@ -160,9 +163,14 @@ class AlarmageddonPanel extends HTMLElement {
       this._data = data;
       this._connError = false;
       if (!this._systems().some((s) => s.entry_id === this._sel)) this._sel = this._systems()[0]?.entry_id || null;
-      for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) if (!ui.dirtyCount()) ui.draft = null;
+      for (const ui of [this.sensors, this.systemUi, this.actions, this.notify, this.updates]) if (!ui.dirtyCount()) ui.draft = null;
       this._sig = this._stateSig();
       this._fetchForecast();
+      // Einmal beim Start (ohne Knopfdruck, der Server begrenzt die Abfragen): für den Punkt am Reiter
+      if (!this._updatesChecked) {
+        this._updatesChecked = true;
+        this.updates.load(false);
+      }
       // Erstes Laden: alles; danach nur die Ansicht, damit Suchfeld und Fokus bleiben
       if (!this._loaded || !this._view) {
         this._loaded = true;
@@ -220,6 +228,9 @@ class AlarmageddonPanel extends HTMLElement {
       const st = this._state(s.entity_id);
       parts.push(st ? `${st.state}|${st.attributes.changed_by}|${st.attributes.deadline}|${st.attributes.triggered_by}` : "-");
     }
+    // Update-Entität von HACS (Fortschritt, neue Version): ändert die Versionszeile
+    const hacs = this.updates.hacsEntity();
+    parts.push(hacs ? `${hacs.state}|${hacs.attributes.latest_version}|${hacs.attributes.installed_version}|${hacs.attributes.in_progress}` : "-");
     for (const [id, info] of Object.entries(this._data?.sensors || {})) {
       const st = this._state(id);
       parts.push(st ? `${st.state}|${st.last_changed}` : "-");
@@ -260,6 +271,13 @@ class AlarmageddonPanel extends HTMLElement {
     this._renderView(true);
   }
 
+  // Punkt am Reiter "Konfiguration" und am Unterreiter "Updates", wenn es etwas Neues gibt (Update oder Neustart)
+  _renderDots() {
+    const news = this.updates.hasNews();
+    this._root.querySelector('[data-tab="config"]')?.classList.toggle("has-dot", news);
+    this._root.querySelector('[data-sub="updates"]')?.classList.toggle("has-dot", news);
+  }
+
   _renderView(full) {
     if (!this._view || !this._data) return this._placePills();
     if (!this._systems().length && this._tab === "overview") {
@@ -269,6 +287,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._tab === "config") this._renderConfig(full);
     else this._renderOverview(full);
     this._placePills();
+    this._renderDots();
   }
 
   // Bei Zustandsänderungen in HA: nur die Teile, die Live-Werte zeigen
@@ -279,7 +298,10 @@ class AlarmageddonPanel extends HTMLElement {
       this._renderLog();
     } else if (this._sub === "sensors") {
       this.sensors.render();
+    } else if (this._sub === "updates") {
+      this.updates.renderRow();
     }
+    this._renderDots();
   }
 
   _emptyHtml() {
@@ -523,10 +545,10 @@ class AlarmageddonPanel extends HTMLElement {
     const narrow = this.hasAttribute("narrow");
     if (full || !this._view.querySelector(".ag-cfg")) {
       const label = (key) => this._t(narrow ? `${key}Short` : key);
-      const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")]], this._sub, "data-sub", "small ag-subs");
+      const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")], ["updates", label("subUpdates")]], this._sub, "data-sub", "small ag-subs");
       const systems = this._systems();
       // Benachrichtigungen gelten für alle Anlagen: dort keine Auswahl der Anlage
-      const pick = systems.length > 1 && this._sub !== "notify"
+      const pick = systems.length > 1 && !["notify", "updates"].includes(this._sub)
         ? `<select class="ag-select" data-act="system" aria-label="${esc(this._t("groupsSystem"))}">${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this._sel ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>`
         : "";
       const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
@@ -540,11 +562,11 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   _resetConfig() {
-    for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) ui.reset();
+    for (const ui of [this.sensors, this.systemUi, this.actions, this.notify, this.updates]) ui.reset();
   }
 
   _dirty() {
-    return this._tab === "config" && [this.sensors, this.systemUi, this.actions, this.notify].some((ui) => ui.dirtyCount() > 0);
+    return this._tab === "config" && [this.sensors, this.systemUi, this.actions, this.notify, this.updates].some((ui) => ui.dirtyCount() > 0);
   }
 
   // Rückfrage vor dem Verlassen mit offenen Änderungen (Einheitlich speichern)
@@ -623,6 +645,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._tab === "config" && this._sub === "system" && this.systemUi.onClick(ev.target.closest("[data-sys]"))) return;
     if (this._tab === "config" && this._sub === "actions" && this.actions.onClick(ev.target.closest("[data-wf], [data-trigger]"))) return;
     if (this._tab === "config" && this._sub === "notify" && this.notify.onClick(ev.target.closest("[data-nt]"))) return;
+    if (this.updates.onClick(ev.target.closest("[data-upd]"))) return;
     const listEl = ev.target.closest("[data-list]");
     if (listEl && this.list.onClick(listEl)) return;
     const tab = ev.target.closest("[data-tab]");

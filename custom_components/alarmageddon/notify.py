@@ -56,6 +56,10 @@ TEXTS: dict[str, dict[str, str]] = {
         "maint_battery": "{sensor}: battery {value} %",
         "maint_offline": "{sensor}: unreachable since {time}",
         "time_format": "%m/%d %H:%M",
+        "update_found_title": "Alarmageddon {latest} available",
+        "update_found_text": "Installed is {installed}. Update in the panel under Configuration › Updates or in HACS.",
+        "update_done_title": "Alarmageddon {latest} installed",
+        "update_done_text": "Home Assistant still has to be restarted for the new version to run.",
     },
     "de": {
         "triggered_title": "Alarm: {name}",
@@ -90,6 +94,10 @@ TEXTS: dict[str, dict[str, str]] = {
         "maint_battery": "{sensor}: Batterie {value} %",
         "maint_offline": "{sensor}: nicht erreichbar seit {time}",
         "time_format": "%d.%m. %H:%M",
+        "update_found_title": "Alarmageddon {latest} verfügbar",
+        "update_found_text": "Installiert ist {installed}. Aktualisieren im Panel unter Konfiguration › Updates oder in HACS.",
+        "update_done_title": "Alarmageddon {latest} installiert",
+        "update_done_text": "Home Assistant muss noch neu gestartet werden, damit die neue Version läuft.",
     },
 }
 

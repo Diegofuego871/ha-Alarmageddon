@@ -57,7 +57,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 5  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 6  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -132,14 +132,14 @@ DEFAULT_NOTIFY: Final = {
     "critical": True,
     "volume": 0.8,  # Lautstärke der kritischen Meldung (iOS), 0 bis 1
     "events": {"triggered": True, "pending": False, "armed": False, "disarmed": False, "arm_failed": True, "sensor_offline": True,
-               "battery_low": True, "sensor_unavailable": True},
+               "battery_low": True, "sensor_unavailable": True, "update_available": True},
     # Wartung (0.5.0): Batterie schwach unter dieser Schwelle (%), nicht erreichbar ab so vielen Minuten
     "battery_threshold": 20,
     "offline_minutes": 60,
     # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
     "disarm_action": False,
 }
-NOTIFY_EVENTS: Final = ("triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline", "battery_low", "sensor_unavailable")
+NOTIFY_EVENTS: Final = ("triggered", "pending", "armed", "disarmed", "arm_failed", "sensor_offline", "battery_low", "sensor_unavailable", "update_available")
 BATTERY_THRESHOLD_RANGE: Final = (5, 50)
 OFFLINE_MINUTES_RANGE: Final = (5, 1440)
 # Wartung: Prüfung alle 15 Minuten, die erste 5 Minuten nach dem Start (Geräte verbinden sich erst)
@@ -176,3 +176,8 @@ CONF_SCHEDULES: Final = "schedules"
 SCHEDULE_OFF: Final = "off"
 SCHEDULE_ACTIONS: Final = (SCHEDULE_OFF, "home", "away", "night")
 MAX_SCHEDULES: Final = 20
+
+# Updates (0.7.0, nach dem Vorbild von ha-device-panel): Versionsprüfung bei GitHub, Installation immer über HACS
+GITHUB_REPO: Final = "Diegofuego871/ha-Alarmageddon"
+MARKET_PLATFORMS: Final = ("hacs",)
+DEFAULT_UPDATE: Final = {"check": True, "prerelease": None, "auto_update": False}

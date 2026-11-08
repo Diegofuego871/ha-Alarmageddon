@@ -20,6 +20,7 @@ from .const import (
     OFFLINE_MINUTES_RANGE,
     NOTIFY_EVENTS,
     DEFAULT_PRESETS,
+    DEFAULT_UPDATE,
     DEVICE_CLASS_TYPE,
     SENSOR_OPTIONS,
     SENSOR_TYPES,
@@ -70,11 +71,29 @@ def valid_notify(value: Any) -> dict[str, Any]:
     return out
 
 
+def valid_update(value: Any) -> dict[str, Any]:
+    """check und auto_update als Wahrheitswert; prerelease zusätzlich None (noch nie gewählt: folgt der installierten Version)."""
+    out = copy.deepcopy(DEFAULT_UPDATE)
+    if isinstance(value, dict):
+        for key in ("check", "auto_update"):
+            if isinstance(value.get(key), bool):
+                out[key] = value[key]
+        if isinstance(value.get("prerelease"), bool):
+            out["prerelease"] = value["prerelease"]
+    return out
+
+
 class Settings:
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
         self._store = Store(hass, 1, SETTINGS_STORE_KEY)
-        self.data: dict[str, Any] = {"presets": copy.deepcopy(DEFAULT_PRESETS), "notify": copy.deepcopy(DEFAULT_NOTIFY)}
+        self.data: dict[str, Any] = {
+            "presets": copy.deepcopy(DEFAULT_PRESETS),
+            "notify": copy.deepcopy(DEFAULT_NOTIFY),
+            "update": copy.deepcopy(DEFAULT_UPDATE),
+            # Versionen, zu denen schon gemeldet wurde ({"found": "0.7.0", "done": ...}); intern, nicht in der Sicherung
+            "update_notified": {},
+        }
         self._listeners: list[Callable[[], None]] = []
 
     async def async_load(self) -> None:
@@ -83,6 +102,11 @@ class Settings:
             self.data.update(stored)
         self.data["presets"] = valid_presets(self.data.get("presets"))
         self.data["notify"] = valid_notify(self.data.get("notify"))
+        self.data["update"] = valid_update(self.data.get("update"))
+        notified = self.data.get("update_notified")
+        self.data["update_notified"] = (
+            {k: str(v) for k, v in notified.items() if k in ("found", "done") and v} if isinstance(notified, dict) else {}
+        )
 
     @property
     def presets(self) -> dict[str, list[str]]:
@@ -91,6 +115,23 @@ class Settings:
     @property
     def notify(self) -> dict[str, Any]:
         return self.data["notify"]
+
+    @property
+    def update(self) -> dict[str, Any]:
+        return self.data["update"]
+
+    @property
+    def update_notified(self) -> dict[str, str]:
+        return self.data["update_notified"]
+
+    async def async_set_update(self, values: dict[str, Any]) -> None:
+        # Eigene Einstellungen der Updates; ändern nichts an den Anlagen: ohne Neuladen speichern
+        self.data["update"] = valid_update({**self.data["update"], **values})
+        await self._store.async_save(self.data)
+
+    async def async_remember_notified(self, kind: str, version: str) -> None:
+        self.data["update_notified"][kind] = version
+        await self._store.async_save(self.data)
 
     async def async_set_notify(self, notify: dict[str, Any]) -> None:
         # Benachrichtigungen ändern nichts an Zonen oder Entitäten: speichern ohne die Anlagen neu zu laden

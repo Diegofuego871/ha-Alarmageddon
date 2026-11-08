@@ -7,6 +7,19 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.7.0] - 2026-11-08
+
+Updates aus dem Panel, wie in Device Panel.
+
+### Hinzugefügt
+
+- **Konfiguration › Updates:** zeigt die installierte und die neueste Version (GitHub und HACS), die Release Notes aller Versionen dazwischen (in deiner Sprache, aus dem CHANGELOG) und "Aktualisieren", das die neue Version über HACS installiert. Home Assistant startet nie von selbst neu: "Jetzt neu starten" erscheint, sobald die neue Version auf der Platte liegt, mit Rückfrage. Ein Punkt am Reiter zeigt, dass etwas wartet.
+- **Tägliche Prüfung:** fragt einmal am Tag bei GitHub nach (die erste Prüfung zu einer zufälligen Zeit nach dem Start) und meldet eine neue Version unter Reparaturen. Lässt sich ausschalten.
+- **Meldung "Update verfügbar"** an die Wartungs-Empfänger, einmal pro Version, unter Benachrichtigungen ein- und ausschaltbar.
+- **Updates automatisch installieren:** standardmässig aus. Lädt die neue Version nach der täglichen Prüfung über HACS herunter; der Neustart bleibt bei dir. Benutzt wird nur die HACS-Entität dieses Repositorys.
+- **Vorabversionen:** auf Wunsch angeboten (Standard: ja, solange eine Vorabversion installiert ist). HACS installiert sie nur mit seinem eigenen Schalter "Pre-release"; das Panel erklärt das und verlinkt auf das HACS-Gerät.
+- Die Einstellungen der Updates gehören zur Sicherung.
+
 ## [0.6.0] - 2026-11-08
 
 Zeitplan zum Scharfschalten und Deaktivieren, und die Modi einer Alarmanlage werden jetzt im Panel gewählt.
@@ -114,5 +127,6 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[0.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

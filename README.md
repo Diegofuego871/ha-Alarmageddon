@@ -4,7 +4,7 @@
 
 Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
 
-> **Status:** early pre-release (0.6.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** early pre-release (0.7.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
 
 ## Features
 
@@ -88,6 +88,18 @@ Side panel › Configuration › Alarm system › "Codes per person": each perso
 ## Two-sensor confirmation
 
 Option per sensor "Needs a second sensor" (side sheet of the sensor or defaults per sensor type). While armed such a sensor triggers only if another sensor with this option responds within the confirmation window (Configuration › Alarm system, default 60 seconds). The same sensor twice does not count. Sensors without the option trigger alone as before; during the entry delay the option does not apply, and "failure counts as alarm" still triggers at once. Off by default: an alarm system should rather alarm in doubt.
+
+## Updates
+
+Side panel › Configuration › Updates (like in Device Panel):
+
+- Shows the installed and the latest version (asked at GitHub, at most every 6 hours, "Check for updates" at most once a minute), the release notes of all versions in between (from the changelog, in your language) and "Update".
+- **Installing always goes through HACS** (the update entity of this repository, recognised by its release link; no other integration is ever touched). Without HACS the panel points to a manual installation.
+- **Home Assistant is never restarted by itself.** When the new version is on disk, "Restart now" appears (with confirmation). Until then the old version keeps running.
+- **Daily check** (on by default): reports a new version under Settings › Repairs and, as the event "Update available" under Notifications, to the maintenance recipients (once per version).
+- **Install updates automatically** (off by default): downloads the new version through HACS after the daily check. The restart stays with you.
+- **Pre-releases:** offered on request. HACS installs them only if its own switch "Pre-release" is on for this integration (enable the entity in the HACS device and switch it on); the panel explains this.
+- The settings are part of the backup.
 
 ## Modes
 
