@@ -250,10 +250,12 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-otx b { font-weight: 500; display: block; }
 .ag-otx small { display: block; color: var(--ag-text2); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
 /* Einstellungen pro Modus: Schalter mit Text, daneben die Reiter; Punkt am Kästchen = eigener Wert dieses Modus */
-.ag-pmbar { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin: 22px 0; padding: 14px 18px; border: 1px solid var(--ag-divider); border-radius: 16px; background: var(--ag-card); }
+.ag-pmbar { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin: 22px 0; padding: 14px 18px; border: 1px solid var(--ag-divider); border-radius: 16px; background: var(--ag-card); }
 .ag-pmsw { display: flex; align-items: center; gap: 12px; }
 .ag-pmsw .ag-toggle { margin: 0; flex: none; }
 /* Schalter, Reiter und alles, was zu den Reitern gehört, stehen in einem umrandeten Bereich: so ist klar, bis wohin die Einstellung greift */
+.ag-pmstick { margin: var(--ag-gap, 18px) 0; }
+.ag-pmstick > .ag-pmbar { margin: 0; }
 .ag-pmgroup { margin-top: 6px; padding: 16px 18px 18px; border: 1.5px solid var(--ag-divider); border-radius: 20px; background: color-mix(in srgb, var(--ag-text) 2%, var(--ag-card)); }
 .ag-pmgroup.on { border: 2px solid color-mix(in srgb, var(--ag-primary) 45%, transparent); background: color-mix(in srgb, var(--ag-primary) 4%, var(--ag-card)); }
 .ag-pmgroup > .ag-pmbar { margin: 0 0 14px; padding: 0; border: 0; background: none; }
@@ -574,7 +576,7 @@ select.ag-select, select.ag-input, .ag-dlg select, .ag-view select {
   background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
 select.ag-select:focus-visible, select.ag-input:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 1px; }
 /* Auswahl der Alarmanlage in der Konfiguration: auffällig, damit klar ist, dass sie für alle Reiter gilt */
-select.ag-select[data-act="system"] { height: 44px; padding-left: 18px; border: 2px solid var(--ag-primary); background-color: var(--ag-primary-soft); color: var(--ag-primary); font-weight: 600; }
+select.ag-select[data-act="system"] { height: 52px; padding-left: 22px; font-size: 24px; letter-spacing: -.2px; border: 2px solid var(--ag-primary); background-color: var(--ag-primary-soft); color: var(--ag-primary); font-weight: 600; }
 .ag-content { scroll-padding: calc(var(--ag-th-top, 0px) + 56px) 0 80px; }
 :host([narrow]) .ag-table-wrap.ag-stickwrap { overflow-x: auto; }
 :host([narrow]) .ag-stickwrap .ag-table th { position: static; }
@@ -606,4 +608,11 @@ dialog.ag-sheetdlg .ag-side-head { padding-right: 58px; }
 :host([narrow]) .ag-tabs > button { flex-direction: column; gap: 2px; font-size: 12px; min-height: 52px; }
 :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 389px) { :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Name der Anlage oben in der Konfiguration: gross und fett, Stift, Sprung nach HA */
+.ag-sysbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ag-systitle { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -.3px; overflow-wrap: anywhere; }
+:host([narrow]) .ag-systitle { font-size: 22px; }
+:host([narrow]) select.ag-select[data-act="system"] { font-size: 20px; height: 48px; max-width: 100%; }
+.ag-rename-ids { border-bottom: 0; margin-top: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
 `;
+

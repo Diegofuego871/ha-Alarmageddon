@@ -282,13 +282,20 @@ export class LogUi {
     const alarms = incidents.length
       ? incidents.map((r, i) => this._card(r, expanded(r, i))).join("")
       : `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(this.range === "all" && this.system === "all" ? "logNoAlarms" : "logNoAlarmsRange"))}</span></div>`;
-    const events = this.events();
+    const all = this.events();
+    const cat = (e) => (e.kind === "arm_failed" ? "failed" : e.state === "pending" || e.state === "triggered" ? "alarm" : e.state === "disarmed" ? "disarmed" : String(e.state || "").startsWith("armed") || e.state === "arming" ? "armed" : "other");
+    const count = (k) => (k === "all" ? all.length : all.filter((e) => cat(e) === k).length);
+    if (this.evFilter && this.evFilter !== "all" && !count(this.evFilter)) this.evFilter = "all";
+    const filter = this.evFilter || "all";
+    const events = filter === "all" ? all : all.filter((e) => cat(e) === filter);
+    const chips = `<div class="ag-tools ag-evchips" style="margin-bottom:10px">${[["all", "evFilterAll"], ["alarm", "evFilterAlarm"], ["armed", "evFilterArmed"], ["disarmed", "evFilterDisarmed"], ["failed", "evFilterFailed"]]
+      .map(([k, label]) => `<button class="ag-chip ${filter === k ? "on" : ""} ${count(k) || k === "all" ? "" : "zero"}" data-log="evfilter" data-filter="${k}">${esc(this._t(label))} <span class="ag-t2">${count(k)}</span></button>`).join("")}</div>`;
     const rows = events.length
       ? events.slice(0, SHOWN).map((e) => `<div class="ag-row"><time>${esc(this.host._fmtTime(e.t))}</time><span class="ag-grow"><b style="font-weight:500">${esc(e.system)}</b> · ${esc(this.host._eventText(e))}</span></div>`).join("")
       : `<div class="ag-row ag-t2">${esc(this._t("logNoEventsRange"))}</div>`;
     const more = events.length > SHOWN ? `<div class="ag-row ag-t2">${esc(this._t("logMore", { count: events.length - SHOWN }))}</div>` : "";
     return chapter(this._t("logAlarms"), alarms, this._t("logAlarmsHint"))
-      + chapter(this._t("logEvents"), `<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}${more}</div></div>`);
+      + chapter(this._t("logEvents"), `${chips}<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}${more}</div></div>`);
   }
 
   render() {
@@ -360,6 +367,11 @@ export class LogUi {
   onClick(el) {
     if (el?.dataset?.log === "export-csv") return this.exportFile("csv"), true;
     if (el?.dataset?.log === "export-json") return this.exportFile("json"), true;
+    if (el?.dataset?.log === "evfilter") {
+      this.evFilter = el.dataset.filter;
+      this.render();
+      return true;
+    }
     if (!el || el.dataset.log !== "toggle") return false;
     if (!this.touched) {
       this.touched = true;

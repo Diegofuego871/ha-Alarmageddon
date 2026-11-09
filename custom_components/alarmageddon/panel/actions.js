@@ -208,9 +208,31 @@ export class ActionsUi {
   ensureDraft() {
     const s = this.system;
     if (!s) return null;
-    if (!this.draft || this.draft.entry !== s.entry_id) this.draft = { entry: s.entry_id, wf: JSON.parse(JSON.stringify(s.workflows || {})), end: { ...(s.workflow_end || {}) } };
+    if (!this.draft || this.draft.entry !== s.entry_id) {
+      const wf = JSON.parse(JSON.stringify(s.workflows || {}));
+      const end = { ...(s.workflow_end || {}) };
+      // Ohne gespeicherte Wahl: an, wenn sich die Abläufe der Modi (oder "Immer aktiv") unterscheiden
+      const keys = this.triggers(s);
+      const sig = (t) => JSON.stringify([wf[t] || [], normEnd(end[t])]);
+      this.draft = { entry: s.entry_id, wf, end, perMode: keys.some((t) => sig(t) !== sig(keys[0])) };
+    }
     if (!this.triggers(s).includes(this.trigger)) this.trigger = "away";
+    // Schalter aus: ein Ablauf für alles, bearbeitet wird der des ersten Reiters
+    if (!this.draft.perMode) this.trigger = this.triggers(s)[0];
     return this.draft;
+  }
+
+  // Der Stand, der gespeichert würde: ohne "Einstellungen pro Modus" gilt der erste Ablauf für alle Modi und "Immer aktiv"
+  _effective(d, s = this.system) {
+    if (d.perMode) return { wf: d.wf, end: d.end || {} };
+    const keys = this.triggers(s);
+    const wf = {};
+    const end = {};
+    for (const t of keys) {
+      wf[t] = JSON.parse(JSON.stringify(d.wf[keys[0]] || []));
+      end[t] = JSON.parse(JSON.stringify(normEnd(d.end?.[keys[0]])));
+    }
+    return { wf, end };
   }
 
   reset() {
@@ -227,10 +249,11 @@ export class ActionsUi {
     const s = this.system;
     const d = this.draft;
     if (!s || !d || d.entry !== s.entry_id) return 0;
-    const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(d.wf)]);
+    const eff = this._effective(d, s);
+    const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(eff.wf)]);
     let n = 0;
     for (const k of all) {
-      if (JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(d.wf[k] || []) || JSON.stringify(normEnd((s.workflow_end || {})[k])) !== JSON.stringify(normEnd((d.end || {})[k]))) n += 1;
+      if (JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(eff.wf[k] || []) || JSON.stringify(normEnd((s.workflow_end || {})[k])) !== JSON.stringify(normEnd((eff.end || {})[k]))) n += 1;
     }
     return n;
   }
@@ -253,8 +276,12 @@ export class ActionsUi {
       ? `<button class="ag-btn" data-wf="test-stop">${ic("stop", 18)}${esc(this._t("wfTestStop"))}</button>`
       : `<button class="ag-btn" data-wf="test" ${dirty || running || !this.steps().length ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("wfTestHint"))}">${ic("play", 18)}${esc(this._t("wfTest"))}</button>`;
     const status = running ? `<span class="ag-tag ${s.workflow_test ? "warn" : "err"}">${esc(this._t(s.workflow_test ? "wfTestRunning" : "wfAlarmRunning"))}</span>` : "";
-    h._setHtml(head, `<div class="ag-tools"><span class="ag-t2">${esc(this._t("wfFor"))}</span>${h._segHtml("wf-trigger", triggers, this.trigger, "data-trigger", "small")}<span class="ag-grow"></span>${status}${testBtn}</div>
-      ${this.trigger === "always" ? `<div class="ag-t2 ag-small" style="margin:-6px 4px 0">${esc(this._t("wfAlwaysHint"))}</div>` : ""}`);
+    const d = this.draft;
+    const tabs = d.perMode ? h._segHtml("wf-trigger", triggers, this.trigger, "data-trigger", "small") : "";
+    const scope = d.perMode ? `<div class="ag-pmscope" style="margin:0">${ic(this.trigger === "always" ? "flash" : MODE_ICON[this.trigger], 18)}${esc(this._t(this.trigger === "always" ? "pmScopeAlways" : "pmScope", { mode: this._t(MODE_KEY[this.trigger] || "wfAlways") }))}</div>` : "";
+    h._setHtml(head, `<div class="ag-tools"><div class="ag-pmbar" style="flex:1;margin:0"><div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-wf="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("wfPerMode"))}"></button>
+        <div class="ag-settx"><b>${esc(this._t("wfPerMode"))}</b><small>${esc(this._t(d.perMode ? "wfPerModeOn" : "wfPerModeHint"))}</small></div></div>${tabs}${scope}</div>${status}${testBtn}</div>
+      ${this.trigger === "always" && d.perMode ? `<div class="ag-t2 ag-small" style="margin:-6px 4px 0">${esc(this._t("wfAlwaysHint"))}</div>` : ""}`);
     const steps = this.steps();
     // Nach einem Schritt, der nebenher läuft, ist die Verbindung gestrichelt: der nächste Schritt startet sofort
     const plus = (i) => `<div class="ag-wf-plus ${steps[i - 1]?.detach && ["action", "sound"].includes(steps[i - 1].type) ? "par" : ""}"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
@@ -843,8 +870,9 @@ export class ActionsUi {
     this.saving = true;
     this.renderFoot();
     try {
-      const wf = Object.fromEntries(this.triggers(s).map((t) => [t, d.wf[t] || []]));
-      const end = Object.fromEntries(this.triggers(s).map((t) => [t, normEnd(d.end?.[t])]));
+      const eff = this._effective(d, s);
+      const wf = Object.fromEntries(this.triggers(s).map((t) => [t, eff.wf[t] || []]));
+      const end = Object.fromEntries(this.triggers(s).map((t) => [t, normEnd(eff.end[t])]));
       await h._hass.callWS({ type: "alarmageddon/save_workflows", entry_id: s.entry_id, workflows: wf, workflow_end: end });
       s.workflow_end = Object.fromEntries(Object.entries(end).filter(([, v]) => v.notify));
       s.workflows = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(wf).filter(([, v]) => v.length))));
@@ -1012,6 +1040,22 @@ export class ActionsUi {
     }
     const act = el?.dataset.wf;
     if (!act) return false;
+    if (act === "permode") {
+      const dr = this.ensureDraft();
+      const first = this.triggers()[0];
+      if (dr.perMode) {
+        // Aus: der Ablauf des ersten Modus gilt für alle (bis zu "Speichern" lässt sich das mit "Abbrechen" zurücknehmen)
+        const eff = this._effective(dr);
+        dr.wf = eff.wf;
+        dr.end = eff.end;
+        this.trigger = first;
+      } else {
+        this.trigger = first;
+      }
+      dr.perMode = !dr.perMode;
+      this.render();
+      return true;
+    }
     if (act === "grab") return true; // das Ziehen läuft über Pointer-Ereignisse; ein Klick tut nichts
     const d = this.ensureDraft();
     const i = Number(el.dataset.index);

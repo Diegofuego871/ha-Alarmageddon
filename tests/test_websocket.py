@@ -232,3 +232,34 @@ async def test_last_change_only_counts_open_close(hass: HomeAssistant, hass_ws_c
     assert entry.entry_id and WINDOW in data["last_changes"]
     stamp = dt_util.parse_datetime(data["last_changes"][WINDOW])
     assert stamp is not None and abs((stamp - (t0 + timedelta(minutes=5))).total_seconds()) < 2  # der echte Wechsel off -> on; "unavailable -> off" danach zählt nicht
+
+
+async def test_rename_system(hass: HomeAssistant, hass_ws_client) -> None:
+    """Umbenennen: Eintrag, Gerät und Entitäts-Name; IDs nur auf Wunsch."""
+    entry = await setup_alarm(hass, "Haus")
+    garage = await setup_alarm(hass, "Garage")
+    ent = er.async_get(hass)
+    alarm_id = ent.async_get_entity_id("alarm_control_panel", "alarmageddon", f"{entry.entry_id}_alarm")
+    assert alarm_id == "alarm_control_panel.haus"
+    # Ohne neue IDs: Name ändert sich, ID bleibt
+    result = await _ws(hass, hass_ws_client, type="alarmageddon/rename", entry_id=entry.entry_id, name="  Wohnhaus ")
+    assert result["success"] and result["result"]["renamed_ids"] == 0
+    await hass.async_block_till_done()
+    assert entry.title == "Wohnhaus" and entry.data["name"] == "Wohnhaus"
+    assert dr.async_get(hass).async_get_device(identifiers={("alarmageddon", entry.entry_id)}).name == "Wohnhaus"
+    assert hass.states.get("alarm_control_panel.haus").attributes["friendly_name"] == "Wohnhaus"
+    # Mit neuen IDs: Alarm-Entität und die übrigen Entitäten der Anlage folgen
+    result = await _ws(hass, hass_ws_client, type="alarmageddon/rename", entry_id=entry.entry_id, name="Villa", regenerate_ids=True)
+    assert result["success"]
+    await hass.async_block_till_done()
+    assert result["result"]["renamed_ids"] >= 1
+    assert hass.states.get("alarm_control_panel.haus") is None
+    assert hass.states.get("alarm_control_panel.villa") is not None
+    # Name leer, doppelt, fremd
+    result = await _ws(hass, hass_ws_client, type="alarmageddon/rename", entry_id=entry.entry_id, name="   ")
+    assert result["error"]["code"] == "name_required"
+    result = await _ws(hass, hass_ws_client, type="alarmageddon/rename", entry_id=entry.entry_id, name="garage")
+    assert result["error"]["code"] == "name_taken"
+    assert garage.title == "Garage"
+    result = await _ws(hass, hass_ws_client, type="alarmageddon/rename", entry_id="fremd", name="X")
+    assert result["error"]["code"] == "not_found"

@@ -72,7 +72,7 @@ class AlarmageddonPanel extends HTMLElement {
 
   _init() {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
-      <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
+      <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-rename"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
@@ -555,8 +555,12 @@ class AlarmageddonPanel extends HTMLElement {
       const items = [
         c.querySelector(":scope > .ag-head"),
         v?.querySelector(":scope > .ag-cfg"),
+        // Name der Anlage: am Computer fest (der Platz reicht), auf dem Handy scrollt er weg
+        this.hasAttribute("narrow") ? null : v?.querySelector(":scope > .ag-sysbar"),
         stickyOverview && tall ? v.querySelector(":scope > .ag-ov-top") : null,
         stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
+        // Sensoren: Schalter und Reiter der Modi bleiben über der Tabelle stehen
+        this._tab === "config" && this._sub === "sensors" ? v?.querySelector(".ag-pmstick") : null,
       ].filter(Boolean);
       // Der Abstand zum nächsten Teil liegt im Teil selbst (Innenabstand statt Lücke, siehe CSS): so ist der Abstand fest und beim Scrollen gleich.
       // Der letzte feste Teil hat keinen, der Tabellenkopf und das Blatt der Optionen stehen direkt darunter.
@@ -795,21 +799,65 @@ class AlarmageddonPanel extends HTMLElement {
       const label = (key) => this._t(narrow ? `${key}Short` : key);
       const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")]], this._sub, "data-sub", "small ag-subs");
       const systems = this._systems();
-      // Benachrichtigungen gelten für alle Anlagen: dort keine Auswahl der Anlage
-      const pick = systems.length > 1 && this._sub !== "notify"
-        ? `<select class="ag-select" data-act="system" aria-label="${esc(this._t("groupsSystem"))}">${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this._sel ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>`
-        : "";
+      // Benachrichtigungen gelten für alle Anlagen: dort kein Anlagenname und keine Auswahl
+      const cur = this._system();
+      const bar = systems.length && cur && this._sub !== "notify" ? this._sysBar(systems, cur) : "";
       const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
       this._lastHtml.delete(this._view);
       // Die Seite gleitet von der Seite herein, wenn der Reiter wechselt (nicht bei jedem Neuaufbau)
       const slide = this._slide || "";
       this._slide = "";
-      this._keepScroll(() => (this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}${pick}</div><div class="ag-pane ${slide}">${body}</div>`));
+      this._keepScroll(() => (this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}</div>${bar}<div class="ag-pane ${slide}">${body}</div>`));
     }
     if (!this._systems().length) return;
     // Nie neu aufbauen, während ein Eingabefeld den Fokus hat (Cursor bliebe nicht stehen)
     const focused = this._root.activeElement && this._view.contains(this._root.activeElement) && /INPUT|TEXTAREA/.test(this._root.activeElement.tagName);
     if (full || !focused || this._sub === "sensors") this._cfgUi.render();
+  }
+
+  // Name der Anlage gross und fett (bei mehreren Anlagen als gleich grosses Dropdown), Stift zum Umbenennen, Sprung nach HA
+  _sysBar(systems, cur) {
+    const title = systems.length > 1
+      ? `<select class="ag-select" data-act="system" aria-label="${esc(this._t("groupsSystem"))}">${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this._sel ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>`
+      : `<h2 class="ag-systitle">${esc(cur.title)}</h2>`;
+    return `<div class="ag-sysbar">${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
+      <button class="ag-btn" data-act="open-ha">${ic("external", 18)}${esc(this._t("openInHa"))}</button></div>`;
+  }
+
+  _openRename() {
+    const s = this._system();
+    if (!s) return;
+    const dlg = this._root.getElementById("ag-rename");
+    dlg.innerHTML = `<form class="ag-dlg-body" data-form="rename" data-entry="${esc(s.entry_id)}">
+      <h3>${esc(this._t("renameTitle"))}</h3>
+      <label class="ag-t2 ag-small" for="ag-rename-input">${esc(this._t("renameLabel"))}</label>
+      <input class="ag-input" id="ag-rename-input" type="text" maxlength="60" value="${esc(s.title)}" required style="width:100%;box-sizing:border-box">
+      <label class="ag-orow ag-rename-ids"><div class="ag-otx"><b>${esc(this._t("renameIds"))}</b><small>${esc(this._t("renameIdsHint"))}</small></div>
+        <button type="button" class="ag-toggle" data-act="rename-ids" role="switch" aria-checked="false" aria-label="${esc(this._t("renameIds"))}"></button></label>
+      <div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-dlg-btns"><button type="button" class="ag-btn" data-act="close-rename">${esc(this._t("cancel"))}</button><button class="ag-btn primary" type="submit">${esc(this._t("renameSave"))}</button></div></form>`;
+    dlg.showModal();
+    const input = dlg.querySelector("input");
+    input.focus();
+    input.select();
+  }
+
+  async _rename(form) {
+    const dlg = this._root.getElementById("ag-rename");
+    const err = dlg.querySelector(".ag-dlg-err");
+    const name = form.querySelector("input").value.trim();
+    if (!name) { err.textContent = this._t("renameEmpty"); return; }
+    const regen = form.querySelector('[data-act="rename-ids"]').classList.contains("on");
+    try {
+      await this._hass.callWS({ type: "alarmageddon/rename", entry_id: form.dataset.entry, name, regenerate_ids: regen });
+    } catch (e) {
+      err.textContent = e?.code === "name_taken" ? this._t("renameTaken") : e?.code === "name_required" ? this._t("renameEmpty") : this._t("errGeneric", { message: errText(e) });
+      return;
+    }
+    this._closeDialog("ag-rename");
+    await this._fetch();
+    // Der Name steht in der Kopfzeile, die sonst nur beim Wechsel von Reiter oder Anlage neu aufgebaut wird
+    if (this._tab === "config") this._renderView(true);
   }
 
   _resetConfig() {
@@ -1034,6 +1082,16 @@ class AlarmageddonPanel extends HTMLElement {
       this._moreInfo(el.dataset.entity);
     } else if (act === "add") {
       this._navigate("/config/integrations/integration/alarmageddon");
+    } else if (act === "rename") {
+      this._openRename();
+    } else if (act === "rename-ids") {
+      const on = !el.classList.contains("on");
+      el.classList.toggle("on", on);
+      el.setAttribute("aria-checked", String(on));
+    } else if (act === "close-rename") {
+      this._closeDialog("ag-rename");
+    } else if (act === "open-ha") {
+      this._navigate(`/config/integrations/integration/alarmageddon#config_entry=${encodeURIComponent(this._sel || "")}`);
     } else if (act === "close-code") {
       this._closeDialog("ag-code");
     } else if (act === "keep") {
@@ -1073,6 +1131,12 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   _onSubmit(ev) {
+    const rform = ev.target.closest('[data-form="rename"]');
+    if (rform) {
+      ev.preventDefault();
+      this._rename(rform);
+      return;
+    }
     const form = ev.target.closest('[data-form="code"]');
     if (!form) return;
     ev.preventDefault();

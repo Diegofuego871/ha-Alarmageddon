@@ -7,13 +7,33 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.35.0] - 2026-11-09
+
+Die Alarmanlage lässt sich umbenennen, mit Kurzbefehl nach Home Assistant.
+
+### Hinzugefügt
+
+- **Name der Alarmanlage** gross und fett oben in der Konfiguration (Sensoren, Aktionen, Anlage), mit einem Stift zum Umbenennen. Der Name ändert sich durchgängig in Home Assistant: Eintrag, Gerät und Name aller Entitäten. Ein Schalter "Entitäts-IDs aus dem neuen Namen neu erzeugen" benennt auch die Entitäts-IDs um, die noch dem alten Namen folgen (selbst benannte IDs bleiben); Automationen, die die alte ID nutzen, müssen angepasst werden. Ein Name, den eine andere Alarmanlage schon hat, wird abgelehnt.
+- **Knopf "Integration in HA öffnen"** neben dem Namen: öffnet die Integrationsseite dieser Alarmanlage in Home Assistant.
+- **Einstellungen pro Modus bei den Aktionen** (Konfiguration › Aktionen): derselbe Schalter wie bei Sensoren, Meldungen und Anlage. Aus (Standard): Ein Ablauf, samt "Alarm endet", gilt für jeden Alarm, in allen Modi und bei immer aktiven Sensoren. Ein: Reiter der Modi und "Immer aktiv", jeder mit eigenem Ablauf. Anlagen, deren Abläufe sich schon unterscheiden, starten mit eingeschaltetem Schalter. Beim Ausschalten gilt der Ablauf des ersten Modus für alle (zurücknehmen mit "Abbrechen").
+- **Filter-Pillen bei den Ereignissen** im Reiter Protokoll (Alle, Alarme, Scharf, Deaktiviert, Scharfschalten fehlgeschlagen), mit Anzahl.
+
+### Geändert
+
+- **Reiterleisten der Einstellungen pro Modus** (Sensoren, Aktionen, Benachrichtigungen › Meldungen, Anlage) stehen links bündig unter dem Schalter. Bei den Sensoren bleibt die Leiste mit Schalter und Reitern beim Scrollen fest.
+- **Bei mehreren Alarmanlagen** wird der Name zu einem gleich grossen Dropdown zum Wechseln der Anlage (statt des kleinen Dropdowns neben den Reitern). Benachrichtigungen gelten für alle Anlagen und zeigen keinen Namen.
+
 ## [0.34.2] - 2026-11-09
+
+Nicht veröffentlicht; enthalten in 0.35.0.
 
 ### Behoben
 
 - **Alarmablauf:** Die gestrichelte Linie eines Schritts, der nebenher läuft, geht nicht mehr durch den Plus-Knopf; der Plus-Knopf hat etwas mehr Abstand nach oben.
 
 ## [0.34.1] - 2026-11-09
+
+Nicht veröffentlicht; enthalten in 0.35.0.
 
 Der Geltungsbereich der Einstellungen pro Modus ist jetzt klar ersichtlich.
 
@@ -524,8 +544,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.34.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.2
-[0.34.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.1
+[0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0
 [0.34.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.0
 [0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0

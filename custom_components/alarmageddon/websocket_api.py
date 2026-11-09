@@ -17,12 +17,14 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_integrations
+from homeassistant.util import slugify
 
 from . import backup, last_change
 from .code import hash_code, match_code
@@ -83,6 +85,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_data)
     websocket_api.async_register_command(hass, ws_save_zones)
     websocket_api.async_register_command(hass, ws_arm)
+    websocket_api.async_register_command(hass, ws_rename)
     websocket_api.async_register_command(hass, ws_save_presets)
     websocket_api.async_register_command(hass, ws_save_system)
     websocket_api.async_register_command(hass, ws_save_notify)
@@ -323,6 +326,56 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         return
     connection.send_result(msg["id"], {"ok": True})
 
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/rename",
+        vol.Required("entry_id"): str,
+        vol.Required("name"): vol.All(str, vol.Length(max=60)),
+        vol.Optional("regenerate_ids", default=False): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_rename(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Benennt die Anlage um: Eintrag, Gerät und damit der Name der Entitäten. Auf Wunsch
+    folgen auch die Entitäts-IDs (nur die, die noch dem alten Namen folgen).
+    """
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    name = " ".join(msg["name"].split())
+    if not name:
+        connection.send_error(msg["id"], "name_required", "Name is empty")
+        return
+    if any(e.entry_id != entry.entry_id and e.title.casefold() == name.casefold() for e in hass.config_entries.async_entries(DOMAIN)):
+        connection.send_error(msg["id"], "name_taken", "Name already used")
+        return
+    registry = er.async_get(hass)
+    # Die IDs folgen dem Namen von damals, nicht unbedingt dem jetzigen Titel: beide Vorsilben gelten
+    prefixes = {slugify(entry.title)}
+    if alarm_id := _alarm_entity(hass, entry):
+        prefixes.add(alarm_id.partition(".")[2])
+    renamed = 0
+    if msg["regenerate_ids"] and (new_slug := slugify(name)):
+        for ent in er.async_entries_for_config_entry(registry, entry.entry_id):
+            domain, _, obj = ent.entity_id.partition(".")
+            # Längste passende Vorsilbe zuerst; selbst benannte IDs bleiben unberührt
+            old = next((p for p in sorted(prefixes, key=len, reverse=True) if obj == p or obj.startswith(p + "_")), None)
+            if old is None:
+                continue
+            new_id = registry.async_generate_entity_id(domain, new_slug + obj[len(old):], current_entity_id=ent.entity_id)
+            if new_id != ent.entity_id:
+                registry.async_update_entity(ent.entity_id, new_entity_id=new_id)
+                renamed += 1
+    # Gerät sofort umbenennen (ein eigener Name am Gerät würde sonst den neuen Namen verdecken)
+    devices = dr.async_get(hass)
+    if device := devices.async_get_device(identifiers={(DOMAIN, entry.entry_id)}):
+        devices.async_update_device(device.id, name=name, name_by_user=None)
+    # Löst das Neuladen aus; der Zustand übersteht es über die Wiederherstellung der Entität
+    hass.config_entries.async_update_entry(entry, title=name, data={**entry.data, CONF_NAME: name})
+    connection.send_result(msg["id"], {"ok": True, "renamed_ids": renamed})
 
 
 @websocket_api.websocket_command(

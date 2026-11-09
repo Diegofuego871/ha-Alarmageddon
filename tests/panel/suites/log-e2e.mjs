@@ -26,6 +26,9 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Reihenfolge mit sechs Einträgen`, await s.ev(`const li=[...r.querySelectorAll('.ag-seq-item')]; return li.length === 6 && li[0].innerText.includes('${t.first}') && li[2].innerText.includes('Bewegung Flur') && li[5].innerText.includes('Diego') && li[3].innerText.includes('${t.calm}')`));
     check(`${tag}: Abstand zum Anfang`, await s.ev("const li=[...r.querySelectorAll('.ag-seq-item time small')]; return li.length === 6 && /\\+/.test(li[2].textContent) && !/\\+/.test(li[0].textContent)"));
     check(`${tag}: Ereignisliste gefüllt`, await s.ev("return r.querySelectorAll('.ag-log .ag-row').length > 1"));
+    check(`${tag}: Filter-Pillen bei den Ereignissen filtern die Liste`, await s.ev("const n=r.querySelectorAll('.ag-log .ag-row').length; const chip=[...r.querySelectorAll('[data-log=\"evfilter\"]')].find((b) => b.dataset.filter === 'disarmed'); if (!chip || r.querySelectorAll('[data-log=\"evfilter\"]').length < 4) return false; chip.click(); return true"));
+    check(`${tag}: nur noch Deaktiviert-Ereignisse, Pille gewählt`, await s.waitFor("const rows=[...r.querySelectorAll('.ag-log .ag-row')]; return rows.length >= 1 && rows.every((x) => /Deaktiviert|Disarmed/.test(x.textContent)) && r.querySelector('[data-filter=\"disarmed\"]').classList.contains('on')"));
+    await s.tap('[data-filter="all"]');
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
     await s.page.screenshot({ path: `${outDir}log-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     // ----- Zeitraum und Export -----

@@ -228,7 +228,7 @@ export class SensorsUi {
         ${filters}<span class="ag-grow"></span>${narrow ? "" : `<span class="ag-hint">${ic("hand", 16)}${esc(this._t("dragHint"))}</span>`}
         <button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>
         <button class="ag-btn" data-sen="presets">${ic("tune", 18)}${esc(this._t("presets"))}</button></div>
-      <div class="ag-pmbar"></div>
+      <div class="ag-pmstick"><div class="ag-pmbar"></div></div>
       <div class="ag-sen-layout"><div class="ag-gbody"></div><div class="ag-side"></div></div><div class="ag-foot"></div>`;
   }
 

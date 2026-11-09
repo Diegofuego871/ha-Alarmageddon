@@ -7,13 +7,33 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.35.0] - 2026-11-09
+
+The name of the alarm system can be changed, with a shortcut to Home Assistant.
+
+### Added
+
+- **Name of the alarm system** large and bold at the top of Configuration (Sensors, Actions, Alarm system), with a pencil to rename it. The name changes everywhere in Home Assistant: config entry, device and the name of all entities. A switch "Create new entity IDs from the new name" also renames the entity IDs that still follow the old name (IDs you named yourself stay); automations that use the old ID must be adjusted. A name already used by another alarm system is refused.
+- **Button "Open integration in HA"** next to the name: opens the integration page of this alarm system in Home Assistant.
+- **Settings per mode for the actions** (Configuration › Actions): the same switch as for sensors, messages and alarm system. Off (default): one action flow, including "Alarm ends", applies to every alarm, in all modes and for always active sensors. On: tabs of the modes and "Always active", each with its own flow. Alarm systems whose flows already differ start with the switch on. Switching off applies the flow of the first mode to all (undo with "Cancel").
+- **Filter pills for the events** in the tab Log (All, Alarms, Armed, Disarmed, Arming failed), with counts.
+
+### Changed
+
+- **Tab bars of the settings per mode** (Sensors, Actions, Notifications › Messages, Alarm system) sit left-aligned below the switch. In Sensors the bar with switch and tabs stays fixed while scrolling.
+- **With several alarm systems** the name becomes a dropdown of the same size to switch the alarm system (instead of the small dropdown next to the tabs). Notifications apply to all alarm systems and show no name.
+
 ## [0.34.2] - 2026-11-09
+
+Not released; included in 0.35.0.
 
 ### Fixed
 
 - **Alarm flow:** the dashed line of a step that runs alongside no longer runs through the plus button; the plus button has a little more space above it.
 
 ## [0.34.1] - 2026-11-09
+
+Not released; included in 0.35.0.
 
 The scope of the settings per mode is now obvious.
 
@@ -524,8 +544,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.34.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.2
-[0.34.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.1
+[0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0
 [0.34.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.0
 [0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0

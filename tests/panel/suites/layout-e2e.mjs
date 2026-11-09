@@ -164,6 +164,7 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: Schalter "Einstellungen pro Modus" aus: keine Reiterleiste`, await s.ev("const sw=r.querySelector('[data-sen=\"permode\"]'); return sw.getAttribute('aria-checked') === 'false' && !r.querySelector('[data-seg=\"sen-mode\"]')"));
       await s.tap('[data-sen="permode"]');
       check(`${tag}: Schalter ein: Reiter der Modi (ohne "Alle Modi"), der erste ist gewählt, Entwurf`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"sen-mode\"] > button')]; return t.length >= 3 && t.every((b) => b.dataset.sen !== 'mt:all') && t.at(-1).dataset.sen === 'mt:always' && t[0].classList.contains('on') && r.querySelector('[data-sub=\"sensors\"]').classList.contains('has-edit')"));
+      check(`${tag}: Reiter der Modi links bündig unter dem Schalter, Leiste bleibt beim Scrollen fest`, await s.ev("const sw=r.querySelector('.ag-pmbar .ag-toggle').getBoundingClientRect(); const seg=r.querySelector('.ag-pmbar [data-seg=\"sen-mode\"]').getBoundingClientRect(); return Math.abs(seg.left - sw.left) < 4 && seg.top > sw.bottom && r.querySelector('.ag-pmstick').classList.contains('ag-stk')"));
       if (!mobile) check(`${tag}: dieselben Spalten wie vorher, Spalten des gewählten Modus hervorgehoben`, await s.ev(`return r.querySelectorAll('.ag-gbody th').length === ${thCount} && r.querySelectorAll('.ag-gbody th.cur').length === 1`));
       await s.tap('[data-sen="mt:away"]');
       const alwaysSel = '.ag-gbody [data-sen="mopt"][data-key="always"][data-mode="always"]';

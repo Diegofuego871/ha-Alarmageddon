@@ -343,6 +343,14 @@
       sys.night_enabled = enabled.night;
       return { ok: true };
     }
+    if (msg.type === "alarmageddon/rename") {
+      const name = String(msg.name || "").trim();
+      if (!name) throw err("name_required", "empty");
+      if (window.__systems.some((x) => x.entry_id !== sys.entry_id && x.title.toLowerCase() === name.toLowerCase())) throw err("name_taken", "taken");
+      window.__renames = (window.__renames || []).concat([{ entry_id: sys.entry_id, name, regenerate_ids: !!msg.regenerate_ids }]);
+      sys.title = name;
+      return { ok: true, renamed_ids: msg.regenerate_ids ? 1 : 0 };
+    }
     if (msg.type === "alarmageddon/arm") {
       const needCode = sys.has_code && (msg.mode === "off" || sys.code_arm_required);
       if (needCode && msg.code !== sys.code && !Object.values(sys.pcodes).includes(msg.code)) throw err("invalid_code", "Wrong code");
