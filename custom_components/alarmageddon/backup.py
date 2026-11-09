@@ -14,15 +14,17 @@ bleiben unverändert.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_CODE_ARM_REQUIRED, DOMAIN
+from .const import BACKUPS_STORE_KEY, CONF_CODE_ARM_REQUIRED, DOMAIN, MAX_BACKUPS
 from .schemas import SYSTEM_OPTIONS_SCHEMA
 from .settings import async_get_settings, valid_notify, valid_presets
 
@@ -103,3 +105,46 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str
         # Zuletzt: Voreinstellungen laden alle Anlagen neu
         await settings.async_set_presets(backup["presets"])
     return result
+
+
+# ----- Sicherungen in der Integration (0.38.0): bis zu MAX_BACKUPS, neueste zuerst -----
+
+
+def _store(hass: HomeAssistant) -> Store:
+    return Store(hass, 1, BACKUPS_STORE_KEY)
+
+
+async def _load(hass: HomeAssistant) -> list[dict[str, Any]]:
+    data = await _store(hass).async_load()
+    items = data.get("backups") if isinstance(data, dict) else None
+    return [b for b in (items or []) if isinstance(b, dict) and isinstance(b.get("id"), str) and isinstance(b.get("data"), dict)]
+
+
+async def async_list_backups(hass: HomeAssistant) -> list[dict[str, Any]]:
+    """Ohne den Inhalt: Kennung, Zeitpunkt und die Namen der gesicherten Anlagen."""
+    return [
+        {"id": b["id"], "created": b.get("created"), "systems": [s.get("title") for s in b["data"].get("systems", []) if isinstance(s, dict)]}
+        for b in await _load(hass)
+    ]
+
+
+async def async_create_backup(hass: HomeAssistant, integration_version: str | None) -> dict[str, Any]:
+    data = await async_export(hass, integration_version)
+    items = await _load(hass)
+    item = {"id": uuid.uuid4().hex[:12], "created": data["created"], "data": data}
+    items = [item, *items][:MAX_BACKUPS]
+    await _store(hass).async_save({"backups": items})
+    return {"id": item["id"], "created": item["created"], "systems": [s["title"] for s in data["systems"]]}
+
+
+async def async_get_backup(hass: HomeAssistant, backup_id: str) -> dict[str, Any] | None:
+    return next((b["data"] for b in await _load(hass) if b["id"] == backup_id), None)
+
+
+async def async_delete_backup(hass: HomeAssistant, backup_id: str) -> bool:
+    items = await _load(hass)
+    rest = [b for b in items if b["id"] != backup_id]
+    if len(rest) == len(items):
+        return False
+    await _store(hass).async_save({"backups": rest})
+    return True

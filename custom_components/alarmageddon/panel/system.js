@@ -17,6 +17,8 @@ export class SystemUi {
     this.draft = null;
     this.saveState = null;
     this.saving = false;
+    this.backups = null; // in der Integration abgelegte Sicherungen (neueste zuerst), null = noch nicht geladen
+    this.bkMax = 10;
     this.scope = "away"; // Modus, dessen Werte gerade angezeigt werden (Ansicht, nicht Teil des Entwurfs)
   }
 
@@ -169,20 +171,111 @@ export class SystemUi {
   }
 
   _backupHtml() {
+    if (this.backups === null && !this._bkLoading) this.loadBackups();
     return chapter(this._t("bkTitle"), `<div class="ag-card ag-setlist ag-codes"><div class="ag-setrow"><div class="ag-settx"><small>${esc(this._t("bkHint"))}</small></div>
-      <div class="ag-btnrow"><button class="ag-btn" data-sys="export">${ic("arrowDown", 18)}${esc(this._t("bkExport"))}</button>
-        <button class="ag-btn" data-sys="import">${ic("arrowUp", 18)}${esc(this._t("bkImport"))}</button><input type="file" accept="application/json,.json" data-sys="import-file" hidden></div></div></div>`);
+      <div class="ag-btnrow"><button class="ag-btn primary" data-sys="bk-create">${ic("check", 18)}${esc(this._t("bkSave"))}</button>
+        <button class="ag-btn" data-sys="export">${ic("arrowDown", 18)}${esc(this._t("bkExport"))}</button>
+        <button class="ag-btn" data-sys="import">${ic("arrowUp", 18)}${esc(this._t("bkImport"))}</button><input type="file" accept="application/json,.json" data-sys="import-file" hidden></div></div></div>
+      <div class="ag-bkbody">${this._bkBody()}</div>`);
+  }
+
+  // Liste der Sicherungen als Tabelle: Datum, Anlagen, Herunterladen, Wiederherstellen, Löschen
+  _bkBody() {
+    if (this.backups === null) return "";
+    const lang = this.host._lang || "en";
+    const date = (iso) => (iso ? new Date(iso).toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" }) : "–");
+    if (!this.backups.length) return `<div class="ag-t2 ag-small" style="margin:10px 4px 0">${esc(this._t("bkEmpty"))}</div>`;
+    const btn = (act, icon, key, id) => `<button class="ag-iconbtn" data-sys="${act}" data-id="${esc(id)}" title="${esc(this._t(key))}" aria-label="${esc(this._t(key))}">${ic(icon, 18)}</button>`;
+    const rows = this.backups.map((b) => `<tr data-bk="${esc(b.id)}"><td>${esc(date(b.created))}</td><td class="ag-t2">${esc((b.systems || []).join(", ") || "–")}</td>
+        <td class="ag-acts"><div class="ag-actrow">${btn("bk-download", "arrowLine", "bkDownload", b.id)}${btn("bk-restore", "restore", "bkRestoreOne", b.id)}${btn("bk-delete", "trash", "bkDelete", b.id)}</div></td></tr>`).join("");
+    return `<div class="ag-t2 ag-small" style="margin:10px 4px 6px">${esc(this._t("bkCount", { count: this.backups.length, max: this.bkMax }))}</div>
+      <div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table ag-bktable"><tr><th>${esc(this._t("bkColDate"))}</th><th>${esc(this._t("bkColSystems"))}</th><th></th></tr>${rows}</table></div>`;
+  }
+
+  renderBackups() {
+    const el = this.host._view?.querySelector(".ag-bkbody");
+    if (el) this.host._setHtml(el, this._bkBody());
+    this.host._stickySync?.();
+  }
+
+  async loadBackups() {
+    this._bkLoading = true;
+    try {
+      const res = await this.host._hass.callWS({ type: "alarmageddon/backups" });
+      this.backups = res.backups || [];
+      this.bkMax = res.max || 10;
+    } catch {
+      this.backups = [];
+    } finally {
+      this._bkLoading = false;
+    }
+    this.renderBackups();
+  }
+
+  async createBackup() {
+    try {
+      const res = await this.host._hass.callWS({ type: "alarmageddon/backup_create" });
+      this.backups = res.backups || [];
+      this.bkMax = res.max || 10;
+      this.renderBackups();
+      this.host._toast(this._t("bkSaved"));
+    } catch (err) {
+      this.host._toast(this._t("errGeneric", { message: errText(err) }));
+    }
+  }
+
+  _download(data, name) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = this.host.ownerDocument.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  async downloadBackup(id) {
+    try {
+      const data = await this.host._hass.callWS({ type: "alarmageddon/backup_get", backup_id: id });
+      this._download(data, `alarmageddon-${String(data.created || new Date().toISOString()).slice(0, 10)}.json`);
+    } catch (err) {
+      this.host._toast(this._t("errGeneric", { message: errText(err) }));
+    }
+  }
+
+  async restoreBackup(id) {
+    try {
+      await this.askRestore(await this.host._hass.callWS({ type: "alarmageddon/backup_get", backup_id: id }));
+    } catch (err) {
+      this.host._toast(this._backupErr(err));
+    }
+  }
+
+  openDeleteBackup(id) {
+    const b = (this.backups || []).find((x) => x.id === id);
+    if (!b) return;
+    const lang = this.host._lang || "en";
+    const dlg = this._codeDlg();
+    dlg.innerHTML = `<div class="ag-dlg-body"><h3>${esc(this._t("bkDeleteTitle"))}</h3><div class="ag-t2">${esc(b.created ? new Date(b.created).toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" }) : "")}</div>
+      <div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-dlg-btns"><button class="ag-btn" data-sys="code-close">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-sys="bk-delete-go" data-id="${esc(id)}">${esc(this._t("bkDelete"))}</button></div></div>`;
+    dlg.showModal();
+  }
+
+  async deleteBackup(id) {
+    try {
+      const res = await this.host._hass.callWS({ type: "alarmageddon/backup_delete", backup_id: id });
+      this.backups = res.backups || [];
+      this._codeDlg().close();
+      this.renderBackups();
+    } catch (err) {
+      this._codeError(this._t("errGeneric", { message: errText(err) }));
+    }
   }
 
   async exportBackup() {
     try {
       const data = await this.host._hass.callWS({ type: "alarmageddon/export" });
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const a = this.host.ownerDocument.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `alarmageddon-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      this._download(data, `alarmageddon-${new Date().toISOString().slice(0, 10)}.json`);
     } catch (err) {
       this.host._toast(this._t("errGeneric", { message: errText(err) }));
     }
@@ -204,20 +297,25 @@ export class SystemUi {
       return this.host._toast(this._t("errNotABackup"));
     }
     try {
-      const plan = await this.host._hass.callWS({ type: "alarmageddon/import", data, dry_run: true });
-      this._pendingBackup = data;
-      const dlg = this._codeDlg();
-      const ok = plan.systems.length || plan.settings;
-      dlg.innerHTML = `<div class="ag-dlg-body"><h3>${esc(this._t("bkConfirmTitle"))}</h3>
-        ${plan.systems.length ? `<div>${esc(this._t("bkFound", { list: plan.systems.join(", ") }))}</div>` : `<div class="ag-t2">${esc(this._t("bkNoneFound"))}</div>`}
-        ${plan.missing.length ? `<div class="ag-t2">${esc(this._t("bkMissing", { list: plan.missing.join(", ") }))}</div>` : ""}
-        ${plan.settings ? `<div class="ag-t2">${esc(this._t("bkSettings"))}</div>` : ""}
-        <div class="ag-dlg-err" aria-live="polite"></div>
-        <div class="ag-dlg-btns"><button class="ag-btn" data-sys="code-close">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-sys="import-go" ${ok ? "" : "disabled"}>${esc(this._t("bkRestore"))}</button></div></div>`;
-      dlg.showModal();
+      await this.askRestore(data);
     } catch (err) {
       this.host._toast(this._backupErr(err));
     }
+  }
+
+  // Prüft eine Sicherung (Datei oder abgelegt) und zeigt, was wiederhergestellt würde
+  async askRestore(data) {
+    const plan = await this.host._hass.callWS({ type: "alarmageddon/import", data, dry_run: true });
+    this._pendingBackup = data;
+    const dlg = this._codeDlg();
+    const ok = plan.systems.length || plan.settings;
+    dlg.innerHTML = `<div class="ag-dlg-body"><h3>${esc(this._t("bkConfirmTitle"))}</h3>
+      ${plan.systems.length ? `<div>${esc(this._t("bkFound", { list: plan.systems.join(", ") }))}</div>` : `<div class="ag-t2">${esc(this._t("bkNoneFound"))}</div>`}
+      ${plan.missing.length ? `<div class="ag-t2">${esc(this._t("bkMissing", { list: plan.missing.join(", ") }))}</div>` : ""}
+      ${plan.settings ? `<div class="ag-t2">${esc(this._t("bkSettings"))}</div>` : ""}
+      <div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-dlg-btns"><button class="ag-btn" data-sys="code-close">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-sys="import-go" ${ok ? "" : "disabled"}>${esc(this._t("bkRestore"))}</button></div></div>`;
+    dlg.showModal();
   }
 
   async importGo() {
@@ -401,6 +499,16 @@ export class SystemUi {
       this.save();
     } else if (act === "code") {
       this.host._navigate("/config/integrations/integration/alarmageddon");
+    } else if (act === "bk-create") {
+      this.createBackup();
+    } else if (act === "bk-download") {
+      this.downloadBackup(el.dataset.id);
+    } else if (act === "bk-restore") {
+      this.restoreBackup(el.dataset.id);
+    } else if (act === "bk-delete") {
+      this.openDeleteBackup(el.dataset.id);
+    } else if (act === "bk-delete-go") {
+      this.deleteBackup(el.dataset.id);
     } else if (act === "export") {
       this.exportBackup();
     } else if (act === "import-go") {

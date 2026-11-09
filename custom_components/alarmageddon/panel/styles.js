@@ -496,6 +496,7 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 :host([narrow]) .ag-schrow .ag-time, :host([narrow]) .ag-schrow select.ag-input { flex: 1 1 120px; min-width: 0; }
 :host([narrow]) .ag-schrow .ag-days { flex-basis: 100%; }
 .ag-btnrow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+:host([narrow]) .ag-codes .ag-btnrow { justify-content: flex-start; }
 /* Lange Texte in der Auswahl "Offener Sensor" auf dem Handy: volle Breite, Text darf umbrechen statt abgeschnitten zu werden */
 :host([narrow]) [data-seg="sys-open"] { display: flex; width: 100%; }
 :host([narrow]) [data-seg="sys-open"] > button { flex: 1 1 0; min-width: 0; white-space: normal; line-height: 1.25; text-align: center; }

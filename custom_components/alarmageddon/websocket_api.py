@@ -30,6 +30,7 @@ from . import backup, last_change
 from .code import hash_code, match_code
 from .const import (
     BATTERY_THRESHOLD_RANGE,
+    MAX_BACKUPS,
     OFFLINE_MINUTES_RANGE,
     CODE_PATTERN,
     CONF_CODE_ARM_REQUIRED,
@@ -98,6 +99,10 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_import)
+    websocket_api.async_register_command(hass, ws_backups)
+    websocket_api.async_register_command(hass, ws_backup_create)
+    websocket_api.async_register_command(hass, ws_backup_get)
+    websocket_api.async_register_command(hass, ws_backup_delete)
     websocket_api.async_register_command(hass, ws_add_code)
     websocket_api.async_register_command(hass, ws_remove_code)
 
@@ -741,6 +746,47 @@ async def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         return
     result = backup.plan(hass, data) if msg["dry_run"] else await backup.async_restore(hass, data)
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backups"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backups(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Die in der Integration abgelegten Sicherungen (ohne Inhalt), neueste zuerst."""
+    connection.send_result(msg["id"], {"backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backup_create"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backup_create(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Legt die aktuelle Konfiguration (ohne Codes) in der Integration ab; es bleiben höchstens MAX_BACKUPS."""
+    entries = backup.loaded_entries(hass)
+    version = entries[0].runtime_data.version if entries else None
+    created = await backup.async_create_backup(hass, version)
+    connection.send_result(msg["id"], {"created": created, "backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backup_get", vol.Required("backup_id"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backup_get(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Inhalt einer Sicherung: zum Herunterladen und (über "import") zum Wiederherstellen."""
+    data = await backup.async_get_backup(hass, msg["backup_id"])
+    if data is None:
+        connection.send_error(msg["id"], "not_found", "Unknown backup")
+        return
+    connection.send_result(msg["id"], data)
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backup_delete", vol.Required("backup_id"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backup_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    if not await backup.async_delete_backup(hass, msg["backup_id"]):
+        connection.send_error(msg["id"], "not_found", "Unknown backup")
+        return
+    connection.send_result(msg["id"], {"backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/log"})

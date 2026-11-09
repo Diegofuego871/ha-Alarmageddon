@@ -240,6 +240,20 @@
       return { format: "alarmageddon", version: 1, integration_version: "0.5.0", created: new Date().toISOString(), settings: { presets: window.__presets, notify: window.__notify },
         systems: window.__systems.map((s) => ({ title: s.title, options: { workflows: s.workflows, sensor_options: s.sensor_options } })) };
     }
+    if (msg.type === "alarmageddon/backups" || msg.type === "alarmageddon/backup_create" || msg.type === "alarmageddon/backup_get" || msg.type === "alarmageddon/backup_delete") {
+      window.__backups = window.__backups || [];
+      const list = () => ({ backups: window.__backups.map((b) => ({ id: b.id, created: b.data.created, systems: b.data.systems.map((x) => x.title) })), max: 10 });
+      if (msg.type === "alarmageddon/backup_create") {
+        const data = await callWS({ type: "alarmageddon/export" });
+        window.__backups = [{ id: "b" + Math.random().toString(36).slice(2, 8), data }, ...window.__backups].slice(0, 10);
+      } else if (msg.type !== "alarmageddon/backups") {
+        const found = window.__backups.find((b) => b.id === msg.backup_id);
+        if (!found) throw err("not_found", "Unknown backup");
+        if (msg.type === "alarmageddon/backup_get") return found.data;
+        window.__backups = window.__backups.filter((b) => b !== found);
+      }
+      return list();
+    }
     if (msg.type === "alarmageddon/import") {
       const d = msg.data;
       if (!d || d.format !== "alarmageddon") throw err("not_a_backup");

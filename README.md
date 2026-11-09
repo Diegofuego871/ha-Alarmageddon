@@ -133,7 +133,7 @@ Side panel › Configuration › Alarm system › "Schedule": "Add time" creates
 
 ## Backup
 
-Side panel › Configuration › Alarm system › "Backup": "Export" saves all settings of all alarm systems as a JSON file (zones, delays, options per sensor, actions, defaults, notifications). "Import" shows first which alarm systems are found (matched by name) and replaces their settings after confirming. Codes are never part of a backup, and the codes of the target alarm system stay as they are. The backup of Home Assistant contains all settings including codes anyway.
+Side panel › Configuration › Alarm system › "Backup": "Back up" stores the current configuration (all alarm systems, defaults, notifications; no codes) in the integration. A table below lists the backups with the date and the alarm systems; each one can be restored, downloaded as a file or deleted. Up to 10 backups are kept, the oldest one is dropped when an eleventh is added. "Export" saves all settings of all alarm systems as a JSON file (zones, delays, options per sensor, actions, defaults, notifications). "Import" shows first which alarm systems are found (matched by name) and replaces their settings after confirming. Codes are never part of a backup, and the codes of the target alarm system stay as they are. The backup of Home Assistant contains all settings including codes anyway.
 
 ## Apple HomeKit
 

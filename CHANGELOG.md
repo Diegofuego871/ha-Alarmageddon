@@ -7,7 +7,17 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.38.0] - 2026-11-09
+
+Backups kept in the integration, with a list.
+
+### Added
+
+- **Back up** (Configuration › Alarm system › Backup): one button stores the current configuration (all alarm systems, defaults, notifications; never codes) in the integration. Below, a table lists the backups with the date and the alarm systems: **restore** (with the same confirmation as an import), **download** a single backup as a file, or **delete** it. Up to 10 backups are kept; adding an eleventh drops the oldest. "Export" and "Import" with a file stay.
+
 ## [0.37.0] - 2026-11-09
+
+Not released; included in 0.38.0.
 
 Arming and disarming from the overview shows that the alarm system is working.
 
@@ -19,7 +29,7 @@ Arming and disarming from the overview shows that the alarm system is working.
 
 ## [0.36.0] - 2026-11-09
 
-Not released; included in 0.37.0.
+Not released; included in 0.38.0.
 
 A tidier log, especially on the phone.
 
@@ -597,7 +607,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.37.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.37.0
+[0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2
 [0.35.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.1
 [0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0

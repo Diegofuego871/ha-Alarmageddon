@@ -7,7 +7,17 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.38.0] - 2026-11-09
+
+Sicherungen in der Integration, mit Liste.
+
+### Hinzugefügt
+
+- **Sichern** (Konfiguration › Anlage › Sicherung): Ein Knopf legt die aktuelle Konfiguration (alle Anlagen, Voreinstellungen, Benachrichtigungen; nie Codes) in der Integration ab. Darunter listet eine Tabelle die Sicherungen mit Datum und Anlagen: **wiederherstellen** (mit derselben Rückfrage wie beim Import), eine einzelne Sicherung als Datei **herunterladen** oder **löschen**. Es bleiben höchstens 10 Sicherungen; kommt eine elfte dazu, fällt die älteste weg. "Exportieren" und "Importieren" mit einer Datei bleiben.
+
 ## [0.37.0] - 2026-11-09
+
+Nicht veröffentlicht; enthalten in 0.38.0.
 
 Scharf- und Deaktivieren in der Übersicht zeigt, dass die Anlage arbeitet.
 
@@ -19,7 +29,7 @@ Scharf- und Deaktivieren in der Übersicht zeigt, dass die Anlage arbeitet.
 
 ## [0.36.0] - 2026-11-09
 
-Nicht veröffentlicht; enthalten in 0.37.0.
+Nicht veröffentlicht; enthalten in 0.38.0.
 
 Ein aufgeräumteres Protokoll, besonders auf dem Handy.
 
@@ -597,7 +607,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.37.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.37.0
+[0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2
 [0.35.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.1
 [0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0

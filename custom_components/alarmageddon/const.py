@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 58  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 59  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -203,6 +203,8 @@ WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor be
 WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
 STEP_TYPES: Final = ("notify", "action", "wait", "sound")
 WORKFLOW_STORE_KEY: Final = f"{DOMAIN}.workflow"
+BACKUPS_STORE_KEY: Final = f"{DOMAIN}.backups"
+MAX_BACKUPS: Final = 10  # Sicherungen in der Integration; die älteste fällt weg
 TEST_SECONDS: Final = 60  # ein Test endet spätestens nach so vielen Sekunden von selbst
 MAX_STEPS: Final = 40
 # Mitgelieferte Töne: Name und Länge in Sekunden (scripts/make_sounds.py)

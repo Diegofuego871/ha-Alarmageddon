@@ -133,7 +133,7 @@ Seitenpanel › Konfiguration › Anlage › "Zeitplan": "Zeit hinzufügen" legt
 
 ## Sicherung
 
-Seitenpanel › Konfiguration › Anlage › "Sicherung": "Exportieren" speichert alle Einstellungen aller Alarmanlagen als JSON-Datei (Zonen, Verzögerungen, Optionen pro Sensor, Aktionen, Voreinstellungen, Benachrichtigungen). "Importieren" zeigt zuerst, welche Alarmanlagen gefunden werden (Zuordnung über den Namen), und ersetzt deren Einstellungen nach Bestätigung. Codes sind nie Teil einer Sicherung, und die Codes der Zielanlage bleiben, wie sie sind. Die Sicherung von Home Assistant enthält ohnehin alle Einstellungen samt Codes.
+Seitenpanel › Konfiguration › Anlage › "Sicherung": "Sichern" legt die aktuelle Konfiguration (alle Anlagen, Voreinstellungen, Benachrichtigungen; ohne Codes) in der Integration ab. Eine Tabelle darunter listet die Sicherungen mit Datum und Anlagen; jede lässt sich wiederherstellen, als Datei herunterladen oder löschen. Es bleiben höchstens 10 Sicherungen, die älteste fällt weg, wenn eine elfte dazukommt. "Exportieren" speichert alle Einstellungen aller Alarmanlagen als JSON-Datei (Zonen, Verzögerungen, Optionen pro Sensor, Aktionen, Voreinstellungen, Benachrichtigungen). "Importieren" zeigt zuerst, welche Alarmanlagen gefunden werden (Zuordnung über den Namen), und ersetzt deren Einstellungen nach Bestätigung. Codes sind nie Teil einer Sicherung, und die Codes der Zielanlage bleiben, wie sie sind. Die Sicherung von Home Assistant enthält ohnehin alle Einstellungen samt Codes.
 
 ## Apple HomeKit
 

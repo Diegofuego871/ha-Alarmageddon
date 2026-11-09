@@ -94,6 +94,26 @@ for (const lang of ["de", "en"]) {
     const thirdCall = await s.page.waitForFunction(() => window.__calls.filter((c) => c.type === "alarmageddon/import").length === 3, null, { timeout: 5000 }).then(() => true, () => false);
     check(`${tag}: fremde Datei abgelehnt`, thirdCall && await s.waitFor("return !r.getElementById('ag-codes').open"));
 
+    // ----- Sicherungen in der Integration: Sichern, Liste, Herunterladen, Wiederherstellen, Löschen, höchstens 10 -----
+    const bkRows = () => s.ev("return r.querySelectorAll('.ag-bktable tr[data-bk]').length");
+    check(`${tag}: Sichern: Knopf da, noch keine Sicherung`, await s.ev("return !!r.querySelector('[data-sys=\"bk-create\"]') && !r.querySelector('.ag-bktable') && r.querySelector('.ag-bkbody')?.innerText.length > 10"));
+    await s.tap('[data-sys="bk-create"]');
+    check(`${tag}: Sicherung abgelegt, Meldung`, await s.waitFor("return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 1 && !!r.querySelector('.ag-toast')"));
+    await s.tap('[data-sys="bk-create"]');
+    check(`${tag}: zwei Sicherungen mit Datum und Anlagen, drei Knöpfe je Zeile`, await s.waitFor("const row=r.querySelector('.ag-bktable tr[data-bk]'); return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 2 && /\\d{4}/.test(row.cells[0].textContent) && row.cells[1].textContent.includes('Haus') && row.querySelectorAll('.ag-iconbtn').length === 3"));
+    check(`${tag}: Tabelle im festen Kopf-Rahmen und passt in die Breite`, await s.ev("const w=r.querySelector('.ag-bktable').closest('.ag-stickwrap'); return !!w && !w.classList.contains('hscroll') && r.querySelector('.ag-bktable').scrollWidth <= w.clientWidth + 1"));
+    const [bkDownload] = await Promise.all([s.page.waitForEvent("download", { timeout: 5000 }).catch(() => null), s.tap('.ag-bktable tr[data-bk] [data-sys="bk-download"]')]);
+    check(`${tag}: einzelne Sicherung herunterladen`, !!bkDownload && /^alarmageddon-\d{4}-\d{2}-\d{2}\.json$/.test(bkDownload.suggestedFilename()), bkDownload?.suggestedFilename());
+    await s.tap('.ag-bktable tr[data-bk] [data-sys="bk-restore"]');
+    check(`${tag}: Wiederherstellen fragt mit den gefundenen Anlagen`, await s.waitFor("const d=r.getElementById('ag-codes'); return d.open && d.innerText.includes('Haus') && !!d.querySelector('[data-sys=\"import-go\"]')"));
+    await s.tap('#ag-codes [data-sys="code-close"]');
+    await s.tap('.ag-bktable tr[data-bk] [data-sys="bk-delete"]');
+    check(`${tag}: Löschen fragt nach`, await s.waitFor("const d=r.getElementById('ag-codes'); return d.open && !!d.querySelector('[data-sys=\"bk-delete-go\"]')"));
+    await s.tap('#ag-codes [data-sys="bk-delete-go"]');
+    check(`${tag}: gelöscht`, await s.waitFor("return !r.getElementById('ag-codes').open && r.querySelectorAll('.ag-bktable tr[data-bk]').length === 1"));
+    for (let i = 0; i < 11; i += 1) await s.tap('[data-sys="bk-create"]');
+    check(`${tag}: höchstens 10 Sicherungen`, await s.waitFor("return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 10 && /10/.test(r.querySelector('.ag-bkbody .ag-small').textContent)"));
+
     // ----- Wartungsmeldungen -----
     await s.tap('[data-sub="notify"]');
     check(`${tag}: Wartung in Benachrichtigungen`, await s.waitFor(`return r.querySelector('.ag-nt')?.innerText.includes('${t.maint}')`));
