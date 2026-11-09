@@ -153,6 +153,7 @@ export class LogUi {
     if (e.kind === "sensor") return this._t(e.to === "on" ? "logSensorOn" : e.to === "off" ? "logSensorOff" : "logSensorGone", { sensor });
     if (e.kind === "restart") return this._t("logRestart");
     if (e.kind === "notified") return this._t("logNotified", { type: this._t(`ntT_${e.type}`) });
+    if (e.kind === "step_failed") return this._t(e.reason === "timeout" ? "logStepTimeout" : "logStepError", { action: e.action || "?" });
     if (e.kind === "step") {
       const targets = (e.targets || []).map((id) => this.host._name(id)).join(", ");
       const test = e.test ? ` (${this._t("logTest")})` : "";
@@ -169,6 +170,7 @@ export class LogUi {
     if (e.kind === "sensor") return e.to === "on" ? "err" : e.to === "off" ? "none" : "warn";
     if (e.kind === "state") return STATE_COLOR[e.state] || "none";
     if (e.kind === "sensor_offline") return "warn";
+    if (e.kind === "step_failed") return "warn";
     if (e.kind === "step" || e.kind === "notified") return "info";
     return STATE_COLOR[e.kind] || "none";
   }

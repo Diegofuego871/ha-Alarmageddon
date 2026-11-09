@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 
 import pytest
@@ -28,15 +29,22 @@ async def call(hass: HomeAssistant, service: str, entity: str = ALARM, **data) -
     await hass.async_block_till_done()
 
 
+async def settle(hass: HomeAssistant) -> None:
+    """Der Ablauf der Aktionen läuft in Hintergrund-Tasks mit mehreren Schritten: mehrere Runden, bis alles ruht."""
+    for _ in range(6):
+        await hass.async_block_till_done()
+        await asyncio.sleep(0)
+
+
 async def advance(hass: HomeAssistant, freezer, seconds: float) -> None:
     freezer.tick(timedelta(seconds=seconds))
     async_fire_time_changed(hass, dt_util.utcnow())
-    await hass.async_block_till_done()
+    await settle(hass)
 
 
 async def open_sensor(hass: HomeAssistant, entity: str) -> None:
     hass.states.async_set(entity, "on")
-    await hass.async_block_till_done()
+    await settle(hass)
 
 
 async def test_device_and_entities(hass: HomeAssistant) -> None:

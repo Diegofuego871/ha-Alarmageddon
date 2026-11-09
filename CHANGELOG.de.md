@@ -17,6 +17,7 @@ Sicherungen können einen Namen haben.
 
 ### Behoben
 
+- **Alarmaktionen hängen nie:** Ein Gerät, das nicht innerhalb von 10 Sekunden antwortet (vorher: 15), hält den Ablauf nicht mehr auf; er geht mit dem nächsten Schritt weiter, und die Zeitachse des Alarms zeigt "Keine Antwort innerhalb von 10 s, der Ablauf ging weiter". Der hängende Aufruf wird nicht abgebrochen (ein Skript darf fertig werden), aber nicht mehr abgewartet, und Deaktivieren beendet ihn, auch wenn er den Abbruch ignoriert. Der Sonos-Schnappschuss vor dem ersten Schritt verzögert den Alarm höchstens um 3 Sekunden. Auch eine fehlschlagende Aktion steht auf der Zeitachse. Deaktivieren, während der Ablauf startet, hinterlässt keinen halb gestarteten Ablauf mehr. Meldungen an die Handys warten ebenfalls höchstens 15 Sekunden.
 - **Alarmablauf auf dem Handy:** Die gestrichelte Linie und die Linie zu "Alarm endet" liegen jetzt genau unter der Mitte der Plus-Knöpfe (sie lagen 3 px zu weit rechts).
 
 ## [0.38.0] - 2026-11-09

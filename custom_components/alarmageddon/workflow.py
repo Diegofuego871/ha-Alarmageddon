@@ -31,7 +31,11 @@ from .const import CONF_WORKFLOWS, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, 
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
-SERVICE_TIMEOUT = 15
+# Ein Gerät, das länger nicht antwortet, hält den Ablauf nie auf: nach dieser Zeit (Sekunden) läuft er mit dem nächsten Schritt weiter.
+# Der hängende Aufruf wird nicht abgebrochen (ein Skript soll weiterlaufen dürfen), nur nicht mehr abgewartet; Deaktivieren beendet ihn.
+SERVICE_TIMEOUT = 10
+# Der Schnappschuss vor dem ersten Schritt darf den Alarm höchstens so lange verzögern
+SNAPSHOT_TIMEOUT = 3
 # Was vom Zustand eines Geräts für die Wiederherstellung zählt
 KEEP_ATTRS = ("brightness", "color_temp_kelvin", "current_position", "volume_level", "is_volume_muted", "source")
 
@@ -62,6 +66,7 @@ class WorkflowRunner:
         self._store = _store(hass, entry.entry_id)
         self._task: asyncio.Task | None = None
         self._side_tasks: set[asyncio.Task] = set()  # Schritte "nicht abwarten", laufen nebenher
+        self._late: set[asyncio.Task] = set()  # Aufrufe, auf die nicht mehr gewartet wird (Zeit überschritten)
         self._run: dict[str, Any] | None = None  # laufender Ablauf: Auslöser, Schritt, Schnappschuss, Test
         self._last_state: str | None = None
         self._unsubs: list[Any] = []
@@ -136,8 +141,13 @@ class WorkflowRunner:
             return False
         entities = sorted({e for s in steps for e in step_entities(s)})
         self._run = {"trigger": trigger, "index": 0, "test": test, "snapshot": self._snapshot(entities), "sonos": [], "steps": override}
-        self._run["sonos"] = await self._sonos_snapshot(entities)
-        await self._store.async_save(self._run)
+        run = self._run
+        run["sonos"] = await self._sonos_snapshot(entities)
+        if self._run is not run:
+            return False  # während des Schnappschusses deaktiviert: nichts mehr starten
+        await self._store.async_save(run)
+        if self._run is not run:
+            return False
         self._task = self._background(self._execute(trigger, 0))
         if test:
             self._test_timer = async_call_later(self.hass, TEST_SECONDS, partial(self._test_over))
@@ -223,7 +233,7 @@ class WorkflowRunner:
             data = dict(step.get("data") or {})
             if step.get("target"):
                 data["entity_id"] = list(step["target"])
-            await asyncio.wait_for(self.hass.services.async_call(domain, service, data, blocking=True), SERVICE_TIMEOUT)
+            await self._bounded(self.hass.services.async_call(domain, service, data, blocking=True), f"{domain}.{service}")
         elif kind == "sound":
             await self._play(step)
 
@@ -266,13 +276,45 @@ class WorkflowRunner:
             # Zeit um, deaktiviert oder "Sirene stumm": der Ton darf nicht ausklingen oder weiterlaufen
             await self._call("media_player", "media_stop", {"entity_id": players})
 
-    async def _call(self, domain: str, service: str, data: dict[str, Any]) -> None:
+    async def _bounded(self, coro: Any, label: str, timeout: float | None = None) -> None:
+        """
+        Wartet höchstens `timeout` (Standard SERVICE_TIMEOUT) auf einen Aufruf. Antwortet das Gerät nicht, geht es weiter: Der Aufruf
+        läuft als eigener Task weiter (auch wenn er Abbrüche ignoriert, wir warten nicht auf ihn) und endet spätestens beim
+        Deaktivieren. Zeitüberschreitung und Fehler stehen auf der Zeitachse des Alarms.
+        """
+        limit = SERVICE_TIMEOUT if timeout is None else timeout
+        # Eigener, von HA verfolgter Task (wie ein gewöhnlicher Dienstaufruf), damit "alles abgearbeitet" ihn mitzählt
+        task = self.hass.async_create_task(coro, f"alarmageddon step call {self.entry.entry_id}")
         try:
-            await asyncio.wait_for(self.hass.services.async_call(domain, service, data, blocking=True), SERVICE_TIMEOUT)
+            done, _pending = await asyncio.wait({task}, timeout=limit)
+        except asyncio.CancelledError:
+            task.cancel()
+            raise
+        if not done:
+            self._late.add(task)
+            task.add_done_callback(self._late.discard)
+            task.add_done_callback(lambda t: t.cancelled() or t.exception())  # Ausnahme als abgeholt markieren
+            self._ctl.record("step_failed", action=label, reason="timeout")
+            raise TimeoutError(f"{label} did not respond within {limit} s")
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self._ctl.record("step_failed", action=label, reason="error")
+            raise
+
+    async def _call(self, domain: str, service: str, data: dict[str, Any], timeout: float | None = None) -> None:
+        try:
+            await self._bounded(self.hass.services.async_call(domain, service, data, blocking=True), f"{domain}.{service}", timeout)
         except Exception:  # noqa: BLE001 - ein Gerät, das nicht antwortet, hält den Ablauf nicht auf
             _LOGGER.exception("%s: %s.%s failed", self.entry.title, domain, service)
 
     async def _cancel_task(self) -> None:
+        # Hängende Aufrufe enden mit dem Alarm; nicht abwarten (ein Aufruf, der Abbrüche ignoriert, darf das Deaktivieren nicht aufhalten)
+        for late in list(self._late):
+            late.cancel()
+        self._late.clear()
         side, self._side_tasks = list(self._side_tasks), set()
         for t in side:
             t.cancel()
@@ -332,7 +374,7 @@ class WorkflowRunner:
         registry = er.async_get(self.hass)
         sonos = [e for e in entities if e.startswith("media_player.") and (r := registry.async_get(e)) and r.platform == "sonos"]
         if sonos:
-            await self._call("sonos", "snapshot", {"entity_id": sonos, "with_group": True})
+            await self._call("sonos", "snapshot", {"entity_id": sonos, "with_group": True}, SNAPSHOT_TIMEOUT)
         return sonos
 
     async def _restore(self, run: dict[str, Any]) -> None:

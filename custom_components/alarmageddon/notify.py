@@ -10,6 +10,7 @@ Meldung; jede App nimmt sich, was sie kennt. Texte in der Sprache von HA
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -177,7 +178,7 @@ def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, t
 
 async def _async_call(hass: HomeAssistant, domain: str, service: str, payload: dict[str, Any]) -> None:
     try:
-        await hass.services.async_call(domain, service, payload, blocking=True)
+        await asyncio.wait_for(hass.services.async_call(domain, service, payload, blocking=True), 15)
     except Exception:  # noqa: BLE001 - jede Meldung einzeln, ein Fehler stoppt die anderen nicht
         _LOGGER.exception("Notification via %s.%s failed", domain, service)
 

@@ -17,6 +17,7 @@ Backups can have a name.
 
 ### Fixed
 
+- **Alarm actions never hang:** a device that does not answer within 10 seconds (before: 15) no longer holds up the flow; it goes on with the next step, and the timeline of the alarm shows "No answer within 10 s, the flow went on". The hanging call is not cancelled (a script may finish) but is not waited for, and disarming ends it, even if it ignores the cancellation. The Sonos snapshot before the first step delays the alarm by 3 seconds at most. A failing action is shown in the timeline too. Disarming while the flow starts no longer leaves a half-started flow behind. Notifications to the phones also stop waiting after 15 seconds.
 - **Alarm flow on the phone:** the dashed line and the line to "Alarm ends" now sit exactly under the centre of the plus buttons (they were 3 px to the right).
 
 ## [0.38.0] - 2026-11-09

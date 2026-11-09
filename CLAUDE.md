@@ -101,6 +101,11 @@ Umsetzung:
   einem Szenario-Schritt brechen die übrigen Schritte nicht ab.
 - Deaktivieren stoppt immer alle laufenden Schritte und führt die
   Gegenaktionen aus, auch nach einem Neustart von HA mitten im Alarm.
+- Kein Gerät darf den Ablauf der Alarmaktionen aufhalten: Jeder Aufruf wartet
+  höchstens 10 Sekunden (`SERVICE_TIMEOUT` in `workflow.py`), dann geht der
+  Ablauf weiter; Deaktivieren beendet hängende Aufrufe, auch solche, die
+  Abbrüche ignorieren. Jeder neue Schritt im Ablauf braucht einen Test mit
+  hängendem Gerät (`tests/test_action_hang.py`).
 - Deaktivieren per Push-Aktion ist standardmässig aus.
 - Jede Änderung am Zustandsautomaten oder an der Szenario-Engine braucht
   Tests für: Deaktivieren während Verzögerung, Neustart während Alarm,

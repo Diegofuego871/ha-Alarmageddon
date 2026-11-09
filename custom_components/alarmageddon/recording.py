@@ -132,7 +132,7 @@ class AlarmRecorder:
     @callback
     def _on_record(self, kind: str, data: dict[str, Any]) -> None:
         """Aktionsschritte und gesendete Meldungen des laufenden Alarms."""
-        if self.current is not None and kind in ("step", "notified"):
+        if self.current is not None and kind in ("step", "step_failed", "notified"):
             self._add({"kind": kind, **data})
 
     @callback
