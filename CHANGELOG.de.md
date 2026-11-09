@@ -20,6 +20,10 @@ Enthält die Änderungen aus 0.23.0.
 - **Handy:** Tippfläche mindestens 44 px, die Leisten füllen die Breite, ab fünf Reitern vier Spalten in Zeilen (bei schmalen Handys drei). Kleine Leisten (zum Beispiel der Umschalter Liste / Karten) bleiben so breit wie ihr Inhalt.
 - **"Offener Sensor beim Scharfschalten" ist ein Aufklappmenü** (Konfiguration › Anlage › Verhalten) statt zwei Reitern: Reiter wirkten dort zu nah an der Navigation und verwirrten.
 
+### Behoben
+
+- **"Letzte Änderung" in der Sensorliste** springt nicht mehr auf den Zeitpunkt des letzten Neustarts von Home Assistant. Nur ein Wechsel zwischen offen und zu zählt; "nicht verfügbar" und zurück (Neustart, Funkabbruch) nicht. Alarmageddon merkt sich die Zeit selbst und liest für Sensoren ohne gemerkte Zeit einmal den Verlauf (Recorder, letzte 90 Tage); ohne echten Wechsel in dieser Zeit zeigt die Liste "–".
+
 
 ## [0.23.0] - 2026-11-08
 

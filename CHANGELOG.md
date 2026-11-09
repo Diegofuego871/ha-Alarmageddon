@@ -20,6 +20,10 @@ Includes the changes from 0.23.0.
 - **Phone:** tap area at least 44 px, bars fill the width, from five tabs on four columns in rows (three on narrow phones). Small bars (for example the switch List / Cards) stay as wide as their content.
 - **"Open sensor when arming" is a dropdown** (Configuration › Alarm system › Behaviour) instead of two tabs: tabs there looked too much like the navigation and were confusing.
 
+### Fixed
+
+- **"Last change" in the sensor list** no longer jumps to the time of the last restart of Home Assistant. Only a change between open and closed counts; "unavailable" and back (restart, radio dropout) does not. Alarmageddon remembers the time itself and, for sensors without a remembered time, reads the history once (recorder, last 90 days); without a real change in that time the list shows "–".
+
 
 ## [0.23.0] - 2026-11-08
 

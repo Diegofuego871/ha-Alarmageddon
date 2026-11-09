@@ -13,6 +13,9 @@ for (const lang of ["de", "en"]) {
     await (await s.el('select[data-list="area"]')).selectOption("Flur");
     check(`${tag}: nach Bereich gefiltert`, await s.waitFor("const rows=[...r.querySelectorAll('.ag-lrow, .ag-lcard')]; return rows.length > 0 && rows.length < 9 && rows.every((x) => x.innerText.includes('Flur'))"));
     await (await s.el('select[data-list="area"]')).selectOption("");
+    // "Letzte Änderung" kommt vom Server (nur echte Wechsel offen <-> zu), nicht aus last_changed von HA, das beim Neustart zurückgesetzt wird
+    const times = await s.ev("const rows=[...r.querySelectorAll('.ag-lrow, .ag-lcard')]; const pick=(n) => rows.find((x) => x.innerText.includes(n)); return { door: pick('Haustür')?.innerText, other: pick('Bewegung Flur')?.innerText }");
+    check(`${tag}: letzte Änderung aus dem Server (Haustür vor Tagen), ohne Wert nichts erfunden`, /5|fünf|five|Tag|day/i.test(times.door || "") && !/Min\.|min ago|Sek|sec/i.test(times.other || ""), JSON.stringify(times));
     if (mobile) {
       check(`${tag}: Handy zeigt Karten, kein Umschalter`, await s.ev("return r.querySelectorAll('.ag-lcard').length === 9 && !r.querySelector('[data-seg=\"layout\"]')"));
     } else {

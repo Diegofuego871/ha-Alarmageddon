@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_track_point_in_utc_time, async_tra
 from homeassistant.util import dt as dt_util
 
 from .code import match_code
+from .last_change import is_real_change
 from .const import (
     ARM_ON_CLOSE_SETTLE,
     CONF_CONFIRM_WINDOW,
@@ -358,6 +359,9 @@ class AlarmController:
         if old is None or new is None:
             return
         entity = event.data["entity_id"]
+        # "Letzte Änderung" der Liste: nur ein Wechsel offen <-> zu, nicht der Neustart von Home Assistant
+        if self.settings is not None and is_real_change(old.state, new.state):
+            self.settings.note_change(entity, new.last_changed.isoformat())
         # Nur ein echter Wechsel von "zu" auf "offen" zählt. "nicht verfügbar" -> "offen" kommt nach jedem
         # Neustart und jeder Neuverbindung vor und wäre ein Fehlalarm.
         went_on = old.state == STATE_OFF and new.state == STATE_ON

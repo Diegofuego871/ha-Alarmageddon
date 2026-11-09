@@ -114,6 +114,8 @@ class Settings:
             "update": copy.deepcopy(DEFAULT_UPDATE),
             # Versionen, zu denen schon gemeldet wurde ({"found": "0.7.0", "done": ...}); intern, nicht in der Sicherung
             "update_notified": {},
+            # Letzte echte Änderung (offen <-> zu) je Sensor, ISO-Zeit; intern, nicht in der Sicherung (Laufzeitdaten)
+            "last_changes": {},
         }
         self._listeners: list[Callable[[], None]] = []
 
@@ -124,10 +126,28 @@ class Settings:
         self.data["presets"] = valid_presets(self.data.get("presets"))
         self.data["notify"] = valid_notify(self.data.get("notify"))
         self.data["update"] = valid_update(self.data.get("update"))
+        stored_changes = self.data.get("last_changes")
+        self.data["last_changes"] = {k: v for k, v in stored_changes.items() if isinstance(k, str) and isinstance(v, str)} if isinstance(stored_changes, dict) else {}
         notified = self.data.get("update_notified")
         self.data["update_notified"] = (
             {k: str(v) for k, v in notified.items() if k in ("found", "done") and v} if isinstance(notified, dict) else {}
         )
+
+    @property
+    def last_changes(self) -> dict[str, str]:
+        return self.data["last_changes"]
+
+    def note_change(self, entity_id: str, when: str) -> None:
+        """Echte Änderung eines Sensors merken (aus dem Zustandsautomaten); selten, verzögertes Speichern genügt."""
+        self.data["last_changes"][entity_id] = when
+        self._store.async_delay_save(lambda: self.data, 5)
+
+    def seed_changes(self, found: dict[str, str]) -> None:
+        """Aus dem Verlauf geholte Zeitpunkte nur für Sensoren ohne gemerkten Wert übernehmen."""
+        added = {k: v for k, v in found.items() if k not in self.data["last_changes"]}
+        if added:
+            self.data["last_changes"].update(added)
+            self._store.async_delay_save(lambda: self.data, 5)
 
     @property
     def presets(self) -> dict[str, list[str]]:

@@ -73,7 +73,8 @@ export class ListUi {
         open: st?.state === "on",
         low: battery !== null && battery < h._lowBattery(),
         signal: Number.isFinite(sigVal) ? { value: sigVal, unit: sigState.attributes.unit_of_measurement || "" } : null,
-        changed: st?.last_changed || null,
+        // Letzte echte Änderung (offen <-> zu) vom Server; HA setzt last_changed bei jedem Neustart zurück, das gilt hier nicht
+        changed: h._data?.last_changes?.[id] || null,
       };
     });
   }

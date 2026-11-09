@@ -195,3 +195,40 @@ async def test_chosen_sensors_saved_and_listed(hass: HomeAssistant, hass_ws_clie
     await client.send_json({"id": 4, "type": "alarmageddon/export"})
     exported = (await client.receive_json())["result"]
     assert exported["systems"][0]["options"]["sensors"] == ["binary_sensor.wasser_keller"]
+
+
+async def test_last_change_only_counts_open_close(hass: HomeAssistant, hass_ws_client, freezer) -> None:
+    """"Letzte Änderung" (0.25.0): nur ein Wechsel offen <-> zu zählt, nicht "nicht verfügbar" nach einem Neustart."""
+    from datetime import timedelta
+
+    from custom_components.alarmageddon.last_change import is_real_change, last_real_change
+    from homeassistant.util import dt as dt_util
+
+    assert is_real_change("off", "on") and is_real_change("on", "off")
+    assert not is_real_change("unavailable", "off") and not is_real_change("off", "unavailable") and not is_real_change("off", "off")
+
+    t0 = dt_util.utcnow()
+    at = lambda m: t0 + timedelta(minutes=m)  # noqa: E731
+    # Verlauf: zu, offen (Wechsel), nicht verfügbar, zu (Wechsel, 2 Min danach), nicht verfügbar, zu (kein Wechsel)
+    items = [(at(0), "off"), (at(10), "on"), (at(20), "unavailable"), (at(22), "off"), (at(30), "unavailable"), (at(31), "off")]
+    assert last_real_change(items) == at(22)
+    assert last_real_change([(at(0), "off"), (at(5), "unavailable"), (at(6), "off")]) is None  # Neustart allein ist keine Änderung
+
+    entry = await setup_alarm(hass)
+    hass.states.async_set(WINDOW, "off", {"device_class": "window"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=5))
+    hass.states.async_set(WINDOW, "on", {"device_class": "window"})
+    await hass.async_block_till_done()
+    # Neustart: nicht verfügbar, dann zu: die gemerkte Zeit bleibt
+    freezer.tick(timedelta(minutes=5))
+    hass.states.async_set(WINDOW, "unavailable")
+    await hass.async_block_till_done()
+    hass.states.async_set(WINDOW, "off", {"device_class": "window"})
+    await hass.async_block_till_done()
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/data"})
+    data = (await client.receive_json())["result"]
+    assert entry.entry_id and WINDOW in data["last_changes"]
+    stamp = dt_util.parse_datetime(data["last_changes"][WINDOW])
+    assert stamp is not None and abs((stamp - (t0 + timedelta(minutes=5))).total_seconds()) < 2  # der echte Wechsel off -> on; "unavailable -> off" danach zählt nicht

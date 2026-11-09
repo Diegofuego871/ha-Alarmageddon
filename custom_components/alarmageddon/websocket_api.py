@@ -24,7 +24,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_integrations
 
-from . import backup, update_check
+from . import backup, last_change, update_check
 from .code import hash_code, match_code
 from .const import (
     BATTERY_THRESHOLD_RANGE,
@@ -155,6 +155,16 @@ async def _sensor_info(hass: HomeAssistant, extra: set[str]) -> dict[str, dict[s
     return out
 
 
+async def _last_changes(hass: HomeAssistant, settings, entities: list[str]) -> dict[str, str]:
+    """Letzte echte Änderung (offen <-> zu) je Sensor: gemerkt, sonst einmal aus dem Verlauf geholt (nicht bei jedem Abruf)."""
+    tried: set[str] = hass.data.setdefault(f"{DOMAIN}_changes_tried", set())
+    missing = [e for e in entities if e not in settings.last_changes and e not in tried]
+    if missing:
+        tried.update(missing)
+        settings.seed_changes(await last_change.async_history_changes(hass, missing))
+    return {e: settings.last_changes[e] for e in entities if e in settings.last_changes}
+
+
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/data"})
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -211,6 +221,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "systems": systems,
         "sensors": sensors,
         "presets": settings.presets,
+        "last_changes": await _last_changes(hass, settings, sorted(chosen)),
         "notify": settings.notify,
         "notify_services": notify_services,
         "users": sorted(
