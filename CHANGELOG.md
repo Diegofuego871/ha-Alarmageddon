@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.34.2] - 2026-11-09
+
+### Fixed
+
+- **Alarm flow:** the dashed line of a step that runs alongside no longer runs through the plus button; the plus button has a little more space above it.
+
 ## [0.34.1] - 2026-11-09
 
 The scope of the settings per mode is now obvious.
@@ -518,6 +524,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.34.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.2
 [0.34.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.1
 [0.34.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.0
 [0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0

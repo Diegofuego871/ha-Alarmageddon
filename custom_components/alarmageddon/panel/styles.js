@@ -303,13 +303,13 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-start .ag-mini.err { background-image: linear-gradient(var(--ag-error-soft), var(--ag-error-soft)); }
 .ag-wf-start .ag-mini.ok { background-image: linear-gradient(var(--ag-success-soft), var(--ag-success-soft)); }
 .ag-wf-start { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-weight: 500; position: relative; z-index: 1; }
-.ag-wf-plus { display: flex; padding: 6px 0 6px 20px; position: relative; z-index: 1; }
-.ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.ag-wf-plus { display: flex; padding: 18px 0 6px 20px; position: relative; z-index: 1; }
+.ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; position: relative; z-index: 2; }
 .ag-wf-add:hover { background: var(--ag-primary-soft); }
 .ag-flow { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ag-divider); background: transparent; color: var(--ag-text2); font: inherit; font-size: 12px; cursor: pointer; }
 .ag-flow.par { border-color: transparent; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-flow:hover { border-color: var(--ag-primary); }
-.ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: -14px; bottom: 0; width: 0; border-left: 2px dashed var(--ag-primary); z-index: 0; }
+.ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: -14px; height: 32px; width: 0; border-left: 2px dashed var(--ag-primary); z-index: 0; }
 .ag-wf-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; z-index: 1; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }
