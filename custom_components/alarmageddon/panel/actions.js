@@ -447,8 +447,18 @@ export class ActionsUi {
 
   // ----- Editor -----
 
-  _field(label, body, hint = "") {
+  // Einfaches Feld mit Beschriftung (innerhalb eines Kapitels)
+  _ef(label, body, hint = "") {
     return `<div class="ag-ef"><div class="ag-ef-l">${esc(this._t(label))}</div>${hint ? `<div class="ag-ef-h">${esc(this._t(hint))}</div>` : ""}${body}</div>`;
+  }
+
+  // Kapitel im Dialog (Design-Regel "Kapitel"): Titel mit Strich davor, darunter die Karte
+  _sec(title, body, hint = "") {
+    return `<section class="ag-chap ag-chap-s"><h4 class="ag-sec-t">${esc(this._t(title))}</h4>${hint ? `<p class="ag-chap-h">${esc(this._t(hint))}</p>` : ""}<div class="ag-card ag-efcard">${body}</div></section>`;
+  }
+
+  _field(label, body, hint = "") {
+    return this._sec(label, body, hint);
   }
 
   _toggle(attr, on, label) {
@@ -462,7 +472,7 @@ export class ActionsUi {
   }
 
   _restoreRow(f) {
-    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestore"))}</b>${f.kind === "sound" ? `<small>${esc(this._t("fldRestoreSoundHint"))}</small>` : ""}</div>${this._toggle('data-wf="restore"', f.restore, "fldRestore")}</div>${this._detachRow(f)}`;
+    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestore"))}</b><small>${esc(this._t(f.kind === "sound" ? "fldRestoreSoundHint" : "fldRestoreHint"))}</small></div>${this._toggle('data-wf="restore"', f.restore, "fldRestore")}</div>${this._detachRow(f)}`;
   }
 
   _rangeRow(attr, label, value, min, max, step, text) {
@@ -537,11 +547,11 @@ export class ActionsUi {
     const dm = this._t("ntDefaultMessage");
     const chips = NOTIFY_TOKENS.map((tok) => `<button type="button" class="ag-chip" data-wf="ins" data-token="${esc(tok)}">${esc(tok)}<small>${esc(this._t(`ntTok_${tok.slice(1, -1)}`))}</small></button>`).join("");
     return `<div class="ag-t2">${esc(this._t("stepNotifyHint"))}</div>
-      ${this._field("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
-      ${this._field("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
-      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtTokens"))}</div><div class="ag-ef-h">${esc(this._t("fldNtTokensHint"))}</div><div class="ag-zline">${chips}</div></div>
-      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtPreview"))}</div><div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
-        <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div></div>
+      ${this._sec("chapNtContent", `${this._ef("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
+      ${this._ef("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
+      ${this._ef("fldNtTokens", `<div class="ag-zline">${chips}</div>`, "fldNtTokensHint")}
+      ${this._ef("fldNtPreview", `<div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
+        <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div>`)}`)}
       ${this._ntDelivery(f)}`;
   }
 
@@ -559,14 +569,11 @@ export class ActionsUi {
       const on = f.ntButtons?.[key] ?? g[key];
       return `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t(label))}</b><small class="${warn ? "ag-warntext" : ""}">${warn ? `${ic("alert", 14)} ` : ""}${esc(this._t(hint))}</small></div>${this._toggle(`data-wf="nt-btn" data-key="${key}"`, on, label)}</div>`;
     };
-    return `<div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtDelivery"))}</div>
-        <div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("ntCriticalShort"))}</b><small>${esc(this._t("fldNtCriticalHint"))}</small></div>${this._toggle('data-wf="nt-crit"', critical, "ntCriticalShort")}</div>
-        ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}</div>
-      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtClick"))}</div><div class="ag-ef-h">${esc(this._t("fldNtClickHint"))}</div>
-        <select class="ag-input" data-wf="nt-click" aria-label="${esc(this._t("fldNtClick"))}">${["log", "overview", "custom"].map((k) => `<option value="${k}" ${(f.ntClick || "log") === k ? "selected" : ""}>${esc(this._t(`ntClick_${k}`))}</option>`).join("")}</select>
-        ${f.ntClick === "custom" ? `<input class="ag-input ag-mono" data-wf="f" data-key="ntClickPath" value="${esc(f.ntClickPath || "")}" placeholder="/lovelace/alarm" aria-label="${esc(this._t("ntClick_custom"))}" autocapitalize="off" autocomplete="off" spellcheck="false">` : ""}</div>
-      <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtButtons"))}</div>
-        ${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}</div>`;
+    return this._sec("fldNtDelivery", `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("ntCriticalShort"))}</b><small>${esc(this._t("fldNtCriticalHint"))}</small></div>${this._toggle('data-wf="nt-crit"', critical, "ntCriticalShort")}</div>
+        ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}`)
+      + this._sec("fldNtClick", `<select class="ag-input" data-wf="nt-click" aria-label="${esc(this._t("fldNtClick"))}">${["log", "overview", "custom"].map((k) => `<option value="${k}" ${(f.ntClick || "log") === k ? "selected" : ""}>${esc(this._t(`ntClick_${k}`))}</option>`).join("")}</select>
+        ${f.ntClick === "custom" ? `<input class="ag-input ag-mono" data-wf="f" data-key="ntClickPath" value="${esc(f.ntClickPath || "")}" placeholder="/lovelace/alarm" aria-label="${esc(this._t("ntClick_custom"))}" autocapitalize="off" autocomplete="off" spellcheck="false">` : ""}`, "fldNtClickHint")
+      + this._sec("fldNtButtons", `${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}`);
   }
 
   // Vorschau mit echten Namen der Anlage und eines Sensors, so wie die Meldung aussähe
@@ -675,6 +682,7 @@ export class ActionsUi {
 
   renderEditor() {
     const f = this.edit.form;
+    if (this.edit.snap === undefined) this.edit.snap = JSON.stringify(f); // Stand beim Öffnen: Abbrechen fragt nur bei echten Änderungen
     const k = KINDS.find((x) => x.kind === f.kind);
     let fields;
     if (f.kind === "notify") fields = this._notifyFields(f);
@@ -940,7 +948,7 @@ export class ActionsUi {
     if (act === "add") this.openPicker(Number(el.dataset.at));
     else if (act === "kind") {
       const k = KINDS.find((x) => x.kind === el.dataset.kind);
-      this.openEditor({ ...blank(), kind: k.kind, restore: k.kind === "sound" });
+      this.openEditor({ ...blank(), kind: k.kind, restore: k.kind === "sound", detach: k.kind === "sound" }); // Alarmton: standardmässig "nicht abwarten" und zurückstellen
     } else if (act === "edit") {
       this.edit = { index: i, insert: null, form: fromStep(list[i]), q: "", error: "", open: false };
       this.renderEditor();

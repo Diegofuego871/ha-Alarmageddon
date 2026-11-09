@@ -224,7 +224,7 @@ export class SensorsUi {
         body.push(`<tr class="grp"><td colspan="${modes.length + 5}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
       }
       const bits = this._bits(r);
-      body.push(`<tr class="${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
+      body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
         ${modes.map((m) => {
           const on = d.zones[m].has(r.id);
           return `<td class="z"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
@@ -232,7 +232,7 @@ export class SensorsUi {
         <td class="z">${this._entryToggle(r)}</td><td>${esc(r.info.integration || "")}</td><td>${bits.batt}</td>
         <td style="width:92px;white-space:nowrap"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></td></tr>`);
     }
-    return `<div class="ag-card ag-table-wrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
+    return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
   }
 
   _entryToggle(r, extra = "") {
@@ -252,7 +252,7 @@ export class SensorsUi {
         out.push(`<div class="ag-group-label">${esc(area)}</div>`);
       }
       const bits = this._bits(r);
-      out.push(`<div class="ag-card ag-mcard"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>${bits.batt}
+      out.push(`<div class="ag-card ag-mcard ag-clickrow" data-row="${esc(r.id)}"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>${bits.batt}
           <button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
         <div class="ag-zbtns" style="--n:${modes.length}">${modes.map((m) => {
           const on = d.zones[m].has(r.id);
@@ -451,13 +451,17 @@ export class SensorsUi {
     const own = this.host._systems().reduce((n, s) => n + Object.keys(s.sensor_options || {}).length, 0);
     return `<div class="ag-dlg-body"><h3>${esc(this._t("presetsTitle"))}</h3><div class="ag-t2">${esc(this._t("presetsText"))}</div>
       <div class="ag-table-wrap"><table class="ag-table ag-ptable"><tr><th>${esc(this._t("colType"))}</th>${OPTIONS.map((o) => `<th class="z">${esc(this._t(o.name))}</th>`).join("")}</tr>${rows}</table></div>
-      <div class="ag-t2 ag-small">${own ? esc(this._t("presetsOwnCount", { count: own })) : ""}</div><div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-t2 ag-small">${own ? esc(this._t("presetsOwnCount", { count: own })) : ""}</div>
+      <div class="ag-ef-row ag-presetall"><div class="ag-settx"><b>${esc(this._t("presetsApplyAll"))}</b><small class="${this.presetOverride ? "ag-warntext" : ""}">${this.presetOverride ? `${ic("alert", 14)} ` : ""}${esc(this._t("presetsApplyAllHint", { count: own }))}</small></div>
+        <button class="ag-toggle ${this.presetOverride ? "on" : ""}" data-sen="preset-all" role="switch" aria-checked="${Boolean(this.presetOverride)}" aria-label="${esc(this._t("presetsApplyAll"))}"></button></div>
+      <div class="ag-dlg-err" aria-live="polite"></div>
       <div class="ag-dlg-btns"><button class="ag-btn" data-sen="presets-restore" style="margin-right:auto">${esc(this._t("presetsRestore"))}</button>
         <button class="ag-btn" data-sen="presets-cancel">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-sen="presets-save">${esc(this._t("save"))}</button></div></div>`;
   }
 
   openPresets() {
     this.presetDraft = JSON.parse(JSON.stringify(this.presets));
+    this.presetOverride = false;
     const dlg = this.host._root.getElementById("ag-presets");
     dlg.innerHTML = this.presetsHtml();
     dlg.showModal();
@@ -467,7 +471,10 @@ export class SensorsUi {
     const h = this.host;
     const dlg = h._root.getElementById("ag-presets");
     try {
-      await h._hass.callWS({ type: "alarmageddon/save_presets", presets: this.presetDraft });
+      const msg = { type: "alarmageddon/save_presets", presets: this.presetDraft };
+      // Alle Sensoren übernehmen die Voreinstellung: eigene Werte je Sensor werden gelöscht
+      if (this.presetOverride) msg.reset_sensors = Object.keys(this.presetDraft);
+      await h._hass.callWS(msg);
       if (h._data) h._data.presets = JSON.parse(JSON.stringify(this.presetDraft));
       dlg.close();
       h._toast(this._t("presetsSaved"));
@@ -567,6 +574,9 @@ export class SensorsUi {
       if (list.has(el.dataset.key)) list.delete(el.dataset.key);
       else list.add(el.dataset.key);
       this.presetDraft[el.dataset.kind] = OPTIONS.map((o) => o.key).filter((k) => list.has(k));
+      this.host._setHtml(this.host._root.getElementById("ag-presets"), this.presetsHtml());
+    } else if (act === "preset-all") {
+      this.presetOverride = !this.presetOverride;
       this.host._setHtml(this.host._root.getElementById("ag-presets"), this.presetsHtml());
     } else if (act === "presets-restore") {
       this.presetDraft = JSON.parse(JSON.stringify(DEFAULT_PRESETS));

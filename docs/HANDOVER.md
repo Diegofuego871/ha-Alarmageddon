@@ -5,6 +5,16 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.26.0, Fenster, feste Kopfzeile, Sortieren)
+
+- Dialoge: `_initDialogs` in `alarmageddon-panel.js` setzt per MutationObserver ein rundes `.ag-dlg-x` (42 px, wie `.dlg-close` in Device Panel) in jedes `dialog.ag-dlg` ausser `ag-discard`; `_onDlgClick` (Capture) fängt X und die Abbrechen-Knöpfe (`DLG_CANCEL`) ab und fragt über `_dlgDirty(dlg)` (Schritt-Editor: Vergleich mit `edit.snap`, Auswahl, Voreinstellungen, neuer Code) per `_confirm` nach; Escape geht über das `cancel`-Ereignis. Knöpfe unten: `.ag-dlg-btns` ist `position: sticky` im scrollenden `.ag-dlg-body`. Das Blatt am Handy (`ag-sheetdlg`) hat das X im Kopf.
+- Fixe Kopfzeile: `_stickySync` misst `.ag-head`, Unterreiter und `.ag-tools` und setzt `top`/`z-index` sowie `--ag-th-top` für `th` (nur Desktop; am Handy bleibt die Tabelle seitlich wischbar). `.ag-content` hat oben kein Padding (Chrome misst `sticky top` ab dem Innenabstand), der Abstand sitzt in `.ag-head`. Maximalbreite 1680 px über `--ag-px`.
+- Liste: Spaltenköpfe sind Knöpfe (`data-list="sort"`), `_sortKey` je Spalte, leere Werte am Ende; Filter `occupied` (Bewegung, Belegung, Anwesenheit) getrennt von `open`.
+- `save_presets` nimmt `reset_sensors` (Sensorarten): löscht `sensor_options` der betroffenen Sensoren in allen Anlagen, Antwort `reset`. Panel: Schalter "Auf alle Sensoren anwenden" im Dialog.
+- Aktionsdialoge in Kapiteln (`_sec`, `.ag-sec-t`); "Rückgängig beim Deaktivieren/Quittieren" (`fldRestore`) mit Hinweis; Alarmton: neuer Schritt mit `detach: true`.
+- Offen, wartet auf den Entscheid des Nutzers: Element "Alarm endet" am Ende des Ablaufs mit der Wahl, was Deaktivieren macht (nur stoppen, markierte zurück, alle zurück).
+- Tests: `layout-e2e.mjs` (Fenster, X, Rückfrage, feste Kopfzeile, Sortieren, Belegung, Zeilenklick, breit), `test_presets_can_reset_own_sensor_values`.
+
 ## Stand (0.25.0, Liste wie Device Panel, Alarm bis zum Quittieren)
 
 - Sensorliste (`panel/list.js`): Ansicht je Gerät (`desktop`/`mobile`, `get kind()` nach Breite), Spalten als geordnete Liste `[key,on]` plus Kartenfelder, Gruppierung, Sortierung und Richtung je Gerät getrennt; Speicherort: `localStorage` und pro Benutzer in HA (`frontend/set_user_data`, Schlüssel `alarmageddon_view`, 400 ms verzögert, `loadRemote()` beim Start; Migration aus dem alten `alarmageddon.view`). Standard ist die Liste (Handy: Zustand, Batterie, Empfang, Firmware), Karten optional (`view.layout`). Dialog "Ansicht" mit zwei Spaltenlisten (`data-list="col"`/`"mv"`).

@@ -7,11 +7,35 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.26.0] - 2026-11-09
+
+Structured windows with a close button and fixed buttons, fixed header with a sortable list, free choice of columns per device, an "Occupancy" filter, and defaults that can be applied to all sensors.
+
+Includes the changes from 0.24.0 and 0.25.0.
+
+### Added
+
+- **Windows (popups) as in Device Panel:** every window has a round close button (x) at the top right, and the buttons at the bottom (Cancel, Apply, Save …) stay in view while the content scrolls. "Cancel", the x and Escape ask "Discard changes?" when something was entered or changed (action step, sensor selection, defaults, new code).
+- **Fixed header:** title bar with tabs, sub-tabs, toolbar and the column header of the sensor tables stay in place when scrolling; only the list scrolls.
+- **Sort by column:** a click on a column header of the sensor list sorts by it (a second click reverses the order, an arrow shows the direction); every column is sortable (state, battery, forecast, signal, firmware, model, integration, last change, area, zones). Empty values always stay at the end. The header row is more prominent. The choice also appears in the "View" window as a dropdown.
+- **Filter "Occupancy":** motion, occupancy and presence sensors have their own filter; "Open" no longer counts them.
+- **Tap a sensor row anywhere** in Configuration › Sensors (also a card on the phone) to open its options; checkboxes, switches and buttons in the row keep their function.
+- **"Apply to all sensors"** in the defaults per sensor type: deletes the own values of all sensors, so every sensor follows the defaults (with a warning and the number of affected sensors).
+- **Logo** of the integration next to the tabs.
+- **"Undo on disarm / acknowledge"** (before "Return to previous state on disarm") with a clear hint on every action where it makes sense (switch device, alarm sound, own action with devices). Not for "Scene or script", whose effects cannot be undone in general.
+
+### Changed
+
+- **Alarm sound:** the new step is "Do not wait" by default, so the next step starts at once; existing steps stay as saved.
+- **Dropdowns look the same everywhere** (own arrow with distance to the edge); the choice of the alarm system in the configuration is prominent.
+- **Wide screens:** the content is at most 1680 px wide, with white space left and right.
+- **Push notification dialog** in chapters with a bar in front of the title (message, delivery, tap target, actions); the design is used in all action dialogs.
+
 ## [0.25.0] - 2026-11-09
 
 The sensor list on the overview works like the list in Device Panel (own columns on phone and computer), and the alarm lasts until it is acknowledged.
 
-Includes the changes from 0.24.0.
+Not released; included in 0.26.0.
 
 ### Added
 
@@ -27,7 +51,7 @@ Includes the changes from 0.24.0.
 
 ## [0.24.0] - 2026-11-09
 
-Not released; included in 0.25.0.
+Not released; included in 0.26.0.
 
 ### Changed
 
@@ -370,7 +394,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.25.0
+[0.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.26.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

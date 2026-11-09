@@ -125,6 +125,9 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="cb-pick"][data-key="service"][data-value="set_cover_position"]');
     check(`${tag}: Beschreibung und Feldname übersetzt, unbekanntes Feld lesbar`, await s.waitFor(`const d=r.getElementById('ag-step').textContent; return d.includes('${t.coverDesc}') && d.includes('Position') && d.includes('Speed') && !d.includes('speed')`));
     await s.tap('#ag-step [data-wf="close"]');
+    check(`${tag}: Abbrechen mit Änderungen fragt vor dem Verwerfen`, await s.waitFor("return r.getElementById('ag-confirm').open && r.getElementById('ag-step').open"));
+    await s.tap('#ag-confirm [data-c="yes"]');
+    check(`${tag}: nach "Verwerfen" ist der Dialog zu`, await s.waitFor("return !r.getElementById('ag-step').open && !r.getElementById('ag-confirm').open"));
 
     // Push-Meldung: Standardtext steht im Feld und lässt sich ändern, Platzhalter und Vorschau
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');

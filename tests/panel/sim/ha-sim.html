@@ -268,7 +268,11 @@
     }
     if (msg.type === "alarmageddon/save_presets") {
       window.__presets = { ...window.__presets, ...msg.presets };
-      return { presets: window.__presets };
+      let reset = 0;
+      if (msg.reset_sensors) for (const sys of window.__systems) for (const id of Object.keys(sys.sensor_options || {})) {
+        if (msg.reset_sensors.includes(SENSORS[id]?.type || "other")) { delete sys.sensor_options[id]; reset += 1; }
+      }
+      return { presets: window.__presets, reset };
     }
     const sys = window.__systems.find((s) => s.entry_id === msg.entry_id);
     if (!sys) throw err("not_found");

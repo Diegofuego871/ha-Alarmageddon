@@ -7,11 +7,35 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.26.0] - 2026-11-09
+
+Strukturierte Fenster mit Schliessen-Knopf und festen Knöpfen, feste Kopfzeile mit sortierbarer Liste, freie Spaltenwahl je Gerät, Filter "Belegung" und Voreinstellungen für alle Sensoren übernehmbar.
+
+Enthält die Änderungen aus 0.24.0 und 0.25.0.
+
+### Hinzugefügt
+
+- **Fenster (Popups) wie in Device Panel:** Jedes Fenster hat oben rechts einen runden Schliessen-Knopf (x), und die Knöpfe unten (Abbrechen, Übernehmen, Speichern …) bleiben im Blick, während der Inhalt scrollt. "Abbrechen", das x und Escape fragen "Änderungen verwerfen?", wenn etwas eingegeben oder geändert wurde (Aktionsschritt, Sensorauswahl, Voreinstellungen, neuer Code).
+- **Feste Kopfzeile:** Titelleiste mit Reitern, Unterreiter, Werkzeugleiste und der Spaltenkopf der Sensortabellen bleiben beim Scrollen stehen; es scrollt nur die Liste.
+- **Nach Spalte sortieren:** Ein Klick auf einen Spaltenkopf der Sensorliste sortiert danach (ein zweiter Klick kehrt um, ein Pfeil zeigt die Richtung); jede Spalte lässt sich sortieren (Zustand, Batterie, Prognose, Empfang, Firmware, Modell, Integration, letzte Änderung, Bereich, Zonen). Leere Werte stehen immer am Ende. Die Kopfzeile ist prägnanter. Die Wahl steht auch im Fenster "Ansicht" als Aufklappmenü.
+- **Filter "Belegung":** Bewegungs-, Belegungs- und Anwesenheitssensoren haben einen eigenen Filter; "Offen" zählt sie nicht mehr mit.
+- **Sensorzeile überall antippen** in Konfiguration › Sensoren (auf dem Handy auch die Karte) öffnet die Optionen; Kästchen, Schalter und Knöpfe in der Zeile behalten ihre Aufgabe.
+- **"Auf alle Sensoren anwenden"** bei den Voreinstellungen je Sensorart: löscht die eigenen Werte aller Sensoren, damit jeder Sensor den Voreinstellungen folgt (mit Warnung und Anzahl der betroffenen Sensoren).
+- **Logo** der Integration neben den Reitern.
+- **"Rückgängig beim Deaktivieren/Quittieren"** (vorher "Beim Deaktivieren in den vorherigen Zustand zurück") mit klarem Hinweis bei jeder Aktion, wo es sinnvoll ist (Gerät schalten, Alarmton, Eigene Aktion mit Geräten). Nicht bei "Szene oder Skript", deren Wirkung sich nicht allgemein rückgängig machen lässt.
+
+### Geändert
+
+- **Alarmton:** Der neue Schritt ist standardmässig "Nicht abwarten", der nächste Schritt startet also sofort; bestehende Schritte bleiben wie gespeichert.
+- **Aufklappmenüs sehen überall gleich aus** (eigener Pfeil mit Abstand zum Rand); die Wahl der Alarmanlage in der Konfiguration ist auffällig.
+- **Breite Bildschirme:** Der Inhalt ist höchstens 1680 px breit, links und rechts bleibt Weissraum.
+- **Dialog der Push-Meldung** in Kapiteln mit Strich vor dem Titel (Meldung, Zustellung, Klickziel, Aktionen); das Design gilt in allen Aktionsdialogen.
+
 ## [0.25.0] - 2026-11-09
 
 Die Sensorliste auf der Übersicht funktioniert wie die Liste in Device Panel (eigene Spalten für Handy und Computer), und der Alarm dauert, bis er quittiert wird.
 
-Enthält die Änderungen aus 0.24.0.
+Nicht veröffentlicht; enthalten in 0.26.0.
 
 ### Hinzugefügt
 
@@ -27,7 +51,7 @@ Enthält die Änderungen aus 0.24.0.
 
 ## [0.24.0] - 2026-11-09
 
-Nicht veröffentlicht; enthalten in 0.25.0.
+Nicht veröffentlicht; enthalten in 0.26.0.
 
 ### Geändert
 
@@ -370,7 +394,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.25.0
+[0.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.26.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

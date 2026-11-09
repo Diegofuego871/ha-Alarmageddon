@@ -312,6 +312,8 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     {
         vol.Required("type"): f"{DOMAIN}/save_presets",
         vol.Required("presets"): {vol.In(SENSOR_TYPES): [vol.In(SENSOR_OPTIONS)]},
+        # Sensorarten, deren Sensoren die Voreinstellung übernehmen: eigene Werte je Sensor werden gelöscht
+        vol.Optional("reset_sensors"): [vol.In(SENSOR_TYPES)],
     }
 )
 @websocket_api.require_admin
@@ -320,7 +322,16 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     """Voreinstellungen je Sensorart, für alle Anlagen. Die Anlagen laden danach neu."""
     settings = await async_get_settings(hass)
     await settings.async_set_presets(msg["presets"])
-    connection.send_result(msg["id"], {"presets": settings.presets})
+    reset = 0
+    kinds = set(msg.get("reset_sensors") or [])
+    if kinds:
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            own = dict(entry.options.get(CONF_SENSOR_OPTIONS) or {})
+            drop = [e for e in own if sensor_type(hass, e) in kinds]
+            if drop:
+                reset += len(drop)
+                hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_SENSOR_OPTIONS: {e: o for e, o in own.items() if e not in drop}})
+    connection.send_result(msg["id"], {"presets": settings.presets, "reset": reset})
 
 
 @websocket_api.websocket_command(

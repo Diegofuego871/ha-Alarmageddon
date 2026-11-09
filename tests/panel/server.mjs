@@ -16,6 +16,7 @@ function resolve(url) {
   const path = decodeURIComponent(new URL(url, "http://x").pathname);
   if (path.includes("..")) return null;
   if (path.startsWith(PREFIX)) return join(panelDir, path.slice(PREFIX.length));
+  if (path === "/alarmageddon_icon.png") return join(here, "..", "..", "custom_components", "alarmageddon", "brand", "icon.png");
   if (path.startsWith(SOUNDS)) return join(soundsDir, path.slice(SOUNDS.length));
   return join(here, "sim", normalize(path === "/" ? "/ha-sim.html" : path));
 }

@@ -172,6 +172,26 @@ async def test_presets_via_websocket(hass: HomeAssistant, hass_ws_client, hass_s
     assert (await client.receive_json())["error"]["code"] == "open_sensors"
 
 
+async def test_presets_can_reset_own_sensor_values(hass: HomeAssistant, hass_ws_client) -> None:
+    """"Auf alle Sensoren anwenden": eigene Werte je Sensor der gewählten Arten werden gelöscht, andere bleiben."""
+    _classes(hass)
+    entry = await setup_alarm(hass, exit_delay_away=0, sensor_options={MOTION: {"open_ok": False}, SMOKE: {"always": True}, WINDOW: {"report_only": True}})
+    client = await hass_ws_client(hass)
+    # Ohne reset_sensors bleiben die eigenen Werte
+    await client.send_json({"id": 1, "type": "alarmageddon/save_presets", "presets": {"motion": []}})
+    result = await client.receive_json()
+    assert result["success"] and result["result"]["reset"] == 0
+    assert set(entry.options["sensor_options"]) == {MOTION, SMOKE, WINDOW}
+    # Nur die genannte Art (Bewegung) wird überschrieben
+    await client.send_json({"id": 2, "type": "alarmageddon/save_presets", "presets": {"motion": []}, "reset_sensors": ["motion"]})
+    result = await client.receive_json()
+    assert result["success"] and result["result"]["reset"] == 1
+    await hass.async_block_till_done()
+    assert set(entry.options["sensor_options"]) == {SMOKE, WINDOW}
+    await client.send_json({"id": 3, "type": "alarmageddon/save_presets", "presets": {}, "reset_sensors": ["nonsense"]})
+    assert not (await client.receive_json())["success"]
+
+
 async def test_save_sensor_options_and_system(hass: HomeAssistant, hass_ws_client) -> None:
     _classes(hass)
     entry = await setup_alarm(hass)

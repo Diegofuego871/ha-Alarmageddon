@@ -18,6 +18,9 @@ const { LogUi } = await import(`./log.js${V}`);
 const { loaderHtml, loaderStart } = await import(`./loader.js${V}`);
 const SUBS = ["sensors", "actions", "notify", "system", "updates"];
 
+// Knöpfe, die einen Dialog ohne Speichern schliessen (das X löst den ersten gefundenen aus)
+const DLG_CANCEL = '[data-wf="close"],[data-sen="pick-close"],[data-sen="presets-cancel"],[data-sys="code-close"],[data-act="close-code"],[data-c="no"],[data-sen="close-detail"],[data-upd="notes-close"],[data-list="vdone"]';
+
 class AlarmageddonPanel extends HTMLElement {
   constructor() {
     super();
@@ -75,6 +78,7 @@ class AlarmageddonPanel extends HTMLElement {
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog><dialog class="ag-dlg ag-wide" id="ag-notes"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => this._stickySync()).observe(this._content);
     this._initSeg(this._root);
     // Wie auch immer der Code-Dialog schliesst (Abbrechen, Escape, Erfolg): Auswahl wieder nach dem echten Zustand
     this._root.getElementById("ag-code").addEventListener("close", () => this._renderTop(true));
@@ -93,6 +97,9 @@ class AlarmageddonPanel extends HTMLElement {
         ev.returnValue = "";
       }
     });
+    this._initDialogs();
+    // Capture: Abbrechen und X fragen vor dem Verwerfen, bevor irgendein anderer Handler den Dialog schliesst
+    this._root.addEventListener("click", (ev) => this._onDlgClick(ev), true);
     this._root.addEventListener("click", (ev) => this._onClick(ev));
     this._root.addEventListener("input", (ev) => this._onInput(ev));
     this._root.addEventListener("change", (ev) => this._onChange(ev));
@@ -358,7 +365,7 @@ class AlarmageddonPanel extends HTMLElement {
     let right = "";
     if (this._tab === "overview" && !narrow) right = `<span class="ag-grow"></span><button class="ag-btn" data-act="add">${ic("plus")}${esc(this._t("addSystem"))}</button>`;
     this._lastHtml.delete(this._content);
-    this._content.innerHTML = `<div class="ag-head">${tabs}${right}</div><div class="ag-view"></div>`;
+    this._content.innerHTML = `<div class="ag-head"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${tabs}${right}</div><div class="ag-view"></div>`;
     this._view = this._content.querySelector(".ag-view");
     this._view.style.display = "contents";
     this._renderView(true);
@@ -516,6 +523,26 @@ class AlarmageddonPanel extends HTMLElement {
 
   _placePills(still = false) {
     this._segSync?.(still);
+    this._stickySync();
+  }
+
+  // Kopfzeile, Unterreiter, Werkzeugleiste und Tabellenkopf bleiben beim Scrollen stehen: nur die Liste scrollt.
+  // Die Abstände (top) hängen von den Höhen ab (Umbruch auf schmalen Fenstern), darum werden sie gemessen und nach jedem Zeichnen und bei Grössenänderung gesetzt.
+  _stickySync() {
+    const c = this._content;
+    if (!c) return;
+    window.cancelAnimationFrame(this._stickyRaf);
+    this._stickyRaf = window.requestAnimationFrame(() => {
+      const items = [c.querySelector(":scope > .ag-head"), this._view?.querySelector(":scope > .ag-cfg"), this._view?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools")].filter(Boolean);
+      let top = 0;
+      items.forEach((el, i) => {
+        el.classList.add("ag-stk");
+        el.style.top = `${top}px`;
+        el.style.zIndex = String(20 + i);
+        top += el.offsetHeight;
+      });
+      c.style.setProperty("--ag-th-top", `${top}px`);
+    });
   }
 
   _toast(text) {
@@ -763,6 +790,66 @@ class AlarmageddonPanel extends HTMLElement {
     dlg.querySelector('[data-act="keep"]').focus();
   }
 
+  // ----- Dialoge: X oben rechts (wie Device Panel), feste Knöpfe unten, Rückfrage vor dem Verwerfen -----
+
+  _initDialogs() {
+    const decorate = (dlg) => {
+      if (dlg.id === "ag-discard" || dlg.querySelector(":scope > .ag-dlg-x") || !dlg.firstElementChild) return;
+      dlg.insertAdjacentHTML("afterbegin", `<button type="button" class="ag-dlg-x" data-dlg-x title="${esc(this._t("close"))}" aria-label="${esc(this._t("close"))}">${ic("close", 18)}</button>`);
+    };
+    for (const dlg of this._root.querySelectorAll("dialog.ag-dlg")) {
+      new MutationObserver(() => decorate(dlg)).observe(dlg, { childList: true });
+      // Escape wie Abbrechen: mit offenen Änderungen erst fragen
+      dlg.addEventListener("cancel", (ev) => {
+        if (dlg.id === "ag-discard" || dlg.id === "ag-confirm" || !this._dlgDirty(dlg)) return;
+        ev.preventDefault();
+        this._dlgAskClose(dlg);
+      });
+    }
+  }
+
+  // Gibt es im Dialog ungeschriebene Eingaben? (Schritt-Editor, Sensorauswahl, Voreinstellungen, neuer Code)
+  _dlgDirty(dlg) {
+    if (dlg.id === "ag-step") {
+      const e = this.actions.edit;
+      return Boolean(e?.form) && e.snap !== undefined && JSON.stringify(e.form) !== e.snap;
+    }
+    if (dlg.id === "ag-pick") return Boolean(this.sensors.pick?.sel?.size);
+    if (dlg.id === "ag-presets") return JSON.stringify(this.sensors.presetDraft) !== JSON.stringify(this.sensors.presets) || Boolean(this.sensors.presetOverride);
+    if (dlg.id === "ag-codes") return [...dlg.querySelectorAll("input[data-key]")].some((i) => i.value) && Boolean(dlg.querySelector('[data-sys="code-save"]'));
+    return false;
+  }
+
+  async _dlgAskClose(dlg) {
+    if (!(await this._confirm(this._t("discardTitle"), this._t("dlgDiscardText"), this._t("discard")))) return;
+    this._dlgConfirmed = true;
+    this._dlgCloseNow(dlg);
+    this._dlgConfirmed = false;
+  }
+
+  _dlgCloseNow(dlg) {
+    const cancel = dlg.querySelector(DLG_CANCEL);
+    if (cancel) cancel.click();
+    else if (dlg.open) dlg.close();
+  }
+
+  _onDlgClick(ev) {
+    if (this._dlgConfirmed) return;
+    const dlg = ev.target.closest?.("dialog.ag-dlg");
+    if (!dlg || dlg.id === "ag-confirm" || dlg.id === "ag-discard") return;
+    const x = ev.target.closest("[data-dlg-x]");
+    const cancel = ev.target.closest(DLG_CANCEL);
+    if (!x && !cancel) return;
+    if (this._dlgDirty(dlg)) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      this._dlgAskClose(dlg);
+    } else if (x) {
+      ev.stopPropagation();
+      this._dlgCloseNow(dlg);
+    }
+  }
+
   // Einfache Rückfrage; löst mit true oder false auf
   _confirm(title, text, okLabel) {
     const dlg = this._root.getElementById("ag-confirm");
@@ -843,6 +930,16 @@ class AlarmageddonPanel extends HTMLElement {
   // ----- Ereignisse -----
 
   _onClick(ev) {
+    // Ganze Sensorzeile (und Karte) antippen öffnet die Optionen; Kästchen, Schalter und Knöpfe in der Zeile behalten ihre Aufgabe
+    if (this._tab === "config" && this._sub === "sensors") {
+      const row = ev.target.closest("[data-row]");
+      if (row && !ev.target.closest("button, input, a, label, select, [data-box], .ag-toggle")) {
+        const id = row.dataset.row;
+        this.sensors.detail = this.sensors.detail === id && !this.hasAttribute("narrow") ? null : id;
+        this.sensors.render();
+        return;
+      }
+    }
     if (this._tab === "config" && this._sub === "sensors" && this.sensors.onClick(ev.target.closest("[data-sen]"), ev)) return;
     if (this._tab === "config" && this._sub === "system" && this.systemUi.onClick(ev.target.closest("[data-sys], [data-scope]"))) return;
     if (this._tab === "config" && this._sub === "actions" && this.actions.onClick(ev.target.closest("[data-wf], [data-trigger]"))) return;

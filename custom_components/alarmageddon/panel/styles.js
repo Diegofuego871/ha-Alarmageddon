@@ -32,8 +32,20 @@ button { font: inherit; color: inherit; }
 .ag-t2 { color: var(--ag-text2); }
 
 /* Einziger Scroll-Container (LEARNINGS: das iframe-Dokument scrollt nie selbst) */
-.ag-content { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 20px 24px calc(32px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.ag-content { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 0 var(--ag-px) calc(32px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 18px; }
 .ag-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* Fest beim Scrollen (Abstand und Ebene setzt _stickySync): eigener Grund, und ein Schatten in Grundfarbe deckt die Lücke darunter zu */
+.ag-stk { position: sticky; background: var(--ag-bg); box-shadow: 0 var(--ag-gap, 18px) 0 var(--ag-bg); }
+/* Auf sehr breiten Bildschirmen bleibt der Inhalt höchstens 1680 px breit, der Rest ist Weissraum links und rechts */
+.ag-content > .ag-head { padding-top: 20px; }
+:host([narrow]) .ag-content > .ag-head { padding-top: 12px; }
+.ag-content { --ag-gap: 18px; --ag-px: max(24px, calc((100vw - 1680px) / 2)); }
+:host([narrow]) .ag-content { --ag-gap: 12px; --ag-px: 12px; }
+.ag-table-wrap.ag-stickwrap { overflow: visible; }
+.ag-stickwrap .ag-table th { position: sticky; top: var(--ag-th-top, 0px); z-index: 15; background: var(--ag-card); }
+.ag-stickwrap .ag-table.ag-ltable th { background: color-mix(in srgb, var(--ag-text) 6%, var(--ag-card)); }
+.ag-stickwrap .ag-table tr:first-child th:first-child { border-top-left-radius: 18px; }
+.ag-stickwrap .ag-table tr:first-child th:last-child { border-top-right-radius: 18px; }
 .ag-grow { flex: 1; }
 
 /* Reiterleiste mit gleitender Kapsel (Design-Regel Auswahlknöpfe) */
@@ -130,7 +142,7 @@ button { font: inherit; color: inherit; }
 .ag-batt { font-variant-numeric: tabular-nums; color: var(--ag-text2); }
 .ag-batt.low { color: var(--ag-error); font-weight: 500; }
 .ag-entry { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ag-warning-text); background: var(--ag-warning-soft); padding: 2px 7px; border-radius: 999px; }
-.ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: auto -24px calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 3; }
+.ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: auto calc(-1 * var(--ag-px)) calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px var(--ag-px) calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 30; }
 .ag-foot > span:first-child { min-width: 0; font-size: 13.5px; }
 .ag-foot .ag-saved { color: var(--ag-success); font-weight: 500; }
 .ag-foot .ag-err, .ag-settx .ag-err { color: var(--ag-error); }
@@ -154,6 +166,15 @@ button { font: inherit; color: inherit; }
 /* Dialoge (Code, Rückfrage): auf dem Handy als Blatt von unten */
 dialog.ag-dlg { border: 0; padding: 0; border-radius: 22px; background: var(--ag-card); color: var(--ag-text); box-shadow: var(--ag-shadow); width: min(420px, calc(100vw - 32px)); }
 dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
+/* Dialog: Kopf mit rundem X oben rechts (wie Device Panel), Inhalt scrollt, Knöpfe unten bleiben stehen */
+dialog.ag-dlg[open] { display: flex; flex-direction: column; max-height: min(92vh, 900px); overflow: hidden; }
+dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.ag-dlg-x { position: absolute; top: 14px; right: 14px; z-index: 5; display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--ag-divider); border-radius: 50%; background: var(--ag-card); color: var(--ag-text2); cursor: pointer; }
+.ag-dlg-x:hover { background: var(--ag-subtle); color: var(--ag-text); }
+.ag-dlg-x:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 2px; }
+.ag-dlg-body > h3, .ag-dlg-body > .ag-sys-top { padding-right: 54px; min-height: 42px; }
+.ag-dlg-btns { position: sticky; bottom: -22px; z-index: 4; margin: 0 -22px -22px; padding: 14px 22px calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--ag-card); border-top: 1px solid var(--ag-divider); }
+.ag-step-ed { max-height: none; overflow: auto; }
 .ag-dlg-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
 .ag-dlg h3 { margin: 0; font-size: 19px; font-weight: 500; }
 .ag-dlg-btns { display: flex; gap: 10px; justify-content: flex-end; }
@@ -163,7 +184,7 @@ dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 .ag-root { position: relative; display: flex; flex-direction: column; height: 100%; }
 
 /* Handy (Companion App): einspaltig, Reiter mit Symbol und kurzem Text (Entscheid des Nutzers) */
-:host([narrow]) .ag-content { padding: 12px 12px calc(24px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
+:host([narrow]) .ag-content { padding: 0 var(--ag-px) calc(24px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
 :host([narrow]) .ag-sysgrid { grid-template-columns: 1fr; gap: 12px; }
 :host([narrow]) .ag-sys { padding: 14px; gap: 12px; }
 :host([narrow]) .ag-tabs { flex: 1 1 100%; }
@@ -381,7 +402,6 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-kind .ag-wf-icon { grid-row: span 2; }
 .ag-kind b { font-weight: 500; }
 .ag-kind small { color: var(--ag-text2); font-size: 12px; line-height: 1.3; }
-.ag-step-ed { max-height: 80vh; overflow: auto; }
 .ag-dlg-body .list-search { flex: none; height: 48px; min-height: 48px; min-width: 0; padding: 0 8px 0 14px; }
 .ag-dlg-body .list-search input { font-size: 15px; }
 .ag-pick-chips { gap: 10px; margin-top: 12px; }
@@ -431,7 +451,7 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 /* Lange Texte in der Auswahl "Offener Sensor" auf dem Handy: volle Breite, Text darf umbrechen statt abgeschnitten zu werden */
 :host([narrow]) [data-seg="sys-open"] { display: flex; width: 100%; }
 :host([narrow]) [data-seg="sys-open"] > button { flex: 1 1 0; min-width: 0; white-space: normal; line-height: 1.25; text-align: center; }
-select.ag-input { appearance: auto; }
+
 #ag-codes .ag-dlg-body { gap: 14px; }
 #ag-codes .ag-fld small { font-size: 12.5px; }
 
@@ -530,6 +550,40 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 
 /* 0.10.0: Einstellungen je Modus */
 .ag-scopebar { margin: 0 0 12px; overflow-x: auto; }
+
+/* Tabellenkopf der Sensorliste: abgehoben (Grundfläche, kräftigere Schrift, Linie darunter), Spalten sortierbar */
+.ag-table.ag-ltable th { background: color-mix(in srgb, var(--ag-text) 6%, var(--ag-card)); color: var(--ag-text); font-weight: 600; font-size: 12px; padding: 0; border-bottom: 2px solid var(--ag-divider); }
+.ag-sortbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; width: 100%; padding: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; font-size: 12px; color: var(--ag-text2); }
+.ag-sortbtn:hover { color: var(--ag-text); }
+.ag-sortbtn.on { color: var(--ag-primary); }
+.ag-sortbtn:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: -2px; }
+.ag-sortic { display: inline-flex; width: 14px; }
+/* Alle Auswahlfelder (Dropdowns) einheitlich: eigener kleiner Pfeil mit Abstand zum Rand, Platz rechts dafür */
+select.ag-select, select.ag-input, .ag-dlg select, .ag-view select {
+  appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 40px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
+select.ag-select:focus-visible, select.ag-input:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 1px; }
+/* Auswahl der Alarmanlage in der Konfiguration: auffällig, damit klar ist, dass sie für alle Reiter gilt */
+select.ag-select[data-act="system"] { height: 44px; padding-left: 18px; border: 2px solid var(--ag-primary); background-color: var(--ag-primary-soft); color: var(--ag-primary); font-weight: 600; }
+.ag-content { scroll-padding: calc(var(--ag-th-top, 0px) + 56px) 0 80px; }
+:host([narrow]) .ag-table-wrap.ag-stickwrap { overflow-x: auto; }
+:host([narrow]) .ag-stickwrap .ag-table th { position: static; }
+.ag-clickrow { cursor: pointer; }
+.ag-table tr.ag-clickrow:hover td { background: color-mix(in srgb, var(--ag-text) 4%, transparent); }
+.ag-logo { flex: none; width: 40px; height: 40px; border-radius: 11px; object-fit: cover; }
+/* Blatt (Handy): X rechts oben im Kopf, der Kopf lässt Platz dafür */
+dialog.ag-sheetdlg .ag-dlg-x { top: 8px; right: 10px; width: 38px; height: 38px; }
+dialog.ag-sheetdlg .ag-side-head { padding-right: 58px; }
+/* Kapitel im Dialog: kleinerer Titel, Karte mit Innenabstand */
+.ag-chap-s { margin-top: 18px; }
+.ag-chap-s:first-of-type { margin-top: 6px; }
+.ag-sec-t { display: flex; align-items: center; gap: 10px; margin: 0 4px 8px; font-size: 15px; font-weight: 600; }
+.ag-sec-t::before { content: ""; flex: none; width: 4px; height: 16px; border-radius: 2px; background: var(--ag-primary); }
+.ag-efcard { padding: 14px 18px; box-shadow: none; }
+.ag-efcard > .ag-ef:first-child { margin-top: 0; }
+.ag-efcard > .ag-ef:last-child { margin-bottom: 0; }
+.ag-efcard > .ag-ef-row + .ag-ef-row { margin-top: 12px; }
 .ag-subh { margin: 14px 4px 8px; color: var(--ag-text2); font-size: 12px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
 /* Handy: Tippfläche mindestens 44 px; die Leisten füllen die Breite; ab fünf Reitern vier Spalten in Zeilen (schmale Handys drei); Reiter mit Symbol: Symbol über dem Text */
 :host([narrow]) .ag-seg { display: grid; width: 100%; box-sizing: border-box; }

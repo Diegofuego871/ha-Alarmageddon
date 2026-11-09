@@ -38,7 +38,7 @@ function sanitizeView(raw, kind) {
   return {
     layout: raw.layout === "cards" ? "cards" : "list",
     group: ["area", "system", "none"].includes(raw.group) ? raw.group : d.group,
-    sort: ["name", "battery", "changed"].includes(raw.sort) ? raw.sort : d.sort,
+    sort: ["name", ...COLUMNS].includes(raw.sort) ? raw.sort : d.sort,
     dir: raw.dir === "desc" ? "desc" : "asc",
     cols: order(raw.cols, d.cols),
     fields: order(raw.fields, d.fields),
@@ -189,7 +189,9 @@ export class ListUi {
         name: h._name(id),
         area: info.area || this._t("noArea"),
         state: st?.state,
-        open: st?.state === "on",
+        // "Offen" gilt nur für Türen, Fenster und Ähnliches; Bewegung, Belegung und Anwesenheit haben den eigenen Filter "Belegung"
+        occupied: st?.state === "on" && MOTION_CLASSES.has(info.device_class),
+        open: st?.state === "on" && !MOTION_CLASSES.has(info.device_class),
         low: battery !== null && battery < h._lowBattery(),
         signal: Number.isFinite(sigVal) ? { value: sigVal, unit: sigState.attributes.unit_of_measurement || "" } : null,
         // Letzte echte Änderung (offen <-> zu) vom Server; HA setzt last_changed bei jedem Neustart zurück, das gilt hier nicht
@@ -203,6 +205,7 @@ export class ListUi {
     if (this.area && r.area !== this.area) return false;
     if (this.filter === "problems" && !(r.gone || r.low)) return false;
     if (this.filter === "open" && !r.open) return false;
+    if (this.filter === "occupied" && !r.occupied) return false;
     if (this.filter === "battery" && !r.low) return false;
     if (this.filter === "offline" && !r.gone) return false;
     const q = this.q.trim().toLowerCase();
@@ -211,14 +214,39 @@ export class ListUi {
       .some((v) => String(v || "").toLowerCase().includes(q));
   }
 
+  // Sortierwert je Spalte: Zahlen als Zahl, Texte als Text; leere Werte stehen immer am Ende, auch absteigend
+  _sortKey(col, r) {
+    switch (col) {
+      case "area": return r.area;
+      case "systems": return r.systems.map((s) => s.title).join(" ");
+      case "state": return r.gone ? 0 : r.open || r.occupied ? 1 : 2;
+      case "battery": return r.battery;
+      case "forecast": {
+        const d = r.info.battery ? this.host._forecast?.[r.info.battery] : null;
+        return Number.isFinite(Number(d)) && d !== null ? Number(d) : null;
+      }
+      case "signal": return r.signal ? r.signal.value : null;
+      case "firmware": return r.info.sw_version || null;
+      case "model": return [r.info.manufacturer, r.info.model].filter(Boolean).join(" ") || null;
+      case "integration": return r.info.integration || null;
+      case "changed": return r.changed ? Date.parse(r.changed) || null : null;
+      default: return r.name;
+    }
+  }
+
   _sorted(rows) {
-    const by = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      battery: (a, b) => (a.battery ?? 999) - (b.battery ?? 999) || a.name.localeCompare(b.name),
-      changed: (a, b) => String(b.changed || "").localeCompare(String(a.changed || "")),
-    }[this.view.sort] || ((a, b) => a.name.localeCompare(b.name));
-    const sorted = rows.sort(by);
-    return this.view.dir === "desc" ? sorted.reverse() : sorted;
+    const col = this.view.sort;
+    const sign = this.view.dir === "desc" ? -1 : 1;
+    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+    return rows.sort((a, b) => {
+      const x = this._sortKey(col, a);
+      const y = this._sortKey(col, b);
+      const nx = x === null || x === undefined || x === "";
+      const ny = y === null || y === undefined || y === "";
+      if (nx !== ny) return nx ? 1 : -1;
+      const c = nx ? 0 : typeof x === "number" && typeof y === "number" ? x - y : collator.compare(String(x), String(y));
+      return c * sign || collator.compare(a.name, b.name);
+    });
   }
 
   // ----- Darstellung -----
@@ -247,7 +275,7 @@ export class ListUi {
       this.filter = saved;
       return ok;
     }).length;
-    return [["all", "filterAll"], ["problems", "filterProblems"], ["open", "filterOpen"], ["battery", "filterLowBattery"], ["offline", "filterOffline"]]
+    return [["all", "filterAll"], ["problems", "filterProblems"], ["open", "filterOpen"], ["occupied", "filterOccupied"], ["battery", "filterLowBattery"], ["offline", "filterOffline"]]
       .map(([k, label]) => {
         const count = n(k);
         return `<button class="ag-chip ${this.filter === k ? "on" : ""} ${count || k === "all" ? "" : "zero"}" data-list="filter" data-filter="${k}">${esc(this._t(label))} <span class="ag-t2">${count}</span></button>`;
@@ -295,7 +323,7 @@ export class ListUi {
   _stateHtml(r) {
     if (r.gone) return `<span class="ag-tag err">${esc(this._t("stUnavailable"))}</span>`;
     const motion = MOTION_CLASSES.has(r.info.device_class);
-    if (r.open) return `<span class="ag-tag warn">${esc(this._t(motion ? "stDetected" : "stOpen"))}</span>`;
+    if (r.open || r.occupied) return `<span class="ag-tag warn">${esc(this._t(motion ? "stDetected" : "stOpen"))}</span>`;
     return `<span class="ag-tag ok">${esc(this._t(motion ? "stClear" : "stClosed"))}</span>`;
   }
 
@@ -329,13 +357,18 @@ export class ListUi {
 
   _table(groups) {
     const cols = this.colsOn();
-    const head = `<tr><th>${esc(this._t("colName"))}</th>${cols.map((c) => `<th>${esc(this._t(COL_LABEL[c]))}</th>`).join("")}<th></th></tr>`;
+    // Spaltenköpfe sortieren (Klick wechselt Richtung); Pfeil an der gewählten Spalte
+    const th = (key, label) => {
+      const on = this.view.sort === key;
+      return `<th aria-sort="${on ? (this.view.dir === "desc" ? "descending" : "ascending") : "none"}"><button type="button" class="ag-sortbtn ${on ? "on" : ""}" data-list="sort" data-key="${key}" title="${esc(this._t("sortBy", { column: label }))}">${esc(label)}<span class="ag-sortic">${on ? ic(this.view.dir === "desc" ? "arrowDown" : "arrowUp", 14) : ""}</span></button></th>`;
+    };
+    const head = `<tr>${th("name", this._t("colName"))}${cols.map((c) => th(c, this._t(COL_LABEL[c]))).join("")}<th></th></tr>`;
     const body = groups.map(([g, rows]) => `${g !== null ? `<tr class="grp"><td colspan="${cols.length + 2}">${esc(g)} · ${rows.length}</td></tr>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
-      return `<tr class="ag-lrow ${r.gone ? "bad" : ""}" data-act="more" data-entity="${esc(r.id)}"><td><div class="ag-nm"><span class="ag-av ${r.gone ? "missing" : r.open ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span><div>${esc(r.name)}<small>${esc(this._typeLabel(r))}</small></div></div></td>
+      return `<tr class="ag-lrow ${r.gone ? "bad" : ""}" data-act="more" data-entity="${esc(r.id)}"><td><div class="ag-nm"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span><div>${esc(r.name)}<small>${esc(this._typeLabel(r))}</small></div></div></td>
         ${cols.map((c) => `<td>${this._cell(c, r)}</td>`).join("")}<td style="width:40px"><span class="ag-cbtn">${ic("chevRight", 16)}</span></td></tr>`;
     }).join("")}`).join("");
-    return `<div class="ag-card ag-table-wrap"><table class="ag-table ag-ltable">${head}${body}</table></div>`;
+    return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table ag-ltable">${head}${body}</table></div>`;
   }
 
   // Karten: eine je Sensor mit allen Angaben der gewählten Spalten; auf dem Desktop als Raster, auf dem Handy untereinander
@@ -351,7 +384,7 @@ export class ListUi {
         on("integration") && r.info.integration ? [this._t("colIntegration"), r.info.integration] : null,
         on("changed") && r.changed ? [this._t("colChanged"), this.host._fmtAgo(r.changed)] : null,
       ].filter(Boolean).map(([k, v]) => `<div><span class="ag-t2">${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
-      return `<div class="ag-card ag-mcard ag-lcard" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
+      return `<div class="ag-card ag-mcard ag-lcard" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
         <div style="flex:1;min-width:0">${esc(r.name)}<div class="ag-t2 ag-small">${esc(this._typeLabel(r))} · ${esc(r.area)}</div></div>${this._stateHtml(r)}</div>
         ${on("systems") ? `<div class="ag-lz">${this._cell("systems", r)}</div>` : ""}<div class="ag-lmeta">${meta}</div>${facts ? `<div class="ag-lfacts">${facts}</div>` : ""}</div>`;
     }).join("")}`).join("")}</div>`;
@@ -372,7 +405,7 @@ export class ListUi {
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
       <div class="ag-t2 ag-small">${esc(this._t(this.kind === "mobile" ? "viewForMobile" : "viewForDesktop"))}</div>
       <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["system", "groupSystem"], ["none", "groupNone"]])}
-      <div class="ag-label">${esc(this._t("viewSort"))}</div>${seg("sort", [["name", "sortName"], ["battery", "sortBattery"], ["changed", "sortChanged"]])}
+      <div class="ag-label">${esc(this._t("viewSort"))}</div><select class="ag-input" data-list="vsort" aria-label="${esc(this._t("viewSort"))}">${["name", ...COLUMNS].map((k) => `<option value="${k}" ${this.view.sort === k ? "selected" : ""}>${esc(this._t(k === "name" ? "colName" : COL_LABEL[k]))}</option>`).join("")}</select>
       <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc"], ["desc", "dirDesc"]])}</div>
       <div class="ag-label">${esc(this._t("viewColumns"))}</div><div class="ag-colist">${rows("cols")}</div>
       <div class="ag-label">${esc(this._t("viewFields"))}</div><div class="ag-colist">${rows("fields")}</div>
@@ -405,6 +438,12 @@ export class ListUi {
       dlg.innerHTML = this.viewDialogHtml();
       dlg.showModal();
       this.host._placePills();
+    } else if (act === "sort") {
+      const key = el.dataset.key;
+      this.view.dir = this.view.sort === key && this.view.dir === "asc" ? "desc" : "asc";
+      this.view.sort = key;
+      this._saveView();
+      this.host._renderList();
     } else if (act === "vset") {
       this.view[el.dataset.key] = el.dataset.value;
       this._applyView();
@@ -450,7 +489,11 @@ export class ListUi {
   onChange(el) {
     if (el.dataset.list === "sys") this.sys = el.value;
     else if (el.dataset.list === "area") this.area = el.value;
-    else return false;
+    else if (el.dataset.list === "vsort") {
+      this.view.sort = el.value;
+      this._applyView();
+      return true;
+    } else return false;
     this.host._renderList();
     return true;
   }
