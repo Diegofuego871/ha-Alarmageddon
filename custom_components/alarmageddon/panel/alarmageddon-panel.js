@@ -558,7 +558,9 @@ class AlarmageddonPanel extends HTMLElement {
         c.querySelector(":scope > .ag-head"),
         v?.querySelector(":scope > .ag-cfg"),
         stickyOverview && tall ? v.querySelector(":scope > .ag-ov-top") : null,
-        stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
+        // Handy mit Tabelle (Übersicht, Sensoren): die Filter scrollen weg, damit Kopfzeile und Tabellenkopf fest bleiben und genug Platz für die Zeilen bleibt
+        this.hasAttribute("narrow") && (stickyOverview || (this._tab === "config" && this._sub === "sensors")) ? null
+          : stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
         // Sensoren: Schalter und Reiter der Modi bleiben über der Tabelle stehen
         this._tab === "config" && this._sub === "sensors" ? v?.querySelector(".ag-pmstick") : null,
       ].filter(Boolean);
@@ -581,6 +583,13 @@ class AlarmageddonPanel extends HTMLElement {
         items.forEach((el) => this._stickyRO.observe(el));
       }
       c.style.setProperty("--ag-th-top", `${top}px`);
+      // Handy: passt die Tabelle nicht in die Breite (viele gewählte Spalten), scrollt sie seitwärts statt Spalten abzuschneiden; dann klebt der Kopf nicht
+      if (this.hasAttribute("narrow")) {
+        for (const wrap of c.querySelectorAll(".ag-table-wrap.ag-stickwrap")) {
+          wrap.classList.remove("hscroll");
+          if ((wrap.querySelector(".ag-table")?.scrollWidth || 0) > wrap.clientWidth + 1) wrap.classList.add("hscroll");
+        }
+      }
       // Nicht mehr feste Teile (Wechsel der Ansicht) wieder freigeben
       for (const el of c.querySelectorAll(".ag-stk")) if (!items.includes(el)) {
         el.classList.remove("ag-stk", "ag-stk-last");
@@ -678,6 +687,7 @@ class AlarmageddonPanel extends HTMLElement {
     const count = toolsEl.querySelector(".ag-list-count");
     if (count) count.textContent = rows.length ? this._t("listCount", { shown, total: rows.length }) : "";
     this._setHtml(listEl, this.list.bodyHtml(rows, this.hasAttribute("narrow")));
+    this._stickySync();
   }
 
   _look(st) {

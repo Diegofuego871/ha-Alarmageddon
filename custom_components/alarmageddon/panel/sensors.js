@@ -248,6 +248,7 @@ export class SensorsUi {
     else this.host._setHtml(body, this._table(rows, changed));
     this.renderSide();
     this.renderFoot();
+    this.host._stickySync();
   }
 
   // Schalter "Einstellungen pro Modus"; nur wenn er an ist, erscheinen die Reiter der Modi (der erste ist gewählt)

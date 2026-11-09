@@ -162,6 +162,13 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   Reiter behält seinen Entwurf, ein gelber Punkt am Reiter zeigt offene
   Änderungen. Rückfrage nur dort, wo ein Entwurf wirklich ersetzt oder
   verworfen würde (andere Anlage, Neuladen der Seite).
+- **Tabellenkopf klebt immer (Vorgabe des Nutzers, 2026-11-09):** Die oberste
+  Zeile jeder Tabelle (Beschriftung, Filtern, Sortieren) scrollt nie weg, auf
+  Desktop und auf dem Handy; nur die Zeilen darunter scrollen. Auf dem Handy
+  scrollen dafür die Filter weg, und die Tabelle ist so kompakt, dass sie ohne
+  seitliches Scrollen passt (ein Rollbereich mit `overflow` verhindert das
+  Festkleben). Jede neue Tabelle bekommt einen Test, der auf Desktop und Handy
+  scrollt und die Lage des Kopfes prüft.
 - **Kapitel:** Einstellungen stehen in Kapiteln; jedes hat einen Titel mit
   einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte.
   Reiter der Konfiguration gleiten beim Wechsel seitlich herein.

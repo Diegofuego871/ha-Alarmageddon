@@ -11,7 +11,7 @@ const VIEW_KEY = "alarmageddon_view";
 const SAVE_DELAY_MS = 400;
 const COL_ON = {
   desktop: ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "changed"],
-  mobile: ["state", "battery", "signal", "firmware"],
+  mobile: ["state", "battery", "signal"],
 };
 const FIELD_ON = {
   desktop: ["systems", "battery", "forecast", "signal", "firmware", "changed"],

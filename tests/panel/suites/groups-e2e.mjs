@@ -137,6 +137,9 @@ for (const lang of ["de", "en"]) {
     const tag = `${lang}/Handy`;
     const s = await open(browser, { lang, tab: "config", mobile: true });
     check(`${tag}: Tabelle mit Kästchen (kein Kartenraster), eine Zeile je Sensor, ohne seitlichen Überlauf`, await s.ev("return !r.querySelector('.ag-mcard') && r.querySelectorAll('.ag-table tr[data-row]').length === 11 && !r.querySelector('.ag-table [data-sen=\"entry\"]') && r.querySelector('.ag-table').scrollWidth <= r.querySelector('.ag-table-wrap').clientWidth + 1"));
+    await s.ev("const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop += th.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 20;");
+    await s.page.waitForTimeout(900);
+    check(`${tag}: Tabellenkopf klebt beim Scrollen (Regel: Titelzeile scrollt nie weg), Tabelle passt in die Breite`, await s.ev(`const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); const t=th.getBoundingClientRect().top; const w=r.querySelector('.ag-table-wrap'); const ok=!w.classList.contains('hscroll') && (Math.abs(t - top - c.getBoundingClientRect().top) < 16 || (c.scrollTop >= c.scrollHeight - c.clientHeight - 1 && t >= top)) && c.scrollTop > 0; c.scrollTop = 0; return ok`));
     const sizes = await s.ev("return [...r.querySelectorAll('.ag-table .ag-box')].slice(0, 3).map((b) => Math.round(b.getBoundingClientRect().height))");
     check(`${tag}: Kästchen gross genug zum Antippen (mindestens 28 px, Zelle 44)`, sizes.every((h) => h >= 28), JSON.stringify(sizes));
     await s.tap('.ag-table [data-box][data-ent="binary_sensor.fenster_bad"][data-mode="home"]');

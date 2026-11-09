@@ -59,6 +59,8 @@ offline = `--ag-error`, keine Daten = `--ag-text3`.
 - Einheitlich speichern: Entwurf, "Abbrechen", "Speichern", Rückfrage beim
   Schliessen mit Änderungen.
 
+- **Tabellenkopf klebt immer:** Die oberste Zeile jeder Tabelle (Beschriftung, Filtern, Sortieren) scrollt nie weg, auch auf dem Handy. Dort scrollen die Filter weg, die Tabelle passt ohne seitliches Rollen (`overflow: clip` statt `auto`; ein Rollbereich verhindert `position: sticky`). Fallback bei zu vielen gewählten Spalten: Klasse `hscroll` (seitlich wischen, Kopf klebt dann nicht).
+
 ## Vorgehen bei neuen Ansichten
 
 Erst Mockup (HTML, Deutsch, erfundene Daten, Desktop und Handy, 2–4

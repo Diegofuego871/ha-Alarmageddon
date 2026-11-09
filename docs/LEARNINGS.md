@@ -613,3 +613,7 @@ währenddessen, liegt die Maus daneben und das Ziehen tut nichts (kein Fehler, n
 `scrollIntoView` ins Bild holen: ausserhalb des Fensters trifft `page.mouse` nichts.
 Pfeiltasten-Test: Reihenfolge so wählen, dass sie nicht zufällig den Ausgangszustand
 herstellt (dann ist der Entwurf sauber und "Abbrechen" gesperrt).
+
+## Tabellenkopf klebt auch auf dem Handy
+
+`position: sticky` am Tabellenkopf wirkt nur, wenn kein Vorfahre bis zum scrollenden Container `overflow` ausser `visible`/`clip` hat. Ein Umschlag mit `overflow-x: auto` (damit eine breite Tabelle seitlich wischt) macht ihn zum Rollbereich, und der Kopf scrollt mit. Auf dem Handy darum `overflow: clip` und die Tabelle so kompakt bauen, dass sie in die Breite passt (Symbole statt Namen, Zellen dürfen umbrechen, Nebensächliches ins Blatt). Die Filter darüber scrollen dort weg, sonst bleibt für die Zeilen zu wenig Platz. Im Test nach dem Scrollen warten (sanftes Scrollen) und bedenken, dass eine kurze Seite nicht weit genug scrollt.

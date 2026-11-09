@@ -591,8 +591,24 @@ select.ag-select:focus-visible, select.ag-input:focus-visible { outline: 2px sol
 /* Auswahl der Alarmanlage in der Konfiguration: auffällig, damit klar ist, dass sie für alle Reiter gilt */
 select.ag-select[data-act="system"] { height: 52px; padding-left: 22px; font-size: 24px; letter-spacing: -.2px; border: 2px solid var(--ag-primary); background-color: var(--ag-primary-soft); color: var(--ag-primary); font-weight: 600; }
 .ag-content { scroll-padding: calc(var(--ag-th-top, 0px) + 56px) 0 80px; }
-:host([narrow]) .ag-table-wrap.ag-stickwrap { overflow-x: auto; }
-:host([narrow]) .ag-stickwrap .ag-table th { position: static; }
+/* Der Tabellenkopf klebt auch auf dem Handy (Regel: Titelzeile einer Tabelle scrollt nie weg). "clip" statt "auto", weil ein Rollbereich das Festkleben verhindert */
+:host([narrow]) .ag-table-wrap.ag-stickwrap { overflow: clip; }
+:host([narrow]) .ag-table-wrap.ag-stickwrap.hscroll { overflow-x: auto; }
+:host([narrow]) .ag-stickwrap.hscroll .ag-table th { position: static; }
+/* Damit nichts abgeschnitten wird, dürfen die Zellen auf dem Handy umbrechen und schrumpfen */
+:host([narrow]) .ag-ltable td, :host([narrow]) .ag-ltable th { white-space: normal; }
+:host([narrow]) .ag-ltable td, :host([narrow]) .ag-ltable th { padding-left: 6px; padding-right: 6px; }
+:host([narrow]) .ag-ltable td:first-child, :host([narrow]) .ag-ltable th:first-child { padding-left: 12px; }
+/* Kompakt: ohne Symbol vor dem Namen, Batterie nur als Zahl, Empfang nur als Balken */
+:host([narrow]) .ag-ltable .ag-nm .ag-av { display: none; }
+:host([narrow]) .ag-ltable .ag-bat i { display: none; }
+:host([narrow]) .ag-ltable .ag-sig { font-size: 0; }
+:host([narrow]) .ag-ltable .ag-sig .ag-bars { font-size: 13px; }
+:host([narrow]) .ag-ltable th .ag-sortbtn { padding-left: 0; padding-right: 0; font-size: 10.5px; letter-spacing: 0; }
+:host([narrow]) .ag-ltable .ag-fc { display: none; }
+:host([narrow]) .ag-ltable td:last-child, :host([narrow]) .ag-ltable th:last-child { display: none; }
+:host([narrow]) .ag-ltable td, :host([narrow]) .ag-ltable th { padding-left: 4px; padding-right: 4px; font-size: 12.5px; }
+:host([narrow]) .ag-ltable tr.grp td { display: table-cell; }
 .ag-table td.ag-acts { width: 1%; white-space: nowrap; padding-right: 16px; }
 /* Papierkorb und Pfeil nebeneinander auf einer Höhe, der Pfeil ganz rechts */
 .ag-actrow { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }

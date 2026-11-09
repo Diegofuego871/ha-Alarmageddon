@@ -11,9 +11,11 @@ for (const lang of ["de", "en"]) {
     const count = () => s.ev(`return r.querySelectorAll('${rowSel}').length`);
     check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 9, String(await count()));
     if (mobile) {
+      await s.ev("const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop += th.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 20;");
+    await s.page.waitForTimeout(900);
+    check(`${tag}: Tabellenkopf klebt beim Scrollen (Regel: Titelzeile scrollt nie weg), Tabelle passt in die Breite`, await s.ev(`const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); const t=th.getBoundingClientRect().top; const w=r.querySelector('.ag-table-wrap'); const ok=!w.classList.contains('hscroll') && (Math.abs(t - top - c.getBoundingClientRect().top) < 16 || (c.scrollTop >= c.scrollHeight - c.clientHeight - 1 && t >= top)) && c.scrollTop > 0; c.scrollTop = 0; return ok`));
       const head = await s.ev("return [...r.querySelectorAll('.ag-ltable th')].map((th) => th.textContent.trim())");
-      check(`${tag}: Handy: Liste mit eigenen, wenigen Spalten (Zustand, Batterie, Empfang, Firmware)`, head.length === 6, JSON.stringify(head));
-      check(`${tag}: Handy: Liste lässt sich seitlich wischen, kein Überlauf der Seite`, await s.ev("const w=r.querySelector('.ag-table-wrap'); return getComputedStyle(w).overflowX === 'auto' && document.documentElement.scrollWidth <= window.innerWidth"));
+      check(`${tag}: Handy: Liste mit eigenen, wenigen Spalten (Zustand, Batterie, Empfang)`, head.length === 5, JSON.stringify(head));
     }
     if (!mobile) {
       const head = await s.ev("return [...r.querySelectorAll('.ag-ltable th')].map((th) => th.textContent.trim())");
@@ -39,7 +41,9 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-list="view"]');
     await s.tap('[data-list="vset"][data-key="group"][data-value="none"]');
     check(`${tag}: Hinweis, für welches Gerät die Ansicht gilt`, await s.ev(`return r.querySelector('#ag-view').innerText.includes('${mobile ? (lang === "de" ? "Handy" : "phone") : (lang === "de" ? "Desktop" : "desktop")}')`));
-    await s.tap('[data-list="col"][data-set="cols"][data-key="firmware"]');
+    const hide = mobile ? "signal" : "firmware";
+    const hideRe = mobile ? /empfang|signal/i : /firmware/i;
+    await s.tap(`[data-list="col"][data-set="cols"][data-key="${hide}"]`);
     // Reihenfolge ändern: Batterie eine Stelle nach oben (vor den Zustand), Spalten der Liste folgen
     await s.tap('[data-list="mv"][data-set="cols"][data-key="battery"][data-dir="-1"]');
     check(`${tag}: Spalte nach oben verschoben`, await s.waitFor("const cols=[...r.querySelectorAll('.ag-ltable th')].map((x) => x.textContent.trim()); const keys=[...r.querySelectorAll('#ag-view [data-list=\"col\"][data-set=\"cols\"]')].map((b) => b.dataset.key); return keys.indexOf('battery') < keys.indexOf('state') || keys.indexOf('battery') < keys.length"));
@@ -49,13 +53,13 @@ for (const lang of ["de", "en"]) {
     // Nach dem Neuladen ist der alte Frame weg: auf den neuen warten, bis die Liste steht
     const f = await (await s.page.waitForSelector("#panel-frame")).contentFrame();
     await f.waitForFunction(new Function(`return document.querySelector("alarmageddon-panel")?.shadowRoot?.querySelector(".ag-ov-list .ag-card")`), null, { timeout: 10000 });
-    const remembered = await f.evaluate(new Function(`const r=document.querySelector("alarmageddon-panel").shadowRoot; return [!r.querySelector('.ag-ov-list tr.grp, .ag-ov-list .ag-group-label'), [...r.querySelectorAll('.ag-ltable th')].some((th) => /firmware/i.test(th.textContent))]`));
+    const remembered = await f.evaluate(new Function(`const r=document.querySelector("alarmageddon-panel").shadowRoot; return [!r.querySelector('.ag-ov-list tr.grp, .ag-ov-list .ag-group-label'), [...r.querySelectorAll('.ag-ltable th')].some((th) => ${hideRe}.test(th.textContent))]`));
     check(`${tag}: Ansicht gemerkt`, remembered[0] && !remembered[1], JSON.stringify(remembered));
     // Je Gerät eigene Spalten, pro Benutzer bei Home Assistant gespeichert
     const saved = await s.sim("return window.__userData?.alarmageddon_view");
     const mine = mobile ? "mobile" : "desktop";
     const other = mobile ? "desktop" : "mobile";
-    check(`${tag}: bei Home Assistant gespeichert, das andere Gerät unverändert`, !!saved && saved[mine].cols.find(([k]) => k === "firmware")[1] === false && saved[other].cols.find(([k]) => k === "firmware")[1] === true && saved[mine].group === "none" && saved[other].group === "area", JSON.stringify(saved && { [mine]: saved[mine].group, [other]: saved[other].group }));
+    check(`${tag}: bei Home Assistant gespeichert, das andere Gerät unverändert`, !!saved && saved[mine].cols.find(([k]) => k === hide)[1] === false && saved[other].cols.find(([k]) => k === hide)[1] === mobile && saved[mine].group === "none" && saved[other].group === "area", JSON.stringify(saved && { [mine]: saved[mine].group, [other]: saved[other].group }));
     await s.page.screenshot({ path: `${outDir}list-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();
