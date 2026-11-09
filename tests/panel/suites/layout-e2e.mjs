@@ -67,8 +67,12 @@ for (const lang of ["de", "en"]) {
         await s.page.waitForTimeout(150);
         const pos = await s.ev("const c=r.querySelector('.ag-content').getBoundingClientRect(); const h=r.querySelector('.ag-head').getBoundingClientRect(); const t=r.querySelector('.ag-tools').getBoundingClientRect(); const th=r.querySelector('.ag-table th').getBoundingClientRect(); return { head: Math.round(h.top - c.top), toolsBelow: t.top >= h.bottom - 1, thBelow: th.top >= t.bottom - 1, thTop: Math.round(th.top - t.bottom) }");
         check(`${tag}: Kopfzeile bleibt oben beim Scrollen`, pos.head <= 1 && pos.toolsBelow && pos.thBelow, JSON.stringify(pos));
+        // Fest stehende Teile überlappen nicht: jeder beginnt dort, wo der vorige endet; der Tabellenkopf liegt unter der Werkzeugleiste
+        const stack = await s.ev("const els=[...r.querySelectorAll('.ag-stk')].map((e) => e.getBoundingClientRect()); const th=r.querySelector('.ag-table th').getBoundingClientRect(); const gaps=els.slice(1).map((b, i) => Math.round(b.top - els[i].bottom)); return { n: els.length, gaps, thBelow: th.top >= els.at(-1).bottom - 1 }");
+        check(`${tag}: feste Teile überlappen nicht (auch nach dem Laden des Logos)`, stack.n >= 3 && stack.gaps.every((g) => g >= -1 && g <= 1) && stack.thBelow, JSON.stringify(stack));
         await s.ev("r.querySelector('.ag-content').scrollTop = 0");
         await s.page.setViewportSize({ width: 1400, height: 950 });
+        check(`${tag}: Papierkorb und Pfeil nebeneinander auf einer Höhe, Pfeil ganz rechts`, await s.ev("const td=r.querySelector('.ag-gbody td.ag-acts'); const t=td.querySelector('[data-sen=\"remove\"]').getBoundingClientRect(); const c=td.querySelector('[data-sen=\"detail\"]').getBoundingClientRect(); const row=td.closest('tr').getBoundingClientRect(); return Math.abs((t.top + t.bottom) / 2 - (c.top + c.bottom) / 2) < 2 && c.left > t.right - 1 && row.right - c.right < 30"));
         // Zeile antippen öffnet die Optionen; Kästchen bleibt Kästchen
         await s.tap('tr[data-row="binary_sensor.fenster_bad"] td:first-child .ag-nm');
         check(`${tag}: Zeile antippen öffnet die Optionen`, await s.waitFor("return r.querySelector('.ag-sen-layout').classList.contains('open') && r.querySelector('.ag-side').textContent.includes('Fenster Bad')"));
@@ -82,6 +86,17 @@ for (const lang of ["de", "en"]) {
         await s.tap(alwaysSel);
         check(`${tag}: Klick schaltet "Immer aktiv" um und ist ein Entwurf`, await s.waitFor(`return r.querySelector('${alwaysSel}').classList.contains('on') === ${!wasOn} && r.querySelector('[data-sub="sensors"]').classList.contains('has-edit')`));
         await s.tap('[data-sen="cancel"]');
+        // Auf einem sehr breiten Bildschirm rutscht die Tabelle beim Öffnen der Optionen nicht nach links
+        await s.page.setViewportSize({ width: 2200, height: 950 });
+        await s.page.waitForTimeout(250);
+        const boxX = () => s.ev("const b=r.querySelector('.ag-gbody [data-box][data-mode=\"home\"]'); return Math.round(b.getBoundingClientRect().left)");
+        const xClosed = await boxX();
+        await s.tap('tr[data-row="binary_sensor.fenster_bad"] td:first-child .ag-nm');
+        await s.waitFor("return r.querySelector('.ag-sen-layout').classList.contains('open')");
+        await s.page.waitForTimeout(250);
+        const xOpen = await boxX();
+        check(`${tag}: breiter Bildschirm: Kästchen bleiben beim Öffnen der Optionen an ihrem Platz`, Math.abs(xOpen - xClosed) <= 1, `${xClosed} -> ${xOpen}`);
+        await s.page.setViewportSize({ width: 1400, height: 950 });
       } else {
         await s.tap('.ag-mcard[data-row="binary_sensor.fenster_bad"] .ag-nm, .ag-mcard[data-row="binary_sensor.fenster_bad"] .ag-mcard-top');
         check(`${tag}: Karte antippen öffnet das Blatt`, await s.waitFor("return r.getElementById('ag-sheet').open"));
@@ -115,6 +130,7 @@ for (const lang of ["de", "en"]) {
       await s.tap('[data-sub="actions"]');
       check(`${tag}: Element "Alarm endet" am Ende des Ablaufs (auch ohne Schritte), mit farbigem Symbol`, await s.waitFor("const e=r.querySelector('.ag-wf-end'); return !!e && !!e.querySelector('[data-wf=\"end-edit\"]') && getComputedStyle(e.querySelector('.ag-end-ic')).color !== getComputedStyle(r.querySelector('.ag-wf-start .ag-mini.err')).color"));
       check(`${tag}: keine Wahl zum Zurücksetzen mehr (entscheidet allein der Schritt)`, await s.ev("return !r.querySelector('.ag-wf-end select') && !r.querySelector('[data-wf=\"end-undo\"]')"));
+      check(`${tag}: Marken im Ablauf sind undurchsichtig (Linie scheint nicht durch das Symbol)`, await s.ev("return [...r.querySelectorAll('.ag-wf-start .ag-mini')].every((m) => { const c=getComputedStyle(m); return c.backgroundColor !== 'rgba(0, 0, 0, 0)' && !c.backgroundColor.endsWith(', 0)'); })"));
       check(`${tag}: Linie läuft nicht durch die Karten`, await s.ev("const l=r.querySelector('.ag-wf-main').getBoundingClientRect(); const e=r.querySelector('.ag-wf-end').getBoundingClientRect(); return e.top >= l.bottom - 1"));
       await s.tap('[data-wf="end-edit"]');
       check(`${tag}: Fenster "Alarm endet" mit Schalter für die Meldung`, await s.waitFor("const d=r.getElementById('ag-step'); return d.open && !!d.querySelector('[data-wf=\"end-notify\"]') && !d.querySelector('select[data-wf=\"end-undo\"]') && !d.querySelector('[data-key=\"ntTitle\"]')"));

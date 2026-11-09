@@ -38,6 +38,8 @@ Nicht veröffentlicht; enthalten in 0.29.0.
 
 - **Sensortabelle (Konfiguration):** Pfeil und Löschsymbol stehen nebeneinander, der Pfeil ganz rechts; die Spalten Integration und Batterie entfallen, damit es übersichtlich bleibt.
 - **Ablauf der Aktionen:** Die Linie läuft nicht mehr durch die Karten und endet bei "Alarm endet", das ein farbiges Symbol hat.
+- **Sensortabelle:** Auf einem breiten Bildschirm behält die Tabelle ihre Breite, und die Kästchen bleiben an ihrem Platz, wenn die Optionen eines Sensors aufgehen (das Blatt steht daneben); Papierkorb und Pfeil stehen auf einer Zeile, der Pfeil ganz rechts. Die festen Teile oben (Reiter, Unterreiter, Werkzeugleiste, Spaltenkopf) schieben sich nicht mehr übereinander.
+- **Ablauf der Aktionen:** Die Symbole "Alarm beginnt" und "Alarm endet" sind undurchsichtig, die Linie scheint nicht mehr durch.
 - **Lautstärkeregler** höchstens halb so breit; **Rollbalken in Fenstern** mit mehr Abstand zum Rand.
 - **Fenster:** Der Spaltenkopf der Tabellen wird nicht mehr von der Werkzeugleiste verdeckt.
 - **"Sensor meldet (kein Alarm)" heisst neu "Stiller Alarm"**, und das Kapitel "Alarmmeldungen" heisst "Meldungen" (Konfiguration › Benachrichtigungen).

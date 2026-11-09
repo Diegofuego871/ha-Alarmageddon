@@ -230,8 +230,10 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-status h2 { font-size: 19px; }
 .ag-rowbtn { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .ag-rowbtn:hover { background: var(--ag-hover); }
-.ag-sen-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
-.ag-sen-layout.open { grid-template-columns: minmax(0, 1fr) 420px; }
+/* Die Tabelle ist höchstens 1180 px breit: bietet der Bildschirm genug Platz, bleibt sie beim Öffnen der Optionen unverändert (die Kästchen
+   rutschen nicht nach links), das Blatt steht daneben; erst auf schmaleren Fenstern wird die Tabelle schmaler */
+.ag-sen-layout { display: grid; grid-template-columns: minmax(0, 1180px); gap: 16px; align-items: start; }
+.ag-sen-layout.open { grid-template-columns: minmax(0, 1180px) 420px; }
 .ag-side:empty { display: none; }
 .ag-sheet { position: sticky; top: 0; overflow: hidden; }
 .ag-side-head { display: flex; gap: 12px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--ag-divider); }
@@ -277,6 +279,9 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 
 .ag-wf-line { position: relative; display: flex; flex-direction: column; align-items: stretch; max-width: 820px; }
 .ag-wf-line::before { content: ""; position: absolute; left: 33px; top: 20px; bottom: 20px; width: 2px; background: var(--ag-divider); z-index: 0; }
+.ag-wf-start .ag-mini { background-color: var(--ag-bg); }
+.ag-wf-start .ag-mini.err { background-image: linear-gradient(var(--ag-error-soft), var(--ag-error-soft)); }
+.ag-wf-start .ag-mini.ok { background-image: linear-gradient(var(--ag-success-soft), var(--ag-success-soft)); }
 .ag-wf-start { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-weight: 500; position: relative; z-index: 1; }
 .ag-wf-plus { display: flex; padding: 6px 0 6px 20px; position: relative; z-index: 1; }
 .ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; }
@@ -554,6 +559,10 @@ select.ag-select[data-act="system"] { height: 44px; padding-left: 18px; border: 
 .ag-content { scroll-padding: calc(var(--ag-th-top, 0px) + 56px) 0 80px; }
 :host([narrow]) .ag-table-wrap.ag-stickwrap { overflow-x: auto; }
 :host([narrow]) .ag-stickwrap .ag-table th { position: static; }
+.ag-table td.ag-acts { width: 1%; white-space: nowrap; padding-right: 16px; }
+/* Papierkorb und Pfeil nebeneinander auf einer Höhe, der Pfeil ganz rechts */
+.ag-actrow { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.ag-actrow > * { flex: none; margin: 0; }
 .ag-clickrow { cursor: pointer; }
 .ag-table tr.ag-clickrow:hover td { background: color-mix(in srgb, var(--ag-text) 4%, transparent); }
 .ag-logo { flex: none; width: 40px; height: 40px; border-radius: 11px; object-fit: cover; }

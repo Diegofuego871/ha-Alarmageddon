@@ -376,6 +376,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._lastHtml.delete(this._content);
     this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${tabs}${right}</div><div class="ag-view"></div>`));
     this._view = this._content.querySelector(".ag-view");
+    this._content.querySelector(".ag-logo")?.addEventListener("load", () => this._stickySync());
     this._view.style.display = "contents";
     this._renderView(true);
   }
@@ -552,8 +553,14 @@ class AlarmageddonPanel extends HTMLElement {
         el.classList.add("ag-stk");
         el.style.top = `${top}px`;
         el.style.zIndex = String(20 + i);
-        top += el.offsetHeight;
+        top += el.getBoundingClientRect().height;
       });
+      // Ändert sich die Höhe eines festen Teils später (Logo, Schrift, Umbruch der Filter), neu messen: sonst schieben sich die Teile übereinander
+      if (typeof ResizeObserver !== "undefined") {
+        this._stickyRO ||= new ResizeObserver(() => this._stickySync());
+        this._stickyRO.disconnect();
+        items.forEach((el) => this._stickyRO.observe(el));
+      }
       // Der Schatten in Grundfarbe unter dem letzten festen Teil (deckt die Lücke) schiebt den Tabellenkopf um dieselbe Lücke nach unten
       const gap = this.hasAttribute("narrow") ? 12 : 18;
       c.style.setProperty("--ag-th-top", `${top + gap}px`);
