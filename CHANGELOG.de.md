@@ -11,7 +11,7 @@ die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Geändert
 
-- **Name der Alarmanlage** (Titel oder Dropdown, Stift, "Integration in HA öffnen") steht ganz oben neben dem Logo statt unter den Reitern. Auf dem Handy zeigt der Knopf nur das Symbol.
+- **Name der Alarmanlage** (Titel oder Dropdown, Stift, "Integration in HA öffnen") steht ganz oben neben dem Logo statt unter den Reitern. Der Name (oder das Dropdown zum Wechseln der Anlage, mit dem Stift zum Umbenennen) bleibt in jedem Reiter der Konfiguration sichtbar, auch bei Benachrichtigungen. Der Knopf "Integration in HA öffnen" steht nur im Reiter Anlage. Auf dem Handy zeigt der Knopf nur das Symbol.
 
 ## [0.35.1] - 2026-11-09
 

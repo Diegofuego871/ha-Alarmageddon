@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **Name of the alarm system** (title or dropdown, pencil, "Open integration in HA") moved to the very top, next to the logo, instead of below the tabs. On the phone the button shows only the icon.
+- **Name of the alarm system** (title or dropdown, pencil, "Open integration in HA") moved to the very top, next to the logo, instead of below the tabs. The name (or the dropdown to switch the alarm system, with the pencil to rename) stays visible in every tab of Configuration, including Notifications. The button "Open integration in HA" is only in the tab Alarm system. On the phone the button shows only the icon.
 
 ## [0.35.1] - 2026-11-09
 

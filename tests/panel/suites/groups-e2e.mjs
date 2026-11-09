@@ -112,12 +112,14 @@ for (const lang of ["de", "en"]) {
     await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_garage"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
     check(`${tag}: Garage ohne Nacht`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 6`));
     // Name der Anlage oben: grosses Dropdown (mehrere Anlagen), Stift, Sprung nach HA, Umbenennen
-    check(`${tag}: Anlagenname gross als Dropdown mit Stift und HA-Knopf`, await s.ev(`const b=r.querySelector('.ag-head .ag-headsys'); const sel=b.querySelector('select[data-act="system"]'); return !!sel && parseFloat(getComputedStyle(sel).fontSize) >= 20 && sel.offsetHeight >= 44 && !!b.querySelector('[data-act="rename"]') && !!b.querySelector('[data-act="open-ha"]')`));
+    check(`${tag}: Anlagenname gross als Dropdown mit Stift ganz oben, HA-Knopf nur im Tab Anlage`, await s.ev(`const b=r.querySelector('.ag-head .ag-headsys'); const sel=b.querySelector('select[data-act="system"]'); return !!sel && parseFloat(getComputedStyle(sel).fontSize) >= 20 && sel.offsetHeight >= 44 && !!b.querySelector('[data-act="rename"]') && !b.querySelector('[data-act="open-ha"]')`));
     await s.ev(`window.__navs=[]; r.host._navigate = (p) => window.__navs.push(p);`);
+    await s.tap('[data-sub="system"]');
+    await s.waitFor(`return !!r.querySelector('.ag-headsys [data-act="open-ha"]')`);
     await s.tap('[data-act="open-ha"]');
     check(`${tag}: Knopf öffnet die Integration dieser Anlage in HA`, await s.ev(`return window.__navs.length === 1 && window.__navs[0] === "/config/integrations/integration/alarmageddon#config_entry=e_garage"`));
     await s.tap('[data-sub="notify"]');
-    check(`${tag}: bei Benachrichtigungen kein Anlagenname`, await s.waitFor(`return !r.querySelector('.ag-headsys select, .ag-headsys h2')`));
+    check(`${tag}: Anlagenname bleibt auch bei Benachrichtigungen oben, ohne HA-Knopf`, await s.waitFor(`return !!r.querySelector('.ag-headsys select[data-act="system"]') && !!r.querySelector('.ag-headsys [data-act="rename"]') && !r.querySelector('.ag-headsys [data-act="open-ha"]')`));
     await s.tap('[data-sub="sensors"]');
     await s.waitFor(`return !!r.querySelector('.ag-headsys select, .ag-headsys h2')`);
     await s.tap('[data-act="rename"]');

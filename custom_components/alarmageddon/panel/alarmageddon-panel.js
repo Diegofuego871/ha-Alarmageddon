@@ -797,9 +797,8 @@ class AlarmageddonPanel extends HTMLElement {
       const label = (key) => this._t(narrow ? `${key}Short` : key);
       const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")]], this._sub, "data-sub", "small ag-subs");
       const systems = this._systems();
-      // Benachrichtigungen gelten für alle Anlagen: dort kein Anlagenname und keine Auswahl
       const cur = this._system();
-      const bar = systems.length && cur && this._sub !== "notify" ? this._sysBar(systems, cur) : "";
+      const bar = systems.length && cur ? this._sysBar(systems, cur) : "";
       // Name der Anlage ganz oben neben dem Logo (die Kopfzeile bleibt beim Scrollen stehen)
       const slot = this._content.querySelector(".ag-headsys");
       if (slot) slot.innerHTML = bar;
@@ -824,7 +823,7 @@ class AlarmageddonPanel extends HTMLElement {
     const label = this._t("openInHa");
     const text = this.hasAttribute("narrow") ? "" : esc(label);
     return `${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
-      <button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>`;
+      ${this._sub === "system" ? `<button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>` : ""}`;
   }
 
   _openRename() {
