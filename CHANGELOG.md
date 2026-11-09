@@ -7,6 +7,19 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.36.0] - 2026-11-09
+
+A tidier log, especially on the phone.
+
+### Changed
+
+- **Log filters** are labelled ("Period", "Alarm system") and a line with the dates the chosen period covers (for example "Monday, 9 November 2026") makes clear what the list shows.
+- **Download** moved to the fixed bar at the bottom as an unobtrusive download symbol, next to the count of events and alarms.
+
+### Removed
+
+- **Export JSON.** The CSV download stays.
+
 ## [0.35.2] - 2026-11-09
 
 ### Changed
@@ -561,6 +574,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.36.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.36.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2
 [0.35.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.1
 [0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0

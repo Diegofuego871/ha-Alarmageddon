@@ -247,20 +247,34 @@ export class LogUi {
   }
 
   html() {
-    return `<div class="ag-tools ag-log-tools">${this._toolsHtml()}</div><div class="ag-log-body">${this.systems ? this._body() : ""}</div>`;
+    return `<div class="ag-tools ag-log-tools">${this._toolsHtml()}</div><div class="ag-log-body">${this.systems ? this._body() : ""}</div>
+      <div class="ag-foot ag-log-foot"><span class="ag-t2 ag-log-count"></span><span class="ag-grow"></span>
+        <button class="ag-iconbtn" data-log="export-csv" title="${esc(this._t("logExportHint"))}" aria-label="${esc(this._t("logExportCsv"))}">${ic("arrowLine", 22)}</button></div>`;
+  }
+
+  // Anzeige des gewählten Zeitraums mit Datum, damit klar ist, was die Liste zeigt
+  _rangeText() {
+    const [lo, hi] = this.window();
+    if (lo === null && hi === null) return this._t(this.range === "all" ? "logRangeAllText" : "logRangePick");
+    const lang = this.host._lang || "en";
+    const end = hi === null ? Date.now() : hi - 1;
+    const fmt = (ms, long) => new Date(ms).toLocaleDateString(lang, long ? { weekday: "long", day: "numeric", month: "long", year: "numeric" } : { day: "numeric", month: "short", year: "numeric" });
+    return dayStr(new Date(lo)) === dayStr(new Date(end)) ? fmt(lo, true) : `${fmt(lo, false)} – ${fmt(end, false)}`;
   }
 
   _toolsHtml() {
     const opt = (k) => `<option value="${k}" ${k === this.range ? "selected" : ""}>${esc(this._t(`logRange_${k}`))}</option>`;
     const date = (key, value, label) => `<input type="date" class="ag-input ag-date" data-log="${key}" value="${esc(value)}" aria-label="${esc(label)}">`;
     const systems = this.systems || [];
-    return `<select class="ag-select" data-log="range" aria-label="${esc(this._t("logRange"))}">${RANGES.map(opt).join("")}</select>
-      ${this.range === "day" ? date("from", this.from, this._t("logDay")) : ""}
-      ${this.range === "span" ? `${date("from", this.from, this._t("logFrom"))}<span class="ag-t2">–</span>${date("to", this.to, this._t("logTo"))}` : ""}
-      ${systems.length > 1 ? `<select class="ag-select" data-log="system" aria-label="${esc(this._t("groupsSystem"))}"><option value="all">${esc(this._t("logAllSystems"))}</option>${systems.map((s) => `<option value="${esc(s.entry_id)}" ${s.entry_id === this.system ? "selected" : ""}>${esc(s.title)}</option>`).join("")}</select>` : ""}
-      <span class="ag-grow"></span><span class="ag-t2 ag-small ag-log-count"></span>
-      <button class="ag-btn" data-log="export-csv" title="${esc(this._t("logExportHint"))}">${ic("arrowDown", 18)}${esc(this._t("logExportCsv"))}</button>
-      <button class="ag-btn" data-log="export-json">${ic("arrowDown", 18)}${esc(this._t("logExportJson"))}</button>`;
+    const dates = this.range === "day" ? date("from", this.from, this._t("logDay"))
+      : this.range === "span" ? `${date("from", this.from, this._t("logFrom"))}<span class="ag-t2">–</span>${date("to", this.to, this._t("logTo"))}` : "";
+    return `<div class="ag-lfields">
+        <div class="ag-field"><span class="ag-label">${esc(this._t("logRange"))}</span>
+          <div class="ag-fieldrow"><select class="ag-select" data-log="range" aria-label="${esc(this._t("logRange"))}">${RANGES.map(opt).join("")}</select>${dates}</div></div>
+        ${systems.length > 1 ? `<div class="ag-field"><span class="ag-label">${esc(this._t("groupsSystem"))}</span>
+          <div class="ag-fieldrow"><select class="ag-select" data-log="system" aria-label="${esc(this._t("groupsSystem"))}"><option value="all">${esc(this._t("logAllSystems"))}</option>${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this.system ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select></div></div>` : ""}
+      </div>
+      <div class="ag-lrange">${ic("calendar", 16)}<span>${esc(this._rangeText())}</span></div>`;
   }
 
   renderTools() {
@@ -337,22 +351,11 @@ export class LogUi {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  exportFile(kind) {
+  exportFile() {
     if (!this.systems) return;
     const events = this.events().reverse();
     const incidents = this.incidents().reverse();
     const base = `alarmageddon-log-${this._rangeName()}-${dayStr(new Date())}`;
-    if (kind === "json") {
-      const keep = new Set(events.map((e) => `${e.system}|${e.t}`));
-      const systems = this._sys().map((s) => ({
-        title: s.title,
-        events: (s.events || []).filter((e) => keep.has(`${s.title}|${e.t}`)),
-        recordings: incidents.filter((r) => r.system === s.title).map(({ system, ...r }) => r),
-      }));
-      const data = { format: "alarmageddon-log", exported: new Date().toISOString(), filter: { range: this.range, from: this.range === "day" || this.range === "span" ? this.from : null, to: this.range === "span" ? this.to : null, system: this.system }, systems };
-      this._download(`${base}.json`, JSON.stringify(data, null, 2), "application/json");
-      return;
-    }
     // CSV mit Semikolon und BOM: öffnet sich in Excel im deutschsprachigen Raum richtig
     const q = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
     const rows = [];
@@ -365,8 +368,7 @@ export class LogUi {
   }
 
   onClick(el) {
-    if (el?.dataset?.log === "export-csv") return this.exportFile("csv"), true;
-    if (el?.dataset?.log === "export-json") return this.exportFile("json"), true;
+    if (el?.dataset?.log === "export-csv") return this.exportFile(), true;
     if (el?.dataset?.log === "evfilter") {
       this.evFilter = el.dataset.filter;
       this.render();

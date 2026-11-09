@@ -67,11 +67,11 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: CSV-Name mit Zeitraum`, /^alarmageddon-log-7d-\d{4}-\d{2}-\d{2}\.csv$/.test(csv.suggestedFilename()), csv.suggestedFilename());
     check(`${tag}: CSV: Kopfzeile, 4 Ereignisse und 6 Alarm-Einträge, Semikolon`, lines.length === 1 + 4 + 6 && lines[0].split(";").length === 7 && text.startsWith("\ufeff") && text.includes("Wandtablet"), String(lines.length));
     check(`${tag}: CSV ohne das Ereignis von vor 40 Tagen, mit Sensornamen im Alarm`, lines.filter((x) => x.includes('"Alarm"')).length === 6 && lines.some((x) => x.includes("Fenster Bad hat angesprochen") || x.includes("Fenster Bad responded")));
-    await pick("3h");
-    const [json] = await Promise.all([s.page.waitForEvent("download", { timeout: 5000 }), s.tap('[data-log="export-json"]')]);
-    const data = JSON.parse((await import("node:fs")).readFileSync(await json.path(), "utf8"));
-    check(`${tag}: JSON mit Filter, 3 Stunden: ein Ereignis, ein Alarm`, data.format === "alarmageddon-log" && data.filter.range === "3h"
-      && data.systems.reduce((n, x) => n + x.events.length, 0) === 1 && data.systems.reduce((n, x) => n + x.recordings.length, 0) === 1, JSON.stringify(data.filter));
+    check(`${tag}: kein JSON-Export mehr, der Download steht unten in der Leiste (nur Symbol)`, await s.ev("const b=r.querySelector('.ag-log-foot [data-log=\"export-csv\"]'); return !r.querySelector('[data-log=\"export-json\"]') && !!b && b.textContent.trim() === '' && !r.querySelector('.ag-log-tools [data-log=\"export-csv\"]')"));
+    {
+      await pick("3h");
+      check(`${tag}: Zeitraum beschriftet und mit Datum`, await s.ev("const l=r.querySelector('.ag-log-tools .ag-field .ag-label'); const d=r.querySelector('.ag-lrange span'); return !!l && l.textContent.length > 3 && /\\d{4}/.test(d.textContent)"));
+    }
     await pick("all");
 
     // Das Protokoll lädt alle 5 Sekunden nach, solange der Reiter offen ist

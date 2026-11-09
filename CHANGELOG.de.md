@@ -7,6 +7,19 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.36.0] - 2026-11-09
+
+Ein aufgeräumteres Protokoll, besonders auf dem Handy.
+
+### Geändert
+
+- **Filter im Protokoll** sind beschriftet ("Zeitraum", "Alarmanlage"), und eine Zeile mit den Daten, die der gewählte Zeitraum umfasst (zum Beispiel "Montag, 9. November 2026"), macht klar, was die Liste zeigt.
+- **Download** steht als unauffälliges Download-Symbol in der festen Leiste unten, neben der Anzahl der Ereignisse und Alarme.
+
+### Entfernt
+
+- **JSON-Export.** Der CSV-Download bleibt.
+
 ## [0.35.2] - 2026-11-09
 
 ### Geändert
@@ -561,6 +574,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[0.36.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.36.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2
 [0.35.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.1
 [0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0

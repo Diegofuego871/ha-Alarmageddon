@@ -388,9 +388,15 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-act { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--ag-divider); background: var(--ag-card); color: var(--ag-text); font: inherit; cursor: pointer; }
 .ag-act.on { background: var(--ag-primary-soft); border-color: transparent; color: var(--ag-primary); font-weight: 500; }
 .ag-actions { display: flex; flex-direction: column; gap: 10px; }
-.ag-log-tools { margin-bottom: 4px; }
+.ag-log-tools { margin-bottom: 4px; flex-direction: column; align-items: stretch; gap: 10px; }
+.ag-lfields { display: flex; flex-wrap: wrap; gap: 12px 16px; }
+.ag-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ag-fieldrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ag-lrange { display: flex; align-items: center; gap: 8px; color: var(--ag-text2); font-size: 14px; }
+:host([narrow]) .ag-field { flex: 1 1 100%; }
+:host([narrow]) .ag-fieldrow > .ag-select { flex: 1 1 auto; }
+.ag-log-body { margin-bottom: 24px; }
 .ag-date { height: 38px; border-radius: 999px; padding: 0 12px; min-width: 150px; }
-:host([narrow]) .ag-log-tools .ag-grow { flex-basis: 100%; height: 0; }
 :host([narrow]) .ag-log-tools .ag-date { flex: 1 1 140px; min-width: 0; }
 .ag-inc { padding: 0; margin-bottom: 12px; overflow: hidden; }
 .ag-inc-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
