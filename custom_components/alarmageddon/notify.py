@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from homeassistant.components import persistent_notification
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
@@ -53,7 +54,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_night": "Night",
         "by_push": "push notification",
         "report_title": "Silent alarm: {name}",
-        "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Report only\".",
+        "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Silent alarm\".",
         "type_triggered": "Alarm", "type_pending": "Entry delay", "type_armed": "Armed", "type_disarmed": "Disarmed",
         "type_arm_failed": "Arming not possible", "type_sensor_offline": "Sensor unreachable while armed",
         "type_sensor_report": "Silent alarm", "type_battery_low": "Low battery",
@@ -95,7 +96,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_night": "Nacht",
         "by_push": "Push-Meldung",
         "report_title": "Stiller Alarm: {name}",
-        "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Nur melden\" steht.",
+        "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Stiller Alarm\" steht.",
         "type_triggered": "Alarm", "type_pending": "Eingangsverzögerung", "type_armed": "Scharf geschaltet", "type_disarmed": "Deaktiviert",
         "type_arm_failed": "Scharfschalten nicht möglich", "type_sensor_offline": "Sensor im scharfen Zustand nicht erreichbar",
         "type_sensor_report": "Stiller Alarm", "type_battery_low": "Batterie schwach",
@@ -132,6 +133,16 @@ def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any])
         hass.async_create_task(_async_call(hass, domain, service, payload))
         sent.append(target)
     return sent
+
+
+@callback
+def async_persist(hass: HomeAssistant, cfg: dict[str, Any], kind: str, title: str, message: str, notification_id: str, mode: str | None = None) -> None:
+    """
+    Zusätzlich als Benachrichtigung in Home Assistant (Glocke in der Seitenleiste), wenn die Art das eingeschaltet hat. Sie bleibt stehen,
+    bis jemand sie wegklickt; dieselbe Kennung ersetzt den Inhalt (wie der tag auf dem Handy). Unabhängig von den Empfängern.
+    """
+    if effective_type(cfg, kind, mode).get("persistent"):
+        persistent_notification.async_create(hass, message, title=title, notification_id=notification_id)
 
 
 def effective_type(cfg: dict[str, Any], kind: str, mode: str | None) -> dict[str, Any]:
@@ -264,7 +275,7 @@ class Notifier:
             self._send("sensor_offline", self._t("offline_title", name=self._name(data.get("sensor"))),
                        self._t("offline", sensor=self._name(data.get("sensor"))))
         elif kind == "sensor_report" and self._on("sensor_report", self._ctl.mode):
-            # Sensor auf "Nur melden": keine Alarmauslösung, aber eine Meldung (Standard: kritisch), eigener tag je Sensor
+            # Sensor auf "Stiller Alarm": keine Alarmauslösung, aber eine Meldung (Standard: kritisch), eigener tag je Sensor
             sensor = data.get("sensor")
             self._send("sensor_report", self._t("report_title", name=self._name(sensor)),
                        self._t("report", sensor=self._name(sensor)), tag=f"{self._tag()}_report_{sensor}")
@@ -405,4 +416,5 @@ class Notifier:
         self._ctl.record("notified", type=kind)
         # Eigene Werte je Modus gelten nur für Arten im scharfen Zustand; ohne Angabe der Modus der Anlage
         mode = mode or (self._ctl.mode if kind in NOTIFY_MODE_KINDS else None)
+        async_persist(self.hass, self.cfg, kind, title, message, tag or f"alarmageddon_{self.entry.entry_id}_{kind}", mode)
         async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))

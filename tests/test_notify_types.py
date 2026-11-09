@@ -42,7 +42,7 @@ def test_old_format_is_migrated() -> None:
     cfg = valid_notify({"alarm_targets": ["notify.a", "notify.a", "light.x"], "critical": False, "volume": 0.3,
                         "events": {"triggered": False, "armed": True, "bogus": True}})
     assert cfg["alarm_targets"] == ["notify.a"]
-    assert cfg["types"]["triggered"] == {"enabled": False, "critical": False, "volume": 0.3}
+    assert cfg["types"]["triggered"] == {"enabled": False, "critical": False, "volume": 0.3, "persistent": False}
     assert cfg["types"]["armed"]["enabled"] is True and cfg["types"]["sensor_offline"]["critical"] is False
     assert "events" not in cfg and "critical" not in cfg and "volume" not in cfg
 
@@ -55,7 +55,7 @@ def test_new_format_wins_over_old() -> None:
 async def test_each_type_has_own_critical_and_volume(hass: HomeAssistant, hass_ws_client) -> None:
     pushes = async_mock_service(hass, "notify", "handy")
     await setup_alarm(hass, exit_delay_away=0)
-    await _types(hass, hass_ws_client, armed={"enabled": True, "critical": True, "volume": 0.2}, triggered={"critical": False})
+    await _types(hass, hass_ws_client, armed={"enabled": True, "critical": True, "volume": 0.2, "persistent": False}, triggered={"critical": False})
     await call(hass, "alarm_arm_away")
     await hass.async_block_till_done()
     armed = pushes[0].data
@@ -248,3 +248,45 @@ async def test_mode_values_are_validated_and_sparse(hass: HomeAssistant, hass_ws
     await client.send_json({"id": 4, "type": "alarmageddon/export"})
     exported = (await client.receive_json())["result"]
     assert exported["settings"]["notify"]["modes"] == {"night": {"sensor_report": {"critical": True}}}
+
+
+# ----- Bleibt als Benachrichtigung in Home Assistant stehen (0.31.0) -----
+
+async def test_persistent_notification_per_kind(hass: HomeAssistant, hass_ws_client) -> None:
+    """Je Art "stehen lassen": zusätzlich eine Benachrichtigung in HA (Kennung wie der tag), auch ohne Empfänger."""
+    from homeassistant.components import persistent_notification
+
+    await setup_alarm(hass, exit_delay_away=0)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {
+        "types": {"triggered": {"persistent": True}, "armed": {"enabled": True, "persistent": True}},
+        "modes": {"home": {"armed": {"persistent": False}}},
+    }})
+    assert (await client.receive_json())["success"]
+    await call(hass, "alarm_arm_home")  # Anwesend: für "Scharf geschaltet" abgeschaltet
+    await hass.async_block_till_done()
+    assert not persistent_notification._async_get_or_create_notifications(hass)
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    notes = persistent_notification._async_get_or_create_notifications(hass)
+    assert len(notes) == 1 and next(iter(notes.values()))["title"] == "Alarm: Haus"
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    # Gleiche Kennung: der Inhalt wird durch "Alarm beendet" ersetzt, er bleibt stehen
+    notes = persistent_notification._async_get_or_create_notifications(hass)
+    assert len(notes) == 1 and next(iter(notes.values()))["title"].startswith("Alarm ended")
+    await open_sensor(hass, WINDOW, "off")
+    await call(hass, "alarm_arm_away")  # Abwesend: gemeinsamer Wert, also eigene Meldung "Scharf geschaltet"
+    await hass.async_block_till_done()
+    assert len(persistent_notification._async_get_or_create_notifications(hass)) == 2
+
+
+async def test_persistent_is_validated(hass: HomeAssistant, hass_ws_client) -> None:
+    await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {"types": {"battery_low": {"persistent": "ja"}}}})
+    assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 2, "type": "alarmageddon/save_notify", "notify": {"types": {"battery_low": {"persistent": True}}}})
+    result = await client.receive_json()
+    assert result["success"] and result["result"]["notify"]["types"]["battery_low"]["persistent"] is True
+    assert result["result"]["notify"]["types"]["triggered"]["persistent"] is False

@@ -85,7 +85,7 @@ def valid_notify(value: Any) -> dict[str, Any]:
             item = types.get(kind)
             if not isinstance(item, dict):
                 continue
-            for key in ("enabled", "critical"):
+            for key in ("enabled", "critical", "persistent"):
                 if isinstance(item.get(key), bool):
                     out["types"][kind][key] = item[key]
             if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
@@ -102,7 +102,7 @@ def valid_notify(value: Any) -> dict[str, Any]:
                 if not isinstance(item, dict):
                     continue
                 own: dict[str, Any] = {}
-                for key in ("enabled", "critical"):
+                for key in ("enabled", "critical", "persistent"):
                     if isinstance(item.get(key), bool):
                         own[key] = item[key]
                 if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):

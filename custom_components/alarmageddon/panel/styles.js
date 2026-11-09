@@ -35,7 +35,8 @@ button { font: inherit; color: inherit; }
 .ag-content { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 0 var(--ag-px) calc(32px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 18px; }
 .ag-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 /* Fest beim Scrollen (Abstand und Ebene setzt _stickySync): eigener Grund, und ein Schatten in Grundfarbe deckt die Lücke darunter zu */
-.ag-stk { position: sticky; background: var(--ag-bg); box-shadow: 0 var(--ag-gap, 18px) 0 var(--ag-bg); }
+.ag-stk { position: sticky; background: var(--ag-bg); }
+.ag-stk:not(.ag-stk-last) { padding-bottom: var(--ag-gap, 18px); margin-bottom: calc(-1 * var(--ag-gap, 18px)); }
 /* Auf sehr breiten Bildschirmen bleibt der Inhalt höchstens 1680 px breit, der Rest ist Weissraum links und rechts */
 .ag-content > .ag-head { padding-top: 20px; }
 :host([narrow]) .ag-content > .ag-head { padding-top: 12px; }
@@ -235,7 +236,7 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-sen-layout { display: grid; grid-template-columns: minmax(0, 1180px); gap: 16px; align-items: start; }
 .ag-sen-layout.open { grid-template-columns: minmax(0, 1180px) 420px; }
 .ag-side:empty { display: none; }
-.ag-sheet { position: sticky; top: 0; overflow: hidden; }
+.ag-sheet { position: sticky; top: var(--ag-th-top, 0px); overflow: hidden; }
 .ag-side-head { display: flex; gap: 12px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--ag-divider); }
 .ag-side-head h3 { margin: 0; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
 .ag-side-body { padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 4px; }
@@ -248,6 +249,7 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-otx { flex: 1; min-width: 0; }
 .ag-otx b { font-weight: 500; display: block; }
 .ag-otx small { display: block; color: var(--ag-text2); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
+.ag-block { display: block; margin-top: 2px; font-size: 12px; }
 .ag-origin { display: inline-flex; gap: 4px; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--ag-text2); border: 0; background: transparent; padding: 0; font-family: inherit; }
 .ag-origin.own { color: var(--ag-primary); font-weight: 500; cursor: pointer; }
 .ag-owndot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ag-primary); margin-left: 6px; vertical-align: middle; }
@@ -270,7 +272,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-num.bad input { border-color: var(--ag-error); }
 .ag-numgrid { display: flex; gap: 12px; flex-wrap: wrap; }
 .ag-numlabel { display: flex; flex-direction: column; gap: 4px; }
-.ag-cfg { margin-top: -4px; }
+.ag-cfg { margin-top: 0; }
 :host([narrow]) .ag-sen-layout.open { grid-template-columns: 1fr; }
 :host([narrow]) dialog.ag-sheetdlg { max-height: 88vh; overflow: auto; }
 :host([narrow]) .ag-list-head { margin-top: 2px; }

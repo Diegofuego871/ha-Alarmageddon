@@ -119,7 +119,7 @@ class AlarmController:
         self._locked_until: datetime | None = None
         # Sensoren mit "braucht Bestätigung", die angesprochen haben, und wann (Zwei-Sensor-Bestätigung)
         self._unconfirmed: dict[str, datetime] = {}
-        # Wann ein Sensor "nur melden" zuletzt gemeldet hat (höchstens eine Meldung pro Minute)
+        # Wann ein Sensor mit "Stiller Alarm" zuletzt gemeldet hat (höchstens eine Meldung pro Minute)
         self._last_report: dict[str, datetime] = {}
 
     # ----- Einstellungen (immer frisch aus den Optionen) -----
@@ -355,7 +355,7 @@ class AlarmController:
         went_off = old.state == STATE_ON and new.state == STATE_OFF
         went_away = old.state in (STATE_ON, STATE_OFF) and new.state in GONE
 
-        # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort. Mit "Nur melden" nur eine Meldung.
+        # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort. Mit "Stiller Alarm" nur eine Meldung.
         if went_on and entity in self.always_sensors() and self.state != AlarmControlPanelState.TRIGGERED:
             if self.option(entity, OPT_REPORT_ONLY):
                 self._report(entity)
@@ -381,7 +381,7 @@ class AlarmController:
             return
         if not went_on:
             return
-        # "Nur melden": der Sensor löst nie aus (auch nicht mit Bestätigung), er meldet nur
+        # "Stiller Alarm": der Sensor löst nie aus (auch nicht mit Bestätigung), er meldet nur
         if self.option(entity, OPT_REPORT_ONLY):
             self._report(entity)
             return

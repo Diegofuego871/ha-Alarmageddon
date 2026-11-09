@@ -67,6 +67,16 @@ for (const lang of ["de", "en"]) {
         await s.page.waitForTimeout(150);
         const pos = await s.ev("const c=r.querySelector('.ag-content').getBoundingClientRect(); const h=r.querySelector('.ag-head').getBoundingClientRect(); const t=r.querySelector('.ag-tools').getBoundingClientRect(); const th=r.querySelector('.ag-table th').getBoundingClientRect(); return { head: Math.round(h.top - c.top), toolsBelow: t.top >= h.bottom - 1, thBelow: th.top >= t.bottom - 1, thTop: Math.round(th.top - t.bottom) }");
         check(`${tag}: Kopfzeile bleibt oben beim Scrollen`, pos.head <= 1 && pos.toolsBelow && pos.thBelow, JSON.stringify(pos));
+        // Der Tabellenkopf wird oben nie abgeschnitten: nichts Festes überdeckt ihn, auch nicht im Ruhezustand ohne Scrollen und mit offenem Blatt
+        await s.page.setViewportSize({ width: 1700, height: 900 });
+        await s.page.waitForTimeout(250);
+        await s.tap('tr[data-row="binary_sensor.fenster_bad"] td:first-child .ag-nm');
+        await s.waitFor("return r.querySelector('.ag-sen-layout').classList.contains('open')");
+        await s.page.waitForTimeout(250);
+        const cover = await s.ev("const sticky=[...r.querySelectorAll('.ag-stk')]; const th=r.querySelector('.ag-table th.z'); const t=th.getBoundingClientRect(); const side=r.querySelector('.ag-sheet').getBoundingClientRect(); const at=(x, y) => r.elementFromPoint(x, y); const mid=at(t.left + t.width / 2, t.top + 3); const sideTop=at(side.left + 40, side.top + 3); return { thTopHit: !!mid && (mid === th || th.contains(mid)), sideHit: !!sideTop && r.querySelector('.ag-sheet').contains(sideTop), overlap: Math.max(...sticky.map((e) => Math.round(e.getBoundingClientRect().bottom - t.top))) }");
+        check(`${tag}: Tabellenkopf und Blatt oben nicht abgeschnitten (ohne Scrollen)`, cover.thTopHit && cover.sideHit && cover.overlap <= 1, JSON.stringify(cover));
+        await s.tap('[data-sen="close-detail"]').catch(() => {});
+        await s.page.setViewportSize({ width: 1400, height: 520 });
         // Fest stehende Teile überlappen nicht: jeder beginnt dort, wo der vorige endet; der Tabellenkopf liegt unter der Werkzeugleiste
         const stack = await s.ev("const els=[...r.querySelectorAll('.ag-stk')].map((e) => e.getBoundingClientRect()); const th=r.querySelector('.ag-table th').getBoundingClientRect(); const gaps=els.slice(1).map((b, i) => Math.round(b.top - els[i].bottom)); return { n: els.length, gaps, thBelow: th.top >= els.at(-1).bottom - 1 }");
         check(`${tag}: feste Teile überlappen nicht (auch nach dem Laden des Logos)`, stack.n >= 3 && stack.gaps.every((g) => g >= -1 && g <= 1) && stack.thBelow, JSON.stringify(stack));
@@ -152,6 +162,13 @@ for (const lang of ["de", "en"]) {
       await s.tap('[data-sub="notify"]');
       check(`${tag}: Meldungen mit Unterreitern (Alle Modi, Anwesend, Abwesend)`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"nt-mode\"] > button')]; return t.length >= 3 && t[0].dataset.nt === 'tab:all'"));
       check(`${tag}: "Sensor meldet" heisst "Stiller Alarm"`, await s.ev("return /Stiller Alarm|Silent alarm/.test(r.querySelector('.ag-nt').textContent) && !/Sensor meldet \\(kein|Sensor reports \\(no/.test(r.querySelector('.ag-nt').textContent)"));
+      // Jede Art kann zusätzlich als Benachrichtigung in Home Assistant stehen bleiben (auch Wartung); Entwurf, wird mit gespeichert
+      check(`${tag}: Schalter "In Home Assistant stehen lassen" bei jeder Art (Alarm und Wartung)`, await s.ev("const n=r.querySelectorAll('.ag-nt [data-nt=\"persistent\"]'); return n.length >= 4 && !!r.querySelector('.ag-nt [data-nt=\"persistent\"][data-kind=\"battery_low\"]')"));
+      await s.tap('.ag-nt [data-nt="persistent"][data-kind="battery_low"]');
+      await s.tap('[data-nt="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
+      const pSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)");
+      check(`${tag}: persistent gesendet`, pSent?.notify?.types?.battery_low?.persistent === true, JSON.stringify(pSent?.notify?.types?.battery_low));
       await s.tap('[data-nt="tab:away"]');
       if (process.env.DBG) console.log(await s.ev(`return JSON.stringify({en: r.querySelectorAll('.ag-nt [data-nt="enabled"][data-mode="away"]').length, or: r.querySelectorAll('.ag-origin').length, on: r.querySelector('[data-seg="nt-mode"] .on')?.dataset.nt})`));
       check(`${tag}: Reiter Abwesend zeigt die vier Arten im scharfen Zustand mit Herkunft`, await s.waitFor("return r.querySelectorAll('.ag-nt [data-nt=\"enabled\"][data-mode=\"away\"]').length === 4 && r.querySelectorAll('.ag-nt .ag-origin').length === 4"));
@@ -206,6 +223,13 @@ for (const lang of ["de", "en"]) {
       await s.tap('[data-sen="add"]');
       await s.waitFor("return r.getElementById('ag-pick').open");
       await s.tap('#ag-pick [data-sen="pick-toggle"]');
+      // Liste scrollen und einen Sensor antippen: die Liste bleibt, wo sie ist
+      const listTop = await s.ev("const l=r.querySelector('#ag-pick .ag-elist'); l.scrollTop = 120; return l.scrollTop");
+      const lastRow = await s.ev("return [...r.querySelectorAll('#ag-pick [data-sen=\"pick-toggle\"]')].at(-1).dataset.ent");
+      await s.ev(`[...r.querySelectorAll('#ag-pick [data-sen="pick-toggle"]')].find((b) => b.dataset.ent === '${lastRow}').click()`);
+      await s.page.waitForTimeout(250);
+      const listAfter = await s.ev("return r.querySelector('#ag-pick .ag-elist').scrollTop");
+      check(`${tag}: Sensor antippen lässt die Liste nicht nach oben springen`, listTop > 20 ? Math.abs(listAfter - listTop) <= 2 : true, `${listTop} -> ${listAfter}`);
       await s.tap('#ag-pick .ag-dlg-x');
       check(`${tag}: Auswahl mit gewähltem Sensor fragt vor dem Schliessen`, await s.waitFor("return r.getElementById('ag-confirm').open"));
       await s.tap('#ag-confirm [data-c="yes"]');

@@ -7,6 +7,23 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.31.0] - 2026-11-09
+
+Meldungen können in Home Assistant stehen bleiben, "Nur melden" heisst neu "Stiller Alarm", und die Scrollposition springt nicht mehr.
+
+### Hinzugefügt
+
+- **Als Benachrichtigung in Home Assistant stehen lassen** (Konfiguration › Benachrichtigungen): Jede Art, Alarm und Wartung, kann zusätzlich in der Glocke von Home Assistant erscheinen. Sie bleibt, bis jemand sie wegklickt, unabhängig von den Empfängern; dieselbe Art ersetzt ihren eigenen Eintrag (die Alarmmeldung wird durch "Alarm beendet" ersetzt). Die Einstellung kann auch je Modus abweichen, wo es Meldungen je Modus gibt. Teil der Sicherung.
+
+### Geändert
+
+- **Die Sensor-Option "Nur melden" heisst "Stiller Alarm"** überall (Option, Hinweise, Liste).
+
+### Behoben
+
+- **Sensoren hinzufügen scrollt nicht mehr nach oben:** Im Fenster "Sensoren hinzufügen" bleibt die Liste stehen, wenn du einen Sensor antippst, und Fenster behalten ihre Scrollposition, wenn sie neu gezeichnet werden.
+- **Tabellenkopf und Blatt oben nicht mehr abgeschnitten:** Die festen Teile oben (Reiter, Unterreiter, Werkzeugleiste) verdecken die ersten Zeilen nicht mehr; ihr Abstand gehört zu den Teilen selbst und ist darum beim Scrollen gleich.
+
 ## [0.30.0] - 2026-11-09
 
 Darstellungsfehler in der Sensortabelle und im Ablauf der Aktionen behoben.
@@ -453,6 +470,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[0.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.31.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0

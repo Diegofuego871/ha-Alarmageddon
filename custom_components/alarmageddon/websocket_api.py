@@ -412,12 +412,14 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
             vol.Optional("types"): {vol.In(list(NOTIFY_TYPES)): {
                 vol.Optional("enabled"): bool,
                 vol.Optional("critical"): bool,
+                vol.Optional("persistent"): bool,
                 vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             }},
             # Eigene Werte je Modus für Arten, die nur im scharfen Zustand vorkommen; ersetzt alle bisherigen eigenen Werte
             vol.Optional("modes"): {vol.In(MODES): {vol.In(NOTIFY_MODE_KINDS): {
                 vol.Optional("enabled"): bool,
                 vol.Optional("critical"): bool,
+                vol.Optional("persistent"): bool,
                 vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             }}},
             vol.Optional("disarm_action"): bool,

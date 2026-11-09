@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 36  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 37  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -92,7 +92,7 @@ OPT_OFFLINE_ALARM: Final = "offline_alarm"  # nicht erreichbar im scharfen Zusta
 # Löst im scharfen Zustand erst aus, wenn ein zweiter Sensor innerhalb des Zeitfensters anspricht (gegen Fehlalarm
 # durch Haustiere, Sonnenlicht). Nie voreingestellt: im Zweifel alarmieren (0.5.0)
 OPT_CONFIRM: Final = "confirm"
-# Nur melden (0.9.0): Spricht der Sensor an, gibt es eine Meldung (Art "Stiller Alarm", standardmässig kritisch), aber nie einen Alarm.
+# Stiller Alarm (0.9.0, früher "Nur melden"): Spricht der Sensor an, gibt es eine Meldung (Art "Stiller Alarm", standardmässig kritisch), aber nie einen Alarm.
 # Für Sensoren, die oft ohne Einbruch ansprechen (Haustier, Sonnenlicht, Batterie zur Neige). Nie voreingestellt.
 OPT_REPORT_ONLY: Final = "report_only"
 REPORT_THROTTLE: Final = 60  # höchstens eine Meldung pro Sensor und Minute
@@ -157,7 +157,7 @@ DEFAULT_NOTIFY: Final = {
     "modes": {},
     "alarm_targets": [],
     "maintenance_targets": [],
-    "types": {key: {"enabled": on, "critical": critical, "volume": 0.8} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
+    "types": {key: {"enabled": on, "critical": critical, "volume": 0.8, "persistent": False} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
     # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
     "disarm_action": False,
     # Weitere Knöpfe der Alarmmeldung (0.16.0): "Öffnen" (Panel) standardmässig an, "Sirene stumm" aus

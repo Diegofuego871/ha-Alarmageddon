@@ -334,6 +334,16 @@ class AlarmageddonPanel extends HTMLElement {
   _setHtml(el, html) {
     if (!el || this._lastHtml.get(el) === html) return;
     this._lastHtml.set(el, html);
+    if (el.tagName === "DIALOG") {
+      // Fenster neu zeichnen (Schalter, Auswahl): Scrollposition des Inhalts und der Listen darin bleibt
+      const spots = [...el.querySelectorAll(".ag-dlg-body, .ag-elist, .ag-step-ed")].map((n, i) => [n.className, i, n.scrollTop]);
+      el.innerHTML = html;
+      for (const [cls, i, top] of spots) {
+        const n = [...el.querySelectorAll(".ag-dlg-body, .ag-elist, .ag-step-ed")][i];
+        if (n && n.className === cls) n.scrollTop = top;
+      }
+      return;
+    }
     this._keepScroll(() => (el.innerHTML = html));
   }
 
@@ -548,9 +558,14 @@ class AlarmageddonPanel extends HTMLElement {
         stickyOverview && tall ? v.querySelector(":scope > .ag-ov-top") : null,
         stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
       ].filter(Boolean);
-      let top = 0;
+      // Der Abstand zum nächsten Teil liegt im Teil selbst (Innenabstand statt Lücke, siehe CSS): so ist der Abstand fest und beim Scrollen gleich.
+      // Der letzte feste Teil hat keinen, der Tabellenkopf und das Blatt der Optionen stehen direkt darunter.
       items.forEach((el, i) => {
         el.classList.add("ag-stk");
+        el.classList.toggle("ag-stk-last", i === items.length - 1);
+      });
+      let top = 0;
+      items.forEach((el, i) => {
         el.style.top = `${top}px`;
         el.style.zIndex = String(20 + i);
         top += el.getBoundingClientRect().height;
@@ -561,12 +576,10 @@ class AlarmageddonPanel extends HTMLElement {
         this._stickyRO.disconnect();
         items.forEach((el) => this._stickyRO.observe(el));
       }
-      // Der Schatten in Grundfarbe unter dem letzten festen Teil (deckt die Lücke) schiebt den Tabellenkopf um dieselbe Lücke nach unten
-      const gap = this.hasAttribute("narrow") ? 12 : 18;
-      c.style.setProperty("--ag-th-top", `${top + gap}px`);
+      c.style.setProperty("--ag-th-top", `${top}px`);
       // Nicht mehr feste Teile (Wechsel der Ansicht) wieder freigeben
       for (const el of c.querySelectorAll(".ag-stk")) if (!items.includes(el)) {
-        el.classList.remove("ag-stk");
+        el.classList.remove("ag-stk", "ag-stk-last");
         el.style.top = "";
         el.style.zIndex = "";
       }

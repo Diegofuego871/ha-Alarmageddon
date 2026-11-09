@@ -34,7 +34,7 @@ from .const import (
     MAINTENANCE_STORE_KEY,
 )
 from .devices import battery_of
-from .notify import async_send, build_payload, text
+from .notify import async_persist, async_send, build_payload, text
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -142,7 +142,9 @@ class Maintenance:
         return dt_util.as_local(when).strftime(text(self.hass, "time_format"))
 
     def _send(self, found: list[tuple[str, str, Any]], targets: list[str]) -> bool:
-        if not targets:
+        cfg = self._settings.notify
+        # Ohne Empfänger geht nichts aufs Handy, aber eine Art mit "stehen lassen" meldet sich trotzdem in Home Assistant
+        if not targets and not any(cfg["types"]["battery_low" if k == "battery" else "sensor_unavailable"].get("persistent") for k, _s, _v in found):
             return False
         lines = [
             text(self.hass, "maint_battery", sensor=self._name(sensor), value=value) if kind == "battery"
@@ -151,13 +153,16 @@ class Maintenance:
         ]
         title = text(self.hass, "maint_title_one", name=self._name(found[0][1])) if len(found) == 1 else text(self.hass, "maint_title", count=len(found))
         # Gemischt (Batterie und Ausfall in einer Meldung): kritisch, wenn eine der beiden Arten kritisch ist; Lautstärke der lauteren
-        cfg = self._settings.notify
         kinds = {"battery_low" if kind == "battery" else "sensor_unavailable" for kind, _s, _v in found}
         loudest = max(kinds, key=lambda k: (cfg["types"][k]["critical"], cfg["types"][k]["volume"]))
         # Eigene Gruppe und eigener tag: Wartung steht auf dem Handy getrennt von Alarmmeldungen
         payload = build_payload(cfg, loudest, title, "\n".join(lines), tag="alarmageddon_maintenance",
                                 critical=any(cfg["types"][k]["critical"] for k in kinds))
-        return bool(async_send(self.hass, targets, payload))
+        persisted = [k for k in kinds if cfg["types"][k].get("persistent")]
+        for kind in persisted:
+            async_persist(self.hass, cfg, kind, title, "\n".join(lines), f"alarmageddon_maintenance_{kind}")
+        # Gilt als gemeldet, wenn es aufs Handy ging oder in Home Assistant steht (sonst käme es alle 15 Minuten wieder)
+        return bool(async_send(self.hass, targets, payload)) or bool(persisted)
 
 
 async def async_start_maintenance(hass: HomeAssistant, settings: Any) -> None:

@@ -30,7 +30,7 @@ for (const lang of ["de", "en"]) {
     const sheet = mobile ? "#ag-sheet" : ".ag-side";
     check(`${tag}: Option im Seitenblatt`, await s.waitFor(`return r.querySelector('${sheet}')?.innerText.includes('${t.confirm}')`));
     await s.tap(`${sheet} [data-sen="opt"][data-key="confirm"]`);
-    check(`${tag}: Option "Nur melden" im Seitenblatt`, await s.ev(`return !!r.querySelector('${sheet} [data-sen="opt"][data-key="report_only"]')`));
+    check(`${tag}: Option "Stiller Alarm" im Seitenblatt`, await s.ev(`return !!r.querySelector('${sheet} [data-sen="opt"][data-key="report_only"]')`));
     await s.tap(`${sheet} [data-sen="opt"][data-key="report_only"]`);
     if (mobile) await s.tap('#ag-sheet [data-sen="close-detail"]');
     await s.tap('[data-sen="save"]');

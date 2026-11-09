@@ -412,9 +412,30 @@ export class SensorsUi {
     }).join("");
   }
 
+  // Nur die Liste neu; die Scrollposition der Liste bleibt (sonst sprang sie bei jedem Antippen nach oben)
   renderPickList() {
     const list = this.host._root.querySelector("#ag-pick .ag-elist");
-    if (list) list.innerHTML = this._pickListHtml();
+    if (list) {
+      const top = list.scrollTop;
+      list.innerHTML = this._pickListHtml();
+      list.scrollTop = top;
+    }
+    this._pickFoot();
+  }
+
+  // Einen Sensor an- oder abwählen, ohne etwas neu zu zeichnen: Zeile, Kästchen und Zähler im Knopf
+  togglePick(id) {
+    if (this.pick.sel.has(id)) this.pick.sel.delete(id);
+    else this.pick.sel.add(id);
+    const on = this.pick.sel.has(id);
+    const row = [...this.host._root.querySelectorAll('#ag-pick [data-sen="pick-toggle"]')].find((b) => b.dataset.ent === id);
+    if (row) {
+      row.classList.toggle("on", on);
+      row.setAttribute("aria-checked", String(on));
+      const box = row.querySelector(".ag-box");
+      box.classList.toggle("on", on);
+      box.innerHTML = on ? ic("check", 18) : "";
+    }
     this._pickFoot();
   }
 
@@ -556,9 +577,7 @@ export class SensorsUi {
     } else if (act === "remove") {
       this.removeSensor(id);
     } else if (act === "pick-toggle") {
-      if (this.pick.sel.has(id)) this.pick.sel.delete(id);
-      else this.pick.sel.add(id);
-      this.renderPick();
+      this.togglePick(id);
     } else if (act === "pick-filter") {
       this.pick.filter = el.dataset.filter;
       this.host._root.querySelectorAll('#ag-pick [data-sen="pick-filter"]').forEach((b) => b.classList.toggle("on", b === el));

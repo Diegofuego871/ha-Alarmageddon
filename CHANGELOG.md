@@ -7,6 +7,23 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.31.0] - 2026-11-09
+
+Notifications can stay in Home Assistant, "Report only" is now "Silent alarm", and the scroll position no longer jumps.
+
+### Added
+
+- **Keep as a notification in Home Assistant** (Configuration › Notifications): every kind of message, alarm and maintenance, can additionally appear in the bell of Home Assistant. It stays until someone dismisses it, independent of the recipients; the same kind replaces its own entry (the alarm message is replaced by "Alarm ended"). The setting can also differ per mode where messages per mode exist. Part of the backup.
+
+### Changed
+
+- **The sensor option "Report only" is called "Silent alarm"** everywhere (option, hints, list).
+
+### Fixed
+
+- **Adding sensors no longer scrolls to the top:** in the window "Add sensors" the list stays where it is when you tick a sensor, and windows keep their scroll position when they are redrawn.
+- **Table header and sheet are no longer cut off at the top:** the fixed parts at the top (tabs, sub-tabs, toolbar) no longer cover the first lines; their spacing is part of the parts themselves, so it is the same while scrolling.
+
 ## [0.30.0] - 2026-11-09
 
 Display fixes in the sensor table and the action flow.
@@ -453,6 +470,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.31.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0

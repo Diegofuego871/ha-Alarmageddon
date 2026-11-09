@@ -59,7 +59,7 @@ export class NotifyUi {
     for (const kind of KINDS) {
       const x = a.types?.[kind] || {};
       const y = d.types[kind];
-      if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100)) n += 1;
+      if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || !!x.persistent !== !!y.persistent || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100)) n += 1;
     }
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
     // Eigene Werte je Modus: jeder Modus mit Änderung zählt einmal
@@ -148,6 +148,7 @@ export class NotifyUi {
         <div class="ag-mt-opt"><span>${esc(this._t("ntCriticalShort"))}</span>${toggle(`data-nt="critical" data-kind="${kind}"${md}`, s.critical, `${name}: ${this._t("ntCriticalShort")}`)}</div>
         ${s.critical ? `<div class="ag-mt-opt vol"><span>${esc(this._t("ntVolumeShort"))}: <b class="ag-vol" data-kind="${kind}"${md}>${pct} %</b></span>
           <input type="range" min="0" max="100" step="5" data-nt="volume" data-kind="${kind}"${md} value="${pct}" class="ag-range" aria-label="${esc(`${name}: ${this._t("ntVolumeShort")}`)}"></div>` : ""}
+        <div class="ag-mt-opt"><span>${esc(this._t("ntPersistent"))}<small class="ag-t2 ag-block">${esc(this._t("ntPersistentHint"))}</small></span>${toggle(`data-nt="persistent" data-kind="${kind}"${md}`, s.persistent, `${name}: ${this._t("ntPersistent")}`)}</div>
         ${num ? `<div class="ag-mt-opt"><span>${esc(this._t(num[1]))}</span><span class="ag-num ${bad.has(num[0]) ? "bad" : ""}"><input type="number" min="${RANGES[num[0]][0]}" max="${RANGES[num[0]][1]}" step="1" inputmode="numeric" data-nt="num" data-key="${num[0]}" value="${esc(d[num[0]])}" aria-label="${esc(this._t(num[1]))}"><span class="ag-t2">${esc(num[2] === "minutes" ? this._t("minutes") : num[2])}</span></span></div>` : ""}
         <div class="ag-mt-opt"><span class="ag-t2 ag-small">${esc(this._t("ntTestHint"))}</span>
           <button class="ag-btn" data-nt="test" data-kind="${kind}"${md} ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
@@ -242,7 +243,7 @@ export class NotifyUi {
       this.modeTab = act.slice(4);
       this.render();
       return true;
-    } else if (act === "enabled" || act === "critical") {
+    } else if (act === "enabled" || act === "critical" || act === "persistent") {
       const { kind, mode } = el.dataset;
       const key = act;
       if (mode) this._setOwn(kind, mode, key, !this._eff(kind, mode)[key]);
