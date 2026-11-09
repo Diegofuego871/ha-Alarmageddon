@@ -34,6 +34,22 @@ for (const lang of ["de", "en"]) {
       const byName = await names();
       check(`${tag}: nach Name sortiert`, byName.length > 3 && byName.slice(0, -1).every((n, i) => n.localeCompare(byName[i + 1], undefined, { numeric: true }) <= 0 || true));
       check(`${tag}: Kopfzeile abgehoben (kräftiger als der Inhalt)`, await s.ev("const th=r.querySelector('.ag-ltable th'); const c=getComputedStyle(th); return c.fontWeight >= 600 || getComputedStyle(th.firstElementChild).fontWeight >= 600"));
+      // Filter nach Sensorart (Aufklappmenü)
+      const typeSel = await s.el('select[data-list="type"]');
+      check(`${tag}: Aufklappmenü "Sensorart" mit allen Arten`, !!typeSel && await s.ev("return r.querySelector('select[data-list=\"type\"]').options.length === 7"));
+      await typeSel.selectOption("window");
+      check(`${tag}: Filter Fenster zeigt nur Fenster`, await s.waitFor("const rows=[...r.querySelectorAll('.ag-lrow')]; return rows.length > 0 && rows.every((x) => ['Fenster', 'Window'].includes(x.querySelector('.ag-nm small').textContent.trim()))"));
+      await typeSel.selectOption("");
+      // Feste Übersicht (hohes Fenster am Desktop): Karten, Filter und Tabellenkopf bleiben stehen
+      if (!mobile) {
+        await s.page.setViewportSize({ width: 1400, height: 900 });
+        await s.page.waitForTimeout(250);
+        await s.ev("r.querySelector('.ag-content').scrollTop = 400");
+        await s.page.waitForTimeout(200);
+        const ov = await s.ev("const c=r.querySelector('.ag-content').getBoundingClientRect(); const t=r.querySelector('.ag-ov-top').getBoundingClientRect(); const tools=r.querySelector('.ag-ov-tools').getBoundingClientRect(); const th=r.querySelector('.ag-ltable th').getBoundingClientRect(); const h=r.querySelector('.ag-head').getBoundingClientRect(); return { head: Math.round(h.top - c.top), cardsBelowHead: t.top >= h.bottom - 1, toolsBelowCards: tools.top >= t.bottom - 1, thBelowTools: th.top >= tools.bottom - 1, scrollable: r.querySelector('.ag-content').scrollTop > 0 }");
+        check(`${tag}: Übersicht: Kopfzeile, Karten, Filter und Tabellenkopf bleiben beim Scrollen`, ov.head <= 1 && ov.cardsBelowHead && ov.toolsBelowCards && ov.thBelowTools && ov.scrollable, JSON.stringify(ov));
+        await s.ev("r.querySelector('.ag-content').scrollTop = 0");
+      }
       check(`${tag}: Logo neben den Reitern`, await s.ev("const i=r.querySelector('.ag-head .ag-logo'); return !!i && i.naturalWidth > 0"));
       check(`${tag}: keine Browserfehler`, s.errors.length === 0, s.errors.join(" | "));
       await s.ctx.close();
@@ -59,6 +75,12 @@ for (const lang of ["de", "en"]) {
         const had = await s.ev("return r.querySelector('[data-box][data-ent=\"binary_sensor.fenster_bad\"][data-mode=\"home\"]').classList.contains('on')");
         await s.tap('[data-box][data-ent="binary_sensor.fenster_bad"][data-mode="home"]');
         check(`${tag}: Kästchen schaltet weiter nur die Zone`, await s.ev(`return r.querySelector('[data-box][data-ent="binary_sensor.fenster_bad"][data-mode="home"]').classList.contains('on') === ${!had}`));
+        // "Immer aktiv" als Kästchen in der Übersicht: wirksamer Wert, Klick setzt einen eigenen Wert (Entwurf)
+        const alwaysSel = '[data-sen="opt"][data-key="always"][data-ent="binary_sensor.fenster_bad"]';
+        check(`${tag}: Spalte "Immer aktiv" mit Kästchen je Sensor`, await s.ev("return [...r.querySelectorAll('.ag-table th')].some((th) => /Immer aktiv|Always active/.test(th.textContent)) && r.querySelectorAll('.ag-gbody [data-key=\"always\"].ag-box').length >= 5"));
+        const wasOn = await s.ev(`return r.querySelector('${alwaysSel}').classList.contains('on')`);
+        await s.tap(alwaysSel);
+        check(`${tag}: Klick schaltet "Immer aktiv" um und ist ein Entwurf`, await s.waitFor(`return r.querySelector('${alwaysSel}').classList.contains('on') === ${!wasOn} && r.querySelector('[data-sub="sensors"]').classList.contains('has-edit')`));
         await s.tap('[data-sen="cancel"]');
       } else {
         await s.tap('.ag-mcard[data-row="binary_sensor.fenster_bad"] .ag-nm, .ag-mcard[data-row="binary_sensor.fenster_bad"] .ag-mcard-top');
@@ -89,15 +111,25 @@ for (const lang of ["de", "en"]) {
       await s.ev(`${lastZone}.click()`);
       await s.page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1400, height: 950 });
 
-      // Ablauf: festes Element "Alarm endet" mit Wahl; Änderung ist ein Entwurf und wird mit gespeichert
+      // Ablauf: festes Element "Alarm endet" mit Fenster (Wahl und eigene Meldung); Änderung ist ein Entwurf und wird mit gespeichert
       await s.tap('[data-sub="actions"]');
-      check(`${tag}: Element "Alarm endet" am Ende des Ablaufs (auch ohne Schritte)`, await s.waitFor("const e=r.querySelector('.ag-wf-end'); return !!e && e.querySelector('select[data-wf=\"end\"]').value === 'restore_marked' && e.querySelectorAll('option').length === 3"));
-      await (await s.el('select[data-wf="end"]')).selectOption("restore_all");
-      check(`${tag}: Wahl ist ein Entwurf (Punkt am Reiter, Hinweis passend)`, await s.waitFor("return r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit') && r.querySelector('.ag-wf-endcard .ag-ef-h').textContent.length > 20"));
+      check(`${tag}: Element "Alarm endet" am Ende des Ablaufs (auch ohne Schritte), mit farbigem Symbol`, await s.waitFor("const e=r.querySelector('.ag-wf-end'); return !!e && !!e.querySelector('[data-wf=\"end-edit\"]') && getComputedStyle(e.querySelector('.ag-end-ic')).color !== getComputedStyle(r.querySelector('.ag-wf-start .ag-mini.err')).color"));
+      check(`${tag}: keine Wahl zum Zurücksetzen mehr (entscheidet allein der Schritt)`, await s.ev("return !r.querySelector('.ag-wf-end select') && !r.querySelector('[data-wf=\"end-undo\"]')"));
+      check(`${tag}: Linie läuft nicht durch die Karten`, await s.ev("const l=r.querySelector('.ag-wf-main').getBoundingClientRect(); const e=r.querySelector('.ag-wf-end').getBoundingClientRect(); return e.top >= l.bottom - 1"));
+      await s.tap('[data-wf="end-edit"]');
+      check(`${tag}: Fenster "Alarm endet" mit Schalter für die Meldung`, await s.waitFor("const d=r.getElementById('ag-step'); return d.open && !!d.querySelector('[data-wf=\"end-notify\"]') && !d.querySelector('select[data-wf=\"end-undo\"]') && !d.querySelector('[data-key=\"ntTitle\"]')"));
+      await s.tap('[data-wf="end-notify"]');
+      check(`${tag}: Meldung mit allen Optionen (Text, Platzhalter, Vorschau, Kritisch, Klickziel), ohne Knöpfe, Kritisch standardmässig aus`, await s.waitFor("const d=r.getElementById('ag-step'); return !!d.querySelector('[data-key=\"ntTitle\"]') && d.querySelectorAll('[data-wf=\"ins\"]').length === 4 && !!d.querySelector('#ag-ntprev') && !!d.querySelector('[data-wf=\"nt-crit\"]') && !!d.querySelector('[data-wf=\"nt-click\"]') && !d.querySelector('[data-wf=\"nt-btn\"]') && d.querySelector('[data-wf=\"nt-crit\"]').getAttribute('aria-checked') === 'false'"));
+      await s.tap('[data-wf="nt-crit"]');
+      check(`${tag}: Lautstärkeregler höchstens halb so breit wie das Fenster`, await s.waitFor("const d=r.getElementById('ag-step'); const rg=d.querySelector('.ag-ef-range'); return !!rg && rg.getBoundingClientRect().width <= d.getBoundingClientRect().width * (r.host.hasAttribute('narrow') ? 1.01 : 0.55)"));
+      await (await s.el('#ag-step [data-key="ntTitle"]')).fill("Ruhe in {name}");
+      await s.tap('#ag-step [data-wf="apply"]');
+      check(`${tag}: Wahl ist ein Entwurf (Punkt am Reiter, Karte zeigt eigene Meldung)`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit') && r.querySelector('.ag-wf-endcard').textContent.includes('Eigene') || r.querySelector('.ag-wf-endcard').textContent.includes('Own')"));
       await s.tap('[data-wf="save"]');
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const wfSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_workflows').at(-1)");
-      check(`${tag}: workflow_end gesendet`, wfSent?.workflow_end?.away === "restore_all" && wfSent.workflow_end.home === "restore_marked", JSON.stringify(wfSent?.workflow_end));
+      const away = wfSent?.workflow_end?.away;
+      check(`${tag}: workflow_end gesendet (nur die eigene Meldung)`, away?.notify?.enabled === true && away.notify.title === "Ruhe in {name}" && away.notify.critical === true && !("undo" in away) && !wfSent.workflow_end.home.notify, JSON.stringify(wfSent?.workflow_end));
       await s.tap('[data-sub="sensors"]');
 
       // Voreinstellungen: X, Rückfrage, "Auf alle Sensoren anwenden"

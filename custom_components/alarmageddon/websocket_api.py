@@ -24,7 +24,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.loader import async_get_integrations
 
-from . import backup, last_change, update_check
+from . import backup, last_change
 from .code import hash_code, match_code
 from .const import (
     BATTERY_THRESHOLD_RANGE,
@@ -48,8 +48,6 @@ from .const import (
     CONF_OPEN_SENSORS,
     CONF_SENSOR_OPTIONS,
     CONF_WORKFLOW_END,
-    END_MODES,
-    END_RESTORE_MARKED,
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
@@ -66,7 +64,7 @@ from .const import (
 )
 from .devices import battery_of, device_sensors
 from .forecast import async_forecasts
-from .schemas import SCHEDULES, SECONDS as _SECONDS, valid_step
+from .schemas import END_NOTIFY_SCHEMA, SCHEDULES, SECONDS as _SECONDS, valid_end, valid_step
 from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
@@ -86,14 +84,12 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_system)
     websocket_api.async_register_command(hass, ws_save_notify)
     websocket_api.async_register_command(hass, ws_test_notify)
+    websocket_api.async_register_command(hass, ws_test_end_notify)
     websocket_api.async_register_command(hass, ws_save_workflows)
     websocket_api.async_register_command(hass, ws_test_workflow)
     websocket_api.async_register_command(hass, ws_stop_workflow)
     websocket_api.async_register_command(hass, ws_battery_forecast)
     websocket_api.async_register_command(hass, ws_log)
-    websocket_api.async_register_command(hass, ws_version)
-    websocket_api.async_register_command(hass, ws_release_notes)
-    websocket_api.async_register_command(hass, ws_set_update)
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_add_code)
@@ -454,13 +450,38 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -
 
 
 
+def _clean_end(value: dict[str, Any]) -> dict[str, Any]:
+    """Nur speichern, was eingeschaltet ist: die eigene Meldung beim Alarmende."""
+    out: dict[str, Any] = {}
+    if (value.get("notify") or {}).get("enabled"):
+        out["notify"] = value["notify"]
+    return out
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/test_end_notify",
+        vol.Required("entry_id"): str,
+        vol.Required("notify"): vol.All(dict, END_NOTIFY_SCHEMA),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_test_end_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Testmeldung "Alarm beendet" mit den (auch ungespeicherten) Einstellungen aus dem Element "Alarm endet"."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    entry.runtime_data.notifier.send_alarm_end(None, test=True, own={**msg["notify"], "enabled": True})
+    connection.send_result(msg["id"], {"ok": True})
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/save_workflows",
         vol.Required("entry_id"): str,
         vol.Required("workflows"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
         # Element "Alarm endet": was Deaktivieren mit den Geräten macht, je Auslöser (fehlt: Standard)
-        vol.Optional("workflow_end"): {vol.In(WORKFLOW_TRIGGERS): vol.In(END_MODES)},
+        vol.Optional("workflow_end"): {vol.In(WORKFLOW_TRIGGERS): valid_end},
     }
 )
 @websocket_api.require_admin
@@ -472,7 +493,7 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
     options = dict(entry.options)
     options[CONF_WORKFLOWS] = {k: v for k, v in msg["workflows"].items() if v}
     if "workflow_end" in msg:
-        options[CONF_WORKFLOW_END] = {k: v for k, v in msg["workflow_end"].items() if v != END_RESTORE_MARKED}
+        options[CONF_WORKFLOW_END] = {k: end for k, v in msg["workflow_end"].items() if (end := _clean_end(v))}
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
 
@@ -653,45 +674,3 @@ async def ws_log(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     systems.sort(key=lambda s: s["title"].lower())
     connection.send_result(msg["id"], {"systems": systems})
 
-
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/version", vol.Optional("force", default=False): bool})
-@websocket_api.require_admin
-@websocket_api.async_response
-async def ws_version(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    """Installierte und neueste angebotene Version (GitHub); zieht die Meldung unter "Reparaturen" mit."""
-    connection.send_result(msg["id"], await update_check.async_version_info(hass, msg["force"]))
-
-
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): f"{DOMAIN}/release_notes",
-        # Kommt in den Pfad der Abfrage: nur Versionsnummern, keine freien Texte
-        vol.Optional("installed"): vol.Any(None, vol.All(str, vol.Match(update_check.VERSION_ARG))),
-        vol.Required("latest"): vol.All(str, vol.Match(update_check.VERSION_ARG)),
-        vol.Optional("language", default="en"): vol.In(("de", "en")),
-        vol.Optional("force", default=False): bool,
-    }
-)
-@websocket_api.require_admin
-@websocket_api.async_response
-async def ws_release_notes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    result = await update_check.async_release_notes(hass, msg.get("installed"), msg["latest"], msg["language"], force=msg["force"])
-    connection.send_result(msg["id"], {k: v for k, v in result.items() if k != "checked_at"})
-
-
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): f"{DOMAIN}/set_update",
-        vol.Optional("check"): bool,
-        vol.Optional("prerelease"): bool,
-        vol.Optional("auto_update"): bool,
-    }
-)
-@websocket_api.require_admin
-@websocket_api.async_response
-async def ws_set_update(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    """Einstellungen der Updates, für alle Anlagen gleich (tägliche Prüfung, Vorabversionen, automatisch installieren)."""
-    settings = await async_get_settings(hass)
-    await settings.async_set_update({k: msg[k] for k in ("check", "prerelease", "auto_update") if k in msg})
-    # Prüfung ausgeschaltet: Meldung sofort weg; sonst gleich mit den neuen Einstellungen neu bewerten
-    connection.send_result(msg["id"], await update_check.async_version_info(hass))

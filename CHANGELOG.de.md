@@ -7,11 +7,36 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.28.0] - 2026-11-09
+
+Die Update-Funktion ist entfernt, "Alarm endet" hat eine eigene Meldung, und die Sensortabelle zeigt "Immer aktiv".
+
+Enthält die Änderungen aus 0.24.0, 0.25.0, 0.26.0 und 0.27.0.
+
+### Entfernt
+
+- **Die ganze Update-Funktion** (Konfiguration › Updates, die tägliche Prüfung, die Entität von HACS, die Meldung "Update verfügbar" unter Reparaturen und bei den Meldungsarten, "Updates automatisch installieren", die Release Notes im Panel und die Einstellungen in der Sicherung). Aktualisiert wird über HACS wie bei jeder Integration. Alte Einstellungen und die alte Meldung unter Reparaturen verschwinden von selbst.
+
+### Hinzugefügt
+
+- **Element "Alarm endet"** am Ende jedes Ablaufs (Konfiguration › Aktionen, je Modus) mit einer optionalen **eigenen Meldung**, wenn jemand deaktiviert: dieselben Optionen wie die Alarmmeldung (Titel und Text mit Platzhaltern, Vorschau, Kritisch, Lautstärke, Klickziel; ohne Knöpfe), in einem Fenster wie bei den Schritten, mit Testknopf. Die Meldung ersetzt die Standardmeldung "Alarm beendet" (gleicher tag, ersetzt also die Alarmmeldung auf dem Handy). Teil der Sicherung. Ob Geräte nach dem Alarm zurückkehren, entscheidet allein "Rückgängig beim Deaktivieren/Quittieren" im jeweiligen Schritt.
+- **"Immer aktiv" als Kästchen** in der Sensortabelle unter Konfiguration › Sensoren (und als Knopf auf den Karten am Handy): zeigt den wirksamen Wert; ein Klick setzt einen eigenen Wert für diesen Sensor.
+- **Filter nach Sensorart** (Aufklappmenü) in der Sensorliste der Übersicht.
+- **Übersicht bleibt im Blick:** Bei hohem Fenster bleiben die Karten der Alarmanlagen, die Filter und der Spaltenkopf beim Scrollen stehen.
+
+### Geändert
+
+- **Sensortabelle (Konfiguration):** Pfeil und Löschsymbol stehen nebeneinander, der Pfeil ganz rechts; die Spalten Integration und Batterie entfallen, damit es übersichtlich bleibt.
+- **Ablauf der Aktionen:** Die Linie läuft nicht mehr durch die Karten und endet bei "Alarm endet", das ein farbiges Symbol hat.
+- **Lautstärkeregler** höchstens halb so breit; **Rollbalken in Fenstern** mit mehr Abstand zum Rand.
+- **Fenster:** Der Spaltenkopf der Tabellen wird nicht mehr von der Werkzeugleiste verdeckt.
+- **"Sensor meldet (kein Alarm)" heisst neu "Stiller Alarm"**, und das Kapitel "Alarmmeldungen" heisst "Meldungen" (Konfiguration › Benachrichtigungen).
+
 ## [0.27.0] - 2026-11-09
 
 Ein Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut.
 
-Enthält die Änderungen aus 0.24.0, 0.25.0 und 0.26.0.
+Nicht veröffentlicht; enthalten in 0.28.0.
 
 ### Behoben
 
@@ -25,7 +50,7 @@ Enthält die Änderungen aus 0.24.0, 0.25.0 und 0.26.0.
 
 Strukturierte Fenster mit Schliessen-Knopf und festen Knöpfen, feste Kopfzeile mit sortierbarer Liste, freie Spaltenwahl je Gerät, Filter "Belegung" und Voreinstellungen für alle Sensoren übernehmbar.
 
-Nicht veröffentlicht; enthalten in 0.27.0.
+Nicht veröffentlicht; enthalten in 0.28.0.
 
 ### Hinzugefügt
 
@@ -49,7 +74,7 @@ Nicht veröffentlicht; enthalten in 0.27.0.
 
 Die Sensorliste auf der Übersicht funktioniert wie die Liste in Device Panel (eigene Spalten für Handy und Computer), und der Alarm dauert, bis er quittiert wird.
 
-Nicht veröffentlicht; enthalten in 0.27.0.
+Nicht veröffentlicht; enthalten in 0.28.0.
 
 ### Hinzugefügt
 
@@ -65,7 +90,7 @@ Nicht veröffentlicht; enthalten in 0.27.0.
 
 ## [0.24.0] - 2026-11-09
 
-Nicht veröffentlicht; enthalten in 0.27.0.
+Nicht veröffentlicht; enthalten in 0.28.0.
 
 ### Geändert
 
@@ -408,7 +433,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
+[0.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.28.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

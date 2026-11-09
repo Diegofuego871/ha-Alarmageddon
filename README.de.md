@@ -74,8 +74,8 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 Seitenpanel › Konfiguration › Benachrichtigungen, für alle Alarmanlagen:
 
 - **Empfänger** getrennt für Alarme und Wartungsmeldungen: jeden `notify`-Dienst (zum Beispiel `notify.mobile_app_<handy>` der Companion App) im Dropdown wählen; die gewählten erscheinen als Pille mit x.
-- **Einstellungen je Meldungsart:** Sensor meldet (kein Alarm), Sensor im scharfen Zustand nicht erreichbar, Eingangsverzögerung, Scharfschalten nicht möglich, scharf, deaktiviert, Batterie schwach, Sensor nicht erreichbar, Update verfügbar. Jede Art lässt sich ein- und ausschalten, **kritisch** (ertönt auch im Lautlos- und Nicht-stören-Modus) oder nicht einstellen und hat ihre eigene **Lautstärke**. Die Lautstärke gilt für iOS; Android spielt kritische Meldungen im Alarmkanal (`alarm_stream`), dessen Lautstärke stellst du am Handy ein. Jede Art hat einen Knopf "Testmeldung senden" (mit den gespeicherten Einstellungen).
-- **Nur melden** (Option pro Sensor): Ein Sensor, der oft ohne Einbruch ansprechen oder dessen Batterie zur Neige geht, schickt im scharfen Zustand die Meldung "Sensor meldet", statt den Alarm auszulösen. Höchstens eine Meldung pro Sensor und Minute.
+- **Einstellungen je Meldungsart:** Stiller Alarm (kein Alarm), Sensor im scharfen Zustand nicht erreichbar, Eingangsverzögerung, Scharfschalten nicht möglich, scharf, deaktiviert, Batterie schwach, Sensor nicht erreichbar, Update verfügbar. Jede Art lässt sich ein- und ausschalten, **kritisch** (ertönt auch im Lautlos- und Nicht-stören-Modus) oder nicht einstellen und hat ihre eigene **Lautstärke**. Die Lautstärke gilt für iOS; Android spielt kritische Meldungen im Alarmkanal (`alarm_stream`), dessen Lautstärke stellst du am Handy ein. Jede Art hat einen Knopf "Testmeldung senden" (mit den gespeicherten Einstellungen).
+- **Nur melden** (Option pro Sensor): Ein Sensor, der oft ohne Einbruch ansprechen oder dessen Batterie zur Neige geht, schickt im scharfen Zustand die Meldung "Stiller Alarm", statt den Alarm auszulösen. Höchstens eine Meldung pro Sensor und Minute.
 - **Symbol in den Meldungen:** Jede Meldung trägt das Symbol der Integration (Android; iOS zeigt immer das Symbol der Home-Assistant-App).
 - **Alarmmeldung** (Konfiguration › Aktionen, Schritt "Push-Meldung", je Modus): Titel und Text, Kritisch, Lautstärke und die Knöpfe "Öffnen" (standardmässig an), "Sirene stumm" (standardmässig aus; stoppt alle Schritte der Alarmaktionen und stellt die Geräte zurück, die Alarmanlage bleibt im Alarm) und "Deaktivieren" (standardmässig aus; iOS fragt nach Face ID oder dem Code, Android nicht). Die letzten beiden kann jeder benutzen, der das entsperrte Handy hält. Ein Knopf wirkt nur, wenn die Meldung ihn anbietet. Ohne Push-Schritt geht eine Standardmeldung raus (kritisch, Knopf "Öffnen"); die Alarmmeldung lässt sich nicht abschalten. Die übrigen Meldungsarten bleiben unter Konfiguration › Benachrichtigungen.
 - **Wartung:** schwache Batterie (Schwelle, Standard 20 %) und Sensoren, die länger als eine eingestellte Zeit nicht erreichbar sind (Standard 60 Minuten), gehen an die Wartungs-Empfänger. Jedes Problem einmal, mehrere in einer Meldung; erneut nach Batteriewechsel oder wenn der Sensor wieder antwortet.
@@ -102,18 +102,6 @@ Seitenpanel › Konfiguration › Anlage › "Codes pro Person": Jede Person bek
 
 Option pro Sensor "Braucht einen zweiten Sensor" (Seitenblatt des Sensors oder Voreinstellungen je Sensorart). Im scharfen Zustand löst ein solcher Sensor nur aus, wenn ein weiterer Sensor mit dieser Option innerhalb des Bestätigungsfensters anspricht (Konfiguration › Anlage, Standard 60 Sekunden). Derselbe Sensor zweimal zählt nicht. Sensoren ohne die Option lösen wie bisher allein aus; während der Eingangsverzögerung gilt die Option nicht, und "Ausfall gilt als Alarm" löst weiterhin sofort aus. Standardmässig aus: Eine Alarmanlage soll im Zweifel alarmieren.
 
-## Updates
-
-Seitenpanel › Konfiguration › Updates (wie in Device Panel):
-
-- Zeigt die installierte und die neueste Version (bei GitHub erfragt, höchstens alle 6 Stunden, "Nach Updates suchen" höchstens einmal pro Minute), die Release Notes aller Versionen dazwischen (aus dem CHANGELOG, in deiner Sprache) und "Aktualisieren".
-- **Installiert wird immer über HACS** (die Update-Entität dieses Repositorys, erkannt am Link des Releases; eine andere Integration wird nie angefasst). Ohne HACS verweist das Panel auf die Installation von Hand.
-- **Home Assistant startet nie von selbst neu.** Sobald die neue Version auf der Platte liegt, erscheint "Jetzt neu starten" (mit Rückfrage). Bis dahin läuft die alte Version weiter.
-- **Tägliche Prüfung** (standardmässig an): meldet eine neue Version unter Einstellungen › Reparaturen und, als Ereignis "Update verfügbar" unter Benachrichtigungen, an die Wartungs-Empfänger (einmal pro Version).
-- **Updates automatisch installieren** (standardmässig aus): lädt die neue Version nach der täglichen Prüfung über HACS herunter. Der Neustart bleibt bei dir.
-- **Vorabversionen:** auf Wunsch angeboten. HACS installiert sie nur, wenn sein eigener Schalter "Pre-release" bei dieser Integration an ist (Entität im HACS-Gerät aktivieren und einschalten); das Panel erklärt das.
-- Die Einstellungen gehören zur Sicherung.
-
 ## Einstellungen je Modus
 
 Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend", "Abwesend" oder "Nacht" wählen und die Werte dieses Modus einstellen:
@@ -125,7 +113,7 @@ Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend
 | Offener Sensor beim Scharfschalten | Scharfschalten verhindern oder die offenen Sensoren umgehen |
 | Bestätigungsfenster | Zeit für den zweiten Sensor bei "Braucht einen zweiten Sensor" |
 
-Das Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut (markierte Schritte rückgängig, alle Schritte rückgängig oder nur stoppen). Der Alarm dauert in jedem Modus, bis er deaktiviert wird (es gibt keine Alarmdauer; alte Werte werden ignoriert). Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
+Am Ende jedes Ablaufs kann das Element "Alarm endet" beim Deaktivieren eine eigene Meldung senden (dieselben Optionen wie die Alarmmeldung). Ob Geräte zurückkehren, entscheidet "Rückgängig beim Deaktivieren/Quittieren" im jeweiligen Schritt. Der Alarm dauert in jedem Modus, bis er deaktiviert wird (es gibt keine Alarmdauer; alte Werte werden ignoriert). Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
 
 ## Modi
 

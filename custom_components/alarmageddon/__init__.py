@@ -9,6 +9,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
@@ -22,7 +23,6 @@ from .notify import Notifier
 from .panel import async_register_panel, async_remove_panel
 from .scheduler import Scheduler
 from .settings import async_get_settings
-from .update_check import async_start_daily, async_stop_daily
 from .workflow import WorkflowRunner, async_remove_workflow_store
 
 PLATFORMS: list[Platform] = [Platform.ALARM_CONTROL_PANEL, Platform.BINARY_SENSOR]
@@ -82,7 +82,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     entry.async_on_unload(settings.add_listener(lambda: hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))))
     await async_register_panel(hass)
     await async_start_maintenance(hass, settings)
-    async_start_daily(hass)
+    # Reste der früheren Update-Prüfung (bis 0.27.0): die Meldung unter "Reparaturen" verschwindet mit der Funktion
+    ir.async_delete_issue(hass, DOMAIN, "update_available")
     return True
 
 
@@ -116,7 +117,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry
     # Oberfläche die Anlage und hinge. Es verschwindet erst, wenn die letzte Anlage entfernt wird (async_remove_entry).
     if not others:
         await async_stop_maintenance(hass)
-        async_stop_daily(hass)
     return True
 
 

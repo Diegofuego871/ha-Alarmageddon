@@ -19,7 +19,7 @@ for (const lang of ["de", "en"]) {
     const on = (ent, mode) => s.ev(`return r.querySelector('${box(ent, mode)}').classList.contains('on')`);
 
     const cols = await s.ev("return [...r.querySelectorAll('.ag-table th')].map((th) => th.childNodes[0]?.textContent.trim() || '')");
-    check(`${tag}: Spalten mit Nacht`, cols.length === 8, JSON.stringify(cols));
+    check(`${tag}: Spalten mit Nacht`, cols.length === 7, JSON.stringify(cols));
     const groups = await s.ev("return [...r.querySelectorAll('tr.grp')].map((g) => g.innerText.split(' ·')[0])");
     check(`${tag}: ohne Bereich zuletzt`, groups.at(-1) === t.noArea, JSON.stringify(groups));
     check(`${tag}: anfangs keine Änderungen`, (await foot()).includes(t.none));
@@ -103,14 +103,14 @@ for (const lang of ["de", "en"]) {
     await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_garage"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
     await s.waitFor(`return r.getElementById("ag-discard").open`);
     await s.tap('[data-act="discard"]');
-    check(`${tag}: Verwerfen wechselt die Anlage`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 7`));
+    check(`${tag}: Verwerfen wechselt die Anlage`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 6`));
     await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_haus"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
     await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 8`);
 
     // Garage hat keine Nacht: keine Spalte Nacht
     await s.tap('[data-tab="config"]');
     await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_garage"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
-    check(`${tag}: Garage ohne Nacht`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 7`));
+    check(`${tag}: Garage ohne Nacht`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 6`));
     await s.page.screenshot({ path: `${outDir}groups-${lang}-desktop.png` });
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();

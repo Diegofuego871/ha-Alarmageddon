@@ -7,11 +7,36 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.28.0] - 2026-11-09
+
+The update function is removed, "Alarm ends" has an own message, and the sensor table shows "Always active".
+
+Includes the changes from 0.24.0, 0.25.0, 0.26.0 and 0.27.0.
+
+### Removed
+
+- **The whole update function** (Configuration › Updates, the daily check, the entity of HACS, the message "Update available" under Repairs and in the notification kinds, "Install updates automatically", the release notes in the panel and the settings in the backup). Updates run through HACS as for every integration. Old settings and the old message under Repairs disappear by themselves.
+
+### Added
+
+- **"Alarm ends" element** at the end of every flow (Configuration › Actions, per mode) with an optional **own message** when someone disarms: the same options as the alarm message (title and text with placeholders, preview, critical, volume, tap target; no buttons), in a window like the steps, with a test button. The message replaces the standard message "Alarm ended" (same tag, so it replaces the alarm message on the phone). Part of the backup. Whether devices return after the alarm is decided only by "Undo on disarm / acknowledge" in each step.
+- **"Always active" as a checkbox** in the sensor table of Configuration › Sensors (and as a button on the phone cards): shows the effective value; a click sets an own value for this sensor.
+- **Filter by sensor type** (dropdown) in the sensor list on the overview.
+- **Overview stays in view:** with a tall window the cards of the alarm systems, the filters and the column header stay in place when scrolling.
+
+### Changed
+
+- **Sensor table (Configuration):** the arrow and the delete symbol stand side by side, the arrow at the far right; integration and battery columns are gone to keep it clear.
+- **Action flow:** the line no longer runs through the cards and ends at "Alarm ends", which has a coloured icon.
+- **Volume slider** is at most half as wide; **scroll bars in windows** have more distance to the edge.
+- **Windows:** the column header of the tables is no longer covered by the toolbar.
+- **"Sensor reports (no alarm)" is now called "Silent alarm"**, and the chapter "Alarm messages" is called "Messages" (Configuration › Notifications).
+
 ## [0.27.0] - 2026-11-09
 
 An "Alarm ends" element at the end of every action flow decides what disarming does.
 
-Includes the changes from 0.24.0, 0.25.0 and 0.26.0.
+Not released; included in 0.28.0.
 
 ### Fixed
 
@@ -25,7 +50,7 @@ Includes the changes from 0.24.0, 0.25.0 and 0.26.0.
 
 Structured windows with a close button and fixed buttons, fixed header with a sortable list, free choice of columns per device, an "Occupancy" filter, and defaults that can be applied to all sensors.
 
-Not released; included in 0.27.0.
+Not released; included in 0.28.0.
 
 ### Added
 
@@ -49,7 +74,7 @@ Not released; included in 0.27.0.
 
 The sensor list on the overview works like the list in Device Panel (own columns on phone and computer), and the alarm lasts until it is acknowledged.
 
-Not released; included in 0.27.0.
+Not released; included in 0.28.0.
 
 ### Added
 
@@ -65,7 +90,7 @@ Not released; included in 0.27.0.
 
 ## [0.24.0] - 2026-11-09
 
-Not released; included in 0.27.0.
+Not released; included in 0.28.0.
 
 ### Changed
 
@@ -408,7 +433,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
+[0.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.28.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

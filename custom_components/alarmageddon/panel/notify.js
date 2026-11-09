@@ -8,7 +8,7 @@ const { ic, esc, errText, chapter } = await import(`./common.js${V}`);
 // Arten je Gruppe in der Reihenfolge der Anzeige, mit Symbol
 const GROUPS = {
   alarm: [["sensor_report", "bell"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
-  maintenance: [["battery_low", "battery"], ["sensor_offline", "offline"], ["sensor_unavailable", "offline"], ["update_available", "verUp"]],
+  maintenance: [["battery_low", "battery"], ["sensor_offline", "offline"], ["sensor_unavailable", "offline"]],
 };
 const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" };
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };

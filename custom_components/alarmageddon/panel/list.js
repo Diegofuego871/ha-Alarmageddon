@@ -2,7 +2,7 @@
 // Sortierung; zeigt Zustand, Batterie, Empfang, Firmware und mehr. Ansicht pro Browser gemerkt (localStorage).
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, DC, GONE } = await import(`./common.js${V}`);
+const { ic, esc, DC, GONE, TYPES } = await import(`./common.js${V}`);
 
 const COLUMNS = ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "model", "integration", "changed"];
 // Ansicht je Gerätetyp (wie Device Panel): Desktop und Handy haben eigene Spalten (Liste), Angaben (Karten), Gruppierung und Sortierung.
@@ -59,6 +59,7 @@ export class ListUi {
     this.filter = "all";
     this.sys = "";
     this.area = "";
+    this.type = ""; // Filter nach Sensorart (Tür, Fenster, Bewegung …)
     this.views = this._loadViews();
     this.viewUpdated = 0;
   }
@@ -203,6 +204,7 @@ export class ListUi {
   _matches(r) {
     if (this.sys && !r.systems.some((s) => s.entry === this.sys)) return false;
     if (this.area && r.area !== this.area) return false;
+    if (this.type && (r.info.type || "other") !== this.type) return false;
     if (this.filter === "problems" && !(r.gone || r.low)) return false;
     if (this.filter === "open" && !r.open) return false;
     if (this.filter === "occupied" && !r.occupied) return false;
@@ -258,11 +260,12 @@ export class ListUi {
       ? `<select class="ag-select" data-list="sys" aria-label="${esc(this._t("allSystems"))}"><option value="">${esc(this._t("allSystems"))}</option>${systems.map((s) => `<option value="${esc(s.entry_id)}" ${this.sys === s.entry_id ? "selected" : ""}>${esc(s.title)}</option>`).join("")}</select>`
       : "";
     const areaSel = `<select class="ag-select" data-list="area" aria-label="${esc(this._t("allAreas"))}"><option value="">${esc(this._t("allAreas"))}</option>${areas.map((a) => `<option ${this.area === a ? "selected" : ""}>${esc(a)}</option>`).join("")}</select>`;
+    const typeSel = `<select class="ag-select" data-list="type" aria-label="${esc(this._t("allTypes"))}"><option value="">${esc(this._t("allTypes"))}</option>${TYPES.map(([k, , label]) => `<option value="${k}" ${this.type === k ? "selected" : ""}>${esc(this._t(label))}</option>`).join("")}</select>`;
     return `<div class="ag-list-head"><h2 class="ag-h2">${esc(this._t("listTitle"))}</h2><span class="ag-t2 ag-list-count"></span></div>
       <div class="ag-tools">
         <label class="list-search">${ic("search", 18)}<input type="search" data-list="search" placeholder="${esc(this._t("search"))}" value="${esc(this.q)}" aria-label="${esc(this._t("search"))}">
           <button class="ag-clear" data-list="clear" aria-label="${esc(this._t("clearSearch"))}" ${this.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
-        <span class="ag-lchips"></span>${sysSel}${areaSel}<span class="ag-grow"></span>
+        <span class="ag-lchips"></span>${sysSel}${areaSel}${typeSel}<span class="ag-grow"></span>
         ${this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
         <button class="ag-btn" data-list="view">${ic("columns", 18)}${esc(this._t("view"))}</button></div>`;
   }
@@ -489,6 +492,7 @@ export class ListUi {
   onChange(el) {
     if (el.dataset.list === "sys") this.sys = el.value;
     else if (el.dataset.list === "area") this.area = el.value;
+    else if (el.dataset.list === "type") this.type = el.value;
     else if (el.dataset.list === "vsort") {
       this.view.sort = el.value;
       this._applyView();

@@ -215,13 +215,13 @@ export class SensorsUi {
     const d = this.draft;
     const modes = this.modes();
     const head = `<tr><th>${esc(this._t("colSensor"))}</th>${modes.map((m) => `<th class="z">${esc(this._t(MODE_KEY[m]))}<button class="ag-allbtn" data-sen="all" data-mode="${m}">${esc(this._t("all"))}</button></th>`).join("")}
-      <th class="z">${esc(this._t("colEntry"))}</th><th>${esc(this._t("colIntegration"))}</th><th>${esc(this._t("colBattery"))}</th><th></th></tr>`;
+      <th class="z">${esc(this._t("optAlways"))}</th><th class="z">${esc(this._t("colEntry"))}</th><th></th></tr>`;
     let area = null;
     const body = [];
     for (const r of rows) {
       if (r.area !== area) {
         area = r.area;
-        body.push(`<tr class="grp"><td colspan="${modes.length + 5}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
+        body.push(`<tr class="grp"><td colspan="${modes.length + 4}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
       }
       const bits = this._bits(r);
       body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
@@ -229,10 +229,16 @@ export class SensorsUi {
           const on = d.zones[m].has(r.id);
           return `<td class="z"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
         }).join("")}
-        <td class="z">${this._entryToggle(r)}</td><td>${esc(r.info.integration || "")}</td><td>${bits.batt}</td>
-        <td style="width:92px;white-space:nowrap"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></td></tr>`);
+        <td class="z">${this._alwaysBox(r)}</td><td class="z">${this._entryToggle(r)}</td>
+        <td class="ag-acts"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></td></tr>`);
     }
     return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
+  }
+
+  // "Immer aktiv" (Rauch, Wasser, Gas lösen auch bei deaktivierter Anlage aus) als Kästchen in der Übersicht: wirksamer Wert, eigener Wert ist ein Punkt
+  _alwaysBox(r) {
+    const on = this.eff(r.id, "always");
+    return `<button class="ag-box ${on ? "on" : ""}" data-sen="opt" data-key="always" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t("optAlways")}`)}" title="${esc(this._t("optAlwaysHint"))}">${on ? ic("check", 18) : ""}</button>`;
   }
 
   _entryToggle(r, extra = "") {
@@ -254,10 +260,10 @@ export class SensorsUi {
       const bits = this._bits(r);
       out.push(`<div class="ag-card ag-mcard ag-clickrow" data-row="${esc(r.id)}"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>${bits.batt}
           <button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
-        <div class="ag-zbtns" style="--n:${modes.length}">${modes.map((m) => {
+        <div class="ag-zbtns" style="--n:${modes.length + 1}">${modes.map((m) => {
           const on = d.zones[m].has(r.id);
           return `<button class="ag-zbtn ${on ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`;
-        }).join("")}</div></div>`);
+        }).join("")}<button class="ag-zbtn ${this.eff(r.id, "always") ? "on" : ""}" data-sen="opt" data-key="always" data-ent="${esc(r.id)}" aria-pressed="${this.eff(r.id, "always")}">${ic("flash", 16)}${esc(this._t("optAlways"))}</button></div></div>`);
     }
     return `<div class="ag-mcards">${out.join("")}</div>`;
   }

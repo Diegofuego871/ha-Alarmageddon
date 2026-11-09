@@ -25,7 +25,6 @@ from .const import (
     CONF_TRIGGER_TIME,
     CONF_WORKFLOW_END,
     CONF_WORKFLOWS,
-    END_MODES,
     CONF_ZONE_PREFIX,
     MAX_CONFIRM_WINDOW,
     MAX_DELAY,
@@ -76,6 +75,26 @@ STEP_SCHEMAS = {
         vol.Optional("detach"): bool,
     }),
 }
+
+
+# Element "Alarm endet" (0.27.0): was Deaktivieren/Quittieren mit den Geräten macht und eine optionale eigene Meldung dazu
+END_NOTIFY_SCHEMA = vol.Schema({
+    vol.Optional("enabled", default=False): bool,
+    vol.Optional("title"): vol.All(str, vol.Length(max=100)),
+    vol.Optional("message"): vol.All(str, vol.Length(max=300)),
+    vol.Optional("critical"): vol.Any(None, bool),
+    vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
+    vol.Optional("click"): vol.In(("log", "overview", "custom")),
+    vol.Optional("click_path"): vol.Any("", vol.All(str, vol.Length(max=200), vol.Match(r"^/[^\s]*$"))),
+})
+END_SCHEMA = vol.Schema({vol.Optional("notify"): END_NOTIFY_SCHEMA}, extra=vol.REMOVE_EXTRA)
+
+
+def valid_end(value: Any) -> dict[str, Any]:
+    """Ein Wert für "Alarm endet": die eigene Meldung. Frühere Angaben zur Wahl beim Deaktivieren (undo, Kurzform) fallen weg."""
+    if not isinstance(value, dict):
+        return {}
+    return END_SCHEMA(value)
 
 
 def valid_step(value: Any) -> dict[str, Any]:
@@ -133,7 +152,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_CONFIRM_WINDOW): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
         vol.Optional(CONF_SENSOR_OPTIONS): {cv.entity_id: {vol.In(SENSOR_OPTIONS): bool}},
         vol.Optional(CONF_WORKFLOWS): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
-        vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): vol.In(END_MODES)},
+        vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): valid_end},
     },
     extra=vol.REMOVE_EXTRA,
 )

@@ -144,15 +144,5 @@
     "mode_not_enabled": {
       "message": "Der Modus \"{mode}\" ist für diese Alarmanlage nicht eingeschaltet."
     }
-  },
-  "issues": {
-    "update_available": {
-      "title": "Update für Alarmageddon verfügbar",
-      "description": "Version {latest} ist verfügbar, installiert ist {installed}. Aktualisieren im Panel von Alarmageddon unter Konfiguration › Updates oder in HACS."
-    },
-    "restart_required": {
-      "title": "Neustart für Alarmageddon nötig",
-      "description": "Version {latest} wurde installiert. Home Assistant muss neu gestartet werden, damit sie läuft (läuft: {installed}). Neustart, wenn niemand auf die Alarmanlage angewiesen ist."
-    }
   }
 }

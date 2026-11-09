@@ -155,65 +155,91 @@ async def test_disarm_stops_and_restores(hass: HomeAssistant, freezer) -> None:
     assert not s["media_player.play_media"]
 
 
-NOT_MARKED = [
-    {"type": "action", "action": "switch.turn_on", "target": [SIREN]},  # ohne "Rückgängig"
-    {"type": "sound", "players": [PLAYER], "sound": "siren", "volume": 0.7, "repeat": 2, "restore": False},
-]
+END_NOTIFY = {"enabled": True, "title": "Ruhe in {name}", "message": "{sensor}, {mode}, aufgehoben um {time}", "critical": True, "volume": 0.4,
+              "click": "custom", "click_path": "/lovelace/alarm"}
 
 
-async def test_alarm_end_restore_all(hass: HomeAssistant, freezer) -> None:
-    """Alarm endet: "alles rückgängig" setzt auch Schritte ohne eigene Rückgängig-Option zurück."""
-    _entry, s = await _setup_workflow(hass, NOT_MARKED, workflow_end={"home": "restore_all"})
+async def test_alarm_end_custom_push(hass: HomeAssistant, hass_ws_client) -> None:
+    """Alarm endet: eine eigene Meldung ersetzt den Standardtext "Alarm beendet" (gleicher tag, eigene Werte)."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass, workflow_end={"home": {"notify": END_NOTIFY}}, exit_delay_away=0)
+    await _notify_settings(hass, hass_ws_client)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    assert len(pushes) == 1
+    tag = pushes[0].data["data"]["tag"]
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    assert len(pushes) == 2
+    end = pushes[1].data
+    assert end["title"] == "Ruhe in Haus" and end["message"].startswith("Fenster") and ", Anwesend," in end["message"] or ", Home," in end["message"]
+    assert end["data"]["tag"] == tag
+    assert end["data"]["push"]["sound"]["critical"] == 1 and end["data"]["push"]["sound"]["volume"] == 0.4
+    assert end["data"]["url"] == "/lovelace/alarm"
+
+
+async def test_alarm_end_default_push_is_not_critical(hass: HomeAssistant, hass_ws_client) -> None:
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass, exit_delay_away=0)
+    await _notify_settings(hass, hass_ws_client)
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     await call(hass, "alarm_disarm")
     await hass.async_block_till_done()
-    assert s["switch.turn_off"][0].data["entity_id"] == SIREN
-    assert s["media_player.volume_set"][-1].data["volume_level"] == 0.25
+    assert pushes[1].data["title"] == "Alarm ended: Haus"
+    assert "push" not in pushes[1].data["data"]
 
 
-async def test_alarm_end_default_restores_only_marked(hass: HomeAssistant, freezer) -> None:
-    _entry, s = await _setup_workflow(hass, NOT_MARKED)
-    await call(hass, "alarm_arm_home")
-    await open_sensor(hass, WINDOW)
+async def test_alarm_end_notify_validation_and_test(hass: HomeAssistant, hass_ws_client) -> None:
+    pushes = async_mock_service(hass, "notify", "handy")
+    entry = await setup_alarm(hass)
+    await _notify_settings(hass, hass_ws_client)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_workflows", "entry_id": entry.entry_id, "workflows": {},
+                            "workflow_end": {"home": {"notify": {**END_NOTIFY, "click_path": "kein-pfad"}}}})
+    assert not (await client.receive_json())["success"]
+    # Ausgeschaltet wird nichts gespeichert
+    await client.send_json({"id": 2, "type": "alarmageddon/save_workflows", "entry_id": entry.entry_id, "workflows": {},
+                            "workflow_end": {"home": {"notify": {"enabled": False, "title": "x"}}}})
+    assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
-    await call(hass, "alarm_disarm")
+    assert not entry.options.get("workflow_end")
+    await client.send_json({"id": 3, "type": "alarmageddon/test_end_notify", "entry_id": entry.entry_id, "notify": END_NOTIFY})
+    assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
-    assert not s["switch.turn_off"]  # nicht markiert: Sirene bleibt an
-    assert not s["media_player.volume_set"][1:]  # Lautstärke nicht zurück (nur die des Schritts)
-
-
-async def test_alarm_end_stop_only(hass: HomeAssistant, freezer) -> None:
-    """Alarm endet: "nur stoppen" lässt den Ton verstummen, setzt aber nichts zurück (auch nicht markierte Schritte)."""
-    _entry, s = await _setup_workflow(hass, workflow_end={"home": "stop_only"})
-    await call(hass, "alarm_arm_home")
-    await open_sensor(hass, WINDOW)
-    await hass.async_block_till_done()
-    await call(hass, "alarm_disarm")
-    await hass.async_block_till_done()
-    assert not s["switch.turn_off"]
-    assert s["media_player.media_stop"] and s["media_player.media_stop"][0].data["entity_id"] == PLAYER
-    assert all(c.data.get("volume_level") != 0.25 for c in s["media_player.volume_set"])
-    await advance(hass, freezer, 60)
-    assert not s["media_player.play_media"]
+    assert pushes and pushes[-1].data["title"].startswith("Test:") and "Ruhe in Haus" in pushes[-1].data["title"]
 
 
 async def test_alarm_end_via_websocket_and_backup(hass: HomeAssistant, hass_ws_client) -> None:
     entry, _s = await _setup_workflow(hass)
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "alarmageddon/save_workflows", "entry_id": entry.entry_id, "workflows": {"home": WORKFLOW},
-                            "workflow_end": {"home": "restore_all", "away": "restore_marked"}})
+                            "workflow_end": {"home": {"notify": END_NOTIFY}, "away": {"undo": "restore_all"}, "night": "restore_all"}})
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
-    assert entry.options["workflow_end"] == {"home": "restore_all"}  # Standard wird nicht gespeichert
+    # Nur die eigene Meldung wird gespeichert; frühere Angaben zur Wahl beim Deaktivieren fallen weg
+    assert entry.options["workflow_end"] == {"home": {"notify": END_NOTIFY}}
     await client.send_json({"id": 2, "type": "alarmageddon/data"})
-    assert (await client.receive_json())["result"]["systems"][0]["workflow_end"] == {"home": "restore_all"}
-    await client.send_json({"id": 3, "type": "alarmageddon/save_workflows", "entry_id": entry.entry_id, "workflows": {}, "workflow_end": {"home": "nonsense"}})
-    assert not (await client.receive_json())["success"]
-    await client.send_json({"id": 4, "type": "alarmageddon/export"})
+    assert (await client.receive_json())["result"]["systems"][0]["workflow_end"] == {"home": {"notify": END_NOTIFY}}
+    await client.send_json({"id": 3, "type": "alarmageddon/export"})
     exported = (await client.receive_json())["result"]
-    assert exported["systems"][0]["options"]["workflow_end"] == {"home": "restore_all"}
+    assert exported["systems"][0]["options"]["workflow_end"] == {"home": {"notify": END_NOTIFY}}
+
+
+async def test_alarm_devices_return_only_by_step_setting(hass: HomeAssistant) -> None:
+    """Ob ein Gerät beim Deaktivieren zurückkehrt, entscheidet allein "Rückgängig" im Schritt."""
+    steps = [{"type": "action", "action": "switch.turn_on", "target": [SIREN]},  # ohne Rückgängig
+             {"type": "sound", "players": [PLAYER], "sound": "siren", "volume": 0.7, "repeat": 2, "restore": False}]
+    _entry, s = await _setup_workflow(hass, steps)
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    await hass.async_block_till_done()
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    assert not s["switch.turn_off"]
+    assert all(c.data.get("volume_level") != 0.25 for c in s["media_player.volume_set"])
 
 
 async def test_alarm_stays_until_disarmed_then_restores(hass: HomeAssistant, freezer) -> None:

@@ -37,6 +37,14 @@ export const KINDS = [
 
 const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["position"], climate: ["temperature", "hvac_mode"], fan: ["percentage"] };
 
+// "Alarm endet": nur die optionale eigene Meldung; ob Geräte zurückkehren, entscheidet allein der Schritt ("Rückgängig")
+export function normEnd(value) {
+  const v = value && typeof value === "object" ? value : {};
+  const out = {};
+  if (v.notify?.enabled) out.notify = { enabled: true, title: v.notify.title || "", message: v.notify.message || "", critical: v.notify.critical ?? null, volume: v.notify.volume ?? null, click: v.notify.click || "log", click_path: v.notify.click_path || "" };
+  return out;
+}
+
 // ----- Schritt des Servers <-> Formular -----
 
 const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
@@ -222,8 +230,7 @@ export class ActionsUi {
     const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(d.wf)]);
     let n = 0;
     for (const k of all) {
-      const endOf = (m) => (m || {})[k] || "restore_marked";
-      if (JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(d.wf[k] || []) || endOf(s.workflow_end) !== endOf(d.end)) n += 1;
+      if (JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(d.wf[k] || []) || JSON.stringify(normEnd((s.workflow_end || {})[k])) !== JSON.stringify(normEnd((d.end || {})[k]))) n += 1;
     }
     return n;
   }
@@ -252,23 +259,64 @@ export class ActionsUi {
     // Nach einem Schritt, der nebenher läuft, ist die Verbindung gestrichelt: der nächste Schritt startet sofort
     const plus = (i) => `<div class="ag-wf-plus ${steps[i - 1]?.detach && ["action", "sound"].includes(steps[i - 1].type) ? "par" : ""}"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
     const cards = steps.map((step, i) => this._card(step, i, running)).map((c, i) => c + plus(i + 1)).join("");
-    h._setHtml(body, `<div class="ag-wf-line">
+    h._setHtml(body, `<div class="ag-wf-line ag-wf-main">
         <div class="ag-wf-start"><span class="ag-mini err">${ic("alert", 16)}</span>${esc(this._t("wfStart"))}</div>${plus(0)}
         ${steps.length ? cards : `<div class="ag-card ag-empty ag-wf-empty"><span class="ag-t2">${esc(this._t("wfEmpty"))}</span><button class="ag-btn primary" data-wf="add" data-at="0">${ic("plus", 18)}${esc(this._t("wfAdd"))}</button></div>`}
-        ${this._endHtml()}
-      </div>`);
+      </div>${this._endHtml()}`);
     h._placePills();
     this.renderFoot();
   }
 
-  // Festes Ende des Ablaufs: "Alarm endet" (Deaktivieren/Quittieren) mit der Wahl, was mit den Geräten geschieht
+  // Festes Ende des Ablaufs: "Alarm endet" (Deaktivieren/Quittieren); alle Einstellungen im Fenster wie bei den Schritten
   _endHtml() {
-    const cur = this.draft?.end?.[this.trigger] || "restore_marked";
-    const opts = ["restore_marked", "restore_all", "stop_only"];
-    return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok">${ic("check", 16)}</span>${esc(this._t("wfEnd"))}</div>
-      <div class="ag-card ag-wf-endcard"><div class="ag-ef-l">${esc(this._t("wfEndTitle"))}</div>
-        <select class="ag-input" data-wf="end" aria-label="${esc(this._t("wfEndTitle"))}">${opts.map((o) => `<option value="${o}" ${cur === o ? "selected" : ""}>${esc(this._t(`wfEnd_${o}`))}</option>`).join("")}</select>
-        <div class="ag-ef-h">${esc(this._t(`wfEnd_${cur}_hint`))}</div></div></div>`;
+    const e = normEnd(this.draft?.end?.[this.trigger]);
+    return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok ag-end-ic">${ic("check", 16)}</span>${esc(this._t("wfEnd"))}</div>
+      <div class="ag-card ag-wf-endcard"><span class="ag-wf-icon k-end">${ic("bell", 20)}</span><div class="ag-wf-text"><b>${esc(this._t(e.notify ? "wfEndOwn" : "wfEndDefault"))}</b><small class="ag-t2 ag-small">${esc(this._t(e.notify ? "wfEndOwnHint" : "wfEndDefaultHint"))}</small></div>
+        <div class="ag-wf-btns"><button class="ag-iconbtn" data-wf="end-edit" aria-label="${esc(this._t("wfEndEdit"))}" title="${esc(this._t("wfEndEdit"))}">${ic("pencil", 18)}</button></div></div></div>`;
+  }
+
+  // Fenster "Alarm endet": Wahl beim Deaktivieren und optionale eigene Push-Meldung mit allen Optionen
+  openEndEditor() {
+    const e = normEnd(this.ensureDraft().end?.[this.trigger]);
+    const n = e.notify || {};
+    const form = { ...blank(), kind: "end", endNotify: !!e.notify, ntTitle: n.title || "", ntMessage: n.message || "", ntCritical: n.critical ?? null, ntVolume: n.volume ?? null,
+      ntClick: n.click && n.click !== "log" ? n.click : null, ntClickPath: n.click_path || "" };
+    this.edit = { index: null, insert: null, end: true, form, q: "", error: "", open: false };
+    this.renderEditor();
+    this._dlg().showModal();
+  }
+
+  _endFields(f) {
+    const send = this._sec("wfEndSend", `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("wfEndSend"))}</b><small>${esc(this._t("wfEndSendHint"))}</small></div>${this._toggle('data-wf="end-notify"', f.endNotify, "wfEndSend")}</div>`);
+    return send + (f.endNotify ? `${this._notifyFields(f)}<div><button type="button" class="ag-btn" data-wf="end-test">${ic("play", 16)}${esc(this._t("wfEndTest"))}</button></div>` : "");
+  }
+
+  _endApply() {
+    const f = this.edit.form;
+    if (f.endNotify && f.ntClick === "custom" && !/^\/[^\s]*$/.test(String(f.ntClickPath || "").trim())) return this._editError("fldNtPathBad");
+    const d = this.ensureDraft();
+    d.end = { ...(d.end || {}), [this.trigger]: normEnd({ notify: f.endNotify ? { enabled: true, title: String(f.ntTitle || "").trim(), message: String(f.ntMessage || "").trim(), critical: f.ntCritical, volume: f.ntVolume, click: f.ntClick || "log", click_path: f.ntClick === "custom" ? String(f.ntClickPath || "").trim() : "" } : null }) };
+    this.saveState = null;
+    this.edit = null;
+    this._dlg().close();
+    this.render();
+    this.host._renderDots();
+  }
+
+  // Meldung aus dem Fenster (auch ungespeichert) als Test an die Alarm-Empfänger
+  async _endTest() {
+    const f = this.edit.form;
+    const n = { enabled: true, title: String(f.ntTitle || "").trim(), message: String(f.ntMessage || "").trim() };
+    if (f.ntCritical !== null) n.critical = !!f.ntCritical;
+    if (f.ntVolume !== null) n.volume = Math.min(1, Math.max(0, Number(f.ntVolume)));
+    n.click = f.ntClick || "log";
+    if (n.click === "custom") n.click_path = String(f.ntClickPath || "").trim();
+    try {
+      await this.host._hass.callWS({ type: "alarmageddon/test_end_notify", entry_id: this.system.entry_id, notify: n });
+      this.host._toast(this._t("wfEndTested"));
+    } catch (err) {
+      this._editError(null, this._t("saveFailed", { message: errText(err) }));
+    }
   }
 
   // Kurzfassung eines Schritts für die Karte
@@ -557,16 +605,20 @@ export class ActionsUi {
 
   // Titel und Text der Push-Meldung: der Standardtext steht im Feld und lässt sich ändern; Platzhalter füllt der Server beim Alarm
   _notifyFields(f) {
-    const dt = this._t("ntDefaultTitle");
-    const dm = this._t("ntDefaultMessage");
+    const [dt, dm] = this._ntDefaults(f);
     const chips = NOTIFY_TOKENS.map((tok) => `<button type="button" class="ag-chip" data-wf="ins" data-token="${esc(tok)}">${esc(tok)}<small>${esc(this._t(`ntTok_${tok.slice(1, -1)}`))}</small></button>`).join("");
-    return `<div class="ag-t2">${esc(this._t("stepNotifyHint"))}</div>
+    return `<div class="ag-t2">${esc(this._t(f.kind === "end" ? "wfEndNotifyHint" : "stepNotifyHint"))}</div>
       ${this._sec("chapNtContent", `${this._ef("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
       ${this._ef("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
       ${this._ef("fldNtTokens", `<div class="ag-zline">${chips}</div>`, "fldNtTokensHint")}
       ${this._ef("fldNtPreview", `<div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
         <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div>`)}`)}
       ${this._ntDelivery(f)}`;
+  }
+
+  // Standardtext der Meldung: Alarm oder "Alarm endet" (eigener Text, nie kritisch)
+  _ntDefaults(f) {
+    return f.kind === "end" ? [this._t("ntEndDefaultTitle"), this._t("ntEndDefaultMessage")] : [this._t("ntDefaultTitle"), this._t("ntDefaultMessage")];
   }
 
   // Wirksame Werte der Alarmmeldung: aus dem Schritt, sonst der frühere globale Wert (so ändert sich bei bestehenden Schritten nichts)
@@ -577,7 +629,8 @@ export class ActionsUi {
 
   _ntDelivery(f) {
     const g = this._ntGlobal();
-    const critical = f.ntCritical ?? g.critical;
+    const end = f.kind === "end";
+    const critical = f.ntCritical ?? (end ? false : g.critical);
     const volume = Math.round((f.ntVolume ?? g.volume) * 100);
     const btn = (key, label, hint, warn) => {
       const on = f.ntButtons?.[key] ?? g[key];
@@ -587,7 +640,7 @@ export class ActionsUi {
         ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}`)
       + this._sec("fldNtClick", `<select class="ag-input" data-wf="nt-click" aria-label="${esc(this._t("fldNtClick"))}">${["log", "overview", "custom"].map((k) => `<option value="${k}" ${(f.ntClick || "log") === k ? "selected" : ""}>${esc(this._t(`ntClick_${k}`))}</option>`).join("")}</select>
         ${f.ntClick === "custom" ? `<input class="ag-input ag-mono" data-wf="f" data-key="ntClickPath" value="${esc(f.ntClickPath || "")}" placeholder="/lovelace/alarm" aria-label="${esc(this._t("ntClick_custom"))}" autocapitalize="off" autocomplete="off" spellcheck="false">` : ""}`, "fldNtClickHint")
-      + this._sec("fldNtButtons", `${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}`);
+      + (end ? "" : this._sec("fldNtButtons", `${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}`));
   }
 
   // Vorschau mit echten Namen der Anlage und eines Sensors, so wie die Meldung aussähe
@@ -599,8 +652,9 @@ export class ActionsUi {
       .replaceAll("{sensor}", sensorId ? this.host._name(sensorId) : "")
       .replaceAll("{time}", new Date().toLocaleTimeString(this.host._hass?.locale?.language || this.host._lang, { hour: "2-digit", minute: "2-digit" }))
       .replaceAll("{mode}", this._t(MODE_KEY[this.trigger] || "modeAway"));
-    const title = fill(f.ntTitle || this._t("ntDefaultTitle")).trim();
-    const message = fill(f.ntMessage || this._t("ntDefaultMessage")).trim();
+    const [dt, dm] = this._ntDefaults(f);
+    const title = fill(f.ntTitle || dt).trim();
+    const message = fill(f.ntMessage || dm).trim();
     return `<b>${esc(title)}</b><div>${esc(message)}</div>`;
   }
 
@@ -697,9 +751,10 @@ export class ActionsUi {
   renderEditor() {
     const f = this.edit.form;
     if (this.edit.snap === undefined) this.edit.snap = JSON.stringify(f); // Stand beim Öffnen: Abbrechen fragt nur bei echten Änderungen
-    const k = KINDS.find((x) => x.kind === f.kind);
+    const k = f.kind === "end" ? { kind: "end", icon: "check", label: "wfEnd" } : KINDS.find((x) => x.kind === f.kind);
     let fields;
-    if (f.kind === "notify") fields = this._notifyFields(f);
+    if (f.kind === "end") fields = this._endFields(f);
+    else if (f.kind === "notify") fields = this._notifyFields(f);
     else if (f.kind === "device") fields = this._deviceFields(f);
     else if (f.kind === "sound") fields = this._soundFields(f);
     else if (f.kind === "wait") fields = this._waitFields(f);
@@ -712,6 +767,7 @@ export class ActionsUi {
 
   apply() {
     const f = this.edit.form;
+    if (f.kind === "end") return this._endApply();
     if (["device", "sound", "scene"].includes(f.kind) && !f.targets.length) return this._editError("stepNoTargets");
     if (f.kind === "notify" && f.ntClick === "custom" && !/^\/[^\s]*$/.test(String(f.ntClickPath || "").trim())) return this._editError("fldNtPathBad");
     if (f.kind === "custom") {
@@ -788,9 +844,9 @@ export class ActionsUi {
     this.renderFoot();
     try {
       const wf = Object.fromEntries(this.triggers(s).map((t) => [t, d.wf[t] || []]));
-      const end = Object.fromEntries(this.triggers(s).map((t) => [t, d.end?.[t] || "restore_marked"]));
+      const end = Object.fromEntries(this.triggers(s).map((t) => [t, normEnd(d.end?.[t])]));
       await h._hass.callWS({ type: "alarmageddon/save_workflows", entry_id: s.entry_id, workflows: wf, workflow_end: end });
-      s.workflow_end = Object.fromEntries(Object.entries(end).filter(([, v]) => v !== "restore_marked"));
+      s.workflow_end = Object.fromEntries(Object.entries(end).filter(([, v]) => v.notify));
       s.workflows = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(wf).filter(([, v]) => v.length))));
       this.draft = null;
       this.saveState = "saved";
@@ -1012,12 +1068,19 @@ export class ActionsUi {
       this.edit.cb = null;
       this.renderEditor();
     } else if (act === "nt-crit") {
-      form.ntCritical = !(form.ntCritical ?? this._ntGlobal().critical);
+      form.ntCritical = !(form.ntCritical ?? (form.kind === "end" ? false : this._ntGlobal().critical));
       this.renderEditor();
     } else if (act === "nt-btn") {
       const key = el.dataset.key;
       form.ntButtons = { ...(form.ntButtons || {}), [key]: !(form.ntButtons?.[key] ?? this._ntGlobal()[key]) };
       this.renderEditor();
+    } else if (act === "end-edit") {
+      this.openEndEditor();
+    } else if (act === "end-notify") {
+      form.endNotify = !form.endNotify;
+      this.renderEditor();
+    } else if (act === "end-test") {
+      this._endTest();
     } else if (act === "nt-default") {
       form.ntTitle = "";
       form.ntMessage = "";
@@ -1078,14 +1141,6 @@ export class ActionsUi {
     return true;
   }
 
-  onChange(el) {
-    if (el.dataset?.wf !== "end") return false;
-    this.ensureDraft().end[this.trigger] = el.value;
-    this.render();
-    this.host._renderDots();
-    return true;
-  }
-
   onInput(el) {
     const act = el.dataset.wf;
     if (!act || !this.edit?.form) return false;
@@ -1122,7 +1177,7 @@ export class ActionsUi {
         this.renderEditor();
       } else if (key === "ntTitle" || key === "ntMessage") {
         // Entspricht der Text dem Standard, bleibt das Feld leer (folgt der Sprache)
-        const def = this._t(key === "ntTitle" ? "ntDefaultTitle" : "ntDefaultMessage");
+        const def = this._ntDefaults(f)[key === "ntTitle" ? 0 : 1];
         f[key] = el.value.trim() === def ? "" : el.value;
         const prev = this._dlg().querySelector("#ag-ntprev");
         if (prev) prev.innerHTML = this._ntPreview(f);

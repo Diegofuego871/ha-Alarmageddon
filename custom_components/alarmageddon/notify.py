@@ -52,22 +52,18 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Away",
         "mode_night": "Night",
         "by_push": "push notification",
-        "report_title": "Sensor reports: {name}",
+        "report_title": "Silent alarm: {name}",
         "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Report only\".",
         "type_triggered": "Alarm", "type_pending": "Entry delay", "type_armed": "Armed", "type_disarmed": "Disarmed",
         "type_arm_failed": "Arming not possible", "type_sensor_offline": "Sensor unreachable while armed",
-        "type_sensor_report": "Sensor reports (no alarm)", "type_battery_low": "Low battery",
-        "type_sensor_unavailable": "Sensor unreachable", "type_update_available": "Update available",
+        "type_sensor_report": "Silent alarm", "type_battery_low": "Low battery",
+        "type_sensor_unavailable": "Sensor unreachable",
         "by_schedule": "Schedule",
         "maint_title_one": "Maintenance: {name}",
         "maint_title": "Maintenance: {count} sensors",
         "maint_battery": "{sensor}: battery {value} %",
         "maint_offline": "{sensor}: unreachable since {time}",
         "time_format": "%m/%d %H:%M",
-        "update_found_title": "Alarmageddon {latest} available",
-        "update_found_text": "Installed is {installed}. Update in the panel under Configuration › Updates or in HACS.",
-        "update_done_title": "Alarmageddon {latest} installed",
-        "update_done_text": "Home Assistant still has to be restarted for the new version to run.",
     },
     "de": {
         "triggered_title": "Alarm: {name}",
@@ -98,22 +94,18 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Abwesend",
         "mode_night": "Nacht",
         "by_push": "Push-Meldung",
-        "report_title": "Sensor meldet: {name}",
+        "report_title": "Stiller Alarm: {name}",
         "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Nur melden\" steht.",
         "type_triggered": "Alarm", "type_pending": "Eingangsverzögerung", "type_armed": "Scharf geschaltet", "type_disarmed": "Deaktiviert",
         "type_arm_failed": "Scharfschalten nicht möglich", "type_sensor_offline": "Sensor im scharfen Zustand nicht erreichbar",
-        "type_sensor_report": "Sensor meldet (kein Alarm)", "type_battery_low": "Batterie schwach",
-        "type_sensor_unavailable": "Sensor nicht erreichbar", "type_update_available": "Update verfügbar",
+        "type_sensor_report": "Stiller Alarm", "type_battery_low": "Batterie schwach",
+        "type_sensor_unavailable": "Sensor nicht erreichbar",
         "by_schedule": "Zeitplan",
         "maint_title_one": "Wartung: {name}",
         "maint_title": "Wartung: {count} Sensoren",
         "maint_battery": "{sensor}: Batterie {value} %",
         "maint_offline": "{sensor}: nicht erreichbar seit {time}",
         "time_format": "%d.%m. %H:%M",
-        "update_found_title": "Alarmageddon {latest} verfügbar",
-        "update_found_text": "Installiert ist {installed}. Aktualisieren im Panel unter Konfiguration › Updates oder in HACS.",
-        "update_done_title": "Alarmageddon {latest} installiert",
-        "update_done_text": "Home Assistant muss noch neu gestartet werden, damit die neue Version läuft.",
     },
 }
 
@@ -182,6 +174,8 @@ class Notifier:
         self._ctl = controller
         self._settings = settings
         self._last_state: str | None = None
+        # Auslöser (Modus) des laufenden Alarms: beim Deaktivieren ist der Modus der Anlage schon weg
+        self._alarm_trigger: str | None = None
         self._unsubs: list[Any] = []
         # Ablauf der Anlage: hat er für diesen Auslöser einen eigenen Push-Schritt, meldet der Alarm nicht doppelt
         self.workflow_has_notify = lambda _trigger: False
@@ -233,6 +227,7 @@ class Notifier:
         name = self.entry.title
         if state == AlarmControlPanelState.TRIGGERED:
             trigger = self._ctl.mode or "always"
+            self._alarm_trigger = trigger
             if self._on("triggered") and not self.workflow_has_notify(trigger):
                 self.send_alarm()
         elif state == AlarmControlPanelState.PENDING and self._on("pending"):
@@ -246,9 +241,7 @@ class Notifier:
         elif state == AlarmControlPanelState.DISARMED:
             by = self._ctl.changed_by
             if previous == AlarmControlPanelState.TRIGGERED and self._on("triggered"):
-                # Gleicher tag: ersetzt die kritische Meldung auf dem Handy durch "Alarm beendet" (nie kritisch)
-                self._send("triggered", self._t("ended_title", name=name),
-                           self._t("ended", by=by) if by else self._t("ended_noby"), tag=self._tag(), critical=False)
+                self.send_alarm_end(by)
             elif self._on("disarmed"):
                 self._send("disarmed", self._t("disarmed_title", name=name),
                            self._t("disarmed", by=by) if by else self._t("disarmed_noby"))
@@ -320,9 +313,9 @@ class Notifier:
             return "/alarmageddon"
         return "/alarmageddon?view=log"
 
-    def _fill(self, template: str, sensor: str | None, time: str) -> str:
+    def _fill(self, template: str, sensor: str | None, time: str, mode: str | None = None) -> str:
         """Platzhalter eines eigenen Texts füllen; nur diese vier, alles andere bleibt wie geschrieben (kein str.format)."""
-        values = {"{name}": self.entry.title, "{sensor}": self._name(sensor) if sensor else "", "{time}": time, "{mode}": self._mode(self._ctl.mode)}
+        values = {"{name}": self.entry.title, "{sensor}": self._name(sensor) if sensor else "", "{time}": time, "{mode}": self._mode(mode or self._ctl.mode)}
         for key, value in values.items():
             template = template.replace(key, value)
         return template.strip()
@@ -359,6 +352,36 @@ class Notifier:
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),
                                "authenticationRequired": True, "destructive": True})
         self._send("triggered", title, message, tag=self._tag(), actions=actions, critical=step.get("critical"), volume=step.get("volume"), url=target)
+
+    def _end_notify(self) -> dict[str, Any] | None:
+        """Eigene Meldung aus dem Element "Alarm endet" (Konfiguration › Aktionen), wenn eingeschaltet."""
+        value = (self.entry.options.get("workflow_end") or {}).get(self._alarm_trigger or self._ctl.mode or "always")
+        own = value.get("notify") if isinstance(value, dict) else None
+        return own if own and own.get("enabled") else None
+
+    @callback
+    def send_alarm_end(self, by: str | None, test: bool = False, own: dict[str, Any] | None = None) -> None:
+        """
+        "Alarm beendet": gleicher tag wie die Alarmmeldung, ersetzt also die kritische Meldung auf dem Handy. Ohne eigene Einstellung
+        ein Standardtext und nie kritisch; mit eigener Meldung (Titel, Text, Kritisch, Lautstärke, Klickziel) gelten deren Werte.
+        """
+        name = self.entry.title
+        own = own or self._end_notify()
+        time = dt_util.as_local(dt_util.utcnow()).strftime("%H:%M")
+        title = self._t("ended_title", name=name)
+        message = self._t("ended", by=by) if by else self._t("ended_noby")
+        critical, volume, target = False, None, "/alarmageddon?view=log"
+        if own:
+            sensor = self._ctl.triggered_by
+            mode = self._alarm_trigger if self._alarm_trigger in ("home", "away", "night") else None
+            title = self._fill((own.get("title") or "").strip(), sensor, time, mode) or title
+            message = self._fill((own.get("message") or "").strip(), sensor, time, mode) or message
+            critical = bool(own.get("critical"))
+            volume = own.get("volume")
+            target = self._click_target(own)
+        if test:
+            title = self._t("test_title", name=title)
+        self._send("triggered", title, message, tag=self._tag(), critical=critical, volume=volume, url=target)
 
     @callback
     def send_test(self, kind: str) -> list[str]:

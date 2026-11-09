@@ -74,8 +74,8 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 Side panel › Configuration › Notifications, for all alarm systems:
 
 - **Recipients** separately for alarms and maintenance messages: pick every `notify` service (for example `notify.mobile_app_<phone>` of the companion app) from a dropdown; the chosen ones appear as tags with an x.
-- **Settings per kind of message:** sensor reports (no alarm), sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available. Each kind can be switched on or off, be **critical** (sounds in silent mode and do not disturb) or not, and has its own **volume**. The volume applies to iOS; Android plays critical messages on the alarm channel (`alarm_stream`), set its volume on the phone. Each kind has a "Send test message" button (with the saved settings).
-- **Report only** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Sensor reports" while armed instead of triggering the alarm. At most one message per sensor and minute.
+- **Settings per kind of message:** silent alarm (no alarm), sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available. Each kind can be switched on or off, be **critical** (sounds in silent mode and do not disturb) or not, and has its own **volume**. The volume applies to iOS; Android plays critical messages on the alarm channel (`alarm_stream`), set its volume on the phone. Each kind has a "Send test message" button (with the saved settings).
+- **Report only** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Silent alarm" while armed instead of triggering the alarm. At most one message per sensor and minute.
 - **Icon in notifications:** every notification carries the icon of the integration (Android; iOS always shows the icon of the Home Assistant app).
 - **Alarm message** (Configuration › Actions, step "Push notification", set per mode): title and text, critical, volume and the buttons "Open" (on by default), "Silence siren" (off by default; stops all steps of the alarm actions and returns the devices, the alarm system stays in alarm) and "Disarm" (off by default; iOS asks for Face ID or the passcode, Android does not). Anyone holding the unlocked phone can use the last two. A button only works if the message offers it. Without a push step a default message goes out (critical, button "Open"); the alarm message cannot be switched off. The other kinds of messages stay under Configuration › Notifications.
 - **Maintenance:** low battery (threshold, default 20 %) and sensors unreachable for longer than a set time (default 60 minutes) go to the maintenance recipients. Each problem once, several in one notification; again after the battery was replaced or the sensor responded.
@@ -102,18 +102,6 @@ Side panel › Configuration › Alarm system › "Codes per person": each perso
 
 Option per sensor "Needs a second sensor" (side sheet of the sensor or defaults per sensor type). While armed such a sensor triggers only if another sensor with this option responds within the confirmation window (Configuration › Alarm system, default 60 seconds). The same sensor twice does not count. Sensors without the option trigger alone as before; during the entry delay the option does not apply, and "failure counts as alarm" still triggers at once. Off by default: an alarm system should rather alarm in doubt.
 
-## Updates
-
-Side panel › Configuration › Updates (like in Device Panel):
-
-- Shows the installed and the latest version (asked at GitHub, at most every 6 hours, "Check for updates" at most once a minute), the release notes of all versions in between (from the changelog, in your language) and "Update".
-- **Installing always goes through HACS** (the update entity of this repository, recognised by its release link; no other integration is ever touched). Without HACS the panel points to a manual installation.
-- **Home Assistant is never restarted by itself.** When the new version is on disk, "Restart now" appears (with confirmation). Until then the old version keeps running.
-- **Daily check** (on by default): reports a new version under Settings › Repairs and, as the event "Update available" under Notifications, to the maintenance recipients (once per version).
-- **Install updates automatically** (off by default): downloads the new version through HACS after the daily check. The restart stays with you.
-- **Pre-releases:** offered on request. HACS installs them only if its own switch "Pre-release" is on for this integration (enable the entity in the HACS device and switch it on); the panel explains this.
-- The settings are part of the backup.
-
 ## Settings per mode
 
 Side panel › Configuration › Alarm system › "Settings per mode": choose "Home", "Away" or "Night" and set the values of that mode:
@@ -125,7 +113,7 @@ Side panel › Configuration › Alarm system › "Settings per mode": choose "H
 | Open sensor when arming | Block arming or bypass the open sensors |
 | Confirmation window | Time for the second sensor with "Needs a second sensor" |
 
-The element "Alarm ends" at the end of each action flow decides what disarming does (undo the marked steps, undo all steps, or only stop). The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
+At the end of each action flow the element "Alarm ends" can send an own message when someone disarms (the same options as the alarm message). Whether devices return is decided by "Undo on disarm / acknowledge" in each step. The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
 
 ## Modes
 

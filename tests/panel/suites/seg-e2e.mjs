@@ -34,12 +34,12 @@ for (const lang of ["de", "en"]) {
     await s.page.waitForTimeout(700);
     // Zwei Leisten im selben Fenster haben eigene Schlüssel
     check(`${tag}: jede Leiste hat einen eigenen Schlüssel`, await s.ev("const keys=[...r.querySelectorAll('.ag-seg')].map((b) => (b.closest('dialog')?.id || 'page') + '|' + (b.dataset.seg || '')); return keys.length >= 2 && new Set(keys).size === keys.length && keys.every((k) => !k.endsWith('|'))"));
-    // Handy: fünf Unterreiter als Raster mit vier Spalten
+    // Handy: vier Unterreiter in einer Zeile
     await s.tap('[data-sub="actions"]');
     await s.page.waitForTimeout(500);
     if (mobile) {
-      check(`${tag}: Handy: ab fünf Reitern vier Spalten in Zeilen`, await s.ev("const g=getComputedStyle(r.querySelector('.ag-subs')); return g.gridAutoFlow.startsWith('row') && g.gridTemplateColumns.split(' ').length === 4"));
-      check(`${tag}: Kapsel stimmt auch in der zweiten Zeile`, await (async () => { await s.tap('[data-sub="updates"]'); await s.page.waitForTimeout(900); return s.ev("const on=r.querySelector('.ag-subs > button.on'); const p=r.querySelector('.ag-subs .ag-pill'); const a=on.getBoundingClientRect(); const b=p.getBoundingClientRect(); return Math.abs(a.left-b.left) < 1.5 && Math.abs(a.top-b.top) < 1.5"); })());
+      check(`${tag}: Handy: vier Unterreiter in einer Zeile`, await s.ev("const g=getComputedStyle(r.querySelector('.ag-subs')); return g.gridTemplateColumns.split(' ').length === 4 && r.querySelectorAll('.ag-subs > button').length === 4"));
+      check(`${tag}: Kapsel steht auf dem gewählten Unterreiter`, await (async () => { await s.tap('[data-sub="system"]'); await s.page.waitForTimeout(900); return s.ev("const on=r.querySelector('.ag-subs > button.on'); const p=r.querySelector('.ag-subs .ag-pill'); const a=on.getBoundingClientRect(); const b=p.getBoundingClientRect(); return Math.abs(a.left-b.left) < 1.5 && Math.abs(a.top-b.top) < 1.5"); })());
     } else {
       check(`${tag}: Desktop: eine Zeile`, await s.ev("const g=getComputedStyle(r.querySelector('.ag-subs')); return g.gridAutoFlow.startsWith('column')"));
     }

@@ -32,7 +32,7 @@ async def _types(hass: HomeAssistant, hass_ws_client, **types: dict[str, Any]) -
 def test_defaults_cover_every_type() -> None:
     cfg = valid_notify(None)
     assert set(cfg["types"]) == set(NOTIFY_TYPES)
-    # Im Zweifel melden: Alarm, Sensorausfall im scharfen Zustand und "Sensor meldet" sind kritisch
+    # Im Zweifel melden: Alarm, Sensorausfall im scharfen Zustand und "Stiller Alarm" sind kritisch
     assert [k for k, v in cfg["types"].items() if v["critical"]] == ["triggered", "sensor_offline", "sensor_report"]
     assert all(0 <= v["volume"] <= 1 for v in cfg["types"].values())
 
