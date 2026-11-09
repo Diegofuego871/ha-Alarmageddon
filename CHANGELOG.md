@@ -13,6 +13,10 @@ An "Alarm ends" element at the end of every action flow decides what disarming d
 
 Includes the changes from 0.24.0, 0.25.0 and 0.26.0.
 
+### Fixed
+
+- **The view no longer jumps to the top** when the screen is redrawn (marking sensors, adding sensors, closing a window): the scroll position is kept within the same view, and a window that closes returns to the position where it was opened.
+
 ### Added
 
 - **"Alarm ends" element** at the end of every flow (Configuration › Actions, per mode): the choice "On disarm / acknowledge": **Stop, undo the marked steps** (as before, default), **Stop, undo all steps** (all devices the steps changed return to their state before the alarm, whatever each step says) or **Only stop, undo nothing** (all steps stop and alarm sounds fall silent, switched devices stay). The choice is part of the draft, the backup and the data of the alarm system; the default is not stored.

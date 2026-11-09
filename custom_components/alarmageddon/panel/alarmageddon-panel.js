@@ -345,7 +345,27 @@ class AlarmageddonPanel extends HTMLElement {
   _setHtml(el, html) {
     if (!el || this._lastHtml.get(el) === html) return;
     this._lastHtml.set(el, html);
-    el.innerHTML = html;
+    this._keepScroll(() => (el.innerHTML = html));
+  }
+
+  // Beim Neuzeichnen darf die Ansicht nie nach oben springen: Der Inhalt wird kurz leer, der Browser kürzt dabei die Scrollposition.
+  // Darum die Position vorher merken und danach (und im nächsten Bild, wenn Schriften und Bilder gesetzt sind) wiederherstellen.
+  // Nur innerhalb derselben Ansicht (Reiter, Unterreiter, Anlage); ein Wechsel beginnt oben.
+  _keepScroll(fn) {
+    const c = this._content;
+    if (!c) return fn();
+    const key = `${this._tab}|${this._sub}|${this._sel}`;
+    const same = key === this._scrollKey;
+    this._scrollKey = key;
+    const top = c.scrollTop;
+    const result = fn();
+    if (same && top) {
+      c.scrollTop = top;
+      window.requestAnimationFrame(() => {
+        if (Math.abs(c.scrollTop - top) > 1 && c.scrollHeight - c.clientHeight >= top) c.scrollTop = top;
+      });
+    }
+    return result;
   }
 
   _segHtml(name, items, current, attr = "data-act", cls = "") {
@@ -365,7 +385,7 @@ class AlarmageddonPanel extends HTMLElement {
     let right = "";
     if (this._tab === "overview" && !narrow) right = `<span class="ag-grow"></span><button class="ag-btn" data-act="add">${ic("plus")}${esc(this._t("addSystem"))}</button>`;
     this._lastHtml.delete(this._content);
-    this._content.innerHTML = `<div class="ag-head"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${tabs}${right}</div><div class="ag-view"></div>`;
+    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${tabs}${right}</div><div class="ag-view"></div>`));
     this._view = this._content.querySelector(".ag-view");
     this._view.style.display = "contents";
     this._renderView(true);
@@ -597,7 +617,7 @@ class AlarmageddonPanel extends HTMLElement {
   _renderOverview(full) {
     if (full || !this._view.querySelector(".ag-ov-top")) {
       this._lastHtml.delete(this._view);
-      this._view.innerHTML = `<div class="ag-ov-top"></div><div class="ag-ov-tools">${this.list.toolsHtml()}</div><div class="ag-ov-list"></div>`;
+      this._keepScroll(() => (this._view.innerHTML = `<div class="ag-ov-top"></div><div class="ag-ov-tools">${this.list.toolsHtml()}</div><div class="ag-ov-list"></div>`));
     }
     this._renderTop();
     this._renderList();
@@ -607,7 +627,7 @@ class AlarmageddonPanel extends HTMLElement {
   _renderLogTab(full) {
     if (full || !this._view.querySelector(".ag-log-body")) {
       this._lastHtml.delete(this._view);
-      this._view.innerHTML = this.log.html();
+      this._keepScroll(() => (this._view.innerHTML = this.log.html()));
       this.log.render();
       this.log.load();
     }
@@ -763,7 +783,7 @@ class AlarmageddonPanel extends HTMLElement {
       // Die Seite gleitet von der Seite herein, wenn der Reiter wechselt (nicht bei jedem Neuaufbau)
       const slide = this._slide || "";
       this._slide = "";
-      this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}${pick}</div><div class="ag-pane ${slide}">${body}</div>`;
+      this._keepScroll(() => (this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}${pick}</div><div class="ag-pane ${slide}">${body}</div>`));
     }
     if (!this._systems().length) return;
     // Nie neu aufbauen, während ein Eingabefeld den Fokus hat (Cursor bliebe nicht stehen)
@@ -799,6 +819,19 @@ class AlarmageddonPanel extends HTMLElement {
     };
     for (const dlg of this._root.querySelectorAll("dialog.ag-dlg")) {
       new MutationObserver(() => decorate(dlg)).observe(dlg, { childList: true });
+      // Schliesst ein Dialog, gibt der Browser den Fokus zurück und scrollt dabei zum Auslöser (oft ganz oben): Position wie beim Öffnen
+      const open = dlg.showModal.bind(dlg);
+      dlg.showModal = () => {
+        this._dlgScroll = this._content?.scrollTop ?? 0;
+        open();
+      };
+      dlg.addEventListener("close", () => {
+        const c = this._content;
+        const top = this._dlgScroll;
+        if (!c || top === undefined || dlg.id === "ag-confirm") return;
+        c.scrollTop = top;
+        window.requestAnimationFrame(() => (c.scrollTop = top));
+      });
       // Escape wie Abbrechen: mit offenen Änderungen erst fragen
       dlg.addEventListener("cancel", (ev) => {
         if (dlg.id === "ag-discard" || dlg.id === "ag-confirm" || !this._dlgDirty(dlg)) return;

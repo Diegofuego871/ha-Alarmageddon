@@ -13,6 +13,10 @@ Ein Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut.
 
 Enthält die Änderungen aus 0.24.0, 0.25.0 und 0.26.0.
 
+### Behoben
+
+- **Die Ansicht springt nicht mehr nach oben**, wenn der Bildschirm neu gezeichnet wird (Sensoren markieren, Sensoren hinzufügen, Fenster schliessen): Die Scrollposition bleibt innerhalb derselben Ansicht erhalten, und ein schliessendes Fenster kehrt zur Position beim Öffnen zurück.
+
 ### Hinzugefügt
 
 - **Element "Alarm endet"** am Ende jedes Ablaufs (Konfiguration › Aktionen, je Modus): die Wahl "Beim Deaktivieren/Quittieren": **Stoppen, markierte Schritte rückgängig** (wie bisher, Standard), **Stoppen, alle Schritte rückgängig** (alle Geräte, die die Schritte verändert haben, kehren in den Zustand vor dem Alarm zurück, unabhängig von der Einstellung je Schritt) oder **Nur stoppen, nichts rückgängig** (alle Schritte stoppen und Alarmtöne verstummen, geschaltete Geräte bleiben). Die Wahl gehört zum Entwurf, zur Sicherung und zu den Daten der Anlage; der Standard wird nicht gespeichert.

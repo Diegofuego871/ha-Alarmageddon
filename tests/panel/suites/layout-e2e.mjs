@@ -66,6 +66,29 @@ for (const lang of ["de", "en"]) {
         await s.tap('#ag-sheet [data-sen="close-detail"]');
       }
 
+      // Scrollposition bleibt beim Markieren (kein Sprung nach oben)
+      await s.page.setViewportSize(mobile ? { width: 390, height: 500 } : { width: 1400, height: 430 });
+      await s.page.waitForTimeout(200);
+      const zoneSel = '.ag-gbody [data-box][data-mode="home"], .ag-gbody [data-sen="zone"][data-mode="home"]';
+      const lastZone = `([...r.querySelectorAll('${zoneSel}')].at(-1))`;
+      const scrolled = await s.ev("const c=r.querySelector('.ag-content'); c.scrollTop = c.scrollHeight; return c.scrollTop");
+      const before = scrolled;
+      await s.ev(`${lastZone}.click()`);
+      await s.page.waitForTimeout(400);
+      const after = await s.ev("return r.querySelector('.ag-content').scrollTop");
+      check(`${tag}: Markieren ändert die Scrollposition nicht`, before > 20 && Math.abs(after - before) <= 2, `${before} -> ${after}`);
+      // Dialog öffnen und schliessen (Fokus kehrt zum Auslöser zurück): Position bleibt ebenfalls
+      await s.ev("r.querySelector('.ag-content').scrollTop = 30");
+      await s.ev("r.querySelector('[data-sen=\"add\"]').click()");
+      await s.waitFor("return r.getElementById('ag-pick').open");
+      await s.ev("r.getElementById('ag-pick').querySelector('.ag-dlg-x').click()");
+      await s.waitFor("return !r.getElementById('ag-pick').open");
+      await s.page.waitForTimeout(300);
+      const afterDlg = await s.ev("return r.querySelector('.ag-content').scrollTop");
+      check(`${tag}: Dialog schliessen ändert die Scrollposition nicht`, Math.abs(afterDlg - 30) <= 2, `30 -> ${afterDlg}`);
+      await s.ev(`${lastZone}.click()`);
+      await s.page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1400, height: 950 });
+
       // Ablauf: festes Element "Alarm endet" mit Wahl; Änderung ist ein Entwurf und wird mit gespeichert
       await s.tap('[data-sub="actions"]');
       check(`${tag}: Element "Alarm endet" am Ende des Ablaufs (auch ohne Schritte)`, await s.waitFor("const e=r.querySelector('.ag-wf-end'); return !!e && e.querySelector('select[data-wf=\"end\"]').value === 'restore_marked' && e.querySelectorAll('option').length === 3"));
