@@ -263,3 +263,23 @@ async def test_rename_system(hass: HomeAssistant, hass_ws_client) -> None:
     assert garage.title == "Garage"
     result = await _ws(hass, hass_ws_client, type="alarmageddon/rename", entry_id="fremd", name="X")
     assert result["error"]["code"] == "not_found"
+
+
+async def test_several_systems_load_together_at_startup(hass: HomeAssistant) -> None:
+    """HA lädt beim Start alle Anlagen zugleich: das Panel darf nur einmal registriert werden (sonst "Overwriting panel")."""
+    from homeassistant.config_entries import ConfigEntryState
+
+    from .conftest import options
+
+    entries = []
+    for title in ("Haus", "Garage", "Keller"):
+        e = MockConfigEntry(domain="alarmageddon", title=title, data={"name": title}, options=options())
+        e.add_to_hass(hass)
+        entries.append(e)
+    for entity in (FRONT_DOOR, WINDOW, MOTION):
+        hass.states.async_set(entity, "off")
+    # Der erste Aufruf richtet die Integration ein und lädt dabei alle drei zugleich
+    assert await hass.config_entries.async_setup(entries[0].entry_id)
+    await hass.async_block_till_done()
+    assert [e.state for e in entries] == [ConfigEntryState.LOADED] * 3
+    assert _panel_registered(hass)

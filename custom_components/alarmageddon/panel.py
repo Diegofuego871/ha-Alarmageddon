@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from homeassistant.components import frontend
@@ -10,6 +11,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DATA_PANEL,
+    DATA_PANEL_LOCK,
     DATA_ICON,
     DATA_SOUNDS,
     ICON_URL_PATH,
@@ -34,6 +36,16 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     """
     if hass.data.get(DATA_PANEL):
         return
+    # Beim Start lädt HA alle Anlagen zugleich: ohne Sperre registrieren zwei das Panel, und die zweite scheitert
+    # mit "Overwriting panel alarmageddon" (die Anlage wäre dann nicht geladen)
+    lock = hass.data.setdefault(DATA_PANEL_LOCK, asyncio.Lock())
+    async with lock:
+        if hass.data.get(DATA_PANEL):
+            return
+        await _register(hass)
+
+
+async def _register(hass: HomeAssistant) -> None:
     if not hass.data.get(DATA_STATIC):
         # Statische Pfade lassen sich nicht abmelden: nur einmal pro Lauf von HA
         panel_dir = Path(__file__).parent / PANEL_DIR

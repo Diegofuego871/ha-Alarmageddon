@@ -66,6 +66,7 @@ PANEL_HTML_FILE: Final = "panel.html"
 PANEL_TITLE: Final = "Alarmageddon"
 PANEL_ICON: Final = "mdi:shield-home"
 DATA_PANEL: Final = f"{DOMAIN}_panel_registered"
+DATA_PANEL_LOCK: Final = "alarmageddon_panel_lock"
 DATA_STATIC: Final = f"{DOMAIN}_static_registered"
 
 # Ereignisprotokoll pro Anlage (Übersicht "Letzte Ereignisse")
