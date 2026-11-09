@@ -464,6 +464,7 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 :host([narrow]) .ag-wf-btns .ag-iconbtn { width: 32px; height: 32px; }
 :host([narrow]) .ag-wf-step { flex-wrap: wrap; }
 :host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; }
+:host([narrow]) .ag-wf-endcard .ag-wf-btns { width: auto; }
 :host([narrow]) .ag-wf-line::before { left: 29px; }
 :host([narrow]) .ag-wf-start, :host([narrow]) .ag-wf-plus { padding-left: 16px; }
 

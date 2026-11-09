@@ -271,16 +271,12 @@ export class ActionsUi {
     if (!head || !body || !this.ensureDraft()) return;
     const triggers = this.triggers(s).map((t) => [t, t === "always" ? this._t("wfAlways") : this._t(MODE_KEY[t]), t === "always" ? "flash" : MODE_ICON[t]]);
     const running = s.workflow_running;
-    const dirty = this.dirtyCount() > 0;
-    const testBtn = running && s.workflow_test
-      ? `<button class="ag-btn" data-wf="test-stop">${ic("stop", 18)}${esc(this._t("wfTestStop"))}</button>`
-      : `<button class="ag-btn" data-wf="test" ${dirty || running || !this.steps().length ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("wfTestHint"))}">${ic("play", 18)}${esc(this._t("wfTest"))}</button>`;
     const status = running ? `<span class="ag-tag ${s.workflow_test ? "warn" : "err"}">${esc(this._t(s.workflow_test ? "wfTestRunning" : "wfAlarmRunning"))}</span>` : "";
     const d = this.draft;
     const tabs = d.perMode ? h._segHtml("wf-trigger", triggers, this.trigger, "data-trigger", "small") : "";
     const scope = d.perMode ? `<div class="ag-pmscope" style="margin:0">${ic(this.trigger === "always" ? "flash" : MODE_ICON[this.trigger], 18)}${esc(this._t(this.trigger === "always" ? "pmScopeAlways" : "pmScope", { mode: this._t(MODE_KEY[this.trigger] || "wfAlways") }))}</div>` : "";
     h._setHtml(head, `<div class="ag-tools"><div class="ag-pmbar" style="flex:1;margin:0"><div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-wf="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("wfPerMode"))}"></button>
-        <div class="ag-settx"><b>${esc(this._t("wfPerMode"))}</b><small>${esc(this._t(d.perMode ? "wfPerModeOn" : "wfPerModeHint"))}</small></div></div>${tabs}${scope}</div>${status}${testBtn}</div>
+        <div class="ag-settx"><b>${esc(this._t("wfPerMode"))}</b><small>${esc(this._t(d.perMode ? "wfPerModeOn" : "wfPerModeHint"))}</small></div></div>${tabs}${scope}</div>${status}</div>
       ${this.trigger === "always" && d.perMode ? `<div class="ag-t2 ag-small" style="margin:-6px 4px 0">${esc(this._t("wfAlwaysHint"))}</div>` : ""}`);
     const steps = this.steps();
     // Nach einem Schritt, der nebenher läuft, ist die Verbindung gestrichelt: der nächste Schritt startet sofort
@@ -396,6 +392,16 @@ export class ActionsUi {
     return `<button type="button" class="ag-flow ${par ? "par" : "seq"}" data-wf="flow" data-index="${i}" role="switch" aria-checked="${par}" title="${esc(this._t("fldDetachHint"))}">${ic(par ? "fork" : "arrowDown", 14)}<span>${esc(this._t(par ? "wfFlowPar" : "wfFlowSeq"))}</span></button>`;
   }
 
+  // "Testen" steht unten bei den anderen Knöpfen (auf dem Handy nur das Symbol, damit alle drei Platz haben)
+  _testBtnHtml(dirty) {
+    const s = this.system;
+    const running = s?.workflow_running;
+    const label = this._t(running && s.workflow_test ? "wfTestStop" : "wfTest");
+    const text = this.host.hasAttribute("narrow") ? "" : esc(label);
+    if (running && s.workflow_test) return `<button class="ag-btn" data-wf="test-stop" aria-label="${esc(label)}">${ic("stop", 18)}${text}</button>`;
+    return `<button class="ag-btn" data-wf="test" aria-label="${esc(label)}" ${dirty || running || !this.steps().length ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("wfTestHint"))}">${ic("play", 18)}${text}</button>`;
+  }
+
   renderFoot() {
     const h = this.host;
     h._renderDots?.(); // Punkt "ungespeichert" an den Reitern
@@ -406,7 +412,7 @@ export class ActionsUi {
     if (this.saveState === "saved" && !n) status = `<span class="ag-saved">${ic("check", 16)} ${esc(this._t("saved"))}</span>`;
     else if (this.saveState && this.saveState !== "saved") status = `<span class="ag-err">${esc(this.saveState)}</span>`;
     else status = `<span class="ag-t2">${esc(n === 0 ? this._t("noChanges") : n === 1 ? this._t("change") : this._t("changes", { count: n }))}</span>`;
-    h._setHtml(foot, `${status}<span class="ag-grow"></span><button class="ag-btn" data-wf="cancel" ${n ? "" : "disabled"}>${esc(this._t("cancel"))}</button>
+    h._setHtml(foot, `${status}<span class="ag-grow"></span>${this._testBtnHtml(n > 0)}<button class="ag-btn" data-wf="cancel" ${n ? "" : "disabled"}>${esc(this._t("cancel"))}</button>
       <button class="ag-btn primary" data-wf="save" ${n && !this.saving ? "" : "disabled"}>${ic("check", 18)}${esc(this._t("save"))}</button>`);
   }
 
