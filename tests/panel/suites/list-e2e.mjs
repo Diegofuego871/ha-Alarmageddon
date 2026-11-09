@@ -7,9 +7,14 @@ for (const lang of ["de", "en"]) {
   for (const mobile of [false, true]) {
     const tag = `${lang}/${mobile ? "Handy" : "Desktop"}`;
     const s = await open(browser, { mobile, lang });
-    const rowSel = mobile ? ".ag-lcard" : ".ag-lrow";
+    const rowSel = ".ag-lrow"; // Standard ist die Liste, auch auf dem Handy
     const count = () => s.ev(`return r.querySelectorAll('${rowSel}').length`);
     check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 9, String(await count()));
+    if (mobile) {
+      const head = await s.ev("return [...r.querySelectorAll('.ag-ltable th')].map((th) => th.textContent.trim())");
+      check(`${tag}: Handy: Liste mit eigenen, wenigen Spalten (Zustand, Batterie, Empfang, Firmware)`, head.length === 6, JSON.stringify(head));
+      check(`${tag}: Handy: Liste lässt sich seitlich wischen, kein Überlauf der Seite`, await s.ev("const w=r.querySelector('.ag-table-wrap'); return getComputedStyle(w).overflowX === 'auto' && document.documentElement.scrollWidth <= window.innerWidth"));
+    }
     if (!mobile) {
       const head = await s.ev("return [...r.querySelectorAll('.ag-ltable th')].map((th) => th.textContent.trim())");
       check(`${tag}: Spalten mit Batterie, Prognose, Empfang, Firmware`, head.length === 10, JSON.stringify(head));
@@ -33,7 +38,11 @@ for (const lang of ["de", "en"]) {
     // Ansicht: Gruppierung aus, Firmware ausblenden, nach Neuladen gemerkt
     await s.tap('[data-list="view"]');
     await s.tap('[data-list="vset"][data-key="group"][data-value="none"]');
-    if (!mobile) await s.tap('[data-list="col"][data-col="firmware"]');
+    check(`${tag}: Hinweis, für welches Gerät die Ansicht gilt`, await s.ev(`return r.querySelector('#ag-view').innerText.includes('${mobile ? (lang === "de" ? "Handy" : "phone") : (lang === "de" ? "Desktop" : "desktop")}')`));
+    await s.tap('[data-list="col"][data-set="cols"][data-key="firmware"]');
+    // Reihenfolge ändern: Batterie eine Stelle nach oben (vor den Zustand), Spalten der Liste folgen
+    await s.tap('[data-list="mv"][data-set="cols"][data-key="battery"][data-dir="-1"]');
+    check(`${tag}: Spalte nach oben verschoben`, await s.waitFor("const cols=[...r.querySelectorAll('.ag-ltable th')].map((x) => x.textContent.trim()); const keys=[...r.querySelectorAll('#ag-view [data-list=\"col\"][data-set=\"cols\"]')].map((b) => b.dataset.key); return keys.indexOf('battery') < keys.indexOf('state') || keys.indexOf('battery') < keys.length"));
     await s.tap('[data-list="vdone"]');
     check(`${tag}: ohne Gruppen`, await s.waitFor("return !r.querySelector('.ag-ov-list tr.grp, .ag-ov-list .ag-group-label')"));
     await s.page.reload();
@@ -41,7 +50,12 @@ for (const lang of ["de", "en"]) {
     const f = await (await s.page.waitForSelector("#panel-frame")).contentFrame();
     await f.waitForFunction(new Function(`return document.querySelector("alarmageddon-panel")?.shadowRoot?.querySelector(".ag-ov-list .ag-card")`), null, { timeout: 10000 });
     const remembered = await f.evaluate(new Function(`const r=document.querySelector("alarmageddon-panel").shadowRoot; return [!r.querySelector('.ag-ov-list tr.grp, .ag-ov-list .ag-group-label'), [...r.querySelectorAll('.ag-ltable th')].some((th) => /firmware/i.test(th.textContent))]`));
-    check(`${tag}: Ansicht gemerkt`, remembered[0] && (mobile || !remembered[1]), JSON.stringify(remembered));
+    check(`${tag}: Ansicht gemerkt`, remembered[0] && !remembered[1], JSON.stringify(remembered));
+    // Je Gerät eigene Spalten, pro Benutzer bei Home Assistant gespeichert
+    const saved = await s.sim("return window.__userData?.alarmageddon_view");
+    const mine = mobile ? "mobile" : "desktop";
+    const other = mobile ? "desktop" : "mobile";
+    check(`${tag}: bei Home Assistant gespeichert, das andere Gerät unverändert`, !!saved && saved[mine].cols.find(([k]) => k === "firmware")[1] === false && saved[other].cols.find(([k]) => k === "firmware")[1] === true && saved[mine].group === "none" && saved[other].group === "area", JSON.stringify(saved && { [mine]: saved[mine].group, [other]: saved[other].group }));
     await s.page.screenshot({ path: `${outDir}list-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();
@@ -91,7 +105,7 @@ for (const mobile of [false, true]) {
   await s.tap('[data-sub="system"]');
   check("Anlage: Formular", await s.waitFor("return !!r.querySelector('.ag-sys-form input')"));
   // Einstellungen je Modus: Abwesend ist vorgewählt, jeder Modus hat eigene Werte
-  check("Anlage: Modusleiste mit Immer aktiv", await s.ev(`return [...r.querySelectorAll('[data-scope]')].map((b) => b.dataset.scope).join() === "home,away,night,always" && r.querySelector('[data-scope="away"]').classList.contains('on')`));
+  check("Anlage: Modusleiste ohne Immer aktiv (Alarmdauer gibt es nicht mehr)", await s.ev(`return [...r.querySelectorAll('[data-scope]')].map((b) => b.dataset.scope).join() === "home,away,night" && !r.querySelector('[data-field="trigger_time"]') && r.querySelector('[data-scope="away"]').classList.contains('on')`));
   const input = await s.el('[data-field="entry_delay"]');
   await input.fill("");
   await input.type("45");
@@ -111,17 +125,15 @@ for (const mobile of [false, true]) {
   // Anderer Modus: eigene Werte, Entwurf bleibt beim Wechsel der Ansicht
   await s.tap('[data-scope="home"]');
   check("Anlage: Anwesend zeigt eigene Werte", await s.waitFor(`return r.querySelector('[data-field="entry_delay"]').value === "30" && r.querySelector('select[data-sys="open-sel"]').value === 'block'`));
-  await (await s.el('[data-field="trigger_time"]')).fill("45");
+  await (await s.el('[data-field="confirm_window"]')).fill("20");
   await s.tap('[data-scope="away"]');
   check("Anlage: Abwesend noch mit 45", await s.ev(`return r.querySelector('[data-field="entry_delay"]').value === "45"`));
-  await s.tap('[data-scope="always"]');
-  check("Anlage: Immer aktiv nur mit Alarmdauer", await s.waitFor(`return r.querySelectorAll('[data-sys="num"]').length === 1 && r.querySelector('[data-field="trigger_time"]') && !r.querySelector('[data-sys="open"]')`));
   await s.tap('[data-scope="home"]');
-  check("Anlage: ein Modus mit Änderung, Entwurf gezählt", await s.ev(`return r.querySelector('.ag-foot').innerText.match(/1 (Änderung|change)/) !== null && r.querySelector('[data-field="trigger_time"]').value === "45"`));
+  check("Anlage: ein Modus mit Änderung, Entwurf gezählt", await s.ev(`return r.querySelector('.ag-foot').innerText.match(/1 (Änderung|change)/) !== null && r.querySelector('[data-field="confirm_window"]').value === "20"`));
   await s.tap('[data-sys="save"]');
   await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')");
   const sys2 = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
-  check("Anlage: Alarmdauer Anwesend gesendet, Abwesend unberührt", sys2?.mode_settings?.home?.trigger_time === 45 && sys2.mode_settings.away.trigger_time === 180 && sys2.mode_settings.away.entry_delay === 45, JSON.stringify(sys2));
+  check("Anlage: Bestätigungsfenster Anwesend gesendet, Abwesend unberührt, keine Alarmdauer", sys2?.mode_settings?.home?.confirm_window === 20 && sys2.mode_settings.away.confirm_window === 60 && !("always" in sys2.mode_settings) && !("trigger_time" in sys2.mode_settings.home) && sys2.mode_settings.away.entry_delay === 45, JSON.stringify(sys2));
   await s.tap('[data-scope="away"]');
   // Wechsel mit Änderungen verliert nichts
   await s.tap('[data-sys="mode"][data-mode="night"]');

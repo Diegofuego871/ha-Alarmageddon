@@ -7,11 +7,25 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.25.0] - 2026-11-09
+
+Die Sensorliste auf der Übersicht funktioniert wie die Liste in Device Panel (eigene Spalten für Handy und Computer), und der Alarm dauert, bis er quittiert wird.
+
+Enthält die Änderungen aus 0.24.0.
+
+### Hinzugefügt
+
+- **Sensorliste wie in Device Panel:** Die Liste ist die Standardansicht, am Computer und auf dem Handy. Spalten werden für den **Computer** und das **Handy** getrennt gewählt und angeordnet (Ansicht › "Für diesen Computer" / "Für das Handy"), mit eigener Sortierung, Richtung und Gruppierung, und pro Benutzer in Home Assistant gespeichert (zusätzlich im Browser als Rückfall). Spalten: Zustand, Batterie, Prognose, Empfang, Firmware, Modell, Integration, letzte Änderung, Bereich, Zonen. Das Handy bekommt standardmässig einen kompakten Satz (Zustand, Batterie, Empfang, Firmware).
+- **Kartenansicht ist optional** auf beiden Geräten (Umschalter "Liste / Karten"); die Karten zeigen die für das Gerät gewählten Felder.
+
+### Geändert
+
+- **Der Alarm dauert, bis er quittiert wird:** Der Zustand "Alarm" bleibt, bis jemand deaktiviert, in jedem Modus und auch bei immer aktiven Sensoren. Die Einstellung "Alarmdauer" ist aus dem Panel, dem Optionsdialog und den Alarmanlagen entfernt. Wie lange eine Sirene oder ein Alarmton läuft, steht im Schritt der Aktionen (Alarmton: "Dauer"). Deaktivieren stoppt weiterhin alle Schritte und stellt die Geräte zurück. Alte Werte in den Optionen oder in einer Sicherung werden ignoriert.
+- **Die Ebene "Immer aktiv" entfällt** in Konfiguration › Anlage › "Einstellungen je Modus": Sie enthielt nur die Alarmdauer. Die Aktionen für "immer aktiv" bleiben in Konfiguration › Aktionen.
+
 ## [0.24.0] - 2026-11-09
 
-Reiterleisten verhalten sich und sehen aus wie in Device Panel.
-
-Enthält die Änderungen aus 0.23.0.
+Nicht veröffentlicht; enthalten in 0.25.0.
 
 ### Geändert
 
@@ -27,7 +41,7 @@ Enthält die Änderungen aus 0.23.0.
 
 ## [0.23.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Enthält die Änderungen aus 0.22.0.
 
 ### Hinzugefügt
 
@@ -49,7 +63,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.22.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -62,7 +76,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.21.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -70,7 +84,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.20.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -81,7 +95,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.19.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -89,7 +103,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.18.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -98,7 +112,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.17.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -111,7 +125,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.16.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -125,7 +139,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.15.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -134,7 +148,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.14.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Geändert
 
@@ -145,7 +159,7 @@ Nicht veröffentlicht; enthalten in 0.24.0.
 
 ## [0.13.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.24.0.
+Nicht veröffentlicht; enthalten in 0.23.0.
 
 ### Hinzugefügt
 
@@ -354,7 +368,8 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.24.0
+[0.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.25.0
+[0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

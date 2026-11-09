@@ -52,16 +52,14 @@
               "exit_delay_away": "Ausgangsverzögerung \"Abwesend\"",
               "exit_delay_night": "Ausgangsverzögerung \"Nacht\"",
               "entry_delay": "Eingangsverzögerung",
-              "entry_sensors": "Sensoren mit Eingangsverzögerung",
-              "trigger_time": "Alarmdauer"
+              "entry_sensors": "Sensoren mit Eingangsverzögerung"
             },
             "data_description": {
               "exit_delay_home": "Zeit bis zum Scharfschalten. 0 schaltet sofort scharf.",
               "exit_delay_away": "Zeit, um das Haus zu verlassen, bevor die Anlage scharf ist.",
               "exit_delay_night": "Zeit bis der Modus \"Nacht\" scharf ist. 0 schaltet sofort scharf.",
               "entry_delay": "Zeit zum Deaktivieren, nachdem ein Eingangssensor geöffnet wurde.",
-              "entry_sensors": "Zum Beispiel die Haustür. Alle anderen Sensoren lösen sofort aus.",
-              "trigger_time": "Wie lange der Alarm dauert, bevor die Anlage wieder scharf ist. 0 hält den Alarm bis zum Deaktivieren."
+              "entry_sensors": "Zum Beispiel die Haustür. Alle anderen Sensoren lösen sofort aus."
             }
           },
           "behaviour": {

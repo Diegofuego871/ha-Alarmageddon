@@ -1,4 +1,4 @@
-// Konfiguration › Anlage: Modi, Verzögerungen, Alarmdauer, Verhalten bei offenen Sensoren, Zeitplan (Entwurf mit "Speichern");
+// Konfiguration › Anlage: Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan (Entwurf mit "Speichern");
 // dazu Codes pro Person und Sicherung (sofort).
 // Dieselben Schlüssel wie der Optionsdialog von HA (WebSocket alarmageddon/save_system). Der Code bleibt im Optionsdialog.
 
@@ -6,7 +6,7 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, MODE_KEY, MODE_ICON, errText, chapter } = await import(`./common.js${V}`);
 
 const MAX = 3600;
-const DEFAULTS = { exit_delay: 0, entry_delay: 30, trigger_time: 180, open_sensors: "block", confirm_window: 60 };
+const DEFAULTS = { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 };
 const WINDOW = [5, 600];
 const ALL_MODES = ["home", "away", "night"];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -28,12 +28,11 @@ export class SystemUi {
     return this.host._system();
   }
 
-  // Werte je Modus (und "always" nur mit Alarmdauer); fehlt etwas im Server-Stand, gilt die Grundeinstellung
+  // Werte je Modus; fehlt etwas im Server-Stand, gilt die Grundeinstellung
   base(s = this.system) {
     const ms = s.mode_settings || {};
     const per = {};
     for (const m of ALL_MODES) per[m] = { ...DEFAULTS, ...(ms[m] || {}) };
-    per.always = { trigger_time: ms.always?.trigger_time ?? DEFAULTS.trigger_time };
     return {
       entry: s.entry_id,
       per,
@@ -61,7 +60,7 @@ export class SystemUi {
     const d = this.draft;
     let n = 0;
     // Je Modus mit Änderungen zählt einmal ("Abwesend: 2 Werte" ist eine Änderung am Modus)
-    for (const scope of [...ALL_MODES, "always"]) if (Object.keys(a.per[scope]).some((k) => a.per[scope][k] !== d.per[scope][k])) n += 1;
+    for (const scope of ALL_MODES) if (Object.keys(a.per[scope]).some((k) => a.per[scope][k] !== d.per[scope][k])) n += 1;
     for (const m of ALL_MODES) if (a.modes[m] !== d.modes[m]) n += 1;
     if (JSON.stringify(a.schedules) !== JSON.stringify(d.schedules)) n += 1;
     return n;
@@ -72,10 +71,8 @@ export class SystemUi {
     const d = this.draft;
     const bad = [];
     const check = (key, v, [min, max] = [0, MAX]) => (!Number.isInteger(v) || v < min || v > max) && bad.push(key);
-    for (const scope of [...ALL_MODES.filter((m) => d.modes[m]), "always"]) {
+    for (const scope of ALL_MODES.filter((m) => d.modes[m])) {
       const v = d.per[scope];
-      check(`${scope}.trigger_time`, v.trigger_time);
-      if (scope === "always") continue;
       check(`${scope}.exit_delay`, v.exit_delay);
       check(`${scope}.entry_delay`, v.entry_delay);
       check(`${scope}.confirm_window`, v.confirm_window, WINDOW);
@@ -96,7 +93,7 @@ export class SystemUi {
     if (!form || !d) return;
     const modes = ALL_MODES.filter((m) => d.modes[m]);
     // Gewählter Modus der Einstellungen: ein abgeschalteter fällt auf den ersten eingeschalteten zurück
-    if (this.scope !== "always" && !modes.includes(this.scope)) this.scope = modes.includes("away") ? "away" : modes[0] || "away";
+    if (!modes.includes(this.scope)) this.scope = modes.includes("away") ? "away" : modes[0] || "away";
     const scope = this.scope;
     const v = d.per[scope];
     const bad = new Set(this.invalid());
@@ -104,18 +101,16 @@ export class SystemUi {
     // Auswahl als Aufklappmenü, nicht als Reiterleiste: Reiter stehen hier zu nah an der Navigation und wirken wie ein Seitenwechsel
     const openSeg = `<select class="ag-input ag-open-sel" data-sys="open-sel" aria-label="${esc(this._t("sysOpen"))}">${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
       .map(([val, label]) => `<option value="${val}" ${v.open_sensors === val ? "selected" : ""}>${esc(this._t(label))}</option>`).join("")}</select>`;
-    const scopeSeg = h._segHtml("sys-scope", [...modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), ["always", this._t("wfAlways"), "flash"]], scope, "data-scope", "small");
+    const scopeSeg = h._segHtml("sys-scope", modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), scope, "data-scope", "small");
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
     const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
           ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
     const row = (title, hint, control) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(title))}</b>${hint ? `<small>${esc(this._t(hint))}</small>` : ""}</div>${control}</div>`;
-    const timesRows = (scope === "always" ? "" : row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay)))
-      + row("sysTriggerTime", "sysTriggerTimeHint", num("trigger_time", v.trigger_time));
+    const timesRows = row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay));
     const behaviourRows = row("sysOpen", "", openSeg) + row("sysConfirm", "sysConfirmHint", num("confirm_window", v.confirm_window, WINDOW[0], WINDOW[1]));
     const perMode = chapter(this._t("chapPerMode"), `<div class="ag-scopebar">${scopeSeg}</div>
-        ${scope === "always" ? `<p class="ag-chap-h">${esc(this._t("sysAlwaysHint"))}</p>` : ""}
         <div class="ag-subh">${esc(this._t("chapTimes"))}</div>${card(timesRows)}
-        ${scope === "always" ? "" : `<div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}`}`, this._t("chapPerModeHint"));
+        <div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}`, this._t("chapPerModeHint"));
     const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint")) + perMode
       + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml();
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
@@ -332,8 +327,8 @@ export class SystemUi {
     this.renderFoot();
     try {
       const modes = ALL_MODES.filter((m) => d.modes[m]);
-      // Alle Modi (auch abgeschaltete behalten ihre Werte) und "always" mit der Alarmdauer
-      const mode_settings = Object.fromEntries([...ALL_MODES.map((m) => [m, { ...d.per[m] }]), ["always", { trigger_time: d.per.always.trigger_time }]]);
+      // Alle Modi (auch abgeschaltete behalten ihre Werte)
+      const mode_settings = Object.fromEntries(ALL_MODES.map((m) => [m, { ...d.per[m] }]));
       await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings,
         home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, schedules: d.schedules });
       Object.assign(s, { mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });

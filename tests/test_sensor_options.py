@@ -33,7 +33,9 @@ async def test_always_active_triggers_when_disarmed(hass: HomeAssistant, freezer
     await open_sensor(hass, SMOKE)
     assert state(hass) == AlarmControlPanelState.TRIGGERED
     assert hass.states.get(ALARM).attributes["triggered_by"] == SMOKE
-    await advance(hass, freezer, 121)
+    await advance(hass, freezer, 3600)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # bleibt, bis quittiert
+    await call(hass, "alarm_disarm")
     assert state(hass) == AlarmControlPanelState.DISARMED
 
 

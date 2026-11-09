@@ -104,8 +104,8 @@ async def test_options_change_keeps_state(hass: HomeAssistant, freezer) -> None:
     assert state(hass) == AlarmControlPanelState.PENDING
     await advance(hass, freezer, 21)
     assert state(hass) == AlarmControlPanelState.TRIGGERED
-    await advance(hass, freezer, 61)
-    assert state(hass) == AlarmControlPanelState.ARMED_HOME
+    await advance(hass, freezer, 3600)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # der Alarm endet nicht von selbst
 
 
 async def test_night_disabled_removes_zone(hass: HomeAssistant) -> None:

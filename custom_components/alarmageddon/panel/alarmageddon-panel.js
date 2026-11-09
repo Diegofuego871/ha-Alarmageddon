@@ -135,6 +135,7 @@ class AlarmageddonPanel extends HTMLElement {
       if (this.ownerDocument.visibilityState !== "hidden") this._fetch();
     }, POLL_MS);
     this._tick = setInterval(() => this._updateCountdowns(), 1000);
+    this.list.loadRemote(); // Spalten und Ansicht des Benutzers von Home Assistant
   }
 
   _checkNarrow(initial = false) {

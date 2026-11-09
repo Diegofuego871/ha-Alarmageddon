@@ -5,7 +5,49 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, DC, GONE } = await import(`./common.js${V}`);
 
 const COLUMNS = ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "model", "integration", "changed"];
-const DEFAULT_VIEW = { cols: ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "changed"], group: "area", sort: "name", layout: "list" };
+// Ansicht je Gerätetyp (wie Device Panel): Desktop und Handy haben eigene Spalten (Liste), Angaben (Karten), Gruppierung und Sortierung.
+// Gespeichert pro Benutzer bei Home Assistant (frontend/set_user_data) mit lokaler Kopie; die Liste ist die Standardansicht, Karten sind optional.
+const VIEW_KEY = "alarmageddon_view";
+const SAVE_DELAY_MS = 400;
+const COL_ON = {
+  desktop: ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "changed"],
+  mobile: ["state", "battery", "signal", "firmware"],
+};
+const FIELD_ON = {
+  desktop: ["systems", "battery", "forecast", "signal", "firmware", "changed"],
+  mobile: ["systems", "battery", "signal", "firmware", "changed"],
+};
+const defaultView = (kind) => ({
+  layout: "list", group: "area", sort: "name", dir: "asc",
+  cols: COLUMNS.map((k) => [k, COL_ON[kind].includes(k)]),
+  fields: COLUMNS.filter((k) => k !== "state").map((k) => [k, FIELD_ON[kind].includes(k)]),
+});
+// Gespeicherte Ansicht bereinigen: Unbekanntes fällt weg, neue Spalten kommen mit ihrem Standard ans Ende
+function sanitizeView(raw, kind) {
+  const d = defaultView(kind);
+  if (!raw || typeof raw !== "object") return d;
+  const order = (saved, defs) => {
+    const known = new Set(defs.map(([k]) => k));
+    const out = [];
+    for (const item of Array.isArray(saved) ? saved : []) {
+      if (Array.isArray(item) && known.has(item[0]) && !out.some(([k]) => k === item[0])) out.push([item[0], Boolean(item[1])]);
+    }
+    for (const [k, on] of defs) if (!out.some(([x]) => x === k)) out.push([k, on]);
+    return out;
+  };
+  return {
+    layout: raw.layout === "cards" ? "cards" : "list",
+    group: ["area", "system", "none"].includes(raw.group) ? raw.group : d.group,
+    sort: ["name", "battery", "changed"].includes(raw.sort) ? raw.sort : d.sort,
+    dir: raw.dir === "desc" ? "desc" : "asc",
+    cols: order(raw.cols, d.cols),
+    fields: order(raw.fields, d.fields),
+  };
+}
+const sanitizeViews = (raw) => {
+  const r = raw && typeof raw === "object" ? raw : {};
+  return { desktop: sanitizeView(r.desktop, "desktop"), mobile: sanitizeView(r.mobile, "mobile"), updated: Number(r.updated) || 0 };
+};
 const COL_LABEL = { area: "colArea", systems: "colSystems", state: "colState", battery: "colBattery", forecast: "colForecast", signal: "colSignal", firmware: "colFirmware", model: "colModel", integration: "colIntegration", changed: "colChanged" };
 const MOTION_CLASSES = new Set(["motion", "occupancy", "presence", "moving"]);
 const ZONE_SHORT = { home: "modeHome", away: "modeAway", night: "modeNight" };
@@ -17,28 +59,105 @@ export class ListUi {
     this.filter = "all";
     this.sys = "";
     this.area = "";
-    this.view = this._loadView();
+    this.views = this._loadViews();
+    this.viewUpdated = 0;
   }
 
   _t(key, vars) {
     return this.host._t(key, vars);
   }
 
-  _loadView() {
+  // Die Ansicht für dieses Gerät: Handy oder Desktop (schmales Panel = Handy)
+  get kind() {
+    return this.host.hasAttribute("narrow") ? "mobile" : "desktop";
+  }
+
+  get view() {
+    return this.views[this.kind];
+  }
+
+  set view(v) {
+    this.views[this.kind] = v;
+  }
+
+  colsOn() {
+    return this.view.cols.filter(([, on]) => on).map(([k]) => k);
+  }
+
+  fieldsOn() {
+    return this.view.fields.filter(([, on]) => on).map(([k]) => k);
+  }
+
+  _loadViews() {
     try {
-      const v = JSON.parse(localStorage.getItem("alarmageddon.view") || "null");
-      if (v && Array.isArray(v.cols)) return { ...DEFAULT_VIEW, ...v, cols: v.cols.filter((c) => COLUMNS.includes(c)) };
+      const raw = JSON.parse(localStorage.getItem(VIEW_KEY) || "null");
+      if (raw) {
+        this.viewUpdated = Number(raw.updated) || 0;
+        return sanitizeViews(raw);
+      }
+      // Frühere Ansicht (nur Spaltenschlüssel, ein Satz für alles) übernehmen: sie galt für den Desktop
+      const old = JSON.parse(localStorage.getItem("alarmageddon.view") || "null");
+      if (old && Array.isArray(old.cols)) {
+        const v = sanitizeViews({ desktop: { layout: old.layout, group: old.group, sort: old.sort, cols: COLUMNS.map((k) => [k, old.cols.includes(k)]) } });
+        return v;
+      }
     } catch {
       /* privater Modus oder ungültig: Standard */
     }
-    return { ...DEFAULT_VIEW, cols: [...DEFAULT_VIEW.cols] };
+    return sanitizeViews(null);
   }
 
+  _data() {
+    return { desktop: this.views.desktop, mobile: this.views.mobile, updated: this.viewUpdated };
+  }
+
+  // Nach jeder Änderung: lokal sofort, bei Home Assistant verzögert und gebündelt
   _saveView() {
+    this.viewUpdated = Date.now();
+    this.viewDirty = true;
     try {
-      localStorage.setItem("alarmageddon.view", JSON.stringify(this.view));
+      localStorage.setItem(VIEW_KEY, JSON.stringify(this._data()));
     } catch {
       /* nur für diese Sitzung */
+    }
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this._saveRemote(), SAVE_DELAY_MS);
+  }
+
+  async _saveRemote() {
+    if (!this.host._hass || !this.remoteLoaded) return;
+    try {
+      await this.host._hass.callWS({ type: "frontend/set_user_data", key: VIEW_KEY, value: this._data() });
+      this.viewDirty = false;
+    } catch {
+      /* die lokale Kopie bleibt */
+    }
+  }
+
+  // Stand von Home Assistant holen: er gilt, wenn er mindestens so neu ist wie die lokale Kopie und hier nichts ungespeichert ist;
+  // sonst geht die lokale Kopie an Home Assistant. So folgen die Spalten dem Benutzer auf jedes Gerät.
+  async loadRemote() {
+    if (this.remoteLoaded || !this.host._hass) return;
+    let value = null;
+    try {
+      const res = await this.host._hass.callWS({ type: "frontend/get_user_data", key: VIEW_KEY });
+      value = res ? res.value : null;
+    } catch {
+      return; // ohne Speicher bei Home Assistant bleibt es bei der lokalen Kopie
+    }
+    this.remoteLoaded = true;
+    if (value && !this.viewDirty && (Number(value.updated) || 0) >= this.viewUpdated) {
+      const v = sanitizeViews(value);
+      this.views = { desktop: v.desktop, mobile: v.mobile };
+      this.viewUpdated = v.updated;
+      try {
+        localStorage.setItem(VIEW_KEY, JSON.stringify(this._data()));
+      } catch {
+        /* siehe _saveView */
+      }
+      this.host._renderList?.();
+    } else if (!value || this.viewDirty) {
+      this._saveRemote();
     }
   }
 
@@ -98,7 +217,8 @@ export class ListUi {
       battery: (a, b) => (a.battery ?? 999) - (b.battery ?? 999) || a.name.localeCompare(b.name),
       changed: (a, b) => String(b.changed || "").localeCompare(String(a.changed || "")),
     }[this.view.sort] || ((a, b) => a.name.localeCompare(b.name));
-    return rows.sort(by);
+    const sorted = rows.sort(by);
+    return this.view.dir === "desc" ? sorted.reverse() : sorted;
   }
 
   // ----- Darstellung -----
@@ -115,7 +235,7 @@ export class ListUi {
         <label class="list-search">${ic("search", 18)}<input type="search" data-list="search" placeholder="${esc(this._t("search"))}" value="${esc(this.q)}" aria-label="${esc(this._t("search"))}">
           <button class="ag-clear" data-list="clear" aria-label="${esc(this._t("clearSearch"))}" ${this.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
         <span class="ag-lchips"></span>${sysSel}${areaSel}<span class="ag-grow"></span>
-        ${this.host.hasAttribute("narrow") ? "" : this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
+        ${this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
         <button class="ag-btn" data-list="view">${ic("columns", 18)}${esc(this._t("view"))}</button></div>`;
   }
 
@@ -139,7 +259,7 @@ export class ListUi {
     const shown = this._sorted(rows.filter((r) => this._matches(r)));
     if (!shown.length) return `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t("noSensors"))}</span></div>`;
     const groups = this._groups(shown);
-    return narrow || this.view.layout === "cards" ? this._cards(groups, narrow) : this._table(groups);
+    return this.view.layout === "cards" ? this._cards(groups, narrow) : this._table(groups);
   }
 
   _groups(rows) {
@@ -208,7 +328,7 @@ export class ListUi {
   }
 
   _table(groups) {
-    const cols = COLUMNS.filter((c) => this.view.cols.includes(c));
+    const cols = this.colsOn();
     const head = `<tr><th>${esc(this._t("colName"))}</th>${cols.map((c) => `<th>${esc(this._t(COL_LABEL[c]))}</th>`).join("")}<th></th></tr>`;
     const body = groups.map(([g, rows]) => `${g !== null ? `<tr class="grp"><td colspan="${cols.length + 2}">${esc(g)} · ${rows.length}</td></tr>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
@@ -220,7 +340,8 @@ export class ListUi {
 
   // Karten: eine je Sensor mit allen Angaben der gewählten Spalten; auf dem Desktop als Raster, auf dem Handy untereinander
   _cards(groups, narrow = false) {
-    const on = (c) => this.view.cols.includes(c);
+    const fields = this.fieldsOn();
+    const on = (c) => fields.includes(c);
     return `<div class="ag-mcards ${narrow ? "" : "grid"}">${groups.map(([g, rows]) => `${g !== null ? `<div class="ag-group-label">${esc(g)}</div>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
       const meta = [this._batteryHtml(r), on("forecast") ? this._forecastHtml(r) : "", on("signal") ? this._signalHtml(r) : "",
@@ -243,11 +364,18 @@ export class ListUi {
 
   viewDialogHtml() {
     const seg = (key, items) => `<div class="ag-seg small" data-seg="view-${key}">${items.map(([v, label]) => `<button data-list="vset" data-key="${key}" data-value="${v}" class="${this.view[key] === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
+    // Spalten und Angaben: Schalter und Pfeile zum Umordnen, je Gerät (Handy, Desktop) eigene Einstellung
+    const rows = (set) => this.view[set].map(([k, on], i, all) => `<div class="ag-colrow"><span>${esc(this._t(COL_LABEL[k]))}</span>
+        <button class="ag-iconbtn" data-list="mv" data-set="${set}" data-key="${k}" data-dir="-1" ${i === 0 ? "disabled" : ""} aria-label="${esc(this._t("stepUp"))}">${ic("arrowUp", 18)}</button>
+        <button class="ag-iconbtn" data-list="mv" data-set="${set}" data-key="${k}" data-dir="1" ${i === all.length - 1 ? "disabled" : ""} aria-label="${esc(this._t("stepDown"))}">${ic("arrowDown", 18)}</button>
+        <button class="ag-toggle ${on ? "on" : ""}" data-list="col" data-set="${set}" data-key="${k}" role="switch" aria-checked="${on}" aria-label="${esc(this._t(COL_LABEL[k]))}"></button></div>`).join("");
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
+      <div class="ag-t2 ag-small">${esc(this._t(this.kind === "mobile" ? "viewForMobile" : "viewForDesktop"))}</div>
       <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["system", "groupSystem"], ["none", "groupNone"]])}
       <div class="ag-label">${esc(this._t("viewSort"))}</div>${seg("sort", [["name", "sortName"], ["battery", "sortBattery"], ["changed", "sortChanged"]])}
-      <div class="ag-label">${esc(this._t("viewColumns"))}</div>
-      <div class="ag-colist">${COLUMNS.map((c) => `<label class="ag-colrow"><span>${esc(this._t(COL_LABEL[c]))}</span><button class="ag-toggle ${this.view.cols.includes(c) ? "on" : ""}" data-list="col" data-col="${c}" role="switch" aria-checked="${this.view.cols.includes(c)}" aria-label="${esc(this._t(COL_LABEL[c]))}"></button></label>`).join("")}</div>
+      <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc"], ["desc", "dirDesc"]])}</div>
+      <div class="ag-label">${esc(this._t("viewColumns"))}</div><div class="ag-colist">${rows("cols")}</div>
+      <div class="ag-label">${esc(this._t("viewFields"))}</div><div class="ag-colist">${rows("fields")}</div>
       <div class="ag-dlg-btns"><button class="ag-btn" data-list="vreset" style="margin-right:auto">${esc(this._t("viewReset"))}</button><button class="ag-btn primary" data-list="vdone">${esc(this._t("done"))}</button></div></div>`;
   }
 
@@ -281,11 +409,19 @@ export class ListUi {
       this.view[el.dataset.key] = el.dataset.value;
       this._applyView();
     } else if (act === "col") {
-      const c = el.dataset.col;
-      this.view.cols = this.view.cols.includes(c) ? this.view.cols.filter((x) => x !== c) : [...this.view.cols, c];
+      const set = el.dataset.set;
+      this.view[set] = this.view[set].map(([k, on]) => [k, k === el.dataset.key ? !on : on]);
+      this._applyView();
+    } else if (act === "mv") {
+      const set = el.dataset.set;
+      const list = [...this.view[set]];
+      const i = list.findIndex(([k]) => k === el.dataset.key);
+      const j = i + Number(el.dataset.dir);
+      if (i >= 0 && j >= 0 && j < list.length) [list[i], list[j]] = [list[j], list[i]];
+      this.view[set] = list;
       this._applyView();
     } else if (act === "vreset") {
-      this.view = { ...DEFAULT_VIEW, cols: [...DEFAULT_VIEW.cols] };
+      this.view = defaultView(this.kind);
       this._applyView();
     } else if (act === "vdone") {
       this.host._closeDialog("ag-view");

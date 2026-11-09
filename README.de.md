@@ -17,7 +17,7 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 - **Code:** optional, 4 bis 8 Ziffern, nur als Hash gespeichert. Nach fünf falschen Codes eine Minute gesperrt.
 - **Jede Funktechnik:** Alarmageddon nutzt nur Entitäten von Home Assistant. WLAN, Thread/Matter, Zigbee, Z-Wave und Bluetooth funktionieren gleichermassen.
 
-- **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung, als Liste oder als Karten (Umschalter neben "Ansicht"; auf dem Handy immer Karten).
+- **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung, als Liste (Standard) oder als Karten (Umschalter neben "Ansicht"). Die Spalten werden wie in Device Panel für Computer und Handy getrennt gewählt und pro Benutzer gespeichert.
 - **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan, Codes, Sicherung). Auf dem Handy als Karten und Blätter von unten.
 - **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht einen zweiten Sensor, nur melden. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
@@ -43,7 +43,7 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
 2. **Seitenpanel "Alarmageddon"** (erscheint für Administratoren in der Seitenleiste): Konfiguration › Sensoren: "Sensoren hinzufügen" listet alles auf, was Alarmageddon erkennt, und du wählst die Sensoren dieser Alarmanlage (der Papierkorb-Knopf nimmt einen wieder heraus); dann ordnest du sie den Zonen "Anwesend", "Abwesend" und "Nacht" zu; der Pfeil am Ende einer Zeile öffnet die Optionen des Sensors. Konfiguration › Anlage setzt Modi, Verzögerungen, Verhalten und den Zeitplan. Änderungen gelten mit "Speichern".
 3. **Optionen** (Einstellungen → Geräte & Dienste → Alarmageddon → "Konfigurieren"):
    - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht" (dasselbe wie im Seitenpanel). Ein Sensor kann in mehreren Zonen sein.
-   - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür), Alarmdauer.
+   - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür). Der Alarm dauert, bis er deaktiviert wird; wie lange eine Sirene oder ein Ton läuft, steht je Schritt in den Aktionen.
    - **Verhalten:** Modus "Nacht", offener Sensor beim Scharfschalten (verhindern oder umgehen), Code zum Scharfschalten.
    - **Code:** neuen Hauptcode setzen oder entfernen. Persönliche Codes: siehe "Codes pro Person".
 
@@ -64,7 +64,7 @@ Seitenpanel › Konfiguration › Aktionen. Alarmanlage und Alarm wählen ("Anwe
 
 - **Nicht abwarten:** Ein Schritt kann nebenher laufen, der nächste startet dann sofort (langer Alarmton, träges Gerät). Deaktivieren stoppt ihn ebenfalls; nach einem Neustart mitten im Alarm laufen nur die Schritte danach weiter.
 - **Test pro Schritt:** Der Abspielknopf an einem Schritt führt nur diesen Schritt auf den echten Geräten aus, nach einer Rückfrage. Schritte verschiebt man am Griff links (mit Finger oder Maus ziehen, oder Pfeiltasten am Griff).
-- **Zurück in den Zustand davor:** Geräte mit dem Pfeil-Symbol kehren beim Deaktivieren oder am Ende der Alarmdauer in den Zustand vor dem Alarm zurück (ein/aus, Helligkeit, Position, Lautstärke, Quelle; Sonos mit eigenem Schnappschuss samt Gruppen). Bei Alarmtönen standardmässig an.
+- **Zurück in den Zustand davor:** Geräte mit dem Pfeil-Symbol kehren beim Deaktivieren in den Zustand vor dem Alarm zurück (ein/aus, Helligkeit, Position, Lautstärke, Quelle; Sonos mit eigenem Schnappschuss samt Gruppen). Bei Alarmtönen standardmässig an.
 - **Deaktivieren stoppt alles,** auch nach einem Neustart von Home Assistant mitten im Alarm. Ein fehlerhafter Schritt hält die übrigen nicht auf.
 - **Test** führt den gespeicherten Ablauf ohne Alarm aus und endet spätestens nach 60 Sekunden.
 - **Medienplayer** holen die Töne bei Home Assistant (`/alarmageddon_sounds/…`). Der Player muss die lokale Adresse von Home Assistant erreichen (Einstellungen → System → Netzwerk).
@@ -116,17 +116,16 @@ Seitenpanel › Konfiguration › Updates (wie in Device Panel):
 
 ## Einstellungen je Modus
 
-Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend", "Abwesend", "Nacht" oder "Immer aktiv" wählen und die Werte dieses Modus einstellen:
+Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend", "Abwesend" oder "Nacht" wählen und die Werte dieses Modus einstellen:
 
 | Wert | Bedeutung |
 | --- | --- |
-| Ausgangsverzögerung | Zeit zum Verlassen, bevor die Anlage scharf ist (nicht bei "Immer aktiv") |
-| Eingangsverzögerung | Zeit zum Deaktivieren, nachdem ein Eingangssensor aufging (nicht bei "Immer aktiv") |
-| Alarmdauer | Wie lange der Alarm dauert; 0 = bis zum Deaktivieren |
-| Offener Sensor beim Scharfschalten | Scharfschalten verhindern oder die offenen Sensoren umgehen (nicht bei "Immer aktiv") |
-| Bestätigungsfenster | Zeit für den zweiten Sensor bei "Braucht einen zweiten Sensor" (nicht bei "Immer aktiv") |
+| Ausgangsverzögerung | Zeit zum Verlassen, bevor die Anlage scharf ist |
+| Eingangsverzögerung | Zeit zum Deaktivieren, nachdem ein Eingangssensor aufging |
+| Offener Sensor beim Scharfschalten | Scharfschalten verhindern oder die offenen Sensoren umgehen |
+| Bestätigungsfenster | Zeit für den zweiten Sensor bei "Braucht einen zweiten Sensor" |
 
-"Immer aktiv" ist der Alarm eines immer aktiven Sensors (Rauch, Wasser), während die Anlage deaktiviert ist; es gilt nur die Alarmdauer. Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
+Der Alarm dauert in jedem Modus, bis er deaktiviert wird (es gibt keine Alarmdauer; alte Werte werden ignoriert). Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
 
 ## Modi
 

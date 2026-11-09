@@ -75,7 +75,6 @@ def options(**overrides: Any) -> dict[str, Any]:
         entry_sensors=[FRONT_DOOR],
         exit_delay_away=30,
         entry_delay=20,
-        trigger_time=120,
     )
     data.update(overrides)
     return data

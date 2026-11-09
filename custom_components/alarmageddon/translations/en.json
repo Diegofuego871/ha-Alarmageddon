@@ -52,16 +52,14 @@
               "exit_delay_away": "Exit delay \"Away\"",
               "exit_delay_night": "Exit delay \"Night\"",
               "entry_delay": "Entry delay",
-              "entry_sensors": "Sensors with entry delay",
-              "trigger_time": "Alarm duration"
+              "entry_sensors": "Sensors with entry delay"
             },
             "data_description": {
               "exit_delay_home": "Time to leave before the alarm system is armed. 0 arms at once.",
               "exit_delay_away": "Time to leave the house before the alarm system is armed.",
               "exit_delay_night": "Time before night mode is armed. 0 arms at once.",
               "entry_delay": "Time to disarm after an entry sensor opens.",
-              "entry_sensors": "For example the front door. All other sensors trigger the alarm at once.",
-              "trigger_time": "How long the alarm lasts before the alarm system returns to armed. 0 keeps the alarm until disarmed."
+              "entry_sensors": "For example the front door. All other sensors trigger the alarm at once."
             }
           },
           "behaviour": {

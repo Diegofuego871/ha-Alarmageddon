@@ -128,16 +128,15 @@ async def test_disarm_during_exit_delay(hass: HomeAssistant, freezer) -> None:
     assert state(hass) == AlarmControlPanelState.DISARMED
 
 
-async def test_alarm_duration_returns_to_armed(hass: HomeAssistant, freezer) -> None:
-    await setup_alarm(hass)
+async def test_alarm_never_ends_by_itself(hass: HomeAssistant, freezer) -> None:
+    """Der Zustand Alarm bleibt, bis er quittiert wird (Entscheid des Nutzers, 0.25.0), auch mit einer alten Option "trigger_time"."""
+    await setup_alarm(hass, trigger_time=30)
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
-    await advance(hass, freezer, 121)
-    assert state(hass) == AlarmControlPanelState.ARMED_HOME
-    # Ein neues Öffnen löst wieder aus
-    hass.states.async_set(WINDOW, "off")
-    await open_sensor(hass, WINDOW)
+    await advance(hass, freezer, 7200)
     assert state(hass) == AlarmControlPanelState.TRIGGERED
+    await call(hass, "alarm_disarm")
+    assert state(hass) == AlarmControlPanelState.DISARMED
 
 
 async def test_alarm_until_disarmed(hass: HomeAssistant, freezer) -> None:
@@ -196,7 +195,9 @@ async def test_manual_trigger_from_disarmed(hass: HomeAssistant, freezer) -> Non
     await setup_alarm(hass)
     await call(hass, "alarm_trigger")
     assert state(hass) == AlarmControlPanelState.TRIGGERED
-    await advance(hass, freezer, 121)
+    await advance(hass, freezer, 3600)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # bis zum Quittieren
+    await call(hass, "alarm_disarm")
     assert state(hass) == AlarmControlPanelState.DISARMED
 
 

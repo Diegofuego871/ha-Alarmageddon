@@ -31,13 +31,10 @@ from .const import (
     CONF_NAME,
     CONF_NIGHT_ENABLED,
     CONF_OPEN_SENSORS,
-    CONF_TRIGGER_TIME,
-    SCOPE_ALWAYS,
     CONF_ZONE_PREFIX,
     DEFAULT_ENTRY_DELAY,
     DEFAULT_EXIT_DELAY,
     DEFAULT_OPEN_SENSORS,
-    DEFAULT_TRIGGER_TIME,
     DOMAIN,
     FIELD_CODE,
     FIELD_REMOVE_CODE,
@@ -65,7 +62,6 @@ def default_options() -> dict[str, Any]:
         CONF_NIGHT_ENABLED: False,
         CONF_ENTRY_SENSORS: [],
         CONF_ENTRY_DELAY: DEFAULT_ENTRY_DELAY,
-        CONF_TRIGGER_TIME: DEFAULT_TRIGGER_TIME,
         CONF_OPEN_SENSORS: DEFAULT_OPEN_SENSORS,
         CONF_CODE_ARM_REQUIRED: False,
     }
@@ -133,11 +129,10 @@ class AlarmageddonOptionsFlow(OptionsFlow):
                 options[f"{CONF_EXIT_DELAY_PREFIX}{mode}"] = int(delays.get(f"{CONF_EXIT_DELAY_PREFIX}{mode}", 0))
             options[CONF_ENTRY_SENSORS] = list(delays.get(CONF_ENTRY_SENSORS, []))
             options[CONF_ENTRY_DELAY] = int(delays.get(CONF_ENTRY_DELAY, 0))
-            options[CONF_TRIGGER_TIME] = int(delays.get(CONF_TRIGGER_TIME, 0))
             # Dieser Dialog setzt gemeinsame Werte: ein geänderter Wert gilt für alle Modi (im Panel lassen sie sich je Modus einstellen)
-            for key in (CONF_ENTRY_DELAY, CONF_TRIGGER_TIME):
+            for key in (CONF_ENTRY_DELAY,):
                 if options[key] != current[key]:
-                    for scope in (*MODES, SCOPE_ALWAYS):
+                    for scope in MODES:
                         options[f"{key}_{scope}"] = options[key]
             options[CONF_NIGHT_ENABLED] = bool(behaviour.get(CONF_NIGHT_ENABLED, False))
             options[CONF_OPEN_SENSORS] = behaviour.get(CONF_OPEN_SENSORS, DEFAULT_OPEN_SENSORS)
@@ -181,7 +176,6 @@ class AlarmageddonOptionsFlow(OptionsFlow):
                 **{vol.Required(f"{CONF_EXIT_DELAY_PREFIX}{m}", default=o[f"{CONF_EXIT_DELAY_PREFIX}{m}"]): _SECONDS for m in MODES},
                 vol.Required(CONF_ENTRY_DELAY, default=o[CONF_ENTRY_DELAY]): _SECONDS,
                 vol.Optional(CONF_ENTRY_SENSORS, default=o[CONF_ENTRY_SENSORS]): _SENSORS,
-                vol.Required(CONF_TRIGGER_TIME, default=o[CONF_TRIGGER_TIME]): _SECONDS,
             }
         )
         behaviour = vol.Schema(

@@ -41,7 +41,6 @@ from .const import (
     OPT_ARM_ON_CLOSE,
     OPT_OFFLINE_ALARM,
     OPT_REPORT_ONLY,
-    SCOPE_ALWAYS,
     REPORT_THROTTLE,
     OPT_OPEN_OK,
     CODE_LOCKOUT_SECONDS,
@@ -57,12 +56,10 @@ from .const import (
     MODE_ENABLED_KEY,
     CONF_NIGHT_ENABLED,
     CONF_OPEN_SENSORS,
-    CONF_TRIGGER_TIME,
     CONF_ZONE_PREFIX,
     DEFAULT_ENTRY_DELAY,
     DEFAULT_EXIT_DELAY,
     DEFAULT_OPEN_SENSORS,
-    DEFAULT_TRIGGER_TIME,
     DOMAIN,
     MODE_AWAY,
     MODE_HOME,
@@ -161,9 +158,6 @@ class AlarmController:
     def entry_delay_for(self, mode: str | None) -> int:
         return int(self.mode_value(CONF_ENTRY_DELAY, mode, DEFAULT_ENTRY_DELAY))
 
-    def trigger_time_for(self, mode: str | None) -> int:
-        return int(self.mode_value(CONF_TRIGGER_TIME, mode or SCOPE_ALWAYS, DEFAULT_TRIGGER_TIME))
-
     def open_sensors_for(self, mode: str | None) -> str:
         return str(self.mode_value(CONF_OPEN_SENSORS, mode, DEFAULT_OPEN_SENSORS))
 
@@ -178,11 +172,6 @@ class AlarmController:
     @property
     def entry_sensors(self) -> set[str]:
         return set(self.options.get(CONF_ENTRY_SENSORS, []))
-
-    @property
-    def trigger_time(self) -> int:
-        """Alarmdauer des aktuellen Modus; ohne Modus (Alarm bei deaktivierter Anlage) die von "immer aktiv"."""
-        return self.trigger_time_for(self.mode)
 
     @property
     def confirm_window(self) -> int:
@@ -344,8 +333,6 @@ class AlarmController:
     def _go_triggered(self, _now: Any = None) -> None:
         self._unsub_timer = None
         self.deadline = None
-        if self.trigger_time > 0:
-            self._schedule(dt_util.utcnow() + timedelta(seconds=self.trigger_time), self._go_armed)
         self._set(AlarmControlPanelState.TRIGGERED)
 
     @callback

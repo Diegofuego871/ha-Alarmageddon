@@ -18,7 +18,7 @@ for (const lang of ["de", "en"]) {
 
     // Abwesend ist gerade scharf: Abschalten lehnt der Server ab
     await s.tap('[data-sys="mode"][data-mode="away"]');
-    check(`${tag}: Modusleiste ohne Abwesend`, await s.waitFor("return !r.querySelector('[data-scope=\"away\"]') && !!r.querySelector('[data-scope=\"home\"]') && !!r.querySelector('[data-scope=\"always\"]')"));
+    check(`${tag}: Modusleiste ohne Abwesend`, await s.waitFor("return !r.querySelector('[data-scope=\"away\"]') && !!r.querySelector('[data-scope=\"home\"]')"));
     await s.tap('[data-sys="save"]');
     check(`${tag}: aktiver Modus abgelehnt`, await s.waitFor(`return r.querySelector('.ag-foot .ag-err')?.textContent.includes('${t.active}')`));
     await s.tap('[data-sys="cancel"]');

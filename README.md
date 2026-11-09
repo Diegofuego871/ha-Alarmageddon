@@ -17,7 +17,7 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 - **Code:** optional, 4 to 8 digits, stored only as a hash. Locked for one minute after five wrong codes.
 - **Any radio technology:** Alarmageddon only uses Home Assistant entities. Wi-Fi, Thread/Matter, Zigbee, Z-Wave and Bluetooth all work.
 
-- **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change, as a list or as cards (switch next to "View"; on the phone always cards).
+- **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change, as a list (default) or as cards (switch next to "View"). Columns are chosen separately for the computer and the phone, as in Device Panel, and stored per user.
 - **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (modes, delays, behaviour for open sensors, schedule, codes, backup). On the phone as cards and sheets from the bottom.
 - **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, report only. Defaults per sensor type, own values per sensor.
 - **Ready to arm:** one entity per mode with the blocking sensors.
@@ -43,7 +43,7 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
 2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): Configuration › Sensors: "Add sensors" lists everything Alarmageddon recognises and you choose the sensors of this alarm system (the bin button removes one again); then assign them to the zones "Home", "Away" and "Night"; the arrow at the end of a row opens the options of the sensor. Configuration › Alarm system sets the modes, delays, behaviour and the schedule. Changes apply with "Save".
 3. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
    - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
-   - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door), alarm duration.
+   - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door). The alarm lasts until it is disarmed; how long a siren or sound plays is set per step in the actions.
    - **Behaviour:** night mode, open sensor when arming (block or bypass), code required to arm.
    - **Code:** set a new main code or remove it. Personal codes: see "Codes per person".
 
@@ -64,7 +64,7 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 
 - **Do not wait for this step:** a step can run alongside, so the next one starts right away (long alarm sound, slow device). Disarming stops it too; after a restart in the middle of an alarm only the steps after it continue.
 - **Test per step:** the play button on a step runs only this step on the real devices, after a confirmation. Move steps with the handle on the left (drag with finger or mouse, or arrow keys on the handle).
-- **Back to the previous state:** devices with the arrow symbol return to their state before the alarm when you disarm or the alarm duration ends (on/off, brightness, position, volume, source; Sonos with its own snapshot including groups). On by default for alarm sounds.
+- **Back to the previous state:** devices with the arrow symbol return to their state before the alarm when you disarm (on/off, brightness, position, volume, source; Sonos with its own snapshot including groups). On by default for alarm sounds.
 - **Disarming stops everything,** also after a restart of Home Assistant in the middle of an alarm. A failing step does not stop the other steps.
 - **Test** runs the saved workflow without alarm and stops after 60 seconds at the latest.
 - **Media players** fetch the sounds from Home Assistant (`/alarmageddon_sounds/…`). The player must reach the local URL of Home Assistant (Settings → System → Network).
@@ -116,17 +116,16 @@ Side panel › Configuration › Updates (like in Device Panel):
 
 ## Settings per mode
 
-Side panel › Configuration › Alarm system › "Settings per mode": choose "Home", "Away", "Night" or "Always active" and set the values of that mode:
+Side panel › Configuration › Alarm system › "Settings per mode": choose "Home", "Away" or "Night" and set the values of that mode:
 
 | Value | Meaning |
 | --- | --- |
-| Exit delay | Time to leave before the alarm system is armed (not for "Always active") |
-| Entry delay | Time to disarm after an entry sensor opened (not for "Always active") |
-| Alarm duration | How long the alarm lasts; 0 = until disarmed |
-| Open sensor when arming | Block arming or bypass the open sensors (not for "Always active") |
-| Confirmation window | Time for the second sensor with "Needs a second sensor" (not for "Always active") |
+| Exit delay | Time to leave before the alarm system is armed |
+| Entry delay | Time to disarm after an entry sensor opened |
+| Open sensor when arming | Block arming or bypass the open sensors |
+| Confirmation window | Time for the second sensor with "Needs a second sensor" |
 
-"Always active" is the alarm of an always-active sensor (smoke, water) while the alarm system is disarmed; only the alarm duration applies. Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
+The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
 
 ## Modes
 

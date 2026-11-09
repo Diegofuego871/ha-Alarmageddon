@@ -155,12 +155,16 @@ async def test_disarm_stops_and_restores(hass: HomeAssistant, freezer) -> None:
     assert not s["media_player.play_media"]
 
 
-async def test_alarm_duration_over_restores(hass: HomeAssistant, freezer) -> None:
-    _entry, s = await _setup_workflow(hass, trigger_time=20)
+async def test_alarm_stays_until_disarmed_then_restores(hass: HomeAssistant, freezer) -> None:
+    """Der Alarm endet nie von selbst (0.25.0): erst das Deaktivieren stoppt die Schritte und stellt die Geräte zurück."""
+    _entry, s = await _setup_workflow(hass, trigger_time=20)  # eine alte Option "trigger_time" wird ignoriert
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
-    await advance(hass, freezer, 21)
-    assert state(hass) == AlarmControlPanelState.ARMED_HOME
+    await advance(hass, freezer, 3600)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+    assert not s["switch.turn_off"]
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
     assert s["switch.turn_off"]
 
 

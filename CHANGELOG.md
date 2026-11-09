@@ -7,11 +7,25 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.25.0] - 2026-11-09
+
+The sensor list on the overview works like the list in Device Panel (own columns on phone and computer), and the alarm lasts until it is acknowledged.
+
+Includes the changes from 0.24.0.
+
+### Added
+
+- **Sensor list as in Device Panel:** the list is the default view, on the computer and on the phone. Columns are chosen and ordered separately for the **computer** and the **phone** (View › "For this computer" / "For the phone"), with their own sorting, direction and grouping, and are stored per user in Home Assistant (and in the browser as a fallback). Columns: state, battery, forecast, signal, firmware, model, integration, last change, area, zones. The phone gets a compact set by default (state, battery, signal, firmware).
+- **Card layout is optional** on both devices (switch "List / Cards"); cards show the fields chosen for the device.
+
+### Changed
+
+- **The alarm lasts until it is acknowledged:** the state "Alarm" stays until someone disarms, in every mode and also for always-active sensors. The setting "Alarm duration" is removed from the panel, the options dialog and the alarm systems. How long a siren or an alarm sound plays is set in the step of the actions (alarm sound: "Duration"). Disarming still stops all steps and returns the devices. Old values in the options or in a backup are ignored.
+- **The scope "Always active" is removed** from Configuration › Alarm system › "Settings per mode": it only held the alarm duration. The actions for "always active" stay in Configuration › Actions.
+
 ## [0.24.0] - 2026-11-09
 
-Tab bars behave and look exactly like in Device Panel.
-
-Includes the changes from 0.23.0.
+Not released; included in 0.25.0.
 
 ### Changed
 
@@ -27,7 +41,7 @@ Includes the changes from 0.23.0.
 
 ## [0.23.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Includes the changes from 0.22.0.
 
 ### Added
 
@@ -49,7 +63,7 @@ Not released; included in 0.24.0.
 
 ## [0.22.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -62,7 +76,7 @@ Not released; included in 0.24.0.
 
 ## [0.21.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -70,7 +84,7 @@ Not released; included in 0.24.0.
 
 ## [0.20.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -81,7 +95,7 @@ Not released; included in 0.24.0.
 
 ## [0.19.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -89,7 +103,7 @@ Not released; included in 0.24.0.
 
 ## [0.18.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -98,7 +112,7 @@ Not released; included in 0.24.0.
 
 ## [0.17.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -111,7 +125,7 @@ Not released; included in 0.24.0.
 
 ## [0.16.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -125,7 +139,7 @@ Not released; included in 0.24.0.
 
 ## [0.15.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -134,7 +148,7 @@ Not released; included in 0.24.0.
 
 ## [0.14.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Changed
 
@@ -145,7 +159,7 @@ Not released; included in 0.24.0.
 
 ## [0.13.0] - 2026-11-08
 
-Not released; included in 0.24.0.
+Not released; included in 0.23.0.
 
 ### Added
 
@@ -354,7 +368,8 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.24.0
+[0.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.25.0
+[0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

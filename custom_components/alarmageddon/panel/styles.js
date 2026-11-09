@@ -194,7 +194,10 @@ dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 .ag-lrow.bad td:first-child { box-shadow: inset 4px 0 0 var(--ag-error); }
 .ag-lmeta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px; }
 .ag-colist { display: flex; flex-direction: column; border: 1px solid var(--ag-divider); border-radius: 14px; padding: 2px 12px; }
-.ag-colrow { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--ag-divider); }
+.ag-colrow { display: flex; align-items: center; gap: 4px; padding: 5px 0; border-bottom: 1px solid var(--ag-divider); }
+.ag-colrow > span { flex: 1; min-width: 0; }
+.ag-colrow .ag-iconbtn { width: 34px; height: 34px; }
+.ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-colrow:last-child { border-bottom: 0; }
 .ag-colrow .ag-toggle { margin: 0; }
 .ag-ready { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; padding: 10px 2px; border-bottom: 1px solid var(--ag-divider); }

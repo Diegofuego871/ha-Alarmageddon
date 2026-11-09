@@ -5,6 +5,12 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.25.0, Liste wie Device Panel, Alarm bis zum Quittieren)
+
+- Sensorliste (`panel/list.js`): Ansicht je Gerät (`desktop`/`mobile`, `get kind()` nach Breite), Spalten als geordnete Liste `[key,on]` plus Kartenfelder, Gruppierung, Sortierung und Richtung je Gerät getrennt; Speicherort: `localStorage` und pro Benutzer in HA (`frontend/set_user_data`, Schlüssel `alarmageddon_view`, 400 ms verzögert, `loadRemote()` beim Start; Migration aus dem alten `alarmageddon.view`). Standard ist die Liste (Handy: Zustand, Batterie, Empfang, Firmware), Karten optional (`view.layout`). Dialog "Ansicht" mit zwei Spaltenlisten (`data-list="col"`/`"mv"`).
+- Alarmdauer entfernt (Entscheid des Nutzers): der Alarm bleibt bis zum Deaktivieren. `controller._go_triggered` plant kein Ende mehr; `trigger_time_for` und die Einstellung fehlen in Optionsdialog, `ws_data` (`mode_settings`, kein `always`), Panel (Ebene "Immer aktiv" weg). `save_system` und `SYSTEM_OPTIONS_SCHEMA` akzeptieren alte `trigger_time*`-Werte und ignorieren sie (alte Sicherungen bleiben importierbar). Wie lange ein Ton läuft, bestimmt der Schritt `sound` (`duration`).
+- Offen: Rückmeldung des Nutzers, welche Option trotz "aus" noch "Kritisch" und Testknopf zeigte (im Screenshot nicht reproduzierbar; der Code zeigt den Inhalt nur bei eingeschalteter Art).
+
 ## Stand (0.24.0, Reiterleisten wie Device Panel)
 
 - Übernahme aus ha-device-panel (`_initSeg`, Abschnitt "Reiter als Segmentschalter" in `styles.js`): `_initSeg` in `alarmageddon-panel.js` ersetzt das alte `_placePills` (bleibt als Aufruf von `_segSync`). Die Kapsel ist ein `<i class="ag-pill">` als letztes Kind der Leiste (das Markup enthält keine Kapsel mehr, sonst wäre sie eine Rasterzelle), FLIP mit `_segLast` je Schlüssel `Fenster|data-seg`, `live` (Lage unterwegs), ResizeObserver nur bei echter Breitenänderung, MutationObserver ignoriert Änderungen an der Kapsel. Abweichung vom Vorbild: Eine zweite Zeichnung in derselben Fahrt, bevor `live` mitgeschrieben ist, fasst die Kapsel nicht an (`running`), sonst sprang sie ans Ziel, weil `_renderView` synchron und der MutationObserver nochmals synchronisieren.

@@ -53,7 +53,6 @@ def _sections(**changes):
             "exit_delay_night": 0.0,
             "entry_delay": 25.0,
             "entry_sensors": [FRONT_DOOR],
-            "trigger_time": 90.0,
         },
         "behaviour": {"night_enabled": False, "open_sensors": "bypass", "code_arm_required": False},
         "code_section": {"remove_code": False},
