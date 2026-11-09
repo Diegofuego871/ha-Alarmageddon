@@ -101,8 +101,9 @@ export class SystemUi {
     const v = d.per[scope];
     const bad = new Set(this.invalid());
     const num = (field, value, min = 0, max = MAX, unit = "seconds") => `<span class="ag-num ${bad.has(`${scope}.${field}`) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-field="${field}" value="${esc(value)}" aria-label="${esc(field)}"><span class="ag-t2">${esc(this._t(unit))}</span></span>`;
-    const openSeg = `<div class="ag-seg small" data-seg="sys-open">${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
-      .map(([val, label]) => `<button data-sys="open" data-value="${val}" class="${v.open_sensors === val ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
+    // Auswahl als Aufklappmenü, nicht als Reiterleiste: Reiter stehen hier zu nah an der Navigation und wirken wie ein Seitenwechsel
+    const openSeg = `<select class="ag-input ag-open-sel" data-sys="open-sel" aria-label="${esc(this._t("sysOpen"))}">${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
+      .map(([val, label]) => `<option value="${val}" ${v.open_sensors === val ? "selected" : ""}>${esc(this._t(label))}</option>`).join("")}</select>`;
     const scopeSeg = h._segHtml("sys-scope", [...modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), ["always", this._t("wfAlways"), "flash"]], scope, "data-scope", "small");
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
     const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
@@ -382,10 +383,6 @@ export class SystemUi {
       d.schedules.splice(i, 1);
       this.saveState = null;
       this.render();
-    } else if (act === "open") {
-      d.per[this.scope].open_sensors = el.dataset.value;
-      this.saveState = null;
-      this.render();
     } else if (act === "cancel") {
       this.reset();
       this.render();
@@ -415,6 +412,15 @@ export class SystemUi {
     } else {
       return false;
     }
+    return true;
+  }
+
+  // Auswahl "Offener Sensor beim Scharfschalten" (Aufklappmenü)
+  onChange(el) {
+    if (el?.dataset?.sys !== "open-sel") return false;
+    this.ensureDraft().per[this.scope].open_sensors = el.value;
+    this.saveState = null;
+    this.render();
     return true;
   }
 

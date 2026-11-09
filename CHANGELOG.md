@@ -18,6 +18,8 @@ Includes the changes from 0.23.0.
 - **All tab and selection bars follow the Device Panel design** (the design rule "selection buttons"): equal-width fields with 2 px gap, 3 px padding and 14 px radius, the bar in 7 % text colour over the card colour, the selected field as a capsule in the page background colour with a thin inner border, the selected tab in the accent colour (weight 500). The capsule slides to the new tab in 0.46 s with a slight overshoot and is a little transparent while it moves.
 - **Redrawing does not interrupt the slide:** the panel remembers the last position of each capsule and continues from there, also when the bar is redrawn in the middle of the move (no jump back). Without a selected tab there is no capsule. With "Reduce motion" in the system the capsule stands at the target at once. Every bar has its own key, so two bars never share a position.
 - **Phone:** tap area at least 44 px, bars fill the width, from five tabs on four columns in rows (three on narrow phones). Small bars (for example the switch List / Cards) stay as wide as their content.
+- **"Open sensor when arming" is a dropdown** (Configuration › Alarm system › Behaviour) instead of two tabs: tabs there looked too much like the navigation and were confusing.
+
 
 ## [0.23.0] - 2026-11-08
 

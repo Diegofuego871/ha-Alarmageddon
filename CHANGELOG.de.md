@@ -18,6 +18,8 @@ Enthält die Änderungen aus 0.23.0.
 - **Alle Reiter- und Auswahlleisten folgen dem Design von Device Panel** (Design-Regel "Auswahlknöpfe"): gleich breite Felder mit 2 px Abstand, 3 px Innenabstand und 14 px Rundung, die Leiste in 7 % Textfarbe über der Kartenfarbe, das gewählte Feld als Kapsel in der Farbe des Seitengrunds mit dünnem Innenrand, der gewählte Reiter in der Akzentfarbe (Schrift 500). Die Kapsel gleitet in 0,46 s mit leichtem Nachschwingen zum neuen Reiter und ist unterwegs etwas durchscheinend.
 - **Neuzeichnen unterbricht das Gleiten nicht:** Das Panel merkt sich die letzte Lage jeder Kapsel und fährt von dort weiter, auch wenn die Leiste mitten in der Fahrt neu gezeichnet wird (kein Sprung zurück). Ohne gewählten Reiter gibt es keine Kapsel. Bei "Bewegung reduzieren" im System steht die Kapsel sofort am Ziel. Jede Leiste hat einen eigenen Schlüssel, zwei Leisten teilen sich nie eine Lage.
 - **Handy:** Tippfläche mindestens 44 px, die Leisten füllen die Breite, ab fünf Reitern vier Spalten in Zeilen (bei schmalen Handys drei). Kleine Leisten (zum Beispiel der Umschalter Liste / Karten) bleiben so breit wie ihr Inhalt.
+- **"Offener Sensor beim Scharfschalten" ist ein Aufklappmenü** (Konfiguration › Anlage › Verhalten) statt zwei Reitern: Reiter wirkten dort zu nah an der Navigation und verwirrten.
+
 
 ## [0.23.0] - 2026-11-08
 

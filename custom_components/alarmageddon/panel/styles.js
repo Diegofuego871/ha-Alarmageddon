@@ -396,6 +396,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-fld input[type="range"], .ag-range { width: 100%; max-width: 320px; accent-color: var(--ag-primary); }
 .ag-input { height: 40px; border-radius: 10px; border: 1px solid var(--ag-divider); background: var(--ag-bg); color: var(--ag-text); font: inherit; padding: 0 12px; }
 textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
+.ag-open-sel { min-width: 200px; max-width: 100%; }
 .ag-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 .ag-evgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 24px; margin-top: 6px; }
 .ag-warntext { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }
