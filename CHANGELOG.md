@@ -46,7 +46,7 @@ Not released; included in 0.29.0.
 
 An "Alarm ends" element at the end of every action flow decides what disarming does.
 
-Not released; included in 0.29.0.
+Includes the changes from 0.24.0, 0.25.0 and 0.26.0.
 
 ### Fixed
 
@@ -60,7 +60,7 @@ Not released; included in 0.29.0.
 
 Structured windows with a close button and fixed buttons, fixed header with a sortable list, free choice of columns per device, an "Occupancy" filter, and defaults that can be applied to all sensors.
 
-Not released; included in 0.29.0.
+Not released; included in 0.27.0.
 
 ### Added
 
@@ -84,7 +84,7 @@ Not released; included in 0.29.0.
 
 The sensor list on the overview works like the list in Device Panel (own columns on phone and computer), and the alarm lasts until it is acknowledged.
 
-Not released; included in 0.29.0.
+Not released; included in 0.27.0.
 
 ### Added
 
@@ -100,7 +100,7 @@ Not released; included in 0.29.0.
 
 ## [0.24.0] - 2026-11-09
 
-Not released; included in 0.29.0.
+Not released; included in 0.27.0.
 
 ### Changed
 
@@ -444,6 +444,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Languages:** English and German.
 
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
+[0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

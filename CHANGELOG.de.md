@@ -46,7 +46,7 @@ Nicht veröffentlicht; enthalten in 0.29.0.
 
 Ein Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut.
 
-Nicht veröffentlicht; enthalten in 0.29.0.
+Enthält die Änderungen aus 0.24.0, 0.25.0 und 0.26.0.
 
 ### Behoben
 
@@ -60,7 +60,7 @@ Nicht veröffentlicht; enthalten in 0.29.0.
 
 Strukturierte Fenster mit Schliessen-Knopf und festen Knöpfen, feste Kopfzeile mit sortierbarer Liste, freie Spaltenwahl je Gerät, Filter "Belegung" und Voreinstellungen für alle Sensoren übernehmbar.
 
-Nicht veröffentlicht; enthalten in 0.29.0.
+Nicht veröffentlicht; enthalten in 0.27.0.
 
 ### Hinzugefügt
 
@@ -84,7 +84,7 @@ Nicht veröffentlicht; enthalten in 0.29.0.
 
 Die Sensorliste auf der Übersicht funktioniert wie die Liste in Device Panel (eigene Spalten für Handy und Computer), und der Alarm dauert, bis er quittiert wird.
 
-Nicht veröffentlicht; enthalten in 0.29.0.
+Nicht veröffentlicht; enthalten in 0.27.0.
 
 ### Hinzugefügt
 
@@ -100,7 +100,7 @@ Nicht veröffentlicht; enthalten in 0.29.0.
 
 ## [0.24.0] - 2026-11-09
 
-Nicht veröffentlicht; enthalten in 0.29.0.
+Nicht veröffentlicht; enthalten in 0.27.0.
 
 ### Geändert
 
@@ -444,6 +444,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Sprachen:** Englisch und Deutsch.
 
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
+[0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
