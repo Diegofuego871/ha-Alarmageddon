@@ -202,7 +202,8 @@ class AlarmController:
 
     @property
     def sensor_overrides(self) -> dict[str, dict[str, bool]]:
-        return self.options.get(CONF_SENSOR_OPTIONS, {}) or {}
+        # Nur Wörterbücher: ein beschädigter Eintrag darf die Anlage nicht am Laden hindern
+        return {e: o for e, o in (self.options.get(CONF_SENSOR_OPTIONS) or {}).items() if isinstance(o, dict)}
 
     def preset(self, entity_id: str) -> list[str]:
         from .settings import sensor_type  # noqa: PLC0415 - vermeidet Kreisimport beim Laden
@@ -219,7 +220,9 @@ class AlarmController:
             # Der Reiter "Immer aktiv" (Bereich SCOPE_ALWAYS) gilt, wenn die Anlage deaktiviert ist, und immer für die Option "Immer aktiv"
             # selbst: sie hängt nie an einem Modus (ein Rauchmelder lässt sich nicht in einem Modus abschalten)
             scope = SCOPE_ALWAYS if (mode is None or key == OPT_ALWAYS) else mode
-            own_mode = ((self.options.get(CONF_SENSOR_MODES) or {}).get(scope) or {}).get(entity_id, {}).get(key)
+            per_scope = (self.options.get(CONF_SENSOR_MODES) or {}).get(scope)
+            own = per_scope.get(entity_id) if isinstance(per_scope, dict) else None
+            own_mode = own.get(key) if isinstance(own, dict) else None
             if own_mode is not None:
                 return bool(own_mode)
         own = self.sensor_overrides.get(entity_id, {}).get(key)

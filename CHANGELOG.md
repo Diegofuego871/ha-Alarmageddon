@@ -20,6 +20,10 @@ A tidier log, especially on the phone.
 
 - **Export JSON.** The CSV download stays.
 
+### Fixed
+
+- **Loading with damaged options:** an alarm system no longer fails to load when an entry of the sensor options is damaged (not a dictionary), in the migration of the old "Open sensor when arming" choice or later. The cause of a failed setup is always logged; if an alarm system shows "Setup error", the full entry in the Home Assistant log helps.
+
 ## [0.35.2] - 2026-11-09
 
 ### Changed

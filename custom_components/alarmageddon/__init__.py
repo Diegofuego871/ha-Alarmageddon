@@ -62,7 +62,8 @@ def _migrate_open_sensors(hass: HomeAssistant, entry: ConfigEntry) -> None:
     values = {mode: (options.pop(f"open_sensors_{mode}", None) or common) for mode in MODES}
     sensors = {e for mode in MODES for e in options.get(f"{CONF_ZONE_PREFIX}{mode}", [])} | set(options.get(CONF_SENSORS) or [])
     sensors |= set(options.get(CONF_SENSOR_OPTIONS) or {})
-    sensor_options = {e: dict(o) for e, o in (options.get(CONF_SENSOR_OPTIONS) or {}).items()}
+    # Beschädigte Einträge (kein Wörterbuch) ignorieren, statt die ganze Anlage nicht zu laden
+    sensor_options = {e: dict(o) for e, o in (options.get(CONF_SENSOR_OPTIONS) or {}).items() if isinstance(o, dict)}
     if len(set(values.values())) == 1:
         if next(iter(values.values())) == "bypass":
             for entity in sensors:

@@ -20,6 +20,10 @@ Ein aufgeräumteres Protokoll, besonders auf dem Handy.
 
 - **JSON-Export.** Der CSV-Download bleibt.
 
+### Behoben
+
+- **Laden mit beschädigten Optionen:** Eine Alarmanlage lädt auch dann, wenn ein Eintrag der Sensor-Optionen beschädigt ist (kein Wörterbuch), bei der Übernahme der alten Wahl "Offener Sensor beim Scharfschalten" oder später. Die Ursache eines Einrichtungsfehlers steht immer im Protokoll von Home Assistant; zeigt eine Anlage "Einrichtungsfehler", hilft der vollständige Eintrag dort.
+
 ## [0.35.2] - 2026-11-09
 
 ### Geändert
