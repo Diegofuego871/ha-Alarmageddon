@@ -15,6 +15,7 @@ die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Behoben
 
+- **Aktionen:** Die Leiste mit Schalter und Reitern bleibt beim Scrollen jetzt wirklich fest (sie scrollte bisher weg); auf dem Handy ist sie kompakt, ohne Erklärtext.
 - **Aktionen auf dem Handy:** Die Karte "Alarm endet" wird nicht mehr in eine schmale Spalte gequetscht.
 
 ## [0.35.0] - 2026-11-09

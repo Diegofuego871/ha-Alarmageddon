@@ -256,6 +256,9 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 /* Schalter, Reiter und alles, was zu den Reitern gehört, stehen in einem umrandeten Bereich: so ist klar, bis wohin die Einstellung greift */
 .ag-pmstick { margin: var(--ag-gap, 18px) 0; }
 .ag-pmstick > .ag-pmbar { margin: 0; }
+/* Fest stehende Leisten auf dem Handy kompakt: ohne Erklärtext, sonst bleibt zu wenig Platz für die Liste */
+:host([narrow]) .ag-stk .ag-pmbar small, :host([narrow]) .ag-stk .ag-pmbar .ag-pmscope { display: none; }
+:host([narrow]) .ag-stk .ag-pmbar { gap: 10px; padding: 10px 14px; }
 .ag-pmgroup { margin-top: 6px; padding: 16px 18px 18px; border: 1.5px solid var(--ag-divider); border-radius: 20px; background: color-mix(in srgb, var(--ag-text) 2%, var(--ag-card)); }
 .ag-pmgroup.on { border: 2px solid color-mix(in srgb, var(--ag-primary) 45%, transparent); background: color-mix(in srgb, var(--ag-primary) 4%, var(--ag-card)); }
 .ag-pmgroup > .ag-pmbar { margin: 0 0 14px; padding: 0; border: 0; background: none; }
@@ -335,7 +338,9 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-line > .ag-card { position: relative; z-index: 1; }
 .ag-wf-info { display: flex; gap: 8px; align-items: center; margin: 16px 8px 0; line-height: 1.4; }
 .ag-wf-info .ag-ic { display: inline-block; }
-.ag-wf-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+/* contents: sonst klebt die Leiste nur innerhalb dieses Blocks und scrollt mit weg */
+.ag-wf-head { display: contents; }
+.ag-wf-head > .ag-tools { margin-bottom: 12px; }
 .ag-handle { border: 0; background: transparent; color: var(--ag-text3); width: 30px; height: 44px; border-radius: 10px; display: grid; place-items: center; cursor: grab; flex: none; touch-action: none; padding: 0; }
 .ag-handle:hover, .ag-handle:focus-visible { background: var(--ag-hover); color: var(--ag-text2); }
 .ag-wf-step.dragging { z-index: 5; box-shadow: 0 10px 28px rgba(0,0,0,.28); cursor: grabbing; transition: none; }

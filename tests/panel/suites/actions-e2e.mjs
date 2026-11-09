@@ -22,6 +22,10 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Greifer und Testknopf je Schritt`, await s.ev("return r.querySelectorAll('.ag-wf-step [data-wf=\"grab\"]').length === 5 && r.querySelectorAll('.ag-wf-step [data-wf=\"test-step\"]').length === 5"));
     check(`${tag}: Kapsel am gewählten Auslöser`, await s.ev("const p=r.querySelector('.ag-wf-head .ag-seg .ag-pill'); const b=r.querySelector('.ag-wf-head [data-trigger=\"away\"]'); return !!p && Math.abs(p.getBoundingClientRect().left - b.getBoundingClientRect().left) < 2"));
     check(`${tag}: "Testen" steht unten bei Abbrechen und Speichern, nicht oben`, await s.ev("return !!r.querySelector('.ag-foot [data-wf=\"test\"], .ag-foot [data-wf=\"test-stop\"]') && !r.querySelector('.ag-wf-head [data-wf=\"test\"]') && r.querySelector('.ag-foot').getBoundingClientRect().width > 0"));
+    await s.ev("r.querySelector('.ag-content').scrollTop = 300");
+    await s.page.waitForTimeout(300);
+    check(`${tag}: Schalter und Reiter der Aktionen bleiben beim Scrollen fest (unter Kopfzeile)`, await s.ev("const t=r.querySelector('.ag-wf-head .ag-tools'); const above=[...r.querySelectorAll('.ag-stk')].filter((e) => e !== t); const lim=Math.max(...above.map((e) => e.getBoundingClientRect().bottom)); return t.classList.contains('ag-stk') && Math.abs(t.getBoundingClientRect().top - lim) < 20"));
+    await s.ev("r.querySelector('.ag-content').scrollTop = 0");
     check(`${tag}: Schalter "Einstellungen pro Modus" (an, weil die Abläufe sich unterscheiden), Reiter unter dem Schalter`, await s.ev("const sw=r.querySelector('.ag-wf-head [data-wf=\"permode\"]'); const seg=r.querySelector('.ag-wf-head [data-seg=\"wf-trigger\"]'); return !!sw && sw.getAttribute('aria-checked') === 'true' && !!seg && seg.getBoundingClientRect().top > sw.getBoundingClientRect().bottom"));
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
 

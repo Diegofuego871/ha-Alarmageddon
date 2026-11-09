@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Actions:** the bar with the switch and the tabs now really stays fixed while scrolling (it scrolled away before); on the phone it is compact, without the explanation.
 - **Actions on the phone:** the card "Alarm ends" is no longer squeezed into a narrow column.
 
 ## [0.35.0] - 2026-11-09
