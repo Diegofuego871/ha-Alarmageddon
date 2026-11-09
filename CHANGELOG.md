@@ -7,6 +7,16 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.30.0] - 2026-11-09
+
+Display fixes in the sensor table and the action flow.
+
+### Fixed
+
+- **Sensor table:** on a wide screen the table keeps its width and the checkboxes stay in place when the options of a sensor open (the sheet stands beside it). The delete symbol and the arrow stand on one line, the arrow at the far right.
+- **Fixed parts at the top** (tabs, sub-tabs, toolbar, column header) no longer slide over each other when scrolling; they are measured again when their height changes (for example when the logo has loaded).
+- **Action flow:** the symbols "Alarm begins" and "Alarm ends" are opaque, so the line no longer shines through.
+
 ## [0.29.0] - 2026-11-09
 
 Own message values per mode for everything that happens while the alarm system is armed.
@@ -38,8 +48,6 @@ Not released; included in 0.29.0.
 
 - **Sensor table (Configuration):** the arrow and the delete symbol stand side by side, the arrow at the far right; integration and battery columns are gone to keep it clear.
 - **Action flow:** the line no longer runs through the cards and ends at "Alarm ends", which has a coloured icon.
-- **Sensor table:** on a wide screen the table keeps its width and the checkboxes stay in place when the options of a sensor open (the sheet stands beside it); the delete symbol and the arrow stand on one line, the arrow at the far right. The fixed parts at the top (tabs, sub-tabs, toolbar, column header) no longer slide over each other.
-- **Action flow:** the symbols "Alarm begins" and "Alarm ends" are opaque, so the line no longer shines through.
 - **Volume slider** is at most half as wide; **scroll bars in windows** have more distance to the edge.
 - **Windows:** the column header of the tables is no longer covered by the toolbar.
 - **"Sensor reports (no alarm)" is now called "Silent alarm"**, and the chapter "Alarm messages" is called "Messages" (Configuration › Notifications).
@@ -445,6 +453,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0

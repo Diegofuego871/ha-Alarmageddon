@@ -7,6 +7,16 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.30.0] - 2026-11-09
+
+Darstellungsfehler in der Sensortabelle und im Ablauf der Aktionen behoben.
+
+### Behoben
+
+- **Sensortabelle:** Auf einem breiten Bildschirm behält die Tabelle ihre Breite, und die Kästchen bleiben an ihrem Platz, wenn die Optionen eines Sensors aufgehen (das Blatt steht daneben). Papierkorb und Pfeil stehen auf einer Zeile, der Pfeil ganz rechts.
+- **Feste Teile oben** (Reiter, Unterreiter, Werkzeugleiste, Spaltenkopf) schieben sich beim Scrollen nicht mehr übereinander; sie werden neu gemessen, wenn sich ihre Höhe ändert (zum Beispiel wenn das Logo geladen ist).
+- **Ablauf der Aktionen:** Die Symbole "Alarm beginnt" und "Alarm endet" sind undurchsichtig, die Linie scheint nicht mehr durch.
+
 ## [0.29.0] - 2026-11-09
 
 Eigene Meldungswerte je Modus für alles, was passiert, während die Anlage scharf ist.
@@ -38,8 +48,6 @@ Nicht veröffentlicht; enthalten in 0.29.0.
 
 - **Sensortabelle (Konfiguration):** Pfeil und Löschsymbol stehen nebeneinander, der Pfeil ganz rechts; die Spalten Integration und Batterie entfallen, damit es übersichtlich bleibt.
 - **Ablauf der Aktionen:** Die Linie läuft nicht mehr durch die Karten und endet bei "Alarm endet", das ein farbiges Symbol hat.
-- **Sensortabelle:** Auf einem breiten Bildschirm behält die Tabelle ihre Breite, und die Kästchen bleiben an ihrem Platz, wenn die Optionen eines Sensors aufgehen (das Blatt steht daneben); Papierkorb und Pfeil stehen auf einer Zeile, der Pfeil ganz rechts. Die festen Teile oben (Reiter, Unterreiter, Werkzeugleiste, Spaltenkopf) schieben sich nicht mehr übereinander.
-- **Ablauf der Aktionen:** Die Symbole "Alarm beginnt" und "Alarm endet" sind undurchsichtig, die Linie scheint nicht mehr durch.
 - **Lautstärkeregler** höchstens halb so breit; **Rollbalken in Fenstern** mit mehr Abstand zum Rand.
 - **Fenster:** Der Spaltenkopf der Tabellen wird nicht mehr von der Werkzeugleiste verdeckt.
 - **"Sensor meldet (kein Alarm)" heisst neu "Stiller Alarm"**, und das Kapitel "Alarmmeldungen" heisst "Meldungen" (Konfiguration › Benachrichtigungen).
@@ -445,6 +453,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
