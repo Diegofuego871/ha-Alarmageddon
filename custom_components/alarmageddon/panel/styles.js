@@ -615,10 +615,12 @@ dialog.ag-sheetdlg .ag-side-head { padding-right: 58px; }
 :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 389px) { :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 /* Name der Anlage oben in der Konfiguration: gross und fett, Stift, Sprung nach HA */
-.ag-sysbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ag-headsys { display: flex; align-items: center; gap: 8px; flex: 1 1 calc(100% - 60px); min-width: 0; }
+.ag-head-cfg > .ag-tabs, .ag-head-cfg > .ag-seg { margin-right: auto; }
+.ag-btn-ic { width: 40px; padding: 0; justify-content: center; flex: none; }
 .ag-systitle { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -.3px; overflow-wrap: anywhere; }
 :host([narrow]) .ag-systitle { font-size: 22px; }
-:host([narrow]) select.ag-select[data-act="system"] { font-size: 20px; height: 48px; max-width: 100%; }
+:host([narrow]) select.ag-select[data-act="system"] { font-size: 20px; height: 44px; min-width: 0; flex: 1 1 auto; max-width: 100%; }
 .ag-rename-ids { border-bottom: 0; margin-top: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
 `;
 

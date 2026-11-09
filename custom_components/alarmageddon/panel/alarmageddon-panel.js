@@ -384,7 +384,7 @@ class AlarmageddonPanel extends HTMLElement {
     let right = "";
     if (this._tab === "overview" && !narrow) right = `<span class="ag-grow"></span><button class="ag-btn" data-act="add">${ic("plus")}${esc(this._t("addSystem"))}</button>`;
     this._lastHtml.delete(this._content);
-    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${tabs}${right}</div><div class="ag-view"></div>`));
+    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head ${this._tab === "config" ? "ag-head-cfg" : ""}"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${this._tab === "config" ? '<div class="ag-headsys"></div>' : ""}${tabs}${right}</div><div class="ag-view"></div>`));
     this._view = this._content.querySelector(".ag-view");
     this._content.querySelector(".ag-logo")?.addEventListener("load", () => this._stickySync());
     this._view.style.display = "contents";
@@ -555,8 +555,6 @@ class AlarmageddonPanel extends HTMLElement {
       const items = [
         c.querySelector(":scope > .ag-head"),
         v?.querySelector(":scope > .ag-cfg"),
-        // Name der Anlage: am Computer fest (der Platz reicht), auf dem Handy scrollt er weg
-        this.hasAttribute("narrow") ? null : v?.querySelector(":scope > .ag-sysbar"),
         stickyOverview && tall ? v.querySelector(":scope > .ag-ov-top") : null,
         stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
         // Sensoren: Schalter und Reiter der Modi bleiben über der Tabelle stehen
@@ -802,12 +800,15 @@ class AlarmageddonPanel extends HTMLElement {
       // Benachrichtigungen gelten für alle Anlagen: dort kein Anlagenname und keine Auswahl
       const cur = this._system();
       const bar = systems.length && cur && this._sub !== "notify" ? this._sysBar(systems, cur) : "";
+      // Name der Anlage ganz oben neben dem Logo (die Kopfzeile bleibt beim Scrollen stehen)
+      const slot = this._content.querySelector(".ag-headsys");
+      if (slot) slot.innerHTML = bar;
       const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
       this._lastHtml.delete(this._view);
       // Die Seite gleitet von der Seite herein, wenn der Reiter wechselt (nicht bei jedem Neuaufbau)
       const slide = this._slide || "";
       this._slide = "";
-      this._keepScroll(() => (this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}</div>${bar}<div class="ag-pane ${slide}">${body}</div>`));
+      this._keepScroll(() => (this._view.innerHTML = `<div class="ag-cfg ag-head ${narrow ? "narrow" : ""}">${subs}</div><div class="ag-pane ${slide}">${body}</div>`));
     }
     if (!this._systems().length) return;
     // Nie neu aufbauen, während ein Eingabefeld den Fokus hat (Cursor bliebe nicht stehen)
@@ -820,8 +821,10 @@ class AlarmageddonPanel extends HTMLElement {
     const title = systems.length > 1
       ? `<select class="ag-select" data-act="system" aria-label="${esc(this._t("groupsSystem"))}">${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this._sel ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>`
       : `<h2 class="ag-systitle">${esc(cur.title)}</h2>`;
-    return `<div class="ag-sysbar">${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
-      <button class="ag-btn" data-act="open-ha">${ic("external", 18)}${esc(this._t("openInHa"))}</button></div>`;
+    const label = this._t("openInHa");
+    const text = this.hasAttribute("narrow") ? "" : esc(label);
+    return `${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
+      <button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>`;
   }
 
   _openRename() {

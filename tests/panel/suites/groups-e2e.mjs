@@ -112,14 +112,14 @@ for (const lang of ["de", "en"]) {
     await s.ev(`const sel=r.querySelector('[data-act="system"]'); sel.value="e_garage"; sel.dispatchEvent(new Event("change", { bubbles: true }));`);
     check(`${tag}: Garage ohne Nacht`, await s.waitFor(`return r.querySelectorAll('.ag-table th').length === 6`));
     // Name der Anlage oben: grosses Dropdown (mehrere Anlagen), Stift, Sprung nach HA, Umbenennen
-    check(`${tag}: Anlagenname gross als Dropdown mit Stift und HA-Knopf`, await s.ev(`const b=r.querySelector('.ag-sysbar'); const sel=b.querySelector('select[data-act="system"]'); return !!sel && parseFloat(getComputedStyle(sel).fontSize) >= 20 && sel.offsetHeight >= 44 && !!b.querySelector('[data-act="rename"]') && !!b.querySelector('[data-act="open-ha"]')`));
+    check(`${tag}: Anlagenname gross als Dropdown mit Stift und HA-Knopf`, await s.ev(`const b=r.querySelector('.ag-head .ag-headsys'); const sel=b.querySelector('select[data-act="system"]'); return !!sel && parseFloat(getComputedStyle(sel).fontSize) >= 20 && sel.offsetHeight >= 44 && !!b.querySelector('[data-act="rename"]') && !!b.querySelector('[data-act="open-ha"]')`));
     await s.ev(`window.__navs=[]; r.host._navigate = (p) => window.__navs.push(p);`);
     await s.tap('[data-act="open-ha"]');
     check(`${tag}: Knopf öffnet die Integration dieser Anlage in HA`, await s.ev(`return window.__navs.length === 1 && window.__navs[0] === "/config/integrations/integration/alarmageddon#config_entry=e_garage"`));
     await s.tap('[data-sub="notify"]');
-    check(`${tag}: bei Benachrichtigungen kein Anlagenname`, await s.waitFor(`return !r.querySelector('.ag-sysbar')`));
+    check(`${tag}: bei Benachrichtigungen kein Anlagenname`, await s.waitFor(`return !r.querySelector('.ag-headsys select, .ag-headsys h2')`));
     await s.tap('[data-sub="sensors"]');
-    await s.waitFor(`return !!r.querySelector('.ag-sysbar')`);
+    await s.waitFor(`return !!r.querySelector('.ag-headsys select, .ag-headsys h2')`);
     await s.tap('[data-act="rename"]');
     check(`${tag}: Dialog Umbenennen mit Name und Schalter für neue IDs (aus)`, await s.waitFor(`const d=r.getElementById("ag-rename"); return d.open && d.querySelector("input").value === "Garage" && d.querySelector('[data-act="rename-ids"]').getAttribute("aria-checked") === "false"`));
     await s.ev(`const i=r.getElementById("ag-rename").querySelector("input"); i.value="Haus"; r.getElementById("ag-rename").querySelector("form").requestSubmit();`);
