@@ -101,7 +101,7 @@ export class SystemUi {
     const v = d.per[scope];
     const bad = new Set(this.invalid());
     const num = (field, value, min = 0, max = MAX, unit = "seconds") => `<span class="ag-num ${bad.has(`${scope}.${field}`) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-field="${field}" value="${esc(value)}" aria-label="${esc(field)}"><span class="ag-t2">${esc(this._t(unit))}</span></span>`;
-    const openSeg = `<div class="ag-seg small" data-seg="sys-open"><span class="ag-pill"></span>${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
+    const openSeg = `<div class="ag-seg small" data-seg="sys-open">${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
       .map(([val, label]) => `<button data-sys="open" data-value="${val}" class="${v.open_sensors === val ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
     const scopeSeg = h._segHtml("sys-scope", [...modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), ["always", this._t("wfAlways"), "flash"]], scope, "data-scope", "small");
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;

@@ -7,11 +7,21 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.24.0] - 2026-11-09
+
+Reiterleisten verhalten sich und sehen aus wie in Device Panel.
+
+Enthält die Änderungen aus 0.23.0.
+
+### Geändert
+
+- **Alle Reiter- und Auswahlleisten folgen dem Design von Device Panel** (Design-Regel "Auswahlknöpfe"): gleich breite Felder mit 2 px Abstand, 3 px Innenabstand und 14 px Rundung, die Leiste in 7 % Textfarbe über der Kartenfarbe, das gewählte Feld als Kapsel in der Farbe des Seitengrunds mit dünnem Innenrand, der gewählte Reiter in der Akzentfarbe (Schrift 500). Die Kapsel gleitet in 0,46 s mit leichtem Nachschwingen zum neuen Reiter und ist unterwegs etwas durchscheinend.
+- **Neuzeichnen unterbricht das Gleiten nicht:** Das Panel merkt sich die letzte Lage jeder Kapsel und fährt von dort weiter, auch wenn die Leiste mitten in der Fahrt neu gezeichnet wird (kein Sprung zurück). Ohne gewählten Reiter gibt es keine Kapsel. Bei "Bewegung reduzieren" im System steht die Kapsel sofort am Ziel. Jede Leiste hat einen eigenen Schlüssel, zwei Leisten teilen sich nie eine Lage.
+- **Handy:** Tippfläche mindestens 44 px, die Leisten füllen die Breite, ab fünf Reitern vier Spalten in Zeilen (bei schmalen Handys drei). Kleine Leisten (zum Beispiel der Umschalter Liste / Karten) bleiben so breit wie ihr Inhalt.
+
 ## [0.23.0] - 2026-11-08
 
-Ladeanzeige und keine vergessene Alarmanlage mehr beim Speichern, Kartenlayout für die Sensorliste, durchsuchbare Auswahl bei den Aktionen, Klickziel der Alarmmeldung.
-
-Enthält die Änderungen aus 0.22.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -33,7 +43,7 @@ Enthält die Änderungen aus 0.22.0.
 
 ## [0.22.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -46,7 +56,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.21.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -54,7 +64,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.20.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Geändert
 
@@ -65,7 +75,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.19.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -73,7 +83,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.18.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Geändert
 
@@ -82,7 +92,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.17.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -95,7 +105,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.16.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -109,7 +119,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.15.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Geändert
 
@@ -118,7 +128,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.14.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Geändert
 
@@ -129,7 +139,7 @@ Nicht veröffentlicht; enthalten in 0.23.0.
 
 ## [0.13.0] - 2026-11-08
 
-Nicht veröffentlicht; enthalten in 0.23.0.
+Nicht veröffentlicht; enthalten in 0.24.0.
 
 ### Hinzugefügt
 
@@ -338,7 +348,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
+[0.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.24.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0
 [0.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.2.0

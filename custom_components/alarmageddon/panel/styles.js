@@ -37,14 +37,22 @@ button { font: inherit; color: inherit; }
 .ag-grow { flex: 1; }
 
 /* Reiterleiste mit gleitender Kapsel (Design-Regel Auswahlknöpfe) */
-.ag-seg { position: relative; display: inline-flex; padding: 4px; gap: 2px; border-radius: 14px; background: var(--ag-subtle); max-width: 100%; isolation: isolate; }
-.ag-seg > button { position: relative; z-index: 1; border: 0; background: transparent; padding: 8px 16px; border-radius: 10px; color: var(--ag-text2); white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; }
-.ag-seg > button.on { color: var(--ag-text); font-weight: 500; }
-.ag-seg > button:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 1px; }
+/* Reiterleisten wie in Device Panel (Design-Regel, gleiche Werte): gleich breite Felder, Fläche = 7 % Textfarbe über der Kartenfarbe, die gewählte Kapsel
+   (.ag-pill, vom Panel gesetzt, gleitet mit leichtem Nachschwingen) in der Farbe des Seitengrunds mit Innenrand, gewählter Reiter in der Akzentfarbe.
+   Grösse darf abweichen (kompakte Leisten sind so breit wie ihr Inhalt), Stil nie. Ab fünf Reitern auf dem Handy vier Spalten in Zeilen. */
+.ag-seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; padding: 3px; border-radius: 14px; max-width: 100%;
+  background: color-mix(in srgb, var(--ag-text) 7%, var(--ag-card)); isolation: isolate; }
+.ag-seg > button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 36px; padding: 0 14px; white-space: nowrap;
+  border: none; border-radius: 11px; background: none; color: color-mix(in srgb, var(--ag-text) 72%, transparent); font: inherit; font-size: 13.5px; text-align: center; cursor: pointer; transition: color .22s ease; }
+.ag-seg > button:hover { color: var(--ag-text); }
+.ag-seg > button.on { color: var(--ag-primary); font-weight: 500; }
+.ag-seg > button:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: -2px; }
 .ag-seg > button:disabled { cursor: default; opacity: .55; }
-.ag-pill { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 10px; background: var(--ag-card); box-shadow: var(--ag-shadow-s); transition: transform .28s cubic-bezier(.3,.8,.3,1), width .28s cubic-bezier(.3,.8,.3,1); }
-.ag-seg.small > button { padding: 7px 12px; font-size: 13.5px; min-height: 34px; }
-@media (prefers-reduced-motion: reduce) { .ag-pill { transition: none; } }
+.ag-seg > button:active { transform: scale(0.97); transition: transform 100ms ease-out; }
+.ag-pill { position: absolute; z-index: 0; left: 0; top: 0; border-radius: 11px; background: var(--ag-bg); pointer-events: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ag-text) 7%, transparent);
+  transition: transform .46s cubic-bezier(.3, 1.35, .5, 1), width .46s cubic-bezier(.3, 1.35, .5, 1), height .46s cubic-bezier(.3, 1.35, .5, 1), opacity .46s ease; }
+.ag-pill.go { opacity: .8; }
+@media (prefers-reduced-motion: reduce) { .ag-pill, .ag-seg > button { transition: none; } }
 
 .ag-card { background: var(--ag-card); border-radius: 18px; box-shadow: var(--ag-shadow-s); border: 1px solid var(--ag-divider); }
 .ag-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--ag-divider); background: var(--ag-card); color: var(--ag-text); font-weight: 500; white-space: nowrap; cursor: pointer; }
@@ -71,7 +79,6 @@ button { font: inherit; color: inherit; }
 .ag-sys-state { font-size: 14px; font-weight: 500; }
 .ag-sys-sub { font-size: 12.5px; color: var(--ag-text2); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .ag-sys .ag-seg { align-self: stretch; }
-.ag-sys .ag-seg > button { flex: 1; padding: 8px 6px; }
 .ag-rows { display: flex; flex-direction: column; border-top: 1px solid var(--ag-divider); }
 .ag-row { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--ag-divider); font-size: 13.5px; min-width: 0; }
 .ag-row:last-child { border-bottom: 0; }
@@ -160,7 +167,6 @@ dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 :host([narrow]) .ag-sysgrid { grid-template-columns: 1fr; gap: 12px; }
 :host([narrow]) .ag-sys { padding: 14px; gap: 12px; }
 :host([narrow]) .ag-tabs { flex: 1 1 100%; }
-:host([narrow]) .ag-tabs > button { flex: 1; flex-direction: column; gap: 2px; padding: 6px 4px; font-size: 12px; min-height: 52px; }
 :host([narrow]) .ag-alarm .ag-btn { margin-left: 0; width: 100%; }
 :host([narrow]) .list-search { flex: 1 1 100%; min-width: 0; }
 :host([narrow]) .ag-foot { margin: auto -12px calc(-24px - env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); }
@@ -243,7 +249,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 :host([narrow]) .ag-list-head { margin-top: 2px; }
 
 /* 0.4.0: Aktionen als Ablauf, Benachrichtigungen */
-.ag-subs { max-width: 100%; overflow-x: auto; }
+
 .ag-wf-line { position: relative; display: flex; flex-direction: column; align-items: stretch; max-width: 820px; }
 .ag-wf-line::before { content: ""; position: absolute; left: 33px; top: 20px; bottom: 20px; width: 2px; background: var(--ag-divider); z-index: 0; }
 .ag-wf-start { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-weight: 500; position: relative; z-index: 1; }
@@ -427,8 +433,6 @@ select.ag-input { appearance: auto; }
 
 /* 0.7.0: Updates (Versionszeile wie in ha-device-panel) */
 /* Fünf Unterreiter auf dem Handy: volle Breite, gleich breit, kleinere Schrift (kein Abschneiden) */
-:host([narrow]) .ag-subs { display: flex; width: 100%; box-sizing: border-box; }
-:host([narrow]) .ag-subs > button { flex: 1 1 0; min-width: 0; padding: 7px 2px; font-size: 13px; }
 .ag-upd { display: flex; flex-direction: column; gap: 14px; }
 .ag-ver { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 14px; border-radius: 16px; background: var(--ag-card); box-shadow: var(--ag-shadow-s); }
 .ag-ver-ic { display: grid; flex: none; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--ag-success-soft); color: var(--ag-success); }
@@ -458,7 +462,7 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 @keyframes ag-prog { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 @media (prefers-reduced-motion: reduce) { .ag-spin, .ag-ver-prog i { animation: none; } }
 .ag-seg > button.has-dot { position: relative; }
-.ag-seg > button.has-dot::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-primary); box-shadow: 0 0 0 2px var(--ag-subtle); }
+.ag-seg > button.has-dot::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ag-text) 7%, var(--ag-card)); }
 .ag-notes { gap: 12px; }
 .ag-rn-body { max-height: min(60vh, 520px); overflow-y: auto; padding-right: 4px; }
 .ag-rn-entry h3 { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 6px; font-size: 16px; }
@@ -487,7 +491,7 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 @keyframes ag-from-left { from { opacity: 0; transform: translateX(-36px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ag-pane.from-right, .ag-pane.from-left { animation: none; } }
 .ag-seg > button.has-edit { position: relative; }
-.ag-seg > button.has-edit::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-warning); box-shadow: 0 0 0 2px var(--ag-subtle); }
+.ag-seg > button.has-edit::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-warning); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ag-text) 7%, var(--ag-card)); }
 .ag-seg > button.has-edit.has-dot::after { background: var(--ag-warning); }
 
 /* 0.9.0: Meldungen (Empfänger-Dropdown mit Pillen, Arten mit kritisch und Lautstärke) */
@@ -523,7 +527,10 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 /* 0.10.0: Einstellungen je Modus */
 .ag-scopebar { margin: 0 0 12px; overflow-x: auto; }
 .ag-subh { margin: 14px 4px 8px; color: var(--ag-text2); font-size: 12px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
-:host([narrow]) .ag-scopebar .ag-seg { display: flex; width: 100%; box-sizing: border-box; }
-:host([narrow]) .ag-scopebar .ag-seg > button { flex: 1 1 0; min-width: 0; padding: 7px 2px; font-size: 13px; }
-:host([narrow]) .ag-scopebar .ag-seg > button svg { display: none; }
+/* Handy: Tippfläche mindestens 44 px; die Leisten füllen die Breite; ab fünf Reitern vier Spalten in Zeilen (schmale Handys drei); Reiter mit Symbol: Symbol über dem Text */
+:host([narrow]) .ag-seg { display: grid; width: 100%; box-sizing: border-box; }
+:host([narrow]) .ag-seg > button { min-height: 44px; padding: 0 4px; }
+:host([narrow]) .ag-tabs > button { flex-direction: column; gap: 2px; font-size: 12px; min-height: 52px; }
+:host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 389px) { :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 `;

@@ -241,7 +241,7 @@ export class ListUi {
   }
 
   viewDialogHtml() {
-    const seg = (key, items) => `<div class="ag-seg small" data-seg="view-${key}"><span class="ag-pill"></span>${items.map(([v, label]) => `<button data-list="vset" data-key="${key}" data-value="${v}" class="${this.view[key] === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
+    const seg = (key, items) => `<div class="ag-seg small" data-seg="view-${key}">${items.map(([v, label]) => `<button data-list="vset" data-key="${key}" data-value="${v}" class="${this.view[key] === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
       <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["system", "groupSystem"], ["none", "groupNone"]])}
       <div class="ag-label">${esc(this._t("viewSort"))}</div>${seg("sort", [["name", "sortName"], ["battery", "sortBattery"], ["changed", "sortChanged"]])}

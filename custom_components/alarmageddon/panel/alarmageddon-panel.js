@@ -75,6 +75,7 @@ class AlarmageddonPanel extends HTMLElement {
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog><dialog class="ag-dlg ag-wide" id="ag-notes"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
+    this._initSeg(this._root);
     // Wie auch immer der Code-Dialog schliesst (Abbrechen, Escape, Erfolg): Auswahl wieder nach dem echten Zustand
     this._root.getElementById("ag-code").addEventListener("close", () => this._renderTop(true));
     this._root.getElementById("ag-notes").addEventListener("close", () => (this.updates.notes = null));
@@ -125,7 +126,7 @@ class AlarmageddonPanel extends HTMLElement {
     });
     new ResizeObserver(() => {
       this._checkNarrow();
-      this._placePills();
+      this._placePills(true);
     }).observe(this);
     this._checkNarrow(true);
     this._render();
@@ -340,7 +341,7 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   _segHtml(name, items, current, attr = "data-act", cls = "") {
-    return `<div class="ag-seg ${cls}" role="tablist" data-seg="${name}"><span class="ag-pill"></span>${items
+    return `<div class="ag-seg ${cls}" role="tablist" data-seg="${name}">${items
       .map(([key, label, icon]) => `<button role="tab" ${attr}="${key}" class="${current === key ? "on" : ""}" aria-selected="${current === key}">${icon ? ic(icon, 20) : ""}<span>${esc(label)}</span></button>`)
       .join("")}</div>`;
   }
@@ -416,29 +417,104 @@ class AlarmageddonPanel extends HTMLElement {
       <button class="ag-btn primary" data-act="add">${ic("plus")}${esc(this._t("emptyButton"))}</button></div>`;
   }
 
-  // Gleitende Kapsel unter dem gewählten Knopf (Design-Regel). Ohne gewählten Knopf keine Kapsel.
-  _placePills() {
-    for (const seg of this._root.querySelectorAll(".ag-seg")) {
-      const pill = seg.querySelector(".ag-pill");
-      const on = seg.querySelector(":scope > button.on");
-      if (!pill) continue;
-      if (!on) {
-        pill.style.width = "0";
-        pill.style.opacity = "0";
-        continue;
+  // Reiterleisten wie in Device Panel (_initSeg dort): Die gewählte Fläche ist ein eigenes Element (.ag-pill, vom Panel gesetzt), das beim
+  // Wechsel zum neuen Reiter gleitet. Die Leisten werden bei jedem Aufbau neu gezeichnet; darum merkt sich das Panel je Leiste die letzte Lage
+  // der Kapsel und fährt von dort los (FLIP). Mitten in der Fahrt neu gezeichnet: von der echten Lage weiterfahren. Ohne Bewegung (erstes
+  // Zeichnen, Grössenänderung, "Bewegung reduzieren") steht die Kapsel sofort am Ziel. Ohne gewählten Knopf keine Kapsel.
+  _initSeg(root) {
+    this._segLast = new Map();
+    const reduced = () => Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+    // Schlüssel je Leiste: Fenster | Name der Leiste (data-seg); jede Leiste braucht einen eigenen, sonst teilen sich Leisten die Lage
+    const keyOf = (bar) => `${bar.closest("dialog")?.id || "page"}|${bar.dataset.seg || ""}`;
+    const apply = (pill, r) => {
+      pill.style.width = `${r.w}px`;
+      pill.style.height = `${r.h}px`;
+      pill.style.transform = `translate(${r.x}px, ${r.y}px)`;
+    };
+    const instant = (pill, r) => {
+      pill.style.transition = "none";
+      apply(pill, r);
+      void pill.offsetWidth;
+      pill.style.transition = "";
+    };
+    this._segSync = (still = false) => {
+      for (const bar of root.querySelectorAll(".ag-seg")) {
+        const on = bar.querySelector(":scope > button.on");
+        if (!on && bar.offsetWidth) {
+          bar.querySelector(":scope > .ag-pill")?.remove();
+          this._segLast.delete(keyOf(bar));
+        }
+        if (!on || !bar.offsetWidth) continue; // unsichtbar (Fenster zu): die Lage wird beim Öffnen gesetzt
+        if (!bar._segSeen) {
+          bar._segSeen = true;
+          this._segRO.observe(bar);
+        }
+        bar._segW = bar.offsetWidth;
+        const rect = { x: on.offsetLeft, y: on.offsetTop, w: on.offsetWidth, h: on.offsetHeight };
+        const key = keyOf(bar);
+        const prev = this._segLast.get(key);
+        let pill = bar.querySelector(":scope > .ag-pill");
+        const fresh = !pill;
+        if (fresh) {
+          pill = this.ownerDocument.createElement("i");
+          pill.className = "ag-pill";
+          pill.setAttribute("aria-hidden", "true");
+          bar.appendChild(pill);
+        }
+        const same = (a, b) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+        const moved = Boolean(prev) && !same(prev, rect);
+        const now = Date.now();
+        // Mitten in der Fahrt neu gezeichnet (Daten treffen gleich nach dem Tipp ein): von der echten Lage der alten Kapsel weiterfahren
+        const flying = Boolean(prev?.live) && now - prev.t < 340;
+        // Dasselbe Ziel, die Fahrt läuft schon (eine zweite Zeichnung gleich danach, bevor die Lage mitgeschrieben ist): nichts anfassen.
+        // Wurde die Leiste dabei neu gezeichnet (neue Kapsel), von der Lage weiterfahren, die zuletzt bekannt war.
+        const running = Boolean(prev) && !moved && prev.t > 0 && now - prev.t < 340;
+        if (running && !fresh) continue;
+        const from = flying ? prev.live : moved ? prev : running ? prev.live || prev.start : null;
+        const animate = Boolean(from) && !still && !reduced();
+        if (!animate) instant(pill, rect);
+        else if (fresh) {
+          instant(pill, from);
+          apply(pill, rect);
+        } else apply(pill, rect);
+        if (animate) {
+          pill.classList.add("go");
+          window.clearTimeout(pill._goT);
+          pill._goT = window.setTimeout(() => pill.classList.remove("go"), 320);
+        }
+        const entry = { ...rect, live: null, start: moved ? prev : prev?.start || null, t: moved ? now : prev?.t || 0 };
+        this._segLast.set(key, entry);
+        if (animate) {
+          // Lage der Kapsel während der Fahrt mitschreiben (Bild für Bild), damit ein Neuzeichnen dort ansetzen kann
+          const t0 = performance.now();
+          const track = () => {
+            if (this._segLast.get(key) !== entry || !pill.isConnected || performance.now() - t0 > 340) {
+              if (this._segLast.get(key) === entry) entry.live = null;
+              return;
+            }
+            const m = new DOMMatrixReadOnly(getComputedStyle(pill).transform);
+            entry.live = { x: m.m41, y: m.m42, w: pill.offsetWidth, h: pill.offsetHeight };
+            window.requestAnimationFrame(track);
+          };
+          window.requestAnimationFrame(track);
+        }
       }
-      // Neue Kapsel (nach einem Neuaufbau) sofort an ihren Platz, gleiten nur bei einem Wechsel
-      const fresh = !pill.dataset.placed;
-      if (fresh) pill.style.transition = "none";
-      pill.style.opacity = "1";
-      pill.style.width = `${on.offsetWidth}px`;
-      pill.style.transform = `translateX(${on.offsetLeft}px)`;
-      if (fresh) {
-        void pill.offsetWidth;
-        pill.style.transition = "";
-        pill.dataset.placed = "1";
-      }
-    }
+    };
+    // Nur bei echter Breitenänderung (Fenster öffnet, Drehen); die erste Meldung beim Beobachten ist keine
+    this._segRO = new ResizeObserver((entries) => {
+      for (const e of entries) if (!e.target.isConnected) this._segRO.unobserve(e.target);
+      if (entries.some((e) => e.target.isConnected && e.target.offsetWidth > 0 && e.target.offsetWidth !== e.target._segW)) this._segSync(true);
+    });
+    // Änderungen, die nur die Kapsel betreffen, ignorieren (sonst Endlosschleife)
+    this._segMO = new MutationObserver((muts) => {
+      if (muts.every((m) => m.target.classList?.contains("ag-pill") || [...m.addedNodes, ...m.removedNodes].every((n) => n.classList?.contains("ag-pill")))) return;
+      this._segSync();
+    });
+    this._segMO.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  }
+
+  _placePills(still = false) {
+    this._segSync?.(still);
   }
 
   _toast(text) {
@@ -575,7 +651,7 @@ class AlarmageddonPanel extends HTMLElement {
     // Auswahl des Modus; während Verzögerung zählt der Zielmodus, bei Alarm ist nichts gewählt
     const current = state === "disarmed" ? "off" : ARMED[state] || (state === "arming" ? attrs.arm_mode : null);
     const modes = ["off", ...s.modes];
-    const seg = `<div class="ag-seg" data-seg="mode-${esc(s.entry_id)}"><span class="ag-pill"></span>${modes
+    const seg = `<div class="ag-seg" data-seg="mode-${esc(s.entry_id)}">${modes
       .map((m) => `<button data-act="mode" data-entry="${esc(s.entry_id)}" data-mode="${m}" class="${m === current ? "on" : ""}" ${st ? "" : "disabled"}>${ic(MODE_ICON[m], 16)}<span>${esc(this._t(MODE_KEY[m]))}</span></button>`)
       .join("")}</div>`;
     // "Bereit für" je Modus (Variante B: Text mit Häkchen oder Warnzeichen, verständlich auch ohne Farben)

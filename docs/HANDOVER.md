@@ -5,6 +5,11 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+## Stand (0.24.0, Reiterleisten wie Device Panel)
+
+- Übernahme aus ha-device-panel (`_initSeg`, Abschnitt "Reiter als Segmentschalter" in `styles.js`): `_initSeg` in `alarmageddon-panel.js` ersetzt das alte `_placePills` (bleibt als Aufruf von `_segSync`). Die Kapsel ist ein `<i class="ag-pill">` als letztes Kind der Leiste (das Markup enthält keine Kapsel mehr, sonst wäre sie eine Rasterzelle), FLIP mit `_segLast` je Schlüssel `Fenster|data-seg`, `live` (Lage unterwegs), ResizeObserver nur bei echter Breitenänderung, MutationObserver ignoriert Änderungen an der Kapsel. Abweichung vom Vorbild: Eine zweite Zeichnung in derselben Fahrt, bevor `live` mitgeschrieben ist, fasst die Kapsel nicht an (`running`), sonst sprang sie ans Ziel, weil `_renderView` synchron und der MutationObserver nochmals synchronisieren.
+- CSS: `.ag-seg` als `inline-grid` (kompakte Leisten so breit wie der Inhalt, Spalten gleich breit), auf dem Handy `grid` über die Breite, ab fünf Reitern 4 Spalten (unter 390 px 3). Tests: `seg-e2e.mjs`. Lage der Punkte `has-dot`/`has-edit` an die neue Leistenfarbe angepasst.
+
 ## Stand (0.23.0, Neuladen, Karten, Klickziel)
 
 - Neuladen nach dem Speichern: `async_unload_entry` entfernt das Panel nicht mehr (nur `async_remove_entry` der letzten Anlage); `controller.instance` (uuid je Lauf) steht in `data`; das Panel wartet in `_reloadWait` auf die neue Kennung, behält die letzten Daten (`_fetch` ergänzt eine fehlende Anlage aus den alten Daten, bei leerer Antwort bis zu 30 Wiederholungen) und zeigt die Ladeanzeige (`loader.js`, 1:1 aus Device Panel `_loaderHtml/_loaderStart`, CSS `.ag-ld`, Klasse `ag-ldwrap` auf `.ag-root`). Der Nachbau simuliert das Neuladen (`window.__reloadMs`).
