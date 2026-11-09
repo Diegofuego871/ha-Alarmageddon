@@ -440,6 +440,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-chip small { margin-left: 6px; color: var(--ag-text2); font-size: 11.5px; }
 /* Ladeanzeige wie in Device Panel (loader.js): der Inhalt bleibt gedimmt, drei Punkte in der Farbe --ld liegen darüber */
 .ag-ldwrap > .ag-content { opacity: .28; pointer-events: none; user-select: none; }
+.ag-ldblur > .ag-content { opacity: .7; filter: blur(3px); transition: filter .15s ease; }
 .ag-ld { position: absolute; left: 50%; top: 40%; width: 72px; height: 72px; margin: -36px 0 0 -36px; pointer-events: none; z-index: 20; }
 .ag-ld s { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--ld, var(--ag-primary)); box-shadow: 0 0 12px color-mix(in srgb, var(--ld, var(--ag-primary)) 55%, transparent); }
 .ag-ld s:nth-child(1) { left: 55px; top: 29px; }

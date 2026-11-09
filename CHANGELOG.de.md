@@ -7,7 +7,17 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.37.0] - 2026-11-09
+
+Scharf- und Deaktivieren in der Übersicht zeigt, dass die Anlage arbeitet.
+
+### Geändert
+
+- **Übersicht, Scharf- und Deaktivieren:** Der Knopf wechselt sofort; danach erscheint die Ladeanzeige (drei drehende Punkte, wie sonst) über dem leicht verschwommenen Hintergrund, bis Home Assistant den neuen Zustand meldet (höchstens 4 Sekunden). Währenddessen lässt sich nichts antippen, so ist klar, dass die Anlage arbeitet und nicht hängt.
+
 ## [0.36.0] - 2026-11-09
+
+Nicht veröffentlicht; enthalten in 0.37.0.
 
 Ein aufgeräumteres Protokoll, besonders auf dem Handy.
 
@@ -581,7 +591,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.36.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.36.0
+[0.37.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.37.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2
 [0.35.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.1
 [0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0

@@ -7,7 +7,17 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.37.0] - 2026-11-09
+
+Arming and disarming from the overview shows that the alarm system is working.
+
+### Changed
+
+- **Overview, arming and disarming:** the button switches at once; then the loader (three spinning dots, as elsewhere) appears over the slightly blurred background until Home Assistant reports the new state (at most 4 seconds). Nothing can be tapped meanwhile, so it is clear that the alarm system is working and not hanging.
+
 ## [0.36.0] - 2026-11-09
+
+Not released; included in 0.37.0.
 
 A tidier log, especially on the phone.
 
@@ -581,7 +591,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.36.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.36.0
+[0.37.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.37.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2
 [0.35.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.1
 [0.35.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.0

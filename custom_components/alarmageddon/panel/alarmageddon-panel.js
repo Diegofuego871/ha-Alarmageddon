@@ -252,10 +252,12 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   // Ladeanzeige über dem gedimmten Inhalt (Device Panel): beim Neuladen einer Anlage nach dem Speichern
-  _busy(on) {
+  _busy(on, blur = false) {
     const root = this._root.querySelector(".ag-root");
     if (!root || root.classList.contains("ag-ldwrap") === on) return;
     root.classList.toggle("ag-ldwrap", on);
+    // Beim Scharf-/Deaktivieren verschwimmt der Hintergrund leicht, statt nur zu dimmen
+    root.classList.toggle("ag-ldblur", on && blur);
     root.querySelector(":scope > .ag-ld")?.remove();
     if (on) {
       root.insertAdjacentHTML("beforeend", loaderHtml(esc(this._t("loading"))));
@@ -980,8 +982,12 @@ class AlarmageddonPanel extends HTMLElement {
     if (!s) return;
     const msg = { type: "alarmageddon/arm", entry_id: entryId, mode };
     if (code) msg.code = code;
+    // Der Knopf wechselt sofort (Kapsel); solange die Anlage arbeitet, liegt die Ladeanzeige über dem verschwommenen Bild und nichts lässt sich antippen
+    const own = !this._root.querySelector(".ag-root")?.classList.contains("ag-ldwrap");
+    if (own && !this._root.getElementById("ag-code").open) this._busy(true, true);
     try {
       await this._hass.callWS(msg);
+      await this._waitArmed(s, mode);
       this._closeDialog("ag-code");
       this._fetch(); // Ereignisse nachladen; der Zustand kommt über hass
     } catch (err) {
@@ -996,7 +1002,15 @@ class AlarmageddonPanel extends HTMLElement {
       else this._toast(text);
       // Die Kapsel wurde schon verschoben: neu aufbauen, auch wenn der Text gleich geblieben ist
       this._renderTop(true);
+    } finally {
+      if (own) this._busy(false);
     }
+  }
+
+  // Wartet, bis Home Assistant den neuen Zustand meldet (höchstens 4 Sekunden): die Ladeanzeige endet erst, wenn die Anlage wirklich so steht
+  async _waitArmed(s, mode) {
+    const want = (st) => (mode === "off" ? st === "disarmed" : st === "arming" || ARMED[st] === mode);
+    for (let i = 0; i < 40 && !want(this._state(s.entity_id)?.state); i += 1) await new Promise((r) => setTimeout(r, 100));
   }
 
   _armError(s, mode, err) {

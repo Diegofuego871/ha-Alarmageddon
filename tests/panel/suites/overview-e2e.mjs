@@ -42,7 +42,12 @@ for (const lang of ["de", "en"]) {
     // Tor zu: jetzt klappt es ohne Code
     await s.sim(`window.__setState("binary_sensor.garagentor", "off")`);
     check(`${tag}: Garage jetzt bereit`, await s.waitFor(`return r.querySelectorAll('[data-system="e_garage"] .ag-rchip.ok').length === 2`));
+    // Schalten: Kapsel sofort, danach Ladeanzeige über verschwommenem Bild, nichts antippbar, am Ende wieder frei
+    await s.sim("window.__wsDelay = 700");
     await s.tap('[data-system="e_garage"] [data-mode="home"]');
+    check(`${tag}: Kapsel wechselt sofort, Ladeanzeige über verschwommenem Bild`, await s.waitFor(`const root=r.querySelector('.ag-root'); return root.classList.contains('ag-ldwrap') && root.classList.contains('ag-ldblur') && !!root.querySelector(':scope > .ag-ld') && r.querySelector('[data-system="e_garage"] button.on')?.dataset.mode === "home" && getComputedStyle(r.querySelector('.ag-content')).pointerEvents === 'none' && getComputedStyle(r.querySelector('.ag-content')).filter.includes('blur')`, 600));
+    check(`${tag}: danach wieder frei`, await s.waitFor(`const root=r.querySelector('.ag-root'); return !root.classList.contains('ag-ldwrap') && !root.classList.contains('ag-ldblur') && !root.querySelector(':scope > .ag-ld')`, 4000));
+    await s.sim("window.__wsDelay = 0");
     check(`${tag}: Garage scharf`, await s.waitFor(`return r.querySelector('[data-system="e_garage"]').innerText.includes(${JSON.stringify(t.armedHome)})`));
 
     // Haus deaktivieren: braucht Code, Dialog erst nach dem Versuch ohne Code
