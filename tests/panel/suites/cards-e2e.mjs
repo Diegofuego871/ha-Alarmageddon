@@ -17,9 +17,18 @@ for (const lang of ["de", "en"]) {
     const times = await s.ev("const rows=[...r.querySelectorAll('.ag-lrow, .ag-lcard')]; const pick=(n) => rows.find((x) => x.innerText.includes(n)); return { door: pick('Haustür')?.innerText, other: pick('Bewegung Flur')?.innerText }");
     check(`${tag}: letzte Änderung aus dem Server (Haustür vor Tagen), ohne Wert nichts erfunden`, /5|fünf|five|Tag|day/i.test(times.door || "") && !/Min\.|min ago|Sek|sec/i.test(times.other || ""), JSON.stringify(times));
     {
-      check(`${tag}: Umschalter Liste/Karten mit Kapsel`, await s.ev("const g=r.querySelector('[data-seg=\"layout\"]'); return !!g && !!g.querySelector('.ag-pill') && g.querySelectorAll('button').length === 2 && g.querySelector('button.on').dataset.listLayout === 'list'"));
+      // Handy: Liste/Karten nur in "Ansicht" (spart Platz); Desktop an beiden Orten
+      const setLayout = async (v) => {
+        if (!mobile) return s.tap(`[data-list-layout="${v}"]`);
+        await s.tap('[data-list="view"]');
+        await s.tap(`#ag-view [data-list="vset"][data-key="layout"][data-value="${v}"]`);
+        await s.tap('[data-list="vdone"]');
+      };
+      if (mobile) check(`${tag}: Handy: kein Umschalter Liste/Karten in der Werkzeugleiste, aber in "Ansicht"`, await s.ev("return !r.querySelector('.ag-tools [data-seg=\"layout\"]')") && (await s.tap('[data-list="view"]'), await s.ev("return !!r.querySelector('#ag-view [data-list=\"vset\"][data-key=\"layout\"]')")) && (await s.tap('[data-list="vdone"]'), true));
+      else check(`${tag}: Desktop: Umschalter auch in "Ansicht"`, (await s.tap('[data-list="view"]'), await s.ev("return !!r.querySelector('#ag-view [data-list=\"vset\"][data-key=\"layout\"]')")) && (await s.tap('[data-list="vdone"]'), true));
+      if (!mobile) check(`${tag}: Umschalter Liste/Karten mit Kapsel`, await s.ev("const g=r.querySelector('[data-seg=\"layout\"]'); return !!g && !!g.querySelector('.ag-pill') && g.querySelectorAll('button').length === 2 && g.querySelector('button.on').dataset.listLayout === 'list'"));
       check(`${tag}: Standard ist die Liste`, await s.ev("return !!r.querySelector('.ag-ltable') && !r.querySelector('.ag-mcards')"));
-      await s.tap('[data-list-layout="cards"]');
+      await setLayout("cards");
       check(`${tag}: Karten, eine je Sensor${mobile ? "" : " (Raster)"}`, await s.waitFor(`const g=r.querySelector('.ag-mcards${mobile ? "" : ".grid"}'); return !!g && g.querySelectorAll('.ag-lcard').length === 9 && !r.querySelector('.ag-ltable')`));
       check(`${tag}: Karten gruppiert nach Bereich`, await s.ev("return r.querySelectorAll('.ag-mcards .ag-group-label').length >= 3"));
       check(`${tag}: Karte mit allen Angaben`, await s.ev("const c=[...r.querySelectorAll('.ag-lcard')].find((x) => x.innerText.includes('Haustür')); const t=c.innerText; return t.includes('Haustür') && !!c.querySelector('.ag-tag') && !!c.querySelector('.ag-bat') && !!c.querySelector('.ag-lz') && !!c.querySelector('.ag-lfacts')"));
@@ -28,7 +37,7 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: Filter wirken auch bei Karten`, await (async () => { await s.tap('[data-list="filter"][data-filter="open"]'); return s.waitFor("return r.querySelectorAll('.ag-lcard').length === 1"); })());
       await s.tap('[data-list="filter"][data-filter="open"]');
       await s.page.screenshot({ path: `${outDir}cards-${lang}-desktop.png`, fullPage: true });
-      await s.tap('[data-list-layout="list"]');
+      await setLayout("list");
       check(`${tag}: zurück zur Liste`, await s.waitFor("return !!r.querySelector('.ag-ltable') && !r.querySelector('.ag-mcards')"));
     }
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));

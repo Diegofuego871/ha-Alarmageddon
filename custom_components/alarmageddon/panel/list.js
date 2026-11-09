@@ -266,7 +266,7 @@ export class ListUi {
         <label class="list-search">${ic("search", 18)}<input type="search" data-list="search" placeholder="${esc(this._t("search"))}" value="${esc(this.q)}" aria-label="${esc(this._t("search"))}">
           <button class="ag-clear" data-list="clear" aria-label="${esc(this._t("clearSearch"))}" ${this.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
         <span class="ag-lchips"></span>${sysSel}${areaSel}${typeSel}<span class="ag-grow"></span>
-        ${this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
+        ${this.host.hasAttribute("narrow") ? "" : this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
         <button class="ag-btn" data-list="view">${ic("columns", 18)}${esc(this._t("view"))}</button></div>`;
   }
 
@@ -407,6 +407,7 @@ export class ListUi {
         <button class="ag-toggle ${on ? "on" : ""}" data-list="col" data-set="${set}" data-key="${k}" role="switch" aria-checked="${on}" aria-label="${esc(this._t(COL_LABEL[k]))}"></button></div>`).join("");
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
       <div class="ag-t2 ag-small">${esc(this._t(this.kind === "mobile" ? "viewForMobile" : "viewForDesktop"))}</div>
+      <div class="ag-label">${esc(this._t("viewLayout"))}</div>${seg("layout", [["list", "layoutList"], ["cards", "layoutCards"]])}
       <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["system", "groupSystem"], ["none", "groupNone"]])}
       <div class="ag-label">${esc(this._t("viewSort"))}</div><select class="ag-input" data-list="vsort" aria-label="${esc(this._t("viewSort"))}">${["name", ...COLUMNS].map((k) => `<option value="${k}" ${this.view.sort === k ? "selected" : ""}>${esc(this._t(k === "name" ? "colName" : COL_LABEL[k]))}</option>`).join("")}</select>
       <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc"], ["desc", "dirDesc"]])}</div>

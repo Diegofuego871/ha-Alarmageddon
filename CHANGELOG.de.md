@@ -17,6 +17,7 @@ Sicherungen können einen Namen haben.
 
 ### Behoben
 
+- **Übersicht auf dem Handy:** Der Umschalter Liste/Karten steht nur noch unter "Ansicht" (er brauchte zu viel Platz in der Werkzeugleiste); am Computer bleibt er an beiden Orten.
 - **Protokoll:** Die Filter-Pillen der Ereignisse gleiten unter den festen Zeitraum und bleiben dort stehen, während die Liste scrolt.
 - **Alarmaktionen hängen nie:** Ein Gerät, das nicht innerhalb von 10 Sekunden antwortet (vorher: 15), hält den Ablauf nicht mehr auf; er geht mit dem nächsten Schritt weiter, und die Zeitachse des Alarms zeigt "Keine Antwort innerhalb von 10 s, der Ablauf ging weiter". Der hängende Aufruf wird nicht abgebrochen (ein Skript darf fertig werden), aber nicht mehr abgewartet, und Deaktivieren beendet ihn, auch wenn er den Abbruch ignoriert. Der Sonos-Schnappschuss vor dem ersten Schritt verzögert den Alarm höchstens um 3 Sekunden. Auch eine fehlschlagende Aktion steht auf der Zeitachse. Deaktivieren, während der Ablauf startet, hinterlässt keinen halb gestarteten Ablauf mehr. Meldungen an die Handys warten ebenfalls höchstens 15 Sekunden.
 - **Alarmablauf auf dem Handy:** Die gestrichelte Linie und die Linie zu "Alarm endet" liegen jetzt genau unter der Mitte der Plus-Knöpfe (sie lagen 3 px zu weit rechts).
