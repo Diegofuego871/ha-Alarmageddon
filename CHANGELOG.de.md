@@ -21,6 +21,8 @@ Enthält die Änderungen aus 0.24.0.
 ### Geändert
 
 - **Der Alarm dauert, bis er quittiert wird:** Der Zustand "Alarm" bleibt, bis jemand deaktiviert, in jedem Modus und auch bei immer aktiven Sensoren. Die Einstellung "Alarmdauer" ist aus dem Panel, dem Optionsdialog und den Alarmanlagen entfernt. Wie lange eine Sirene oder ein Alarmton läuft, steht im Schritt der Aktionen (Alarmton: "Dauer"). Deaktivieren stoppt weiterhin alle Schritte und stellt die Geräte zurück. Alte Werte in den Optionen oder in einer Sicherung werden ignoriert.
+- **Die Vorschau der Pushmeldung** steht jetzt direkt unter den Platzhaltern, vor den Optionen zur Zustellung.
+- **Verständlichere Beschriftung der Knöpfe der Pushmeldung** (Konfiguration › Aktionen, Schritt "Push-Meldung"): Die Gruppe heisst "Aktionen der Pushmeldung", jeder Eintrag sagt, dass er als Knopf unter der Meldung erscheint und was er tut. Der Hinweis zum Alarmton erwähnt die Alarmdauer nicht mehr.
 - **Die Ebene "Immer aktiv" entfällt** in Konfiguration › Anlage › "Einstellungen je Modus": Sie enthielt nur die Alarmdauer. Die Aktionen für "immer aktiv" bleiben in Konfiguration › Aktionen.
 
 ## [0.24.0] - 2026-11-09

@@ -21,6 +21,8 @@ Includes the changes from 0.24.0.
 ### Changed
 
 - **The alarm lasts until it is acknowledged:** the state "Alarm" stays until someone disarms, in every mode and also for always-active sensors. The setting "Alarm duration" is removed from the panel, the options dialog and the alarm systems. How long a siren or an alarm sound plays is set in the step of the actions (alarm sound: "Duration"). Disarming still stops all steps and returns the devices. Old values in the options or in a backup are ignored.
+- **The preview of the push notification** now stands directly under the placeholders, before the delivery options.
+- **Clearer wording for the push notification buttons** (Configuration › Actions, step "Push notification"): the group is called "Actions of the push notification", each entry says that it is a button under the message and what it does. The hint of the alarm sound no longer mentions the alarm duration.
 - **The scope "Always active" is removed** from Configuration › Alarm system › "Settings per mode": it only held the alarm duration. The actions for "always active" stay in Configuration › Actions.
 
 ## [0.24.0] - 2026-11-09

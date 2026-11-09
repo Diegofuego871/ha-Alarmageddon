@@ -540,9 +540,9 @@ export class ActionsUi {
       ${this._field("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
       ${this._field("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
       <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtTokens"))}</div><div class="ag-ef-h">${esc(this._t("fldNtTokensHint"))}</div><div class="ag-zline">${chips}</div></div>
-      ${this._ntDelivery(f)}
       <div class="ag-ef"><div class="ag-ef-l">${esc(this._t("fldNtPreview"))}</div><div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
-        <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div></div>`;
+        <div><button type="button" class="ag-btn" data-wf="nt-default">${ic("undo", 16)}${esc(this._t("fldNtDefault"))}</button></div></div>
+      ${this._ntDelivery(f)}`;
   }
 
   // Wirksame Werte der Alarmmeldung: aus dem Schritt, sonst der frühere globale Wert (so ändert sich bei bestehenden Schritten nichts)
