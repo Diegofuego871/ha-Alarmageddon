@@ -825,7 +825,7 @@ class AlarmageddonPanel extends HTMLElement {
     const label = this._t("openInHa");
     const text = this.hasAttribute("narrow") ? "" : esc(label);
     return `${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
-      ${this._sub === "system" ? `<button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>` : ""}`;
+      <button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>`;
   }
 
   _openRename() {

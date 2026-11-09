@@ -13,6 +13,7 @@ Arming and disarming from the overview shows that the alarm system is working.
 
 ### Changed
 
+- **Button "Open integration in HA"** is shown in every tab of Configuration again (next to the name at the top), not only in Alarm system.
 - **Overview, arming and disarming:** the button switches at once; then the loader (three spinning dots, as elsewhere) appears over the slightly blurred background until Home Assistant reports the new state (at most 4 seconds). Nothing can be tapped meanwhile, so it is clear that the alarm system is working and not hanging.
 
 ## [0.36.0] - 2026-11-09
