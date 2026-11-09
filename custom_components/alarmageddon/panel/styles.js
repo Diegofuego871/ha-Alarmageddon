@@ -663,5 +663,8 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 :host([narrow]) .ag-table tr.grp td { padding: 6px 12px; }
 .ag-bkname { display: block; font-weight: 500; }
 .ag-bkdate { display: block; font-size: 12px; }
+/* Protokoll: die Filter-Pillen der Ereignisse gleiten unter den festen Zeitraum und bleiben dort stehen */
+.ag-evchips { position: sticky; top: var(--ag-th-top, 0px); z-index: 14; background: var(--ag-bg); padding: 8px 0; margin-bottom: 4px !important; }
+.ag-log-tools { padding-bottom: 8px; }
 `;
 
