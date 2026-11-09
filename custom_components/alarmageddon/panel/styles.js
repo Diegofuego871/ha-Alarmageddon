@@ -250,13 +250,14 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-otx b { font-weight: 500; display: block; }
 .ag-otx small { display: block; color: var(--ag-text2); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
 /* Einstellungen pro Modus: Schalter mit Text, daneben die Reiter; Punkt am Kästchen = eigener Wert dieses Modus */
-.ag-pmbar { display: flex; align-items: center; gap: 12px 22px; flex-wrap: wrap; margin: 0 0 14px; }
+.ag-pmbar { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin: 22px 0 22px; }
 .ag-pmsw { display: flex; align-items: center; gap: 12px; }
 .ag-pmsw .ag-toggle { margin: 0; flex: none; }
 .ag-box.own { position: relative; }
 .ag-box.own::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ag-warning); border: 2px solid var(--ag-card); }
-.ag-optth { white-space: normal; max-width: 92px; line-height: 1.2; font-size: 11px; }
-.ag-obtns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
+th.cur, td.cur { background: color-mix(in srgb, var(--ag-primary) 9%, transparent); }
+th.cur { box-shadow: inset 0 3px 0 var(--ag-primary); }
+.ag-zbtn.cur { box-shadow: 0 0 0 2px var(--ag-primary); }
 .ag-block { display: block; margin-top: 2px; font-size: 12px; }
 .ag-origin { display: inline-flex; gap: 4px; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--ag-text2); border: 0; background: transparent; padding: 0; font-family: inherit; }
 .ag-origin.own { color: var(--ag-primary); font-weight: 500; cursor: pointer; }

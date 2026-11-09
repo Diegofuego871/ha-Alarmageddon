@@ -7,6 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.33.0] - 2026-11-09
+
+Settings per mode, simplified: the same table, with the settings of the chosen mode.
+
+### Changed
+
+- **Settings per mode work differently** (Configuration › Sensors): the tabs of the modes only appear when the switch "Settings per mode" is on; there is no tab "All modes" any more, and the first mode is chosen. With the switch on, the table has the **same columns as before** (zones of all modes, "Always active", entry delay), so you always see in which modes a sensor is active. The column of the chosen mode and "Always active" (which then applies to this mode) are highlighted. All other sensor options (may be open, bypass, arm as soon as closed, failure counts as alarm, needs a second sensor, silent alarm) are set in the sheet of the sensor, for the chosen mode. With the switch off everything is as before 0.32.0. On the phone the zone buttons of the cards show the chosen mode with a frame. More space around the switch.
+- **The origin text** of an option in a mode reads "Basic value (as before switching on)" and "Own value for {mode}" with "back to the basic value".
+
 ## [0.32.0] - 2026-11-09
 
 Sensor settings per mode, and "Bypass" is now a setting per sensor.
@@ -485,6 +494,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0

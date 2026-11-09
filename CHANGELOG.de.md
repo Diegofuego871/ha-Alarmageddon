@@ -7,6 +7,15 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.33.0] - 2026-11-09
+
+Einstellungen pro Modus vereinfacht: dieselbe Tabelle, mit den Einstellungen des gewählten Modus.
+
+### Geändert
+
+- **Einstellungen pro Modus funktionieren anders** (Konfiguration › Sensoren): Die Reiter der Modi erscheinen nur, wenn der Schalter "Einstellungen pro Modus" an ist; es gibt keinen Reiter "Alle Modi" mehr, und der erste Modus ist gewählt. Mit eingeschaltetem Schalter hat die Tabelle die **gleichen Spalten wie vorher** (Zonen aller Modi, "Immer aktiv", Eingangsverzögerung), so siehst du immer, in welchen Modi ein Sensor aktiv ist. Die Spalte des gewählten Modus und "Immer aktiv" (gilt dann für diesen Modus) sind hervorgehoben. Alle anderen Sensor-Optionen (darf offen sein, umgehen, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht zweiten Sensor, stiller Alarm) stellst du im Blatt des Sensors ein, für den gewählten Modus. Mit ausgeschaltetem Schalter ist alles wie vor 0.32.0. Am Handy zeigen die Zonen-Knöpfe der Karten den gewählten Modus mit einem Rahmen. Mehr Abstand um den Schalter.
+- **Der Herkunftstext** einer Option in einem Modus heisst "Grundwert (wie vor dem Einschalten)" und "Eigener Wert für {Modus}" mit "zurück zum Grundwert".
+
 ## [0.32.0] - 2026-11-09
 
 Sensor-Einstellungen pro Modus, und "Umgehen" ist jetzt eine Einstellung pro Sensor.
@@ -485,6 +494,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0

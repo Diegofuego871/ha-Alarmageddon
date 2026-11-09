@@ -19,7 +19,7 @@ export class SensorsUi {
     this.paint = null;
     this.skipClick = false;
     this.presetDraft = null;
-    this.mtab = "all"; // Ansicht: "all" (Werte für alle Modi) oder ein Modus mit eigenen Werten (nur mit eingeschaltetem Schalter)
+    this.mtab = "home"; // Ansicht: gewählter Modus (nur mit eingeschaltetem Schalter)
   }
 
   _t(key, vars) {
@@ -107,9 +107,9 @@ export class SensorsUi {
     return n + (s && d && d.entry === s.entry_id && d.perMode !== Boolean(s.per_mode_sensors) ? 1 : 0);
   }
 
-  // Modus der Ansicht: nur mit eingeschaltetem Schalter und gewähltem Reiter (sonst gelten die Werte für alle Modi)
+  // Modus der Ansicht: nur mit eingeschaltetem Schalter (der gewählte Reiter), sonst gelten die Werte für alle Modi
   activeMode() {
-    return this.draft?.perMode && this.mtab !== "all" ? this.mtab : null;
+    return this.draft?.perMode ? this.mtab : null;
   }
 
   preset(id) {
@@ -240,69 +240,23 @@ export class SensorsUi {
       const none = !this.draft.sensors.size;
       this.host._setHtml(body, `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(none ? "noSensorsChosen" : "noSensors"))}</span>${none ? `<button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>` : ""}</div>`);
     }
-    else if (mode) this.host._setHtml(body, narrow ? this._modeCards(rows, mode) : this._modeTable(rows, changed, mode));
     else this.host._setHtml(body, narrow ? this._cards(rows) : this._table(rows, changed));
     this.renderSide();
     this.renderFoot();
   }
 
-  // Schalter "Einstellungen pro Modus" und Reiter (Alle Modi, Anwesend, Abwesend, Nacht); die Modus-Reiter sind ohne Schalter gesperrt
+  // Schalter "Einstellungen pro Modus"; nur wenn er an ist, erscheinen die Reiter der Modi (der erste ist gewählt)
   renderModeBar() {
     const h = this.host;
     const bar = h._view?.querySelector(".ag-pmbar");
     const d = this.draft;
     if (!bar || !d) return;
-    if (!d.perMode) this.mtab = "all";
     const modes = this.modes().filter((m) => ALL_MODES.includes(m));
-    if (this.mtab !== "all" && !modes.includes(this.mtab)) this.mtab = "all";
-    let tabs = h._segHtml("sen-mode", [["mt:all", this._t("senModeAll")], ...modes.map((m) => [`mt:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]])], `mt:${this.mtab}`, "data-sen", "small");
-    if (!d.perMode) tabs = tabs.replace(/<button role="tab" data-sen="mt:(home|away|night)"/g, '<button role="tab" disabled data-sen="mt:$1"');
+    if (d.perMode && !modes.includes(this.mtab)) this.mtab = modes[0] || "home";
+    const tabs = d.perMode ? h._segHtml("sen-mode", modes.map((m) => [`mt:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]]), `mt:${this.mtab}`, "data-sen", "small") : "";
     h._setHtml(bar, `<div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-sen="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("senPerMode"))}"></button>
       <div class="ag-settx"><b>${esc(this._t("senPerMode"))}</b><small>${esc(this._t(d.perMode ? "senPerModeOn" : "senPerModeHint"))}</small></div></div>${tabs}`);
     h._placePills();
-  }
-
-  // Tabelle eines Modus: alle Optionen als Kästchen mit dem Wert dieses Modus (eigener Wert als Punkt), Klick setzt einen eigenen Wert
-  _modeTable(rows, changed, mode) {
-    const head = `<tr><th>${esc(this._t("colSensor"))}</th>${OPTIONS.map((o) => `<th class="z ag-optth">${esc(this._t(o.name))}</th>`).join("")}<th></th></tr>`;
-    let area = null;
-    const body = [];
-    for (const r of rows) {
-      if (r.area !== area) {
-        area = r.area;
-        body.push(`<tr class="grp"><td colspan="${OPTIONS.length + 2}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
-      }
-      const bits = this._bits(r);
-      body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
-        ${OPTIONS.map((o) => this._modeBox(r, o, mode)).join("")}
-        <td class="ag-acts"><div class="ag-actrow"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div></td></tr>`);
-    }
-    return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
-  }
-
-  _modeBox(r, o, mode) {
-    const on = this.eff(r.id, o.key, mode);
-    const own = this.own(r.id, o.key, mode);
-    return `<td class="z"><button class="ag-box ${on ? "on" : ""} ${own ? "own" : ""}" data-sen="mopt" data-mode="${mode}" data-key="${o.key}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(o.name)}`)}" title="${esc(this._t(own ? "originModeOwn" : "originModeAll", { mode: this._t(MODE_KEY[mode]) }))}">${on ? ic("check", 18) : ""}</button></td>`;
-  }
-
-  _modeCards(rows, mode) {
-    let area = null;
-    const out = [];
-    for (const r of rows) {
-      if (r.area !== area) {
-        area = r.area;
-        out.push(`<div class="ag-group-label">${esc(area)}</div>`);
-      }
-      const bits = this._bits(r);
-      out.push(`<div class="ag-card ag-mcard ag-clickrow" data-row="${esc(r.id)}"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>
-          <button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
-        <div class="ag-obtns">${OPTIONS.map((o) => {
-          const on = this.eff(r.id, o.key, mode);
-          return `<button class="ag-zbtn ${on ? "on" : ""} ${this.own(r.id, o.key, mode) ? "own" : ""}" data-sen="mopt" data-mode="${mode}" data-key="${o.key}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(o.icon, 16)}${esc(this._t(o.name))}</button>`;
-        }).join("")}</div></div>`);
-    }
-    return `<div class="ag-mcards">${out.join("")}</div>`;
   }
 
   _bits(r) {
@@ -324,8 +278,9 @@ export class SensorsUi {
   _table(rows, changed) {
     const d = this.draft;
     const modes = this.modes();
-    const head = `<tr><th>${esc(this._t("colSensor"))}</th>${modes.map((m) => `<th class="z">${esc(this._t(MODE_KEY[m]))}<button class="ag-allbtn" data-sen="all" data-mode="${m}">${esc(this._t("all"))}</button></th>`).join("")}
-      <th class="z">${esc(this._t("optAlways"))}</th><th class="z">${esc(this._t("colEntry"))}</th><th></th></tr>`;
+    const cur = this.activeMode(); // gewählter Modus (nur mit Schalter): seine Spalten sind hervorgehoben
+    const head = `<tr><th>${esc(this._t("colSensor"))}</th>${modes.map((m) => `<th class="z ${m === cur ? "cur" : ""}">${esc(this._t(MODE_KEY[m]))}<button class="ag-allbtn" data-sen="all" data-mode="${m}">${esc(this._t("all"))}</button></th>`).join("")}
+      <th class="z ${cur ? "cur" : ""}">${esc(this._t("optAlways"))}</th><th class="z">${esc(this._t("colEntry"))}</th><th></th></tr>`;
     let area = null;
     const body = [];
     for (const r of rows) {
@@ -337,9 +292,9 @@ export class SensorsUi {
       body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
         ${modes.map((m) => {
           const on = d.zones[m].has(r.id);
-          return `<td class="z"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
+          return `<td class="z ${m === cur ? "cur" : ""}"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
         }).join("")}
-        <td class="z">${this._alwaysBox(r)}</td><td class="z">${this._entryToggle(r)}</td>
+        <td class="z ${cur ? "cur" : ""}">${this._alwaysBox(r)}</td><td class="z">${this._entryToggle(r)}</td>
         <td class="ag-acts"><div class="ag-actrow"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div></td></tr>`);
     }
     return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
@@ -347,8 +302,10 @@ export class SensorsUi {
 
   // "Immer aktiv" (Rauch, Wasser, Gas lösen auch bei deaktivierter Anlage aus) als Kästchen in der Übersicht: wirksamer Wert, eigener Wert ist ein Punkt
   _alwaysBox(r) {
-    const on = this.eff(r.id, "always");
-    return `<button class="ag-box ${on ? "on" : ""}" data-sen="opt" data-key="always" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t("optAlways")}`)}" title="${esc(this._t("optAlwaysHint"))}">${on ? ic("check", 18) : ""}</button>`;
+    const mode = this.activeMode();
+    const on = this.eff(r.id, "always", mode);
+    const own = mode ? this.own(r.id, "always", mode) : false;
+    return `<button class="ag-box ${on ? "on" : ""} ${own ? "own" : ""}" data-sen="${mode ? "mopt" : "opt"}" ${mode ? `data-mode="${mode}"` : ""} data-key="always" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t("optAlways")}`)}" title="${esc(this._t("optAlwaysHint"))}">${on ? ic("check", 18) : ""}</button>`;
   }
 
   _entryToggle(r, extra = "") {
@@ -360,6 +317,7 @@ export class SensorsUi {
   _cards(rows) {
     const d = this.draft;
     const modes = this.modes();
+    const cur = this.activeMode();
     let area = null;
     const out = [];
     for (const r of rows) {
@@ -372,8 +330,8 @@ export class SensorsUi {
           <button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
         <div class="ag-zbtns" style="--n:${modes.length + 1}">${modes.map((m) => {
           const on = d.zones[m].has(r.id);
-          return `<button class="ag-zbtn ${on ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`;
-        }).join("")}<button class="ag-zbtn ${this.eff(r.id, "always") ? "on" : ""}" data-sen="opt" data-key="always" data-ent="${esc(r.id)}" aria-pressed="${this.eff(r.id, "always")}">${ic("flash", 16)}${esc(this._t("optAlways"))}</button></div></div>`);
+          return `<button class="ag-zbtn ${on ? "on" : ""} ${m === cur ? "cur" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`;
+        }).join("")}<button class="ag-zbtn ${this.eff(r.id, "always", cur) ? "on" : ""} ${cur ? "cur" : ""}" data-sen="${cur ? "mopt" : "opt"}" ${cur ? `data-mode="${cur}"` : ""} data-key="always" data-ent="${esc(r.id)}" aria-pressed="${this.eff(r.id, "always", cur)}">${ic("flash", 16)}${esc(this._t("optAlways"))}</button></div></div>`);
     }
     return `<div class="ag-mcards">${out.join("")}</div>`;
   }
@@ -680,7 +638,7 @@ export class SensorsUi {
     } else if (act === "permode") {
       const d = this.ensureDraft();
       d.perMode = !d.perMode;
-      if (!d.perMode) this.mtab = "all";
+      if (d.perMode) this.mtab = this.modes().find((m) => ALL_MODES.includes(m)) || "home"; // der erste Modus ist gewählt
       this.saveState = null;
       this.render();
     } else if (act.startsWith("mt:")) {
