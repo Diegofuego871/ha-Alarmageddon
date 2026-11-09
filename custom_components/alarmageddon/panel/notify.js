@@ -3,13 +3,16 @@
 // Meldung. Entwurf mit "Speichern"; Testmeldungen gehen mit dem gespeicherten Stand hinaus.
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, errText, chapter } = await import(`./common.js${V}`);
+const { ic, esc, errText, chapter, MODE_KEY, MODE_ICON } = await import(`./common.js${V}`);
 
 // Arten je Gruppe in der Reihenfolge der Anzeige, mit Symbol
 const GROUPS = {
   alarm: [["sensor_report", "bell"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
   maintenance: [["battery_low", "battery"], ["sensor_offline", "offline"], ["sensor_unavailable", "offline"]],
 };
+// Arten, die nur im scharfen Zustand vorkommen: je Modus eigene Werte (Unterreiter), sonst der gemeinsame Wert
+const MODE_KINDS = [["sensor_report", "bell"], ["pending", "timer"], ["armed", "shieldAway"], ["sensor_offline", "alert"]];
+const ALL_MODES = ["home", "away", "night"];
 const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" };
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
 // Arten mit einem Zahlenfeld: Schlüssel, Beschriftung, Einheit
@@ -24,6 +27,7 @@ export class NotifyUi {
     this.draft = null;
     this.saveState = null;
     this.saving = false;
+    this.modeTab = "all"; // "all" (gemeinsame Werte) oder ein Modus (Ansicht, nicht Teil des Entwurfs)
   }
 
   _t(key, vars) {
@@ -37,6 +41,7 @@ export class NotifyUi {
 
   ensureDraft() {
     if (!this.draft) this.draft = JSON.parse(JSON.stringify(this.base));
+    this.draft.modes ||= {};
     return this.draft;
   }
 
@@ -57,6 +62,8 @@ export class NotifyUi {
       if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100)) n += 1;
     }
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
+    // Eigene Werte je Modus: jeder Modus mit Änderung zählt einmal
+    for (const m of ALL_MODES) if (JSON.stringify(a.modes?.[m] || {}) !== JSON.stringify(d.modes?.[m] || {})) n += 1;
     return n;
   }
 
@@ -88,31 +95,66 @@ export class NotifyUi {
         <div class="ag-rline">${select}</div>${pills ? `<div class="ag-rpills">${pills}</div>` : ""}${none}</div></div>`;
   }
 
+  // Wirksame Werte einer Art in einem Modus (eigener Wert vor dem gemeinsamen)
+  _eff(kind, mode) {
+    const base = this.draft.types[kind];
+    return mode ? { ...base, ...(this.draft.modes?.[mode]?.[kind] || {}) } : base;
+  }
+
+  // Eigenen Wert eines Modus setzen; entspricht er dem gemeinsamen Wert, entfällt er (so folgt er späteren Änderungen mit)
+  _setOwn(kind, mode, key, value) {
+    const d = this.draft;
+    const own = { ...(d.modes[mode]?.[kind] || {}) };
+    if (value === d.types[kind][key] || (key === "volume" && Math.round(value * 100) === Math.round(d.types[kind].volume * 100))) delete own[key];
+    else own[key] = value;
+    const kinds = { ...(d.modes[mode] || {}) };
+    if (Object.keys(own).length) kinds[kind] = own;
+    else delete kinds[kind];
+    if (Object.keys(kinds).length) d.modes[mode] = kinds;
+    else delete d.modes[mode];
+  }
+
+  // Modi, in denen diese Art eigene Werte hat (Hinweis im Reiter "Alle Modi")
+  _ownModes(kind) {
+    return ALL_MODES.filter((m) => this.draft.modes?.[m]?.[kind]);
+  }
+
   // ----- Eine Meldungsart -----
 
   // sub: Unterpunkt in einer gemeinsamen Karte (eigene Namen "ntT2_", "ntH2_")
-  _type(kind, icon, dirty, sub = false) {
+  _type(kind, icon, dirty, sub = false, mode = null) {
     const d = this.draft;
-    const s = d.types[kind];
+    const s = this._eff(kind, mode);
+    const md = mode ? ` data-mode="${mode}"` : "";
     const toggle = (attr, on, label) => `<button class="ag-toggle ${on ? "on" : ""}" ${attr} role="switch" aria-checked="${on}" aria-label="${esc(label)}"></button>`;
     const name = this._t(sub ? `ntT2_${kind}` : `ntT_${kind}`);
     const hint = this._t(sub ? `ntH2_${kind}` : `ntH_${kind}`);
     const pct = Math.round(s.volume * 100);
+    // Herkunft: im Modus "eigener Wert" (mit Zurücksetzen) oder "wie in Alle Modi"; in "Alle Modi" ein Hinweis auf abweichende Modi
+    let origin = "";
+    if (mode) {
+      const own = d.modes?.[mode]?.[kind];
+      origin = own
+        ? `<small class="ag-origin own">${esc(this._t("ntOwnValue"))} <button type="button" class="ag-link" data-nt="mode-reset" data-kind="${kind}" data-mode="${mode}">${esc(this._t("ntReset"))}</button></small>`
+        : `<small class="ag-origin">${esc(this._t("ntSameAsAll"))}</small>`;
+    } else if (MODE_KINDS.some(([k]) => k === kind) && this._ownModes(kind).length) {
+      origin = `<small class="ag-origin own">${esc(this._t("ntOwnIn", { modes: this._ownModes(kind).map((m) => this._t(MODE_KEY[m])).join(", ") }))}</small>`;
+    }
     let body = "";
     if (s.enabled) {
       const num = NUMBERS[kind];
       const bad = new Set(this.invalid());
       body = `<div class="ag-mt-body">
-        <div class="ag-mt-opt"><span>${esc(this._t("ntCriticalShort"))}</span>${toggle(`data-nt="critical" data-kind="${kind}"`, s.critical, `${name}: ${this._t("ntCriticalShort")}`)}</div>
-        ${s.critical ? `<div class="ag-mt-opt vol"><span>${esc(this._t("ntVolumeShort"))}: <b class="ag-vol" data-kind="${kind}">${pct} %</b></span>
-          <input type="range" min="0" max="100" step="5" data-nt="volume" data-kind="${kind}" value="${pct}" class="ag-range" aria-label="${esc(`${name}: ${this._t("ntVolumeShort")}`)}"></div>` : ""}
+        <div class="ag-mt-opt"><span>${esc(this._t("ntCriticalShort"))}</span>${toggle(`data-nt="critical" data-kind="${kind}"${md}`, s.critical, `${name}: ${this._t("ntCriticalShort")}`)}</div>
+        ${s.critical ? `<div class="ag-mt-opt vol"><span>${esc(this._t("ntVolumeShort"))}: <b class="ag-vol" data-kind="${kind}"${md}>${pct} %</b></span>
+          <input type="range" min="0" max="100" step="5" data-nt="volume" data-kind="${kind}"${md} value="${pct}" class="ag-range" aria-label="${esc(`${name}: ${this._t("ntVolumeShort")}`)}"></div>` : ""}
         ${num ? `<div class="ag-mt-opt"><span>${esc(this._t(num[1]))}</span><span class="ag-num ${bad.has(num[0]) ? "bad" : ""}"><input type="number" min="${RANGES[num[0]][0]}" max="${RANGES[num[0]][1]}" step="1" inputmode="numeric" data-nt="num" data-key="${num[0]}" value="${esc(d[num[0]])}" aria-label="${esc(this._t(num[1]))}"><span class="ag-t2">${esc(num[2] === "minutes" ? this._t("minutes") : num[2])}</span></span></div>` : ""}
         <div class="ag-mt-opt"><span class="ag-t2 ag-small">${esc(this._t("ntTestHint"))}</span>
-          <button class="ag-btn" data-nt="test" data-kind="${kind}" ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
+          <button class="ag-btn" data-nt="test" data-kind="${kind}"${md} ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
     }
     return `<div class="ag-mt ${sub ? "sub" : ""} ${s.enabled ? "" : "off"}"><div class="ag-mt-head"><span class="ag-mini ${kind === "triggered" ? "err" : ""}">${ic(icon, 16)}</span>
-        <div class="ag-settx"><b>${esc(name)}</b><small>${esc(hint)}</small></div>
-        ${toggle(`data-nt="enabled" data-kind="${kind}"`, s.enabled, name)}</div>${body}</div>`;
+        <div class="ag-settx"><b>${esc(name)}</b><small>${esc(hint)}</small>${origin}</div>
+        ${toggle(`data-nt="enabled" data-kind="${kind}"${md}`, s.enabled, name)}</div>${body}</div>`;
   }
 
   render() {
@@ -127,10 +169,19 @@ export class NotifyUi {
         <div class="ag-settx"><b>${esc(this._t("ntGroupOffline"))}</b><small>${esc(this._t("ntGroupOfflineHint"))}</small></div></div>
         <div class="ag-mt-subs">${this._type("sensor_offline", "alert", dirty, true)}${this._type("sensor_unavailable", "timer", dirty, true)}</div></div>`;
     const list = (group) => GROUPS[group].map(([kind, icon]) => (kind === "sensor_offline" ? offline() : kind === "sensor_unavailable" ? "" : this._type(kind, icon, dirty))).join("");
+    // Unterreiter: gemeinsame Werte oder eigene Werte je Modus (nur Arten, die im scharfen Zustand vorkommen)
+    const modes = ALL_MODES.filter((m) => (h._systems().length ? h._systems().some((s) => (s.modes || []).includes(m)) : m !== "night"));
+    if (this.modeTab !== "all" && !modes.includes(this.modeTab)) this.modeTab = "all";
+    const tabs = h._segHtml("nt-mode", [["tab:all", this._t("ntModeAll")], ...modes.map((m) => [`tab:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]])], `tab:${this.modeTab}`, "data-nt", "small");
+    const modeList = () => MODE_KINDS.map(([kind, icon]) => this._type(kind, icon, dirty, kind === "sensor_offline", this.modeTab)).join("");
+    const alarmBody = this.modeTab === "all"
+      ? `<div class="ag-card ag-mtlist">${list("alarm")}</div>`
+      : `<p class="ag-chap-h">${esc(this._t("ntModeHint", { mode: this._t(MODE_KEY[this.modeTab]) }))}</p><div class="ag-card ag-mtlist">${modeList()}</div>`;
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
-      + chapter(this._t("ntChapAlarm"), `<div class="ag-card ag-mtlist">${list("alarm")}</div>`, this._t("ntChapAlarmHint"))
+      + chapter(this._t("ntChapAlarm"), `<div class="ag-scopebar">${tabs}</div>${alarmBody}`, this._t("ntChapAlarmHint"))
       + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"));
     h._setHtml(box, html);
+    h._placePills();
     this.renderFoot();
   }
 
@@ -170,10 +221,10 @@ export class NotifyUi {
     }
   }
 
-  async test(kind) {
+  async test(kind, mode) {
     const h = this.host;
     try {
-      const result = await h._hass.callWS({ type: "alarmageddon/test_notify", kind });
+      const result = await h._hass.callWS({ type: "alarmageddon/test_notify", kind, ...(mode ? { mode } : {}) });
       const n = result?.targets?.length || 0;
       h._toast(n ? this._t("ntTestSent", { count: n }) : this._t("ntTestNone"));
     } catch (err) {
@@ -187,11 +238,24 @@ export class NotifyUi {
     const d = this.ensureDraft();
     if (act === "target-del") {
       d[el.dataset.key] = d[el.dataset.key].filter((x) => x !== el.dataset.target);
-    } else if (act === "enabled") d.types[el.dataset.kind].enabled = !d.types[el.dataset.kind].enabled;
-    else if (act === "critical") d.types[el.dataset.kind].critical = !d.types[el.dataset.kind].critical;
-    else if (act === "cancel") this.draft = null;
+    } else if (act.startsWith("tab:")) {
+      this.modeTab = act.slice(4);
+      this.render();
+      return true;
+    } else if (act === "enabled" || act === "critical") {
+      const { kind, mode } = el.dataset;
+      const key = act;
+      if (mode) this._setOwn(kind, mode, key, !this._eff(kind, mode)[key]);
+      else d.types[kind][key] = !d.types[kind][key];
+    } else if (act === "mode-reset") {
+      const { kind, mode } = el.dataset;
+      const kinds = { ...(d.modes[mode] || {}) };
+      delete kinds[kind];
+      if (Object.keys(kinds).length) d.modes[mode] = kinds;
+      else delete d.modes[mode];
+    } else if (act === "cancel") this.draft = null;
     else if (act === "save") return this.save(), true;
-    else if (act === "test") return this.test(el.dataset.kind), true;
+    else if (act === "test") return this.test(el.dataset.kind, el.dataset.mode), true;
     else return false;
     this.saveState = null;
     this.render();
@@ -219,10 +283,12 @@ export class NotifyUi {
       return true;
     }
     if (act === "volume") {
-      const kind = el.dataset.kind;
-      this.ensureDraft().types[kind].volume = Number(el.value) / 100;
+      const { kind, mode } = el.dataset;
+      this.ensureDraft();
+      if (mode) this._setOwn(kind, mode, "volume", Number(el.value) / 100);
+      else this.draft.types[kind].volume = Number(el.value) / 100;
       this.saveState = null;
-      const label = this.host._view.querySelector(`.ag-vol[data-kind="${kind}"]`);
+      const label = this.host._view.querySelector(`.ag-vol[data-kind="${kind}"]${mode ? `[data-mode="${mode}"]` : ""}`);
       if (label) label.textContent = `${el.value} %`;
       this.renderFoot();
       return true;

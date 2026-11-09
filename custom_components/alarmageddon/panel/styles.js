@@ -560,6 +560,8 @@ select.ag-select[data-act="system"] { height: 44px; padding-left: 18px; border: 
 /* Blatt (Handy): X rechts oben im Kopf, der Kopf lässt Platz dafür */
 dialog.ag-sheetdlg .ag-dlg-x { top: 8px; right: 10px; width: 38px; height: 38px; }
 dialog.ag-sheetdlg .ag-side-head { padding-right: 58px; }
+.ag-origin { display: block; margin-top: 2px; color: var(--ag-text2); font-size: 12px; }
+.ag-origin.own { color: var(--ag-primary); }
 /* Kapitel im Dialog: kleinerer Titel, Karte mit Innenabstand */
 .ag-chap-s { margin-top: 18px; }
 .ag-chap-s:first-of-type { margin-top: 6px; }

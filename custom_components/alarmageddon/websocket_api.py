@@ -51,6 +51,7 @@ from .const import (
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
+    NOTIFY_MODE_KINDS,
     NOTIFY_TYPES,
     SOUNDS,
     SOUNDS_URL_PATH,
@@ -413,6 +414,12 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
                 vol.Optional("critical"): bool,
                 vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             }},
+            # Eigene Werte je Modus für Arten, die nur im scharfen Zustand vorkommen; ersetzt alle bisherigen eigenen Werte
+            vol.Optional("modes"): {vol.In(MODES): {vol.In(NOTIFY_MODE_KINDS): {
+                vol.Optional("enabled"): bool,
+                vol.Optional("critical"): bool,
+                vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+            }}},
             vol.Optional("disarm_action"): bool,
             vol.Optional("open_action"): bool,
             vol.Optional("silence_action"): bool,
@@ -434,7 +441,7 @@ async def ws_save_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): f"{DOMAIN}/test_notify", vol.Required("kind"): vol.In(list(NOTIFY_TYPES))}
+    {vol.Required("type"): f"{DOMAIN}/test_notify", vol.Required("kind"): vol.In(list(NOTIFY_TYPES)), vol.Optional("mode"): vol.In(MODES)}
 )
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -444,7 +451,7 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if not entries:
         connection.send_error(msg["id"], "not_found", "No alarm system")
         return
-    targets = entries[0].runtime_data.notifier.send_test(msg["kind"])
+    targets = entries[0].runtime_data.notifier.send_test(msg["kind"], msg.get("mode"))
     connection.send_result(msg["id"], {"targets": targets})
 
 

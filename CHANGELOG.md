@@ -7,11 +7,21 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.29.0] - 2026-11-09
+
+Own message values per mode for everything that happens while the alarm system is armed.
+
+Includes the changes from 0.28.0.
+
+### Added
+
+- **Messages per mode** (Configuration › Notifications › Messages): sub-tabs "All modes", "Home", "Away", "Night". The kinds that only occur while armed (**Silent alarm**, **Entry delay**, **Armed**, **Sensor unreachable while armed**) can have their own values per mode (on/off, critical, volume, own test message). Without an own value the value of "All modes" applies; every kind shows its origin ("Own value for this mode" / "Same as in All modes") with "Reset", and "All modes" points to the modes with own values. Part of the draft and the backup, validated by the server.
+
 ## [0.28.0] - 2026-11-09
 
 The update function is removed, "Alarm ends" has an own message, and the sensor table shows "Always active".
 
-Includes the changes from 0.24.0, 0.25.0, 0.26.0 and 0.27.0.
+Not released; included in 0.29.0.
 
 ### Removed
 
@@ -36,7 +46,7 @@ Includes the changes from 0.24.0, 0.25.0, 0.26.0 and 0.27.0.
 
 An "Alarm ends" element at the end of every action flow decides what disarming does.
 
-Not released; included in 0.28.0.
+Not released; included in 0.29.0.
 
 ### Fixed
 
@@ -50,7 +60,7 @@ Not released; included in 0.28.0.
 
 Structured windows with a close button and fixed buttons, fixed header with a sortable list, free choice of columns per device, an "Occupancy" filter, and defaults that can be applied to all sensors.
 
-Not released; included in 0.28.0.
+Not released; included in 0.29.0.
 
 ### Added
 
@@ -74,7 +84,7 @@ Not released; included in 0.28.0.
 
 The sensor list on the overview works like the list in Device Panel (own columns on phone and computer), and the alarm lasts until it is acknowledged.
 
-Not released; included in 0.28.0.
+Not released; included in 0.29.0.
 
 ### Added
 
@@ -90,7 +100,7 @@ Not released; included in 0.28.0.
 
 ## [0.24.0] - 2026-11-09
 
-Not released; included in 0.28.0.
+Not released; included in 0.29.0.
 
 ### Changed
 
@@ -433,7 +443,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.28.0
+[0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

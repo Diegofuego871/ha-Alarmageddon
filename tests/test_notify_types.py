@@ -203,3 +203,48 @@ async def test_report_only_survives_restart_and_failure(hass: HomeAssistant) -> 
     await hass.async_block_till_done()
     assert state(hass) == AlarmControlPanelState.TRIGGERED
     assert hass.states.get(ALARM).attributes["triggered_by"] == WINDOW
+
+
+# ----- Eigene Werte je Modus (0.29.0) -----
+
+async def test_mode_values_override_kind_settings(hass: HomeAssistant, hass_ws_client) -> None:
+    """Stiller Alarm, Eingangsverzögerung, Scharf geschaltet, Sensorausfall: je Modus eigene Werte, sonst der gemeinsame."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass, exit_delay_away=0)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {
+        "alarm_targets": ["notify.handy"],
+        "types": {"armed": {"enabled": True, "critical": False}},
+        "modes": {"away": {"armed": {"enabled": False}, "pending": {"critical": True, "volume": 0.3}}, "home": {"armed": {"critical": True}}},
+    }})
+    result = await client.receive_json()
+    assert result["success"]
+    assert result["result"]["notify"]["modes"] == {"away": {"armed": {"enabled": False}, "pending": {"critical": True, "volume": 0.3}}, "home": {"armed": {"critical": True}}}
+    # Abwesend: "Scharf geschaltet" ist dort aus
+    await call(hass, "alarm_arm_away")
+    await hass.async_block_till_done()
+    assert not pushes
+    await call(hass, "alarm_disarm")
+    await hass.async_block_till_done()
+    pushes.clear()
+    # Anwesend: eigener Wert "kritisch"
+    await call(hass, "alarm_arm_home")
+    await hass.async_block_till_done()
+    assert len(pushes) == 1 and pushes[0].data["data"]["push"]["interruption-level"] == "critical"
+
+
+async def test_mode_values_are_validated_and_sparse(hass: HomeAssistant, hass_ws_client) -> None:
+    await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    for bad in ({"nonsense": {"armed": {"enabled": True}}}, {"home": {"triggered": {"enabled": False}}}, {"home": {"armed": {"volume": 2}}}):
+        await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {"modes": bad}})
+        assert not (await client.receive_json())["success"]
+    await client.send_json({"id": 2, "type": "alarmageddon/save_notify", "notify": {"modes": {"home": {"armed": {}}}}})
+    result = await client.receive_json()
+    assert result["success"] and result["result"]["notify"]["modes"] == {}  # leere Einträge fallen weg
+    # Sicherung enthält die Werte je Modus
+    await client.send_json({"id": 3, "type": "alarmageddon/save_notify", "notify": {"modes": {"night": {"sensor_report": {"critical": True}}}}})
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 4, "type": "alarmageddon/export"})
+    exported = (await client.receive_json())["result"]
+    assert exported["settings"]["notify"]["modes"] == {"night": {"sensor_report": {"critical": True}}}

@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 34  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 35  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -150,7 +150,11 @@ NOTIFY_TYPE_DEFAULTS: Final = {
     "arm_failed": (True, False), "sensor_offline": (True, True), "sensor_report": (True, True),
     "battery_low": (True, False), "sensor_unavailable": (True, False),
 }
+# Meldungsarten, die nur im scharfen Zustand vorkommen und je Modus eigene Werte haben können (0.29.0): Stiller Alarm, Eingangsverzögerung,
+# Scharf geschaltet, Sensorausfall im scharfen Zustand. notify["modes"][modus][art] = {enabled, critical, volume}, nur abweichende Werte.
+NOTIFY_MODE_KINDS: Final = ("sensor_report", "pending", "armed", "sensor_offline")
 DEFAULT_NOTIFY: Final = {
+    "modes": {},
     "alarm_targets": [],
     "maintenance_targets": [],
     "types": {key: {"enabled": on, "critical": critical, "volume": 0.8} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},

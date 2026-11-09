@@ -21,6 +21,8 @@ from .const import (
     NOTIFY_TYPES,
     DEFAULT_PRESETS,
     DEVICE_CLASS_TYPE,
+    MODES,
+    NOTIFY_MODE_KINDS,
     SENSOR_OPTIONS,
     SENSOR_TYPES,
     SETTINGS_STORE_KEY,
@@ -88,6 +90,25 @@ def valid_notify(value: Any) -> dict[str, Any]:
                     out["types"][kind][key] = item[key]
             if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
                 out["types"][kind]["volume"] = max(0.0, min(1.0, float(item["volume"])))
+    # Eigene Werte je Modus (0.29.0): nur bekannte Modi und Arten, nur gültige Werte; leere Einträge fallen weg
+    modes = value.get("modes")
+    if isinstance(modes, dict):
+        for mode in MODES:
+            per_kind = modes.get(mode)
+            if not isinstance(per_kind, dict):
+                continue
+            for kind in NOTIFY_MODE_KINDS:
+                item = per_kind.get(kind)
+                if not isinstance(item, dict):
+                    continue
+                own: dict[str, Any] = {}
+                for key in ("enabled", "critical"):
+                    if isinstance(item.get(key), bool):
+                        own[key] = item[key]
+                if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
+                    own["volume"] = max(0.0, min(1.0, float(item["volume"])))
+                if own:
+                    out["modes"].setdefault(mode, {})[kind] = own
     return out
 
 

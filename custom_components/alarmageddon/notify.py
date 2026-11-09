@@ -17,7 +17,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .const import ICON_URL_PATH, NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
+from .const import ICON_URL_PATH, NOTIFY_MODE_KINDS, NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -134,16 +134,22 @@ def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any])
     return sent
 
 
+def effective_type(cfg: dict[str, Any], kind: str, mode: str | None) -> dict[str, Any]:
+    """Einstellung einer Art: der eigene Wert des Modus (nur Arten im scharfen Zustand), sonst der gemeinsame."""
+    own = ((cfg.get("modes") or {}).get(mode) or {}).get(kind) if mode and kind in NOTIFY_MODE_KINDS else None
+    return {**cfg["types"][kind], **(own or {})}
+
+
 def build_payload(cfg: dict[str, Any], kind: str, title: str, message: str, *, tag: str | None = None,
                   actions: list | None = None, critical: bool | None = None, volume: float | None = None,
-                  url: str | None = None) -> dict[str, Any]:
+                  url: str | None = None, mode: str | None = None) -> dict[str, Any]:
     """
     Inhalt einer Meldung der Art `kind`. Kritisch und Lautstärke kommen aus den Einstellungen der Art; `critical` überschreibt
     nur das "kritisch" (der Abschluss "Alarm beendet" ersetzt die kritische Meldung durch eine normale mit demselben tag).
     Kritisch: iOS mit "critical" und Lautstärke, Android über den Kanal "alarm_stream" mit hoher Priorität; beides steht in
     jeder kritischen Meldung, jede App nimmt sich, was sie kennt.
     """
-    setting = cfg["types"][kind]
+    setting = effective_type(cfg, kind, mode)
     is_critical = setting["critical"] if critical is None else critical
     group = "alarmageddon" if NOTIFY_TYPES[kind] == "alarm" else "alarmageddon_maintenance"
     # icon_url: Symbol der Integration (Android); iOS zeigt immer das Symbol der App, das lässt sich nicht ersetzen
@@ -211,11 +217,11 @@ class Notifier:
 
     # ----- Auslöser -----
 
-    def _on(self, kind: str) -> bool:
+    def _on(self, kind: str, mode: str | None = None) -> bool:
         # Die Alarmmeldung lässt sich nicht abschalten (Sicherheitsregel: im Zweifel alarmieren); ihre Einstellungen stehen im Push-Schritt
         if kind == "triggered":
             return True
-        return bool(self.cfg["types"][kind]["enabled"])
+        return bool(effective_type(self.cfg, kind, mode)["enabled"])
 
     @callback
     def _on_change(self) -> None:
@@ -230,11 +236,11 @@ class Notifier:
             self._alarm_trigger = trigger
             if self._on("triggered") and not self.workflow_has_notify(trigger):
                 self.send_alarm()
-        elif state == AlarmControlPanelState.PENDING and self._on("pending"):
+        elif state == AlarmControlPanelState.PENDING and self._on("pending", self._ctl.mode):
             self._send("pending", self._t("pending_title", name=name),
                        self._t("pending", sensor=self._name(self._ctl.triggered_by), seconds=self._ctl.entry_delay))
         elif state in (AlarmControlPanelState.ARMED_HOME, AlarmControlPanelState.ARMED_AWAY, AlarmControlPanelState.ARMED_NIGHT):
-            if self._on("armed") and previous not in (AlarmControlPanelState.TRIGGERED,):
+            if self._on("armed", self._ctl.mode) and previous not in (AlarmControlPanelState.TRIGGERED,):
                 by = self._ctl.changed_by
                 self._send("armed", self._t("armed_title", name=name, mode=self._mode(self._ctl.mode)),
                            self._t("armed", by=by) if by else self._t("armed_noby"))
@@ -253,11 +259,11 @@ class Notifier:
             sensors = ", ".join(self._name(e) for e in data.get("sensors", []))
             self._send("arm_failed", self._t("arm_failed_title", name=name, mode=self._mode(data.get("mode"))),
                        self._t("arm_failed", sensors=sensors))
-        elif kind == "sensor_offline" and self._on("sensor_offline"):
+        elif kind == "sensor_offline" and self._on("sensor_offline", self._ctl.mode):
             # Im scharfen Zustand ist ein ausgefallener Melder ein blinder Fleck (Standard: kritisch an die Alarm-Empfänger)
             self._send("sensor_offline", self._t("offline_title", name=self._name(data.get("sensor"))),
                        self._t("offline", sensor=self._name(data.get("sensor"))))
-        elif kind == "sensor_report" and self._on("sensor_report"):
+        elif kind == "sensor_report" and self._on("sensor_report", self._ctl.mode):
             # Sensor auf "Nur melden": keine Alarmauslösung, aber eine Meldung (Standard: kritisch), eigener tag je Sensor
             sensor = data.get("sensor")
             self._send("sensor_report", self._t("report_title", name=self._name(sensor)),
@@ -384,10 +390,10 @@ class Notifier:
         self._send("triggered", title, message, tag=self._tag(), critical=critical, volume=volume, url=target)
 
     @callback
-    def send_test(self, kind: str) -> list[str]:
+    def send_test(self, kind: str, mode: str | None = None) -> list[str]:
         """Testmeldung einer Art an ihre Empfänger, mit ihrem Kritisch und ihrer Lautstärke (so hört man, wie sie klingt)."""
         title = self._t("test_title", name=self._t(f"type_{kind}"))
-        self._send(kind, title, self._t("test"))
+        self._send(kind, title, self._t("test"), mode=mode)
         return self._targets(kind)
 
     def _targets(self, kind: str) -> list[str]:
@@ -395,6 +401,8 @@ class Notifier:
 
     @callback
     def _send(self, kind: str, title: str, message: str, *, tag: str | None = None, actions: list | None = None,
-              critical: bool | None = None, volume: float | None = None, url: str | None = None) -> None:
+              critical: bool | None = None, volume: float | None = None, url: str | None = None, mode: str | None = None) -> None:
         self._ctl.record("notified", type=kind)
-        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url))
+        # Eigene Werte je Modus gelten nur für Arten im scharfen Zustand; ohne Angabe der Modus der Anlage
+        mode = mode or (self._ctl.mode if kind in NOTIFY_MODE_KINDS else None)
+        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))

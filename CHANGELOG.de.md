@@ -7,11 +7,21 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.29.0] - 2026-11-09
+
+Eigene Meldungswerte je Modus für alles, was passiert, während die Anlage scharf ist.
+
+Enthält die Änderungen aus 0.28.0.
+
+### Hinzugefügt
+
+- **Meldungen je Modus** (Konfiguration › Benachrichtigungen › Meldungen): Unterreiter "Alle Modi", "Anwesend", "Abwesend", "Nacht". Die Arten, die nur im scharfen Zustand vorkommen (**Stiller Alarm**, **Eingangsverzögerung**, **Scharf geschaltet**, **Sensor nicht erreichbar, während scharf**), können je Modus eigene Werte haben (an/aus, Kritisch, Lautstärke, eigene Testmeldung). Ohne eigenen Wert gilt der Wert von "Alle Modi"; jede Art zeigt ihre Herkunft ("Eigener Wert für diesen Modus" / "Wie bei Alle Modi") mit "Zurücksetzen", und "Alle Modi" weist auf die Modi mit eigenen Werten hin. Teil des Entwurfs und der Sicherung, vom Server geprüft.
+
 ## [0.28.0] - 2026-11-09
 
 Die Update-Funktion ist entfernt, "Alarm endet" hat eine eigene Meldung, und die Sensortabelle zeigt "Immer aktiv".
 
-Enthält die Änderungen aus 0.24.0, 0.25.0, 0.26.0 und 0.27.0.
+Nicht veröffentlicht; enthalten in 0.29.0.
 
 ### Entfernt
 
@@ -36,7 +46,7 @@ Enthält die Änderungen aus 0.24.0, 0.25.0, 0.26.0 und 0.27.0.
 
 Ein Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut.
 
-Nicht veröffentlicht; enthalten in 0.28.0.
+Nicht veröffentlicht; enthalten in 0.29.0.
 
 ### Behoben
 
@@ -50,7 +60,7 @@ Nicht veröffentlicht; enthalten in 0.28.0.
 
 Strukturierte Fenster mit Schliessen-Knopf und festen Knöpfen, feste Kopfzeile mit sortierbarer Liste, freie Spaltenwahl je Gerät, Filter "Belegung" und Voreinstellungen für alle Sensoren übernehmbar.
 
-Nicht veröffentlicht; enthalten in 0.28.0.
+Nicht veröffentlicht; enthalten in 0.29.0.
 
 ### Hinzugefügt
 
@@ -74,7 +84,7 @@ Nicht veröffentlicht; enthalten in 0.28.0.
 
 Die Sensorliste auf der Übersicht funktioniert wie die Liste in Device Panel (eigene Spalten für Handy und Computer), und der Alarm dauert, bis er quittiert wird.
 
-Nicht veröffentlicht; enthalten in 0.28.0.
+Nicht veröffentlicht; enthalten in 0.29.0.
 
 ### Hinzugefügt
 
@@ -90,7 +100,7 @@ Nicht veröffentlicht; enthalten in 0.28.0.
 
 ## [0.24.0] - 2026-11-09
 
-Nicht veröffentlicht; enthalten in 0.28.0.
+Nicht veröffentlicht; enthalten in 0.29.0.
 
 ### Geändert
 
@@ -433,7 +443,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.28.0
+[0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

@@ -132,6 +132,27 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: workflow_end gesendet (nur die eigene Meldung)`, away?.notify?.enabled === true && away.notify.title === "Ruhe in {name}" && away.notify.critical === true && !("undo" in away) && !wfSent.workflow_end.home.notify, JSON.stringify(wfSent?.workflow_end));
       await s.tap('[data-sub="sensors"]');
 
+      // Meldungen je Modus (Unterreiter): eigene Werte für Arten im scharfen Zustand, Herkunft, Zurücksetzen, Entwurf
+      await s.tap('[data-sub="notify"]');
+      check(`${tag}: Meldungen mit Unterreitern (Alle Modi, Anwesend, Abwesend)`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"nt-mode\"] > button')]; return t.length >= 3 && t[0].dataset.nt === 'tab:all'"));
+      check(`${tag}: "Sensor meldet" heisst "Stiller Alarm"`, await s.ev("return /Stiller Alarm|Silent alarm/.test(r.querySelector('.ag-nt').textContent) && !/Sensor meldet \\(kein|Sensor reports \\(no/.test(r.querySelector('.ag-nt').textContent)"));
+      await s.tap('[data-nt="tab:away"]');
+      if (process.env.DBG) console.log(await s.ev(`return JSON.stringify({en: r.querySelectorAll('.ag-nt [data-nt="enabled"][data-mode="away"]').length, or: r.querySelectorAll('.ag-origin').length, on: r.querySelector('[data-seg="nt-mode"] .on')?.dataset.nt})`));
+      check(`${tag}: Reiter Abwesend zeigt die vier Arten im scharfen Zustand mit Herkunft`, await s.waitFor("return r.querySelectorAll('.ag-nt [data-nt=\"enabled\"][data-mode=\"away\"]').length === 4 && r.querySelectorAll('.ag-nt .ag-origin').length === 4"));
+      await s.tap('.ag-nt [data-nt="critical"][data-kind="sensor_report"][data-mode="away"]');
+      check(`${tag}: eigener Wert mit Zurücksetzen, Entwurf (Punkt am Reiter)`, await s.waitFor("return !!r.querySelector('[data-nt=\"mode-reset\"][data-kind=\"sensor_report\"]') && r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit')"));
+      await s.tap('[data-nt="tab:all"]');
+      check(`${tag}: in "Alle Modi" der Hinweis auf eigene Werte`, await s.waitFor("return [...r.querySelectorAll('.ag-nt .ag-origin.own')].some((x) => /Abwesend|Away/.test(x.textContent))"));
+      await s.tap('[data-nt="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
+      const ntSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)");
+      check(`${tag}: modes gesendet (nur der abweichende Wert)`, JSON.stringify(ntSent?.notify?.modes) === JSON.stringify({ away: { sensor_report: { critical: !ntSent.notify.types.sensor_report.critical } } }), JSON.stringify(ntSent?.notify?.modes));
+      await s.tap('[data-nt="tab:away"]');
+      await s.tap('[data-nt="mode-reset"][data-kind="sensor_report"]');
+      check(`${tag}: Zurücksetzen entfernt den eigenen Wert`, await s.waitFor("return !r.querySelector('[data-nt=\"mode-reset\"]')"));
+      await s.tap('[data-nt="cancel"]');
+      await s.tap('[data-sub="sensors"]');
+
       // Voreinstellungen: X, Rückfrage, "Auf alle Sensoren anwenden"
       await s.tap('[data-sen="presets"]');
       await s.waitFor("return r.getElementById('ag-presets').open");

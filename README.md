@@ -74,6 +74,7 @@ Side panel › Configuration › Actions. Choose the alarm system and the alarm 
 Side panel › Configuration › Notifications, for all alarm systems:
 
 - **Recipients** separately for alarms and maintenance messages: pick every `notify` service (for example `notify.mobile_app_<phone>` of the companion app) from a dropdown; the chosen ones appear as tags with an x.
+- **Messages per mode:** silent alarm, entry delay, armed and "sensor unreachable while armed" can have their own values (on/off, critical, volume) for "Home", "Away" and "Night" in sub-tabs; without an own value the common value applies.
 - **Settings per kind of message:** silent alarm (no alarm), sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available. Each kind can be switched on or off, be **critical** (sounds in silent mode and do not disturb) or not, and has its own **volume**. The volume applies to iOS; Android plays critical messages on the alarm channel (`alarm_stream`), set its volume on the phone. Each kind has a "Send test message" button (with the saved settings).
 - **Report only** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Silent alarm" while armed instead of triggering the alarm. At most one message per sensor and minute.
 - **Icon in notifications:** every notification carries the icon of the integration (Android; iOS always shows the icon of the Home Assistant app).
