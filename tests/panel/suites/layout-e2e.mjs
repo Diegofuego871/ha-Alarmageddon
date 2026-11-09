@@ -66,6 +66,17 @@ for (const lang of ["de", "en"]) {
         await s.tap('#ag-sheet [data-sen="close-detail"]');
       }
 
+      // Ablauf: festes Element "Alarm endet" mit Wahl; Änderung ist ein Entwurf und wird mit gespeichert
+      await s.tap('[data-sub="actions"]');
+      check(`${tag}: Element "Alarm endet" am Ende des Ablaufs (auch ohne Schritte)`, await s.waitFor("const e=r.querySelector('.ag-wf-end'); return !!e && e.querySelector('select[data-wf=\"end\"]').value === 'restore_marked' && e.querySelectorAll('option').length === 3"));
+      await (await s.el('select[data-wf="end"]')).selectOption("restore_all");
+      check(`${tag}: Wahl ist ein Entwurf (Punkt am Reiter, Hinweis passend)`, await s.waitFor("return r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit') && r.querySelector('.ag-wf-endcard .ag-ef-h').textContent.length > 20"));
+      await s.tap('[data-wf="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
+      const wfSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_workflows').at(-1)");
+      check(`${tag}: workflow_end gesendet`, wfSent?.workflow_end?.away === "restore_all" && wfSent.workflow_end.home === "restore_marked", JSON.stringify(wfSent?.workflow_end));
+      await s.tap('[data-sub="sensors"]');
+
       // Voreinstellungen: X, Rückfrage, "Auf alle Sensoren anwenden"
       await s.tap('[data-sen="presets"]');
       await s.waitFor("return r.getElementById('ag-presets').open");

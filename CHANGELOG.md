@@ -7,11 +7,21 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.27.0] - 2026-11-09
+
+An "Alarm ends" element at the end of every action flow decides what disarming does.
+
+Includes the changes from 0.24.0, 0.25.0 and 0.26.0.
+
+### Added
+
+- **"Alarm ends" element** at the end of every flow (Configuration › Actions, per mode): the choice "On disarm / acknowledge": **Stop, undo the marked steps** (as before, default), **Stop, undo all steps** (all devices the steps changed return to their state before the alarm, whatever each step says) or **Only stop, undo nothing** (all steps stop and alarm sounds fall silent, switched devices stay). The choice is part of the draft, the backup and the data of the alarm system; the default is not stored.
+
 ## [0.26.0] - 2026-11-09
 
 Structured windows with a close button and fixed buttons, fixed header with a sortable list, free choice of columns per device, an "Occupancy" filter, and defaults that can be applied to all sensors.
 
-Includes the changes from 0.24.0 and 0.25.0.
+Not released; included in 0.27.0.
 
 ### Added
 
@@ -35,7 +45,7 @@ Includes the changes from 0.24.0 and 0.25.0.
 
 The sensor list on the overview works like the list in Device Panel (own columns on phone and computer), and the alarm lasts until it is acknowledged.
 
-Not released; included in 0.26.0.
+Not released; included in 0.27.0.
 
 ### Added
 
@@ -51,7 +61,7 @@ Not released; included in 0.26.0.
 
 ## [0.24.0] - 2026-11-09
 
-Not released; included in 0.26.0.
+Not released; included in 0.27.0.
 
 ### Changed
 
@@ -394,7 +404,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.26.0
+[0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

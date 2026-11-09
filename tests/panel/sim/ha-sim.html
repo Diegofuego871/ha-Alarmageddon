@@ -291,6 +291,7 @@
     }
     if (msg.type === "alarmageddon/save_workflows") {
       sys.workflows = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(msg.workflows))).filter(([, v]) => v.length));
+      if (msg.workflow_end) sys.workflow_end = Object.fromEntries(Object.entries(msg.workflow_end).filter(([, v]) => v !== "restore_marked"));
       return { ok: true };
     }
     if (msg.type === "alarmageddon/test_workflow") {

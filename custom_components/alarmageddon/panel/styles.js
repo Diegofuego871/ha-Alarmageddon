@@ -296,6 +296,8 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-btns .ag-iconbtn { width: 36px; height: 36px; }
 .ag-wf-btns .ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-wf-empty { margin-left: 20px; }
+.ag-wf-end { margin-top: 6px; }
+.ag-wf-endcard { margin: 6px 0 0 36px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
 .ag-wf-info { display: flex; gap: 8px; align-items: center; margin: 16px 8px 0; line-height: 1.4; }
 .ag-wf-info .ag-ic { display: inline-block; }
 .ag-wf-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }

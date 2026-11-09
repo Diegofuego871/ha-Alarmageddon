@@ -1009,6 +1009,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (this.list.onChange(el)) return;
     if (this._tab === "log" && this.log.onChange(el)) return;
     if (this._tab === "config" && this._sub === "system" && this.systemUi.onChange(el)) return;
+    if (this._tab === "config" && this._sub === "actions" && this.actions.onChange(el)) return;
     if (el.dataset?.act !== "system") return;
     const value = el.value;
     el.value = this._sel;

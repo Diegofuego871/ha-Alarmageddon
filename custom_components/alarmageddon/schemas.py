@@ -23,7 +23,9 @@ from .const import (
     CONF_OPEN_SENSORS,
     CONF_SENSOR_OPTIONS,
     CONF_TRIGGER_TIME,
+    CONF_WORKFLOW_END,
     CONF_WORKFLOWS,
+    END_MODES,
     CONF_ZONE_PREFIX,
     MAX_CONFIRM_WINDOW,
     MAX_DELAY,
@@ -131,6 +133,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_CONFIRM_WINDOW): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
         vol.Optional(CONF_SENSOR_OPTIONS): {cv.entity_id: {vol.In(SENSOR_OPTIONS): bool}},
         vol.Optional(CONF_WORKFLOWS): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): vol.In(END_MODES)},
     },
     extra=vol.REMOVE_EXTRA,
 )

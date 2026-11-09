@@ -7,11 +7,21 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.27.0] - 2026-11-09
+
+Ein Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut.
+
+Enthält die Änderungen aus 0.24.0, 0.25.0 und 0.26.0.
+
+### Hinzugefügt
+
+- **Element "Alarm endet"** am Ende jedes Ablaufs (Konfiguration › Aktionen, je Modus): die Wahl "Beim Deaktivieren/Quittieren": **Stoppen, markierte Schritte rückgängig** (wie bisher, Standard), **Stoppen, alle Schritte rückgängig** (alle Geräte, die die Schritte verändert haben, kehren in den Zustand vor dem Alarm zurück, unabhängig von der Einstellung je Schritt) oder **Nur stoppen, nichts rückgängig** (alle Schritte stoppen und Alarmtöne verstummen, geschaltete Geräte bleiben). Die Wahl gehört zum Entwurf, zur Sicherung und zu den Daten der Anlage; der Standard wird nicht gespeichert.
+
 ## [0.26.0] - 2026-11-09
 
 Strukturierte Fenster mit Schliessen-Knopf und festen Knöpfen, feste Kopfzeile mit sortierbarer Liste, freie Spaltenwahl je Gerät, Filter "Belegung" und Voreinstellungen für alle Sensoren übernehmbar.
 
-Enthält die Änderungen aus 0.24.0 und 0.25.0.
+Nicht veröffentlicht; enthalten in 0.27.0.
 
 ### Hinzugefügt
 
@@ -35,7 +45,7 @@ Enthält die Änderungen aus 0.24.0 und 0.25.0.
 
 Die Sensorliste auf der Übersicht funktioniert wie die Liste in Device Panel (eigene Spalten für Handy und Computer), und der Alarm dauert, bis er quittiert wird.
 
-Nicht veröffentlicht; enthalten in 0.26.0.
+Nicht veröffentlicht; enthalten in 0.27.0.
 
 ### Hinzugefügt
 
@@ -51,7 +61,7 @@ Nicht veröffentlicht; enthalten in 0.26.0.
 
 ## [0.24.0] - 2026-11-09
 
-Nicht veröffentlicht; enthalten in 0.26.0.
+Nicht veröffentlicht; enthalten in 0.27.0.
 
 ### Geändert
 
@@ -394,7 +404,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.26.0
+[0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0
 [0.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.23.0
 [0.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.12.0
 [0.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.6.0

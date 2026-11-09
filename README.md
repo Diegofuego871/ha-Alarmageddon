@@ -125,7 +125,7 @@ Side panel › Configuration › Alarm system › "Settings per mode": choose "H
 | Open sensor when arming | Block arming or bypass the open sensors |
 | Confirmation window | Time for the second sensor with "Needs a second sensor" |
 
-The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
+The element "Alarm ends" at the end of each action flow decides what disarming does (undo the marked steps, undo all steps, or only stop). The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
 
 ## Modes
 

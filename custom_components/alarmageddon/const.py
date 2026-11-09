@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 30  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 31  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -179,6 +179,12 @@ PUSH_ACTION_SILENCE: Final = "ALARMAGEDDON_SILENCE_"  # + entry_id
 
 # Aktionen als Ablauf (0.4.0): pro Anlage und Auslöser eine Liste von Schritten (CONF_WORKFLOWS[auslöser])
 CONF_WORKFLOWS: Final = "workflows"
+# Was Deaktivieren/Quittieren mit den Geräten der Schritte macht (0.26.0), je Auslöser: CONF_WORKFLOW_END[auslöser]
+CONF_WORKFLOW_END: Final = "workflow_end"
+END_RESTORE_MARKED: Final = "restore_marked"  # alle Schritte stoppen, Geräte mit "Rückgängig" zurück (bisheriges Verhalten)
+END_RESTORE_ALL: Final = "restore_all"  # alle Schritte stoppen, alle Geräte der Schritte zurück
+END_STOP_ONLY: Final = "stop_only"  # nur stoppen (Töne aus), nichts zurücksetzen
+END_MODES: Final = (END_RESTORE_MARKED, END_RESTORE_ALL, END_STOP_ONLY)
 WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor bei deaktivierter Anlage
 WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
 STEP_TYPES: Final = ("notify", "action", "wait", "sound")

@@ -125,7 +125,7 @@ Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend
 | Offener Sensor beim Scharfschalten | Scharfschalten verhindern oder die offenen Sensoren umgehen |
 | Bestätigungsfenster | Zeit für den zweiten Sensor bei "Braucht einen zweiten Sensor" |
 
-Der Alarm dauert in jedem Modus, bis er deaktiviert wird (es gibt keine Alarmdauer; alte Werte werden ignoriert). Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
+Das Element "Alarm endet" am Ende jedes Ablaufs bestimmt, was Deaktivieren tut (markierte Schritte rückgängig, alle Schritte rückgängig oder nur stoppen). Der Alarm dauert in jedem Modus, bis er deaktiviert wird (es gibt keine Alarmdauer; alte Werte werden ignoriert). Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.
 
 ## Modi
 

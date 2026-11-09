@@ -47,6 +47,9 @@ from .const import (
     MODE_ENABLED_KEY,
     CONF_OPEN_SENSORS,
     CONF_SENSOR_OPTIONS,
+    CONF_WORKFLOW_END,
+    END_MODES,
+    END_RESTORE_MARKED,
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
@@ -194,6 +197,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "schedules": entry.options.get(CONF_SCHEDULES) or [],
                 "sensor_options": ctl.sensor_overrides,
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
+                "workflow_end": entry.options.get(CONF_WORKFLOW_END) or {},
                 "workflow_running": (entry.runtime_data.workflow.running or {}).get("trigger") if entry.runtime_data.workflow else None,
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
                 "has_code": ctl.has_code,
@@ -455,6 +459,8 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         vol.Required("type"): f"{DOMAIN}/save_workflows",
         vol.Required("entry_id"): str,
         vol.Required("workflows"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
+        # Element "Alarm endet": was Deaktivieren mit den Geräten macht, je Auslöser (fehlt: Standard)
+        vol.Optional("workflow_end"): {vol.In(WORKFLOW_TRIGGERS): vol.In(END_MODES)},
     }
 )
 @websocket_api.require_admin
@@ -465,6 +471,8 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
         return
     options = dict(entry.options)
     options[CONF_WORKFLOWS] = {k: v for k, v in msg["workflows"].items() if v}
+    if "workflow_end" in msg:
+        options[CONF_WORKFLOW_END] = {k: v for k, v in msg["workflow_end"].items() if v != END_RESTORE_MARKED}
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
 

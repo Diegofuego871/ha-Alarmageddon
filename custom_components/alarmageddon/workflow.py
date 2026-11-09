@@ -27,7 +27,7 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_WORKFLOWS, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, TEST_SECONDS, WORKFLOW_STORE_KEY
+from .const import CONF_WORKFLOW_END, CONF_WORKFLOWS, END_MODES, END_RESTORE_ALL, END_RESTORE_MARKED, END_STOP_ONLY, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, TEST_SECONDS, WORKFLOW_STORE_KEY
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,11 +44,14 @@ async def async_remove_workflow_store(hass: HomeAssistant, entry_id: str) -> Non
     await _store(hass, entry_id).async_remove()
 
 
-def step_entities(step: dict[str, Any]) -> list[str]:
-    """Geräte, die ein Schritt verändert und die beim Deaktivieren zurückgesetzt werden sollen."""
-    if step.get("type") == "sound" and step.get("restore", True):
+def step_entities(step: dict[str, Any], end: str = END_RESTORE_MARKED) -> list[str]:
+    """
+    Geräte, die ein Schritt verändert und die beim Deaktivieren zurückgesetzt werden sollen. `end` ist die Wahl im Element
+    "Alarm endet": markierte Schritte (Standard), alle Schritte oder nur stoppen (dann nur die Player, damit der Ton verstummt).
+    """
+    if step.get("type") == "sound" and (end != END_RESTORE_MARKED or step.get("restore", True)):
         return list(step.get("players", []))
-    if step.get("type") == "action" and step.get("restore", False):
+    if step.get("type") == "action" and end != END_STOP_ONLY and (end == END_RESTORE_ALL or step.get("restore", False)):
         return [e for e in step.get("target", []) if e.split(".")[0] in RESTORABLE_DOMAINS]
     return []
 
@@ -68,6 +71,11 @@ class WorkflowRunner:
         self._test_timer = None
 
     # ----- Konfiguration -----
+
+    def end_mode(self, trigger: str) -> str:
+        """Wahl im Element "Alarm endet" für diesen Auslöser; unbekannte Werte gelten als Standard."""
+        mode = (self.entry.options.get(CONF_WORKFLOW_END) or {}).get(trigger)
+        return mode if mode in END_MODES else END_RESTORE_MARKED
 
     def steps(self, trigger: str) -> list[dict[str, Any]]:
         return list((self.entry.options.get(CONF_WORKFLOWS) or {}).get(trigger, []))
@@ -134,9 +142,11 @@ class WorkflowRunner:
         steps = override or self.steps(trigger)
         if not steps:
             return False
-        entities = sorted({e for s in steps for e in step_entities(s)})
-        self._run = {"trigger": trigger, "index": 0, "test": test, "snapshot": self._snapshot(entities), "sonos": [], "steps": override}
-        self._run["sonos"] = await self._sonos_snapshot(entities)
+        end = self.end_mode(trigger)
+        entities = sorted({e for s in steps for e in step_entities(s, end)})
+        self._run = {"trigger": trigger, "index": 0, "test": test, "end": end, "snapshot": self._snapshot(entities), "sonos": [], "steps": override}
+        # Nur stoppen: keine Sonos-Sicherung nötig, es wird nichts zurückgestellt
+        self._run["sonos"] = [] if end == END_STOP_ONLY else await self._sonos_snapshot(entities)
         await self._store.async_save(self._run)
         self._task = self._background(self._execute(trigger, 0))
         if test:
@@ -342,8 +352,12 @@ class WorkflowRunner:
             domain = entity_id.split(".")[0]
             state, attrs = saved.get("state"), saved.get("attributes", {})
             data = {"entity_id": entity_id}
+            if run.get("end") == END_STOP_ONLY and domain != "media_player":
+                continue
             if domain == "media_player":
                 await self._call("media_player", "media_stop", data)
+                if run.get("end") == END_STOP_ONLY:
+                    continue
                 if entity_id in sonos and self.hass.services.has_service("sonos", "restore"):
                     await self._call("sonos", "restore", {**data, "with_group": True})
                     continue

@@ -200,7 +200,7 @@ export class ActionsUi {
   ensureDraft() {
     const s = this.system;
     if (!s) return null;
-    if (!this.draft || this.draft.entry !== s.entry_id) this.draft = { entry: s.entry_id, wf: JSON.parse(JSON.stringify(s.workflows || {})) };
+    if (!this.draft || this.draft.entry !== s.entry_id) this.draft = { entry: s.entry_id, wf: JSON.parse(JSON.stringify(s.workflows || {})), end: { ...(s.workflow_end || {}) } };
     if (!this.triggers(s).includes(this.trigger)) this.trigger = "away";
     return this.draft;
   }
@@ -221,7 +221,10 @@ export class ActionsUi {
     if (!s || !d || d.entry !== s.entry_id) return 0;
     const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(d.wf)]);
     let n = 0;
-    for (const k of all) if (JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(d.wf[k] || [])) n += 1;
+    for (const k of all) {
+      const endOf = (m) => (m || {})[k] || "restore_marked";
+      if (JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(d.wf[k] || []) || endOf(s.workflow_end) !== endOf(d.end)) n += 1;
+    }
     return n;
   }
 
@@ -252,9 +255,20 @@ export class ActionsUi {
     h._setHtml(body, `<div class="ag-wf-line">
         <div class="ag-wf-start"><span class="ag-mini err">${ic("alert", 16)}</span>${esc(this._t("wfStart"))}</div>${plus(0)}
         ${steps.length ? cards : `<div class="ag-card ag-empty ag-wf-empty"><span class="ag-t2">${esc(this._t("wfEmpty"))}</span><button class="ag-btn primary" data-wf="add" data-at="0">${ic("plus", 18)}${esc(this._t("wfAdd"))}</button></div>`}
-      </div><div class="ag-t2 ag-small ag-wf-info">${ic("restore", 14)} ${esc(this._t("wfStopInfo"))}</div>`);
+        ${this._endHtml()}
+      </div>`);
     h._placePills();
     this.renderFoot();
+  }
+
+  // Festes Ende des Ablaufs: "Alarm endet" (Deaktivieren/Quittieren) mit der Wahl, was mit den Geräten geschieht
+  _endHtml() {
+    const cur = this.draft?.end?.[this.trigger] || "restore_marked";
+    const opts = ["restore_marked", "restore_all", "stop_only"];
+    return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok">${ic("check", 16)}</span>${esc(this._t("wfEnd"))}</div>
+      <div class="ag-card ag-wf-endcard"><div class="ag-ef-l">${esc(this._t("wfEndTitle"))}</div>
+        <select class="ag-input" data-wf="end" aria-label="${esc(this._t("wfEndTitle"))}">${opts.map((o) => `<option value="${o}" ${cur === o ? "selected" : ""}>${esc(this._t(`wfEnd_${o}`))}</option>`).join("")}</select>
+        <div class="ag-ef-h">${esc(this._t(`wfEnd_${cur}_hint`))}</div></div></div>`;
   }
 
   // Kurzfassung eines Schritts für die Karte
@@ -774,7 +788,9 @@ export class ActionsUi {
     this.renderFoot();
     try {
       const wf = Object.fromEntries(this.triggers(s).map((t) => [t, d.wf[t] || []]));
-      await h._hass.callWS({ type: "alarmageddon/save_workflows", entry_id: s.entry_id, workflows: wf });
+      const end = Object.fromEntries(this.triggers(s).map((t) => [t, d.end?.[t] || "restore_marked"]));
+      await h._hass.callWS({ type: "alarmageddon/save_workflows", entry_id: s.entry_id, workflows: wf, workflow_end: end });
+      s.workflow_end = Object.fromEntries(Object.entries(end).filter(([, v]) => v !== "restore_marked"));
       s.workflows = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(wf).filter(([, v]) => v.length))));
       this.draft = null;
       this.saveState = "saved";
@@ -1059,6 +1075,14 @@ export class ActionsUi {
     else if (act === "test") this.test(false);
     else if (act === "test-stop") this.test(true);
     else return false;
+    return true;
+  }
+
+  onChange(el) {
+    if (el.dataset?.wf !== "end") return false;
+    this.ensureDraft().end[this.trigger] = el.value;
+    this.render();
+    this.host._renderDots();
     return true;
   }
 
