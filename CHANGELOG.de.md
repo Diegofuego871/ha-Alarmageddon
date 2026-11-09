@@ -22,6 +22,8 @@ Ein aufgeräumteres Protokoll, besonders auf dem Handy.
 
 ### Behoben
 
+- **Alarmablauf:** Auch unter den Plus-Knöpfen mehr Abstand (zwischen Plus und nächster Aktion).
+- **Handy:** Die vier Reiter der Einstellungen pro Modus (Modi und "Immer aktiv") stehen in zwei Reihen statt sich zu überlappen.
 - **Mehrere Alarmanlagen beim Start:** Lud Home Assistant zwei oder mehr Alarmanlagen zugleich, scheiterte eine mit "Einrichtungsfehler" ("Overwriting panel alarmageddon") und fehlte im Panel. Das Panel wird jetzt sicher nur einmal registriert.
 - **Laden mit beschädigten Optionen:** Eine Alarmanlage lädt auch dann, wenn ein Eintrag der Sensor-Optionen beschädigt ist (kein Wörterbuch), bei der Übernahme der alten Wahl "Offener Sensor beim Scharfschalten" oder später. Die Ursache eines Einrichtungsfehlers steht immer im Protokoll von Home Assistant; zeigt eine Anlage "Einrichtungsfehler", hilft der vollständige Eintrag dort.
 

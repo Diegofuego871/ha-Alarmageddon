@@ -22,6 +22,8 @@ A tidier log, especially on the phone.
 
 ### Fixed
 
+- **Alarm flow:** more space below the plus buttons too (between the plus and the next action).
+- **Phone:** the four tabs of the settings per mode (modes and "Always active") sit in two rows instead of overlapping.
 - **Several alarm systems at startup:** when Home Assistant loaded two or more alarm systems at once, one of them failed with "Setup error" ("Overwriting panel alarmageddon") and was missing in the panel. The panel is now registered once, safely.
 - **Loading with damaged options:** an alarm system no longer fails to load when an entry of the sensor options is damaged (not a dictionary), in the migration of the old "Open sensor when arming" choice or later. The cause of a failed setup is always logged; if an alarm system shows "Setup error", the full entry in the Home Assistant log helps.
 
