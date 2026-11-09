@@ -15,6 +15,10 @@ Backups can have a name.
 
 - **Name for a backup:** "Back up" asks for an optional name (for example "before the rebuild"). The list shows the name with the date below it; without a name it shows the date.
 
+### Fixed
+
+- **Alarm flow on the phone:** the dashed line and the line to "Alarm ends" now sit exactly under the centre of the plus buttons (they were 3 px to the right).
+
 ## [0.38.0] - 2026-11-09
 
 Backups kept in the integration, with a list.

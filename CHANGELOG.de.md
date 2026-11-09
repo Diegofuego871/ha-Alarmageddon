@@ -15,6 +15,10 @@ Sicherungen können einen Namen haben.
 
 - **Name für eine Sicherung:** "Sichern" fragt nach einem Namen (freiwillig, zum Beispiel "vor dem Umbau"). Die Liste zeigt den Namen mit dem Datum darunter; ohne Namen steht das Datum.
 
+### Behoben
+
+- **Alarmablauf auf dem Handy:** Die gestrichelte Linie und die Linie zu "Alarm endet" liegen jetzt genau unter der Mitte der Plus-Knöpfe (sie lagen 3 px zu weit rechts).
+
 ## [0.38.0] - 2026-11-09
 
 Sicherungen in der Integration, mit Liste.
