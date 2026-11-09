@@ -666,5 +666,15 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 /* Protokoll: die Filter-Pillen der Ereignisse gleiten unter den festen Zeitraum und bleiben dort stehen */
 .ag-evchips { position: sticky; top: var(--ag-th-top, 0px); z-index: 14; background: var(--ag-bg); padding: 8px 0; margin-bottom: 4px !important; }
 .ag-log-tools { padding-bottom: 8px; }
+/* Übersicht auf dem Handy: Suche (mit "Ansicht"), Filter-Pillen in einer Zeile zum Wischen, Auswahlfelder in einer Zeile; alles bleibt oben stehen */
+:host([narrow]) .ag-ov-tools .ag-list-head { display: none; }
+:host([narrow]) .ag-ov-tools .ag-tools { gap: 8px; padding: 8px 0; }
+:host([narrow]) .ag-ov-tools .list-search { flex: 1 1 0; min-width: 0; order: 1; }
+:host([narrow]) .ag-ov-tools [data-list="view"] { order: 2; font-size: 0; gap: 0; width: 44px; padding: 0; justify-content: center; flex: none; }
+:host([narrow]) .ag-ov-tools .ag-lchips { order: 3; flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; gap: 8px; scrollbar-width: none; }
+:host([narrow]) .ag-ov-tools .ag-lchips::-webkit-scrollbar { display: none; }
+:host([narrow]) .ag-ov-tools .ag-lchips .ag-chip { flex: none; }
+:host([narrow]) .ag-ov-tools .ag-grow { display: none; }
+:host([narrow]) .ag-ov-tools select.ag-select { order: 4; flex: 1 1 0; min-width: 0; }
 `;
 

@@ -17,6 +17,7 @@ Backups can have a name.
 
 ### Fixed
 
+- **Overview on the phone:** search, filter pills and the table header now stand at the very top of the screen while only the rows scroll; the header with logo and tabs and the two tiles scroll away first. Search and "View" share one row, the filter pills sit in one row you can swipe, the selection fields share one row. The title "Sensors 19 of 19" is gone there (the pill "All" shows the count).
 - **Overview on the phone:** the switch List/Cards is only in "View" (it needed too much room in the toolbar); on the computer it stays in both places.
 - **Log:** the filter pills of the events slide up under the fixed period and stay there while the list scrolls.
 - **Alarm actions never hang:** a device that does not answer within 10 seconds (before: 15) no longer holds up the flow; it goes on with the next step, and the timeline of the alarm shows "No answer within 10 s, the flow went on". The hanging call is not cancelled (a script may finish) but is not waited for, and disarming ends it, even if it ignores the cancellation. The Sonos snapshot before the first step delays the alarm by 3 seconds at most. A failing action is shown in the timeline too. Disarming while the flow starts no longer leaves a half-started flow behind. Notifications to the phones also stop waiting after 15 seconds.

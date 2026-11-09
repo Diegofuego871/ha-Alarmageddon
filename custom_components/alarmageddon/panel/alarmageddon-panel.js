@@ -554,12 +554,14 @@ class AlarmageddonPanel extends HTMLElement {
       const tall = c.clientHeight >= 760 && !this.hasAttribute("narrow");
       const v = this._view;
       const stickyOverview = this._tab === "overview" && v?.querySelector(":scope > .ag-ov-tools");
+      const narrowOv = this.hasAttribute("narrow") && stickyOverview;
       const items = [
-        c.querySelector(":scope > .ag-head"),
+        // Übersicht auf dem Handy: Kopfzeile und Karten scrollen weg, Suche, Filter und Tabellenkopf stehen ganz oben (Vorgabe des Nutzers)
+        narrowOv ? null : c.querySelector(":scope > .ag-head"),
         v?.querySelector(":scope > .ag-cfg"),
         stickyOverview && tall ? v.querySelector(":scope > .ag-ov-top") : null,
-        // Handy (Übersicht, Sensoren, Aktionen): die Filter bzw. die Leiste mit dem Schalter scrollen weg, damit Kopfzeile und Tabellenkopf fest bleiben und genug Platz für die Zeilen bleibt
-        this.hasAttribute("narrow") && (stickyOverview || (this._tab === "config" && ["sensors", "actions"].includes(this._sub))) ? null
+        // Handy (Sensoren, Aktionen): die Filter bzw. die Leiste mit dem Schalter scrollen weg, damit Kopfzeile und Tabellenkopf fest bleiben und genug Platz für die Zeilen bleibt
+        this.hasAttribute("narrow") && !stickyOverview && this._tab === "config" && ["sensors", "actions"].includes(this._sub) ? null
           : stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
         // Sensoren am Computer: Schalter und Reiter der Modi bleiben über der Tabelle stehen (auf dem Handy scrollen sie samt Erklärung weg)
         this._tab === "config" && this._sub === "sensors" && !this.hasAttribute("narrow") ? v?.querySelector(".ag-pmstick") : null,
