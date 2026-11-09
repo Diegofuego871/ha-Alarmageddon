@@ -259,7 +259,7 @@
     if (msg.type === "alarmageddon/save_notify") {
       const incoming = JSON.parse(JSON.stringify(msg.notify));
       const types = Object.fromEntries(Object.entries(window.__notify.types).map(([k, v]) => [k, { ...v, ...(incoming.types?.[k] || {}) }]));
-      window.__notify = { ...window.__notify, ...incoming, types, modes: incoming.modes ?? window.__notify.modes ?? {} };
+      window.__notify = { ...window.__notify, ...incoming, types, modes: incoming.modes ?? window.__notify.modes ?? {}, per_mode: incoming.per_mode ?? window.__notify.per_mode ?? false };
       return { notify: window.__notify };
     }
     if (msg.type === "alarmageddon/test_notify") {
@@ -330,6 +330,7 @@
         if (!sys.mode_settings[scope]) sys.mode_settings[scope] = { exit_delay: 0, entry_delay: 30, confirm_window: 60 };
         if (sys.mode_settings[scope]) Object.assign(sys.mode_settings[scope], vals);
       }
+      if (typeof msg.per_mode_settings === "boolean") sys.per_mode_settings = msg.per_mode_settings;
       if (msg.schedules) sys.schedules = JSON.parse(JSON.stringify(msg.schedules));
       const enabled = { home: sys.modes.includes("home"), away: sys.modes.includes("away"), night: sys.modes.includes("night") };
       for (const m of ["home", "away", "night"]) if (`${m}_enabled` in msg) enabled[m] = msg[`${m}_enabled`];

@@ -183,3 +183,18 @@ async def test_backup_contains_mode_settings(hass: HomeAssistant, hass_ws_client
     bad = dict(exported)
     bad["systems"] = [{"title": "Haus", "options": {"entry_delay_away": -5}}]
     assert (await _ws(client, type="alarmageddon/import", data=bad))["error"]["code"] == "invalid_backup"
+
+
+async def test_per_mode_settings_switch_is_saved_and_in_backup(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    data = (await _ws(client, type="alarmageddon/data"))["result"]["systems"][0]
+    assert data["per_mode_settings"] is None  # noch nie gewählt: das Panel entscheidet nach den Werten
+    assert (await _ws(client, type="alarmageddon/save_system", entry_id=entry.entry_id, per_mode_settings=True))["success"]
+    await hass.async_block_till_done()
+    assert entry.options["per_mode_settings"] is True
+    data = (await _ws(client, type="alarmageddon/data"))["result"]["systems"][0]
+    assert data["per_mode_settings"] is True
+    exported = (await _ws(client, type="alarmageddon/export"))["result"]
+    assert exported["systems"][0]["options"]["per_mode_settings"] is True
+    assert not (await _ws(client, type="alarmageddon/save_system", entry_id=entry.entry_id, per_mode_settings="ja"))["success"]

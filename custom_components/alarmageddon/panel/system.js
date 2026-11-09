@@ -33,8 +33,12 @@ export class SystemUi {
     const ms = s.mode_settings || {};
     const per = {};
     for (const m of ALL_MODES) per[m] = { ...DEFAULTS, ...(ms[m] || {}) };
+    const active = (s.modes || ["home", "away"]).filter((m) => ALL_MODES.includes(m));
+    // Schalter "Einstellungen pro Modus": gespeicherter Wert; ohne Wert an, wenn sich die Werte der Modi unterscheiden (Anlagen vor 0.34.0)
+    const differ = active.some((m) => Object.keys(DEFAULTS).some((k) => per[m][k] !== per[active[0]][k]));
     return {
       entry: s.entry_id,
+      perMode: typeof s.per_mode_settings === "boolean" ? s.per_mode_settings : differ,
       per,
       modes: Object.fromEntries(ALL_MODES.map((m) => [m, (s.modes || ["home", "away"]).includes(m)])),
       schedules: JSON.parse(JSON.stringify(s.schedules || [])),
@@ -59,6 +63,7 @@ export class SystemUi {
     const a = this.base(s);
     const d = this.draft;
     let n = 0;
+    if (a.perMode !== d.perMode) n += 1; // der Schalter zählt als eigene Änderung
     // Je Modus mit Änderungen zählt einmal ("Abwesend: 2 Werte" ist eine Änderung am Modus)
     for (const scope of ALL_MODES) if (Object.keys(a.per[scope]).some((k) => a.per[scope][k] !== d.per[scope][k])) n += 1;
     for (const m of ALL_MODES) if (a.modes[m] !== d.modes[m]) n += 1;
@@ -92,22 +97,26 @@ export class SystemUi {
     const d = this.ensureDraft();
     if (!form || !d) return;
     const modes = ALL_MODES.filter((m) => d.modes[m]);
-    // Gewählter Modus der Einstellungen: ein abgeschalteter fällt auf den ersten eingeschalteten zurück
-    if (!modes.includes(this.scope)) this.scope = modes.includes("away") ? "away" : modes[0] || "away";
+    // Ohne Schalter gilt ein Satz Werte für alle Modi (angezeigt wird der des ersten Modus); mit Schalter wählt der Reiter den Modus
+    if (!d.perMode) this.scope = modes[0] || "away";
+    else if (!modes.includes(this.scope)) this.scope = modes.includes("away") ? "away" : modes[0] || "away";
     const scope = this.scope;
     const v = d.per[scope];
     const bad = new Set(this.invalid());
     const num = (field, value, min = 0, max = MAX, unit = "seconds") => `<span class="ag-num ${bad.has(`${scope}.${field}`) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-field="${field}" value="${esc(value)}" aria-label="${esc(field)}"><span class="ag-t2">${esc(this._t(unit))}</span></span>`;
-    const scopeSeg = h._segHtml("sys-scope", modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), scope, "data-scope", "small");
+    // Reiter der Modi nur mit eingeschaltetem Schalter
+    const scopeSeg = d.perMode ? h._segHtml("sys-scope", modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), scope, "data-scope", "small") : "";
+    const switchRow = `<div class="ag-pmbar"><div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-sys="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("sysPerMode"))}"></button>
+      <div class="ag-settx"><b>${esc(this._t("sysPerMode"))}</b><small>${esc(this._t(d.perMode ? "sysPerModeOn" : "sysPerModeHint"))}</small></div></div>${scopeSeg}</div>`;
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
     const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
           ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
     const row = (title, hint, control) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(title))}</b>${hint ? `<small>${esc(this._t(hint))}</small>` : ""}</div>${control}</div>`;
     const timesRows = row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay));
     const behaviourRows = row("sysConfirm", "sysConfirmHint", num("confirm_window", v.confirm_window, WINDOW[0], WINDOW[1]));
-    const perMode = chapter(this._t("chapPerMode"), `<div class="ag-scopebar">${scopeSeg}</div>
+    const perMode = chapter(this._t("chapPerMode"), `${switchRow}
         <div class="ag-subh">${esc(this._t("chapTimes"))}</div>${card(timesRows)}
-        <div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}`, this._t("chapPerModeHint"));
+        <div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}`);
     const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint")) + perMode
       + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml();
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
@@ -326,9 +335,9 @@ export class SystemUi {
       const modes = ALL_MODES.filter((m) => d.modes[m]);
       // Alle Modi (auch abgeschaltete behalten ihre Werte)
       const mode_settings = Object.fromEntries(ALL_MODES.map((m) => [m, { ...d.per[m] }]));
-      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings,
+      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings, per_mode_settings: d.perMode,
         home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, schedules: d.schedules });
-      Object.assign(s, { mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
+      Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
       h._reloadWait();
@@ -352,7 +361,16 @@ export class SystemUi {
     if (!act) return false;
     const d = this.ensureDraft();
     const i = Number(el.dataset.index);
-    if (act === "mode") {
+    if (act === "permode") {
+      d.perMode = !d.perMode;
+      if (!d.perMode) {
+        // Aus: ein Satz Werte für alle Modi, der des ersten Modus
+        const first = ALL_MODES.find((m) => d.modes[m]) || "away";
+        for (const m of ALL_MODES) d.per[m] = { ...d.per[first] };
+      }
+      this.saveState = null;
+      this.render();
+    } else if (act === "mode") {
       d.modes[el.dataset.mode] = !d.modes[el.dataset.mode];
       this.saveState = null;
       this.render();
@@ -439,7 +457,8 @@ export class SystemUi {
     const d = this.ensureDraft();
     const v = el.value === "" ? NaN : Number(el.value);
     const field = el.dataset.field;
-    d.per[this.scope][field] = v;
+    // Ohne Schalter gilt der Wert für alle Modi
+    for (const m of d.perMode ? [this.scope] : ALL_MODES) d.per[m][field] = v;
     this.saveState = null;
     const [min, max] = field === "confirm_window" ? WINDOW : [0, MAX];
     el.closest(".ag-num")?.classList.toggle("bad", !Number.isInteger(v) || v < min || v > max);

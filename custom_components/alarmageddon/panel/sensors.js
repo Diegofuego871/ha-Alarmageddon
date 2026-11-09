@@ -6,6 +6,9 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, DC, OPENINGS, MOTION, MODE_KEY, MODE_ICON, OPTIONS, TYPES, DEFAULT_PRESETS, errText } = await import(`./common.js${V}`);
 
 const ALL_MODES = ["home", "away", "night"];
+const SCOPES = [...ALL_MODES, "always"]; // Bereiche mit eigenen Werten: die Modi und der Reiter "Immer aktiv" (deaktivierter Zustand)
+// "Immer aktiv" selbst hängt nie an einem Modus: sein Wert steht immer im Bereich "always"
+const scopeOf = (key, mode) => (key === "always" ? "always" : mode);
 
 export class SensorsUi {
   constructor(host) {
@@ -91,7 +94,7 @@ export class SensorsUi {
       if (JSON.stringify(sortKeys(baseOpts[id] || {})) !== JSON.stringify(sortKeys(d.opts[id] || {}))) out.add(id);
     }
     const baseModes = s.sensor_modes || {};
-    for (const m of ALL_MODES) {
+    for (const m of SCOPES) {
       for (const id of new Set([...Object.keys(baseModes[m] || {}), ...Object.keys(d.modeOpts[m] || {})])) {
         if (JSON.stringify(sortKeys((baseModes[m] || {})[id] || {})) !== JSON.stringify(sortKeys((d.modeOpts[m] || {})[id] || {}))) out.add(id);
       }
@@ -119,7 +122,7 @@ export class SensorsUi {
   // Wirksamer Wert: eigener Wert, sonst Voreinstellung der Sensorart
   eff(id, key, mode = null) {
     if (mode) {
-      const m = this.draft?.modeOpts[mode]?.[id]?.[key];
+      const m = this.draft?.modeOpts[scopeOf(key, mode)]?.[id]?.[key];
       if (m !== undefined) return m;
     }
     const own = this.draft?.opts[id]?.[key];
@@ -127,11 +130,12 @@ export class SensorsUi {
   }
 
   own(id, key, mode = null) {
-    return mode ? this.draft?.modeOpts[mode]?.[id]?.[key] !== undefined : this.draft?.opts[id]?.[key] !== undefined;
+    return mode ? this.draft?.modeOpts[scopeOf(key, mode)]?.[id]?.[key] !== undefined : this.draft?.opts[id]?.[key] !== undefined;
   }
 
   // Eigenen Wert eines Modus setzen; entspricht er dem Wert für alle Modi, entfällt er (der Modus folgt dann späteren Änderungen mit)
   setModeOption(mode, id, key, value) {
+    mode = scopeOf(key, mode);
     const d = this.ensureDraft();
     const per = { ...(d.modeOpts[mode] || {}) };
     const opts = { ...(per[id] || {}) };
@@ -145,6 +149,7 @@ export class SensorsUi {
   }
 
   resetModeOption(mode, id, key) {
+    mode = scopeOf(key, mode);
     const d = this.ensureDraft();
     const opts = d.modeOpts[mode]?.[id];
     if (!opts) return;
@@ -252,8 +257,9 @@ export class SensorsUi {
     const d = this.draft;
     if (!bar || !d) return;
     const modes = this.modes().filter((m) => ALL_MODES.includes(m));
-    if (d.perMode && !modes.includes(this.mtab)) this.mtab = modes[0] || "home";
-    const tabs = d.perMode ? h._segHtml("sen-mode", modes.map((m) => [`mt:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]]), `mt:${this.mtab}`, "data-sen", "small") : "";
+    if (d.perMode && !modes.includes(this.mtab) && this.mtab !== "always") this.mtab = modes[0] || "home";
+    // Reiter der Modi und "Immer aktiv" (Rauch, Wasser, Gas: gilt auch bei deaktivierter Anlage), jeder mit allen Einstellungen für sich
+    const tabs = d.perMode ? h._segHtml("sen-mode", [...modes.map((m) => [`mt:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]]), ["mt:always", this._t("wfAlways"), "flash"]], `mt:${this.mtab}`, "data-sen", "small") : "";
     h._setHtml(bar, `<div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-sen="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("senPerMode"))}"></button>
       <div class="ag-settx"><b>${esc(this._t("senPerMode"))}</b><small>${esc(this._t(d.perMode ? "senPerModeOn" : "senPerModeHint"))}</small></div></div>${tabs}`);
     h._placePills();
@@ -280,7 +286,7 @@ export class SensorsUi {
     const modes = this.modes();
     const cur = this.activeMode(); // gewählter Modus (nur mit Schalter): seine Spalten sind hervorgehoben
     const head = `<tr><th>${esc(this._t("colSensor"))}</th>${modes.map((m) => `<th class="z ${m === cur ? "cur" : ""}">${esc(this._t(MODE_KEY[m]))}<button class="ag-allbtn" data-sen="all" data-mode="${m}">${esc(this._t("all"))}</button></th>`).join("")}
-      <th class="z ${cur ? "cur" : ""}">${esc(this._t("optAlways"))}</th><th class="z">${esc(this._t("colEntry"))}</th><th></th></tr>`;
+      <th class="z ${cur === "always" ? "cur" : ""}">${esc(this._t("optAlways"))}</th><th class="z">${esc(this._t("colEntry"))}</th><th></th></tr>`;
     let area = null;
     const body = [];
     for (const r of rows) {
@@ -294,7 +300,7 @@ export class SensorsUi {
           const on = d.zones[m].has(r.id);
           return `<td class="z ${m === cur ? "cur" : ""}"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
         }).join("")}
-        <td class="z ${cur ? "cur" : ""}">${this._alwaysBox(r)}</td><td class="z">${this._entryToggle(r)}</td>
+        <td class="z ${cur === "always" ? "cur" : ""}">${this._alwaysBox(r)}</td><td class="z">${this._entryToggle(r)}</td>
         <td class="ag-acts"><div class="ag-actrow"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div></td></tr>`);
     }
     return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
@@ -302,7 +308,7 @@ export class SensorsUi {
 
   // "Immer aktiv" (Rauch, Wasser, Gas lösen auch bei deaktivierter Anlage aus) als Kästchen in der Übersicht: wirksamer Wert, eigener Wert ist ein Punkt
   _alwaysBox(r) {
-    const mode = this.activeMode();
+    const mode = this.activeMode() ? "always" : null;
     const on = this.eff(r.id, "always", mode);
     const own = mode ? this.own(r.id, "always", mode) : false;
     return `<button class="ag-box ${on ? "on" : ""} ${own ? "own" : ""}" data-sen="${mode ? "mopt" : "opt"}" ${mode ? `data-mode="${mode}"` : ""} data-key="always" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t("optAlways")}`)}" title="${esc(this._t("optAlwaysHint"))}">${on ? ic("check", 18) : ""}</button>`;
@@ -331,7 +337,7 @@ export class SensorsUi {
         <div class="ag-zbtns" style="--n:${modes.length + 1}">${modes.map((m) => {
           const on = d.zones[m].has(r.id);
           return `<button class="ag-zbtn ${on ? "on" : ""} ${m === cur ? "cur" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`;
-        }).join("")}<button class="ag-zbtn ${this.eff(r.id, "always", cur) ? "on" : ""} ${cur ? "cur" : ""}" data-sen="${cur ? "mopt" : "opt"}" ${cur ? `data-mode="${cur}"` : ""} data-key="always" data-ent="${esc(r.id)}" aria-pressed="${this.eff(r.id, "always", cur)}">${ic("flash", 16)}${esc(this._t("optAlways"))}</button></div></div>`);
+        }).join("")}<button class="ag-zbtn ${this.eff(r.id, "always", cur) ? "on" : ""} ${cur === "always" ? "cur" : ""}" data-sen="${cur ? "mopt" : "opt"}" ${cur ? `data-mode="always"` : ""} data-key="always" data-ent="${esc(r.id)}" aria-pressed="${this.eff(r.id, "always", cur)}">${ic("flash", 16)}${esc(this._t("optAlways"))}</button></div></div>`);
     }
     return `<div class="ag-mcards">${out.join("")}</div>`;
   }
@@ -348,8 +354,9 @@ export class SensorsUi {
     const zones = this.modes().map((m) => `<button class="ag-chip ${d.zones[m].has(id) ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(id)}" aria-pressed="${d.zones[m].has(id)}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("");
     const entryRow = `<div class="ag-orow"><span class="ag-oav ${d.entrySensors.has(id) ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("colEntry"))}</b><small>${esc(this._t("optEntryHint"))}</small></div>${this._entryToggle(r)}</div>`;
     const mode = this.activeMode();
-    const modeName = mode ? this._t(MODE_KEY[mode]) : "";
-    const opts = OPTIONS.map((o) => {
+    const modeName = mode === "always" ? this._t("wfAlways") : mode ? this._t(MODE_KEY[mode]) : "";
+    // In den Reitern der Modi gibt es "Immer aktiv" nicht (es gilt unabhängig vom Modus und steht im Reiter "Immer aktiv")
+    const opts = OPTIONS.filter((o) => !(mode && mode !== "always" && o.key === "always")).map((o) => {
       const on = this.eff(id, o.key, mode);
       const own = this.own(id, o.key, mode);
       // Im Reiter eines Modus: Herkunft ist "eigener Wert für den Modus" oder der Wert für alle Modi; sonst wie bisher die Voreinstellung der Art
@@ -448,7 +455,7 @@ export class SensorsUi {
     for (const m of ALL_MODES) d.zones[m].delete(id);
     d.entrySensors.delete(id);
     delete d.opts[id];
-    for (const m of ALL_MODES) {
+    for (const m of SCOPES) {
       if (d.modeOpts[m]) delete d.modeOpts[m][id];
       if (d.modeOpts[m] && !Object.keys(d.modeOpts[m]).length) delete d.modeOpts[m];
     }

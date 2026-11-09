@@ -147,7 +147,7 @@ def async_persist(hass: HomeAssistant, cfg: dict[str, Any], kind: str, title: st
 
 def effective_type(cfg: dict[str, Any], kind: str, mode: str | None) -> dict[str, Any]:
     """Einstellung einer Art: der eigene Wert des Modus (nur Arten im scharfen Zustand), sonst der gemeinsame."""
-    own = ((cfg.get("modes") or {}).get(mode) or {}).get(kind) if mode and kind in NOTIFY_MODE_KINDS else None
+    own = ((cfg.get("modes") or {}).get(mode) or {}).get(kind) if cfg.get("per_mode") and mode and kind in NOTIFY_MODE_KINDS else None
     return {**cfg["types"][kind], **(own or {})}
 
 

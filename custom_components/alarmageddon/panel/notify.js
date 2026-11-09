@@ -7,11 +7,11 @@ const { ic, esc, errText, chapter, MODE_KEY, MODE_ICON } = await import(`./commo
 
 // Arten je Gruppe in der Reihenfolge der Anzeige, mit Symbol
 const GROUPS = {
-  alarm: [["sensor_report", "bell"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
-  maintenance: [["battery_low", "battery"], ["sensor_offline", "offline"], ["sensor_unavailable", "offline"]],
+  alarm: [["sensor_report", "bell"], ["sensor_offline", "alert"], ["pending", "timer"], ["arm_failed", "doorOpen"], ["armed", "shieldAway"], ["disarmed", "shieldOff"]],
+  maintenance: [["battery_low", "battery"], ["sensor_unavailable", "offline"]],
 };
 // Arten, die nur im scharfen Zustand vorkommen: je Modus eigene Werte (Unterreiter), sonst der gemeinsame Wert
-const MODE_KINDS = [["sensor_report", "bell"], ["pending", "timer"], ["armed", "shieldAway"], ["sensor_offline", "alert"]];
+const MODE_KINDS = [["sensor_report", "bell"], ["sensor_offline", "alert"], ["pending", "timer"], ["armed", "shieldAway"]];
 const ALL_MODES = ["home", "away", "night"];
 const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" };
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
@@ -27,7 +27,7 @@ export class NotifyUi {
     this.draft = null;
     this.saveState = null;
     this.saving = false;
-    this.modeTab = "all"; // "all" (gemeinsame Werte) oder ein Modus (Ansicht, nicht Teil des Entwurfs)
+    this.modeTab = "home"; // gewählter Modus (nur mit eingeschaltetem Schalter; Ansicht, nicht Teil des Entwurfs)
   }
 
   _t(key, vars) {
@@ -42,6 +42,7 @@ export class NotifyUi {
   ensureDraft() {
     if (!this.draft) this.draft = JSON.parse(JSON.stringify(this.base));
     this.draft.modes ||= {};
+    this.draft.per_mode = Boolean(this.draft.per_mode);
     return this.draft;
   }
 
@@ -62,6 +63,7 @@ export class NotifyUi {
       if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || !!x.persistent !== !!y.persistent || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100)) n += 1;
     }
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
+    if (Boolean(a.per_mode) !== Boolean(d.per_mode)) n += 1; // der Schalter zählt als eigene Änderung
     // Eigene Werte je Modus: jeder Modus mit Änderung zählt einmal
     for (const m of ALL_MODES) if (JSON.stringify(a.modes?.[m] || {}) !== JSON.stringify(d.modes?.[m] || {})) n += 1;
     return n;
@@ -121,14 +123,13 @@ export class NotifyUi {
 
   // ----- Eine Meldungsart -----
 
-  // sub: Unterpunkt in einer gemeinsamen Karte (eigene Namen "ntT2_", "ntH2_")
   _type(kind, icon, dirty, sub = false, mode = null) {
     const d = this.draft;
     const s = this._eff(kind, mode);
     const md = mode ? ` data-mode="${mode}"` : "";
     const toggle = (attr, on, label) => `<button class="ag-toggle ${on ? "on" : ""}" ${attr} role="switch" aria-checked="${on}" aria-label="${esc(label)}"></button>`;
-    const name = this._t(sub ? `ntT2_${kind}` : `ntT_${kind}`);
-    const hint = this._t(sub ? `ntH2_${kind}` : `ntH_${kind}`);
+    const name = this._t(`ntT_${kind}`);
+    const hint = this._t(`ntH_${kind}`);
     const pct = Math.round(s.volume * 100);
     // Herkunft: im Modus "eigener Wert" (mit Zurücksetzen) oder "wie in Alle Modi"; in "Alle Modi" ein Hinweis auf abweichende Modi
     let origin = "";
@@ -137,8 +138,6 @@ export class NotifyUi {
       origin = own
         ? `<small class="ag-origin own">${esc(this._t("ntOwnValue"))} <button type="button" class="ag-link" data-nt="mode-reset" data-kind="${kind}" data-mode="${mode}">${esc(this._t("ntReset"))}</button></small>`
         : `<small class="ag-origin">${esc(this._t("ntSameAsAll"))}</small>`;
-    } else if (MODE_KINDS.some(([k]) => k === kind) && this._ownModes(kind).length) {
-      origin = `<small class="ag-origin own">${esc(this._t("ntOwnIn", { modes: this._ownModes(kind).map((m) => this._t(MODE_KEY[m])).join(", ") }))}</small>`;
     }
     let body = "";
     if (s.enabled) {
@@ -165,21 +164,19 @@ export class NotifyUi {
     if (!box) return;
     const dirty = this.dirtyCount() > 0;
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
-    // Nicht erreichbare Sensoren: ein Punkt mit zwei Fällen (scharf, dauerhaft) statt zwei getrennter Einträge in zwei Kapiteln
-    const offline = () => `<div class="ag-mt group"><div class="ag-mt-head"><span class="ag-mini">${ic("offline", 16)}</span>
-        <div class="ag-settx"><b>${esc(this._t("ntGroupOffline"))}</b><small>${esc(this._t("ntGroupOfflineHint"))}</small></div></div>
-        <div class="ag-mt-subs">${this._type("sensor_offline", "alert", dirty, true)}${this._type("sensor_unavailable", "timer", dirty, true)}</div></div>`;
-    const list = (group) => GROUPS[group].map(([kind, icon]) => (kind === "sensor_offline" ? offline() : kind === "sensor_unavailable" ? "" : this._type(kind, icon, dirty))).join("");
-    // Unterreiter: gemeinsame Werte oder eigene Werte je Modus (nur Arten, die im scharfen Zustand vorkommen)
+    const list = (group) => GROUPS[group].map(([kind, icon]) => this._type(kind, icon, dirty)).join("");
+    // Schalter "Einstellungen pro Modus": aus = ein Satz für alle Modi; ein = Reiter der Modi (der erste gewählt) mit eigenen Werten je Modus
     const modes = ALL_MODES.filter((m) => (h._systems().length ? h._systems().some((s) => (s.modes || []).includes(m)) : m !== "night"));
-    if (this.modeTab !== "all" && !modes.includes(this.modeTab)) this.modeTab = "all";
-    const tabs = h._segHtml("nt-mode", [["tab:all", this._t("ntModeAll")], ...modes.map((m) => [`tab:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]])], `tab:${this.modeTab}`, "data-nt", "small");
-    const modeList = () => MODE_KINDS.map(([kind, icon]) => this._type(kind, icon, dirty, kind === "sensor_offline", this.modeTab)).join("");
-    const alarmBody = this.modeTab === "all"
-      ? `<div class="ag-card ag-mtlist">${list("alarm")}</div>`
-      : `<p class="ag-chap-h">${esc(this._t("ntModeHint", { mode: this._t(MODE_KEY[this.modeTab]) }))}</p><div class="ag-card ag-mtlist">${modeList()}</div>`;
+    if (d.per_mode && !modes.includes(this.modeTab)) this.modeTab = modes[0] || "home";
+    const tabs = d.per_mode ? h._segHtml("nt-mode", modes.map((m) => [`tab:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]]), `tab:${this.modeTab}`, "data-nt", "small") : "";
+    const sw = `<div class="ag-pmbar"><div class="ag-pmsw"><button class="ag-toggle ${d.per_mode ? "on" : ""}" data-nt="permode" role="switch" aria-checked="${d.per_mode}" aria-label="${esc(this._t("ntPerMode"))}"></button>
+      <div class="ag-settx"><b>${esc(this._t("ntPerMode"))}</b><small>${esc(this._t(d.per_mode ? "ntPerModeOn" : "ntPerModeHint"))}</small></div></div>${tabs}</div>`;
+    const modeList = () => MODE_KINDS.map(([kind, icon]) => this._type(kind, icon, dirty, false, this.modeTab)).join("");
+    const alarmBody = d.per_mode
+      ? `<p class="ag-chap-h">${esc(this._t("ntModeHint", { mode: this._t(MODE_KEY[this.modeTab]) }))}</p><div class="ag-card ag-mtlist">${modeList()}</div>`
+      : `<div class="ag-card ag-mtlist">${list("alarm")}</div>`;
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
-      + chapter(this._t("ntChapAlarm"), `<div class="ag-scopebar">${tabs}</div>${alarmBody}`, this._t("ntChapAlarmHint"))
+      + chapter(this._t("ntChapAlarm"), `${sw}${alarmBody}`, this._t("ntChapAlarmHint"))
       + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"));
     h._setHtml(box, html);
     h._placePills();
@@ -239,6 +236,9 @@ export class NotifyUi {
     const d = this.ensureDraft();
     if (act === "target-del") {
       d[el.dataset.key] = d[el.dataset.key].filter((x) => x !== el.dataset.target);
+    } else if (act === "permode") {
+      d.per_mode = !d.per_mode;
+      if (d.per_mode) this.modeTab = ALL_MODES.find((m) => this.host._systems().some((s) => (s.modes || []).includes(m))) || "home"; // der erste Modus ist gewählt
     } else if (act.startsWith("tab:")) {
       this.modeTab = act.slice(4);
       this.render();

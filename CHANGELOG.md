@@ -7,6 +7,21 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.34.0] - 2026-11-09
+
+A tab "Always active" for the settings per mode, and settings per mode for messages.
+
+### Added
+
+- **Tab "Always active"** with the settings per mode of the sensors (Configuration › Sensors, switch on): it has all sensor options for itself and applies while the alarm system is disarmed. The column "Always active" belongs to this tab; the option "Always active" itself never depends on a mode, so a smoke detector cannot be switched off in one mode.
+- **Settings per mode for messages** (Configuration › Notifications › Messages): a switch "Settings per mode"; only when it is on, the tabs of the modes appear (there is no tab "All modes", the first mode is chosen) and every mode gets its own on/off, critical, volume and "keep in Home Assistant" for the messages while armed: silent alarm, **sensor unreachable while armed**, entry delay and armed. With the switch off everything applies to all modes; the own values stay saved. Part of the draft and the backup.
+
+- **Settings per mode for the alarm system** (Configuration › Alarm system › Times and behaviour): a switch "Settings per mode", off by default. Off: one set of exit delay, entry delay and confirmation window for all modes. On: the tabs of the modes appear and every mode has its own values. Alarm systems whose modes already differ start with the switch on. Switching off applies the values of the first mode to all modes. Part of the backup.
+
+### Changed
+
+- **"Sensor unreachable while armed"** moved up to the other messages (before it stood under maintenance), so it can differ per mode. "Sensor unreachable" (for a longer time) stays under maintenance.
+
 ## [0.33.0] - 2026-11-09
 
 Settings per mode, simplified: the same table, with the settings of the chosen mode.
@@ -494,6 +509,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.34.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.0
 [0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0

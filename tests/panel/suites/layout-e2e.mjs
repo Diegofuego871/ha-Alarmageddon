@@ -163,36 +163,58 @@ for (const lang of ["de", "en"]) {
       const thCount = await s.ev("return r.querySelectorAll('.ag-gbody th').length");
       check(`${tag}: Schalter "Einstellungen pro Modus" aus: keine Reiterleiste`, await s.ev("const sw=r.querySelector('[data-sen=\"permode\"]'); return sw.getAttribute('aria-checked') === 'false' && !r.querySelector('[data-seg=\"sen-mode\"]')"));
       await s.tap('[data-sen="permode"]');
-      check(`${tag}: Schalter ein: Reiter der Modi (ohne "Alle Modi"), der erste ist gewählt, Entwurf`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"sen-mode\"] > button')]; return t.length >= 2 && t.every((b) => b.dataset.sen !== 'mt:all') && t[0].classList.contains('on') && r.querySelector('[data-sub=\"sensors\"]').classList.contains('has-edit')"));
-      if (!mobile) check(`${tag}: dieselben Spalten wie vorher, Spalten des gewählten Modus hervorgehoben`, await s.ev(`return r.querySelectorAll('.ag-gbody th').length === ${thCount} && r.querySelectorAll('.ag-gbody th.cur').length === 2`));
+      check(`${tag}: Schalter ein: Reiter der Modi (ohne "Alle Modi"), der erste ist gewählt, Entwurf`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"sen-mode\"] > button')]; return t.length >= 3 && t.every((b) => b.dataset.sen !== 'mt:all') && t.at(-1).dataset.sen === 'mt:always' && t[0].classList.contains('on') && r.querySelector('[data-sub=\"sensors\"]').classList.contains('has-edit')"));
+      if (!mobile) check(`${tag}: dieselben Spalten wie vorher, Spalten des gewählten Modus hervorgehoben`, await s.ev(`return r.querySelectorAll('.ag-gbody th').length === ${thCount} && r.querySelectorAll('.ag-gbody th.cur').length === 1`));
       await s.tap('[data-sen="mt:away"]');
-      const alwaysSel = '.ag-gbody [data-sen="mopt"][data-key="always"][data-mode="away"]';
-      check(`${tag}: Reiter Abwesend: "Immer aktiv" gilt für diesen Modus`, await s.waitFor(`return r.querySelectorAll('${alwaysSel}').length >= 3`));
+      const alwaysSel = '.ag-gbody [data-sen="mopt"][data-key="always"][data-mode="always"]';
+      check(`${tag}: "Immer aktiv" gehört zum eigenen Reiter, nicht zum Modus (Wert im Bereich always)`, await s.waitFor(`return r.querySelectorAll('${alwaysSel}').length >= 3`));
       const bypassEnt = await s.ev(`return [...r.querySelectorAll('${alwaysSel}')].find((b) => (b.getAttribute('aria-checked') || b.getAttribute('aria-pressed')) === 'false').dataset.ent`);
       await s.tap(`${alwaysSel}[data-ent="${bypassEnt}"]`);
       check(`${tag}: Klick setzt einen eigenen Wert für den Modus`, await s.waitFor(`const b=r.querySelector('${alwaysSel}[data-ent="${bypassEnt}"]'); return (b.getAttribute('aria-checked') || b.getAttribute('aria-pressed')) === 'true' && (b.classList.contains('own') || b.classList.contains('on'))`));
       // Alle anderen Optionen im Blatt, für den gewählten Modus
       if (!mobile) {
         await s.tap(`tr[data-row="${bypassEnt}"] td:first-child .ag-nm`);
-        check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 7 && !!sd.querySelector('[data-key="bypass"]')`));
+        check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 6 && !!sd.querySelector('[data-key="bypass"]') && !sd.querySelector('[data-key="always"]')`));
+        await s.tap('.ag-side [data-sen="close-detail"]');
+        // Reiter "Immer aktiv": eigene Einstellungen, Spalte hervorgehoben, im Blatt alle Optionen einschliesslich "Immer aktiv"
+        await s.tap('[data-sen="mt:always"]');
+        await s.tap(`tr[data-row="${bypassEnt}"] td:first-child .ag-nm`);
+        check(`${tag}: Reiter "Immer aktiv": Spalte hervorgehoben, Blatt mit allen 7 Optionen`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return r.querySelectorAll('.ag-gbody th.cur').length === 1 && r.querySelector('.ag-gbody th.cur').textContent.match(/Immer aktiv|Always active/) !== null && sd.querySelectorAll('[data-sen="mopt"][data-mode="always"]').length === 7`));
         await s.tap('.ag-side [data-sen="close-detail"]');
       }
       await s.tap('[data-sen="save"]');
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const pmSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");
-      check(`${tag}: per_mode_sensors und sensor_modes gesendet (nur die Abweichung)`, pmSent?.per_mode_sensors === true && pmSent.sensor_modes?.away?.[bypassEnt]?.always === true && !pmSent.sensor_modes.home, JSON.stringify(pmSent?.sensor_modes));
+      check(`${tag}: per_mode_sensors und sensor_modes gesendet (nur die Abweichung)`, pmSent?.per_mode_sensors === true && pmSent.sensor_modes?.always?.[bypassEnt]?.always === true && !pmSent.sensor_modes.home, JSON.stringify(pmSent?.sensor_modes));
       // Schalter wieder aus: Reiter weg, Werte bleiben gespeichert
       await s.tap('[data-sen="permode"]');
       check(`${tag}: Schalter aus: Reiterleiste weg`, await s.waitFor("return !r.querySelector('[data-seg=\"sen-mode\"]')"));
       await s.tap('[data-sen="save"]');
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const pmOff = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");
-      check(`${tag}: Schalter aus gespeichert, eigene Werte bleiben erhalten`, pmOff?.per_mode_sensors === false && pmOff.sensor_modes?.away?.[bypassEnt]?.always === true);
+      check(`${tag}: Schalter aus gespeichert, eigene Werte bleiben erhalten`, pmOff?.per_mode_sensors === false && pmOff.sensor_modes?.always?.[bypassEnt]?.always === true);
 
-      // Meldungen je Modus (Unterreiter): eigene Werte für Arten im scharfen Zustand, Herkunft, Zurücksetzen, Entwurf
+      // Anlage: Zeiten und Verhalten mit Schalter "Einstellungen pro Modus" (die Werte der Anlage unterscheiden sich: Schalter ist an)
+      await s.tap('[data-sub="system"]');
+      check(`${tag}: Anlage: Schalter an (Werte unterscheiden sich), Reiter der Modi da`, await s.waitFor("return r.querySelector('[data-sys=\"permode\"]').getAttribute('aria-checked') === 'true' && r.querySelectorAll('[data-seg=\"sys-scope\"] > button').length >= 2"));
+      await s.tap('[data-sys="permode"]');
+      check(`${tag}: Anlage: Schalter aus: keine Reiter, ein Satz Werte für alle Modi, Entwurf`, await s.waitFor("return !r.querySelector('[data-seg=\"sys-scope\"]') && r.querySelector('[data-sub=\"system\"]').classList.contains('has-edit')"));
+      await (await s.el('[data-field="entry_delay"]')).fill("41");
+      await s.tap('[data-sys="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
+      const sysSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
+      const ms = sysSent?.mode_settings || {};
+      check(`${tag}: Anlage: per_mode_settings aus, gleiche Werte in allen Modi`, sysSent?.per_mode_settings === false && ms.home?.entry_delay === 41 && ms.away?.entry_delay === 41 && ms.night?.entry_delay === 41 && ms.home?.exit_delay === ms.away?.exit_delay, JSON.stringify(ms));
+      await s.tap('[data-sys="permode"]');
+      check(`${tag}: Anlage: Schalter wieder an: Reiter der Modi`, await s.waitFor("return r.querySelectorAll('[data-seg=\"sys-scope\"] > button').length >= 2"));
+      await s.tap('[data-sys="cancel"]').catch(() => {});
+      await s.tap('[data-sub="sensors"]');
+
+      // Meldungen: "Ausfall (scharf)" steht oben bei den Meldungen; Schalter "Einstellungen pro Modus" (aus: keine Reiter), ein: Reiter der Modi
       await s.tap('[data-sub="notify"]');
-      check(`${tag}: Meldungen mit Unterreitern (Alle Modi, Anwesend, Abwesend)`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"nt-mode\"] > button')]; return t.length >= 3 && t[0].dataset.nt === 'tab:all'"));
-      check(`${tag}: "Sensor meldet" heisst "Stiller Alarm"`, await s.ev("return /Stiller Alarm|Silent alarm/.test(r.querySelector('.ag-nt').textContent) && !/Sensor meldet \\(kein|Sensor reports \\(no/.test(r.querySelector('.ag-nt').textContent)"));
+      check(`${tag}: Schalter "Einstellungen pro Modus" aus: keine Reiterleiste`, await s.waitFor("return r.querySelector('.ag-nt [data-nt=\"permode\"]').getAttribute('aria-checked') === 'false' && !r.querySelector('[data-seg=\"nt-mode\"]')"));
+      check(`${tag}: "Sensor im scharfen Zustand nicht erreichbar" steht bei den Meldungen (nicht mehr unter Wartung)`, await s.ev("const al=[...r.querySelectorAll('.ag-nt .ag-mtlist')][0]; const ma=[...r.querySelectorAll('.ag-nt .ag-mtlist')][1]; return !!al.querySelector('[data-nt=\"enabled\"][data-kind=\"sensor_offline\"]') && !ma.querySelector('[data-kind=\"sensor_offline\"]') && !!ma.querySelector('[data-kind=\"sensor_unavailable\"]')"));
+      check(`${tag}: "Sensor meldet" heisst "Stiller Alarm"`, await s.ev("return /Stiller Alarm|Silent alarm/.test(r.querySelector('.ag-nt').textContent) && !/Sensor meldet \\(kein|Sensor reports \\(n/.test(r.querySelector('.ag-nt').textContent)"));
       // Jede Art kann zusätzlich als Benachrichtigung in Home Assistant stehen bleiben (auch Wartung); Entwurf, wird mit gespeichert
       check(`${tag}: Schalter "In Home Assistant stehen lassen" bei jeder Art (Alarm und Wartung)`, await s.ev("const n=r.querySelectorAll('.ag-nt [data-nt=\"persistent\"]'); return n.length >= 4 && !!r.querySelector('.ag-nt [data-nt=\"persistent\"][data-kind=\"battery_low\"]')"));
       await s.tap('.ag-nt [data-nt="persistent"][data-kind="battery_low"]');
@@ -200,20 +222,20 @@ for (const lang of ["de", "en"]) {
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const pSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)");
       check(`${tag}: persistent gesendet`, pSent?.notify?.types?.battery_low?.persistent === true, JSON.stringify(pSent?.notify?.types?.battery_low));
+      await s.tap('.ag-nt [data-nt="permode"]');
+      check(`${tag}: Schalter ein: Reiter der Modi (ohne "Alle Modi"), der erste ist gewählt, Entwurf`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"nt-mode\"] > button')]; return t.length >= 2 && t.every((b) => b.dataset.nt !== 'tab:all') && t[0].classList.contains('on') && r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit')"));
       await s.tap('[data-nt="tab:away"]');
-      if (process.env.DBG) console.log(await s.ev(`return JSON.stringify({en: r.querySelectorAll('.ag-nt [data-nt="enabled"][data-mode="away"]').length, or: r.querySelectorAll('.ag-origin').length, on: r.querySelector('[data-seg="nt-mode"] .on')?.dataset.nt})`));
-      check(`${tag}: Reiter Abwesend zeigt die vier Arten im scharfen Zustand mit Herkunft`, await s.waitFor("return r.querySelectorAll('.ag-nt [data-nt=\"enabled\"][data-mode=\"away\"]').length === 4 && r.querySelectorAll('.ag-nt .ag-origin').length === 4"));
-      await s.tap('.ag-nt [data-nt="critical"][data-kind="sensor_report"][data-mode="away"]');
-      check(`${tag}: eigener Wert mit Zurücksetzen, Entwurf (Punkt am Reiter)`, await s.waitFor("return !!r.querySelector('[data-nt=\"mode-reset\"][data-kind=\"sensor_report\"]') && r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit')"));
-      await s.tap('[data-nt="tab:all"]');
-      check(`${tag}: in "Alle Modi" der Hinweis auf eigene Werte`, await s.waitFor("return [...r.querySelectorAll('.ag-nt .ag-origin.own')].some((x) => /Abwesend|Away/.test(x.textContent))"));
+      check(`${tag}: Reiter Abwesend zeigt die vier Arten im scharfen Zustand (auch den Ausfall) mit Herkunft`, await s.waitFor("return r.querySelectorAll('.ag-nt [data-nt=\"enabled\"][data-mode=\"away\"]').length === 4 && !!r.querySelector('.ag-nt [data-nt=\"enabled\"][data-kind=\"sensor_offline\"][data-mode=\"away\"]') && r.querySelectorAll('.ag-nt .ag-origin').length === 4"));
+      await s.tap('.ag-nt [data-nt="critical"][data-kind="sensor_offline"][data-mode="away"]');
+      check(`${tag}: eigener Wert mit Zurücksetzen`, await s.waitFor("return !!r.querySelector('[data-nt=\"mode-reset\"][data-kind=\"sensor_offline\"]')"));
       await s.tap('[data-nt="save"]');
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const ntSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)");
-      check(`${tag}: modes gesendet (nur der abweichende Wert)`, JSON.stringify(ntSent?.notify?.modes) === JSON.stringify({ away: { sensor_report: { critical: !ntSent.notify.types.sensor_report.critical } } }), JSON.stringify(ntSent?.notify?.modes));
-      await s.tap('[data-nt="tab:away"]');
-      await s.tap('[data-nt="mode-reset"][data-kind="sensor_report"]');
+      check(`${tag}: per_mode und modes gesendet (nur der abweichende Wert)`, ntSent?.notify?.per_mode === true && JSON.stringify(ntSent.notify.modes) === JSON.stringify({ away: { sensor_offline: { critical: !ntSent.notify.types.sensor_offline.critical } } }), JSON.stringify(ntSent?.notify?.modes));
+      await s.tap('[data-nt="mode-reset"][data-kind="sensor_offline"]');
       check(`${tag}: Zurücksetzen entfernt den eigenen Wert`, await s.waitFor("return !r.querySelector('[data-nt=\"mode-reset\"]')"));
+      await s.tap('.ag-nt [data-nt="permode"]');
+      check(`${tag}: Schalter aus: Reiterleiste weg`, await s.waitFor("return !r.querySelector('[data-seg=\"nt-mode\"]')"));
       await s.tap('[data-nt="cancel"]');
       await s.tap('[data-sub="sensors"]');
 

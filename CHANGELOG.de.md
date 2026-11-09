@@ -7,6 +7,21 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.34.0] - 2026-11-09
+
+Ein Reiter "Immer aktiv" bei den Einstellungen pro Modus, und Einstellungen pro Modus bei den Meldungen.
+
+### Hinzugefügt
+
+- **Reiter "Immer aktiv"** bei den Einstellungen pro Modus der Sensoren (Konfiguration › Sensoren, Schalter an): Er hat alle Sensor-Optionen für sich und gilt, solange die Anlage deaktiviert ist. Die Spalte "Immer aktiv" gehört zu diesem Reiter; die Option "Immer aktiv" selbst hängt nie an einem Modus, ein Rauchmelder lässt sich also nicht in einem Modus abschalten.
+- **Einstellungen pro Modus bei den Meldungen** (Konfiguration › Benachrichtigungen › Meldungen): ein Schalter "Einstellungen pro Modus"; nur wenn er an ist, erscheinen die Reiter der Modi (es gibt keinen Reiter "Alle Modi", der erste Modus ist gewählt), und jeder Modus bekommt eigenes An/Aus, Kritisch, Lautstärke und "In Home Assistant stehen lassen" für die Meldungen im scharfen Zustand: Stiller Alarm, **Sensor nicht erreichbar, während scharf**, Eingangsverzögerung und Scharf geschaltet. Bei ausgeschaltetem Schalter gilt alles für alle Modi; die eigenen Werte bleiben gespeichert. Teil des Entwurfs und der Sicherung.
+
+- **Einstellungen pro Modus bei der Alarmanlage** (Konfiguration › Anlage › Zeiten und Verhalten): ein Schalter "Einstellungen pro Modus", standardmässig aus. Aus: ein Satz Ausgangsverzögerung, Eingangsverzögerung und Bestätigungsfenster für alle Modi. Ein: Die Reiter der Modi erscheinen, und jeder Modus hat eigene Werte. Anlagen, deren Modi sich schon unterscheiden, starten mit eingeschaltetem Schalter. Beim Ausschalten gelten die Werte des ersten Modus für alle Modi. Teil der Sicherung.
+
+### Geändert
+
+- **"Sensor nicht erreichbar, während scharf"** steht jetzt bei den übrigen Meldungen (vorher unter Wartung), damit es je Modus abweichen kann. "Sensor nicht erreichbar" (längere Zeit) bleibt unter Wartung.
+
 ## [0.33.0] - 2026-11-09
 
 Einstellungen pro Modus vereinfacht: dieselbe Tabelle, mit den Einstellungen des gewählten Modus.
@@ -494,6 +509,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[0.34.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.0
 [0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0

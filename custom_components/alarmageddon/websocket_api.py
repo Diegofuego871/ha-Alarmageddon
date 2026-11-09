@@ -46,6 +46,7 @@ from .const import (
     MODE_ENABLED_DEFAULT,
     MODE_ENABLED_KEY,
     CONF_PER_MODE_SENSORS,
+    CONF_PER_MODE_SETTINGS,
     CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     CONF_WORKFLOW_END,
@@ -195,6 +196,8 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "schedules": entry.options.get(CONF_SCHEDULES) or [],
                 "sensor_options": ctl.sensor_overrides,
                 "per_mode_sensors": bool(entry.options.get(CONF_PER_MODE_SENSORS)),
+                # Schalter "Einstellungen pro Modus" der Anlage; ohne gespeicherten Wert null (das Panel schaltet ein, wenn sich die Modi unterscheiden)
+                "per_mode_settings": entry.options.get(CONF_PER_MODE_SETTINGS),
                 "sensor_modes": entry.options.get(CONF_SENSOR_MODES) or {},
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
                 "workflow_end": entry.options.get(CONF_WORKFLOW_END) or {},
@@ -244,7 +247,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         vol.Optional("sensor_options"): {str: {vol.In(SENSOR_OPTIONS): bool}},
         # Einstellungen je Modus: Schalter und eigene Werte je Modus (nur Abweichungen von den Werten für alle Modi)
         vol.Optional("per_mode_sensors"): bool,
-        vol.Optional("sensor_modes"): {vol.In(MODES): {str: {vol.In(SENSOR_OPTIONS): bool}}},
+        vol.Optional("sensor_modes"): {vol.In([*MODES, "always"]): {str: {vol.In(SENSOR_OPTIONS): bool}}},
     }
 )
 @websocket_api.require_admin
@@ -371,6 +374,7 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         vol.Optional("exit_delay"): {vol.In(MODES): _SECONDS},
         vol.Optional("entry_delay"): _SECONDS,
         vol.Optional("trigger_time"): _SECONDS,
+        vol.Optional("per_mode_settings"): bool,
         vol.Optional("night_enabled"): bool,
         vol.Optional("home_enabled"): bool,
         vol.Optional("away_enabled"): bool,
@@ -396,6 +400,8 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
             options[conf] = msg[key]
             for scope in MODES:
                 options[f"{conf}_{scope}"] = msg[key]
+    if "per_mode_settings" in msg:
+        options[CONF_PER_MODE_SETTINGS] = msg["per_mode_settings"]
     if "night_enabled" in msg:
         options[CONF_NIGHT_ENABLED] = msg["night_enabled"]
     for scope, values in msg.get("mode_settings", {}).items():
@@ -436,6 +442,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
                 vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             }},
             # Eigene Werte je Modus für Arten, die nur im scharfen Zustand vorkommen; ersetzt alle bisherigen eigenen Werte
+            vol.Optional("per_mode"): bool,
             vol.Optional("modes"): {vol.In(MODES): {vol.In(NOTIFY_MODE_KINDS): {
                 vol.Optional("enabled"): bool,
                 vol.Optional("critical"): bool,

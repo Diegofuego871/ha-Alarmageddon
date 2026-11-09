@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 39  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 41  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -92,6 +92,9 @@ OPT_OPEN_OK: Final = "open_ok"  # darf beim Scharfschalten offen sein
 OPT_BYPASS: Final = "bypass"
 # Einstellungen pro Sensor je Modus (0.32.0): Schalter CONF_PER_MODE_SENSORS; dann gelten CONF_SENSOR_MODES[modus][sensor][option] vor den
 # Werten für alle Modi (CONF_SENSOR_OPTIONS) und der Voreinstellung der Sensorart.
+# Zeiten und Verhalten der Anlage je Modus (0.34.0): Schalter nur für die Anzeige im Panel (aus: ein Satz Werte für alle Modi, ein: je Modus);
+# die Engine liest die Werte je Modus wie bisher
+CONF_PER_MODE_SETTINGS: Final = "per_mode_settings"
 CONF_PER_MODE_SENSORS: Final = "per_mode_sensors"
 CONF_SENSOR_MODES: Final = "sensor_modes"
 OPT_ARM_ON_CLOSE: Final = "arm_on_close"  # Schliessen während der Ausgangsverzögerung schaltet sofort scharf
@@ -161,6 +164,8 @@ NOTIFY_TYPE_DEFAULTS: Final = {
 # Scharf geschaltet, Sensorausfall im scharfen Zustand. notify["modes"][modus][art] = {enabled, critical, volume}, nur abweichende Werte.
 NOTIFY_MODE_KINDS: Final = ("sensor_report", "pending", "armed", "sensor_offline")
 DEFAULT_NOTIFY: Final = {
+    # Schalter "Einstellungen pro Modus" (0.34.0): nur wenn er an ist, gelten die eigenen Werte je Modus
+    "per_mode": False,
     "modes": {},
     "alarm_targets": [],
     "maintenance_targets": [],

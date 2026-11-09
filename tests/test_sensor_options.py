@@ -280,3 +280,31 @@ async def test_save_zones_per_mode_and_backup(hass: HomeAssistant, hass_ws_clien
     await client.send_json({"id": 4, "type": "alarmageddon/save_zones", "entry_id": entry.entry_id, "zones": {"home": [WINDOW], "away": [WINDOW]},
                             "entry_sensors": [], "sensor_modes": {"away": {"sensor.kein_binary": {"always": True}}}})
     assert not (await client.receive_json())["success"]
+
+
+async def test_always_active_tab_has_own_settings(hass: HomeAssistant) -> None:
+    """Der Reiter "Immer aktiv": gilt bei deaktivierter Anlage; "Immer aktiv" selbst hängt nie an einem Modus."""
+    _classes(hass)
+    await setup_alarm(
+        hass, exit_delay_away=0, per_mode_sensors=True,
+        sensor_options={SMOKE: {"always": True}},
+        sensor_modes={"always": {SMOKE: {"report_only": True}}, "away": {SMOKE: {"always": False}}},  # "Immer aktiv" je Modus wird ignoriert
+    )
+    # Deaktiviert: Reiter "Immer aktiv" gilt, der Rauchmelder meldet nur still
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.DISARMED
+    await open_sensor(hass, SMOKE, "off")
+    # Scharf in Abwesend: der Wert "stiller Alarm" gilt nur im Reiter "Immer aktiv", also löst der Rauchmelder aus
+    await call(hass, "alarm_arm_away")
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+
+
+async def test_always_scope_is_accepted_and_saved(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_zones", "entry_id": entry.entry_id, "zones": {"home": [WINDOW], "away": [WINDOW]},
+                            "entry_sensors": [], "per_mode_sensors": True, "sensor_modes": {"always": {SMOKE: {"always": True}}}})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["sensor_modes"] == {"always": {SMOKE: {"always": True}}}

@@ -213,7 +213,7 @@ async def test_mode_values_override_kind_settings(hass: HomeAssistant, hass_ws_c
     await setup_alarm(hass, exit_delay_away=0)
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {
-        "alarm_targets": ["notify.handy"],
+        "alarm_targets": ["notify.handy"], "per_mode": True,
         "types": {"armed": {"enabled": True, "critical": False}},
         "modes": {"away": {"armed": {"enabled": False}, "pending": {"critical": True, "volume": 0.3}}, "home": {"armed": {"critical": True}}},
     }})
@@ -259,7 +259,7 @@ async def test_persistent_notification_per_kind(hass: HomeAssistant, hass_ws_cli
     await setup_alarm(hass, exit_delay_away=0)
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {
-        "types": {"triggered": {"persistent": True}, "armed": {"enabled": True, "persistent": True}},
+        "types": {"triggered": {"persistent": True}, "armed": {"enabled": True, "persistent": True}}, "per_mode": True,
         "modes": {"home": {"armed": {"persistent": False}}},
     }})
     assert (await client.receive_json())["success"]
@@ -290,3 +290,19 @@ async def test_persistent_is_validated(hass: HomeAssistant, hass_ws_client) -> N
     result = await client.receive_json()
     assert result["success"] and result["result"]["notify"]["types"]["battery_low"]["persistent"] is True
     assert result["result"]["notify"]["types"]["triggered"]["persistent"] is False
+
+
+async def test_mode_values_are_ignored_while_the_switch_is_off(hass: HomeAssistant, hass_ws_client) -> None:
+    """Ohne den Schalter "Einstellungen pro Modus" gelten nur die Werte für alle Modi, die eigenen Werte bleiben gespeichert."""
+    pushes = async_mock_service(hass, "notify", "handy")
+    await setup_alarm(hass, exit_delay_away=0)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_notify", "notify": {
+        "alarm_targets": ["notify.handy"], "per_mode": False,
+        "types": {"armed": {"enabled": True}}, "modes": {"away": {"armed": {"enabled": False}}},
+    }})
+    result = await client.receive_json()
+    assert result["success"] and result["result"]["notify"]["modes"] == {"away": {"armed": {"enabled": False}}}
+    await call(hass, "alarm_arm_away")
+    await hass.async_block_till_done()
+    assert len(pushes) == 1  # Der eigene Wert (aus) gilt nicht

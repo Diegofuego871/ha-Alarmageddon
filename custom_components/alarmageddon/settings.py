@@ -90,6 +90,8 @@ def valid_notify(value: Any) -> dict[str, Any]:
                     out["types"][kind][key] = item[key]
             if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
                 out["types"][kind]["volume"] = max(0.0, min(1.0, float(item["volume"])))
+    if isinstance(value.get("per_mode"), bool):
+        out["per_mode"] = value["per_mode"]
     # Eigene Werte je Modus (0.29.0): nur bekannte Modi und Arten, nur gültige Werte; leere Einträge fallen weg
     modes = value.get("modes")
     if isinstance(modes, dict):

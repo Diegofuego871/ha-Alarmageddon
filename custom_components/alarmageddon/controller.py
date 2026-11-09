@@ -36,6 +36,7 @@ from .const import (
     DEFAULT_CONFIRM_WINDOW,
     OPT_CONFIRM,
     CONF_PER_MODE_SENSORS,
+    SCOPE_ALWAYS,
     CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     DEFAULT_PRESETS,
@@ -214,8 +215,11 @@ class AlarmController:
         Wirksamer Wert einer Sensor-Option: bei eingeschalteten Einstellungen je Modus der eigene Wert für diesen Modus, dann der eigene
         Wert des Sensors (für alle Modi), sonst die Voreinstellung seiner Sensorart. Ohne Modus (deaktiviert) gelten die Werte für alle Modi.
         """
-        if mode and self.options.get(CONF_PER_MODE_SENSORS):
-            own_mode = ((self.options.get(CONF_SENSOR_MODES) or {}).get(mode) or {}).get(entity_id, {}).get(key)
+        if self.options.get(CONF_PER_MODE_SENSORS):
+            # Der Reiter "Immer aktiv" (Bereich SCOPE_ALWAYS) gilt, wenn die Anlage deaktiviert ist, und immer für die Option "Immer aktiv"
+            # selbst: sie hängt nie an einem Modus (ein Rauchmelder lässt sich nicht in einem Modus abschalten)
+            scope = SCOPE_ALWAYS if (mode is None or key == OPT_ALWAYS) else mode
+            own_mode = ((self.options.get(CONF_SENSOR_MODES) or {}).get(scope) or {}).get(entity_id, {}).get(key)
             if own_mode is not None:
                 return bool(own_mode)
         own = self.sensor_overrides.get(entity_id, {}).get(key)
@@ -223,7 +227,7 @@ class AlarmController:
             return bool(own)
         return key in self.preset(entity_id)
 
-    def always_sensors(self, mode: str | None = None) -> set[str]:
+    def always_sensors(self, mode: str | None = None) -> set[str]:  # noqa: ARG002 - "Immer aktiv" hängt an keinem Modus
         """
         Immer aktiv sind Sensoren einer Zone mit dieser Option und alle, bei
         denen der Nutzer sie ausdrücklich eingeschaltet hat (Rauchmelder
@@ -233,16 +237,12 @@ class AlarmController:
         zoned = {e for m in self.modes for e in self.zone(m)}
         explicit = {e for e, opts in self.sensor_overrides.items() if opts.get(OPT_ALWAYS)}
         if self.options.get(CONF_PER_MODE_SENSORS):
-            for per_entity in (self.options.get(CONF_SENSOR_MODES) or {}).values():
-                explicit |= {e for e, opts in per_entity.items() if opts.get(OPT_ALWAYS)}
+            explicit |= {e for e, opts in ((self.options.get(CONF_SENSOR_MODES) or {}).get(SCOPE_ALWAYS) or {}).items() if opts.get(OPT_ALWAYS)}
         return {e for e in zoned | explicit if self.option(e, OPT_ALWAYS, mode)}
 
     def all_sensors(self) -> set[str]:
         """Alle Sensoren, auf die gehört wird: die der Zonen und alle, die in irgendeinem Modus immer aktiv sein können."""
-        always = set(self.always_sensors())
-        for mode in self.modes:
-            always |= self.always_sensors(mode)
-        return {entity for mode in self.modes for entity in self.zone(mode)} | always
+        return {entity for mode in self.modes for entity in self.zone(mode)} | self.always_sensors()
 
     def open_sensors(self, mode: str) -> list[str]:
         return [entity for entity in self.zone(mode) if (s := self.hass.states.get(entity)) and s.state == STATE_ON]

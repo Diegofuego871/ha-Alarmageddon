@@ -97,7 +97,7 @@ for (const lang of ["de", "en"]) {
     // ----- Wartungsmeldungen -----
     await s.tap('[data-sub="notify"]');
     check(`${tag}: Wartung in Benachrichtigungen`, await s.waitFor(`return r.querySelector('.ag-nt')?.innerText.includes('${t.maint}')`));
-    check(`${tag}: nicht erreichbare Sensoren in einer Karte mit zwei Fällen`, await s.ev("const chaps=[...r.querySelectorAll('.ag-chap')]; const maint=chaps[2]; const alarm=chaps[1]; const g=maint.querySelector('.ag-mt.group'); return !!g && g.querySelectorAll('.ag-mt.sub').length === 2 && !!g.querySelector('[data-nt=\"enabled\"][data-kind=\"sensor_offline\"]') && !!g.querySelector('[data-nt=\"enabled\"][data-kind=\"sensor_unavailable\"]') && !alarm.querySelector('[data-nt=\"enabled\"][data-kind=\"sensor_offline\"]')"));
+    check(`${tag}: "Sensor nicht erreichbar" (länger) unter Wartung, "im scharfen Zustand" bei den Meldungen`, await s.ev("const chaps=[...r.querySelectorAll('.ag-chap')]; const maint=chaps[2]; const alarm=chaps[1]; return !!maint.querySelector('[data-nt=\"enabled\"][data-kind=\"sensor_unavailable\"]') && !maint.querySelector('[data-kind=\"sensor_offline\"]') && !!alarm.querySelector('[data-nt=\"enabled\"][data-kind=\"sensor_offline\"]')"));
     await s.page.screenshot({ path: `${outDir}notify-offline-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     const thr = await s.el('[data-nt="num"][data-key="battery_threshold"]');
     await thr.fill("80");
