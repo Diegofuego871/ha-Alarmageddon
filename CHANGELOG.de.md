@@ -13,6 +13,10 @@ die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 - **Aktionen:** Der Knopf "Testen" steht in der festen Leiste unten, neben "Abbrechen" und "Speichern" (auf dem Handy nur das Symbol).
 
+### Behoben
+
+- **Aktionen auf dem Handy:** Die Karte "Alarm endet" wird nicht mehr in eine schmale Spalte gequetscht.
+
 ## [0.35.0] - 2026-11-09
 
 Die Alarmanlage lässt sich umbenennen, mit Kurzbefehl nach Home Assistant.

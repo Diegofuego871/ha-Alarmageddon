@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Actions:** the button "Test" moved to the fixed bar at the bottom, next to "Cancel" and "Save" (icon only on the phone).
 
+### Fixed
+
+- **Actions on the phone:** the card "Alarm ends" is no longer squeezed into a narrow column.
+
 ## [0.35.0] - 2026-11-09
 
 The name of the alarm system can be changed, with a shortcut to Home Assistant.
