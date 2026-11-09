@@ -13,6 +13,7 @@ Scharf- und Deaktivieren in der Übersicht zeigt, dass die Anlage arbeitet.
 
 ### Geändert
 
+- **Sensoren auf dem Handy:** Dieselbe Tabelle mit den Kästchen wie am Computer, kompakt (Symbole in der Kopfzeile, Name, vier Kästchen, Pfeil), statt einer Karte je Sensor. Die Eingangsverzögerung und "Sensor entfernen" stehen im Blatt, das der Pfeil öffnet.
 - **Knopf "Integration in HA öffnen"** steht wieder in jedem Reiter der Konfiguration (neben dem Namen oben), nicht nur bei Anlage.
 - **Übersicht, Scharf- und Deaktivieren:** Der Knopf wechselt sofort; danach erscheint die Ladeanzeige (drei drehende Punkte, wie sonst) über dem leicht verschwommenen Hintergrund, bis Home Assistant den neuen Zustand meldet (höchstens 4 Sekunden). Währenddessen lässt sich nichts antippen, so ist klar, dass die Anlage arbeitet und nicht hängt.
 

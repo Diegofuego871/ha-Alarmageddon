@@ -13,6 +13,7 @@ Arming and disarming from the overview shows that the alarm system is working.
 
 ### Changed
 
+- **Sensors on the phone:** the same table with the tick boxes as on the computer, compact (icons in the header, name, four boxes, arrow), instead of one card per sensor. The entry delay and "Remove sensor" are in the sheet that the arrow opens.
 - **Button "Open integration in HA"** is shown in every tab of Configuration again (next to the name at the top), not only in Alarm system.
 - **Overview, arming and disarming:** the button switches at once; then the loader (three spinning dots, as elsewhere) appears over the slightly blurred background until Home Assistant reports the new state (at most 4 seconds). Nothing can be tapped meanwhile, so it is clear that the alarm system is working and not hanging.
 

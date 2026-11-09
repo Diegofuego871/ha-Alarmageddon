@@ -39,7 +39,12 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Entwurf mit Änderungen`, await s.ev("return !r.querySelector('[data-sen=\"save\"]').disabled"));
 
     // Entfernen: Fenster Bad (in Zonen) verschwindet samt Zonen
-    await s.tap('[data-sen="remove"][data-ent="binary_sensor.fenster_bad"]');
+    // Handy: der Papierkorb steht im Blatt des Sensors (die Tabelle ist kompakt)
+    if (mobile) {
+      await s.tap('[data-sen="detail"][data-ent="binary_sensor.fenster_bad"]');
+      await s.waitFor("return r.getElementById('ag-sheet').open");
+      await s.tap('#ag-sheet [data-sen="remove"][data-ent="binary_sensor.fenster_bad"]');
+    } else await s.tap('[data-sen="remove"][data-ent="binary_sensor.fenster_bad"]');
     check(`${tag}: entfernt`, await s.waitFor(`return !r.querySelector('${ent("binary_sensor.fenster_bad")}') && r.querySelectorAll('[data-sen="detail"]').length === ${zoned.length + 1}`));
     await s.sim("window.__reloadMs = 1600");
     await s.tap('[data-sen="save"]');

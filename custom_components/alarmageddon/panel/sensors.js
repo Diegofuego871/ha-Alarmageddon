@@ -245,7 +245,7 @@ export class SensorsUi {
       const none = !this.draft.sensors.size;
       this.host._setHtml(body, `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(none ? "noSensorsChosen" : "noSensors"))}</span>${none ? `<button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>` : ""}</div>`);
     }
-    else this.host._setHtml(body, narrow ? this._cards(rows) : this._table(rows, changed));
+    else this.host._setHtml(body, this._table(rows, changed));
     this.renderSide();
     this.renderFoot();
   }
@@ -286,23 +286,26 @@ export class SensorsUi {
     const d = this.draft;
     const modes = this.modes();
     const cur = this.activeMode(); // gewählter Modus (nur mit Schalter): seine Spalten sind hervorgehoben
-    const head = `<tr><th>${esc(this._t("colSensor"))}</th>${modes.map((m) => `<th class="z ${m === cur ? "cur" : ""}">${esc(this._t(MODE_KEY[m]))}<button class="ag-allbtn" data-sen="all" data-mode="${m}">${esc(this._t("all"))}</button></th>`).join("")}
-      <th class="z ${cur === "always" ? "cur" : ""}">${esc(this._t("optAlways"))}</th><th class="z">${esc(this._t("colEntry"))}</th><th></th></tr>`;
+    // Handy: dieselbe Tabelle mit den Kästchen, kompakt (Symbole statt Namen in der Kopfzeile; Eingangsverzögerung und Entfernen stehen im Blatt)
+    const nar = this.host.hasAttribute("narrow");
+    const colHead = (m) => (nar ? `<span title="${esc(this._t(MODE_KEY[m]))}" aria-label="${esc(this._t(MODE_KEY[m]))}">${ic(MODE_ICON[m], 20)}</span>` : esc(this._t(MODE_KEY[m])));
+    const head = `<tr><th>${esc(this._t("colSensor"))}</th>${modes.map((m) => `<th class="z ${m === cur ? "cur" : ""}">${colHead(m)}<button class="ag-allbtn" data-sen="all" data-mode="${m}">${esc(this._t("all"))}</button></th>`).join("")}
+      <th class="z ${cur === "always" ? "cur" : ""}">${nar ? `<span title="${esc(this._t("optAlways"))}" aria-label="${esc(this._t("optAlways"))}">${ic("flash", 20)}</span>` : esc(this._t("optAlways"))}</th>${nar ? "" : `<th class="z">${esc(this._t("colEntry"))}</th>`}<th></th></tr>`;
     let area = null;
     const body = [];
     for (const r of rows) {
       if (r.area !== area) {
         area = r.area;
-        body.push(`<tr class="grp"><td colspan="${modes.length + 4}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
+        body.push(`<tr class="grp"><td colspan="${modes.length + (nar ? 3 : 4)}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
       }
       const bits = this._bits(r);
-      body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
+      body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${nar ? "" : bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
         ${modes.map((m) => {
           const on = d.zones[m].has(r.id);
           return `<td class="z ${m === cur ? "cur" : ""}"><button class="ag-box ${on ? "on" : ""}" data-box data-mode="${m}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(MODE_KEY[m])}`)}">${on ? ic("check", 18) : ""}</button></td>`;
         }).join("")}
-        <td class="z ${cur === "always" ? "cur" : ""}">${this._alwaysBox(r)}</td><td class="z">${this._entryToggle(r)}</td>
-        <td class="ag-acts"><div class="ag-actrow"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div></td></tr>`);
+        <td class="z ${cur === "always" ? "cur" : ""}">${this._alwaysBox(r)}</td>${nar ? "" : `<td class="z">${this._entryToggle(r)}</td>`}
+        <td class="ag-acts"><div class="ag-actrow">${nar ? "" : `<button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button>`}<button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div></td></tr>`);
     }
     return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
   }

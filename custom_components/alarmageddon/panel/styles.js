@@ -633,5 +633,18 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 :host([narrow]) .ag-systitle { font-size: 22px; }
 :host([narrow]) select.ag-select[data-act="system"] { font-size: 20px; height: 44px; min-width: 0; flex: 1 1 auto; max-width: 100%; }
 .ag-rename-ids { border-bottom: 0; margin-top: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+/* Sensoren auf dem Handy: dieselbe Tabelle mit Kästchen, kompakt */
+:host([narrow]) .ag-table th { padding: 8px 4px; font-size: 11px; }
+:host([narrow]) .ag-table th:first-child { padding-left: 12px; }
+:host([narrow]) .ag-table td { padding: 6px 4px; }
+:host([narrow]) .ag-table td:first-child { padding-left: 12px; }
+:host([narrow]) .ag-table th.z, :host([narrow]) .ag-table td.z { width: 46px; min-width: 0; }
+:host([narrow]) .ag-table th.z > span { display: grid; place-items: center; }
+:host([narrow]) .ag-table .ag-allbtn { display: block; margin: 2px auto 0; font-size: 10px; padding: 2px 0; }
+:host([narrow]) .ag-table .ag-nm { min-width: 0; }
+:host([narrow]) .ag-table .ag-nm > div { min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.25; }
+:host([narrow]) .ag-table .ag-nm small { display: block; font-size: 11px; line-height: 1.3; }
+:host([narrow]) .ag-table td.ag-acts { padding-right: 8px; }
+:host([narrow]) .ag-table tr.grp td { padding: 6px 12px; }
 `;
 

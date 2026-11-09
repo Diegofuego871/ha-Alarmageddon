@@ -136,11 +136,11 @@ for (const lang of ["de", "en"]) {
   {
     const tag = `${lang}/Handy`;
     const s = await open(browser, { lang, tab: "config", mobile: true });
-    check(`${tag}: Karten statt Tabelle`, await s.ev("return !r.querySelector('.ag-table') && r.querySelectorAll('.ag-mcard').length === 11"));
-    const sizes = await s.ev("return [...r.querySelectorAll('.ag-zbtn')].slice(0, 3).map((b) => Math.round(b.getBoundingClientRect().height))");
-    check(`${tag}: Trefferfläche mindestens 44 px`, sizes.every((h) => h >= 44), JSON.stringify(sizes));
-    await s.tap('[data-sen="zone"][data-ent="binary_sensor.fenster_bad"][data-mode="home"]');
-    check(`${tag}: Antippen setzt Zone`, await s.ev(`return r.querySelector('[data-sen="zone"][data-ent="binary_sensor.fenster_bad"][data-mode="home"]').classList.contains('on')`));
+    check(`${tag}: Tabelle mit Kästchen (kein Kartenraster), eine Zeile je Sensor, ohne seitlichen Überlauf`, await s.ev("return !r.querySelector('.ag-mcard') && r.querySelectorAll('.ag-table tr[data-row]').length === 11 && !r.querySelector('.ag-table [data-sen=\"entry\"]') && r.querySelector('.ag-table').scrollWidth <= r.querySelector('.ag-table-wrap').clientWidth + 1"));
+    const sizes = await s.ev("return [...r.querySelectorAll('.ag-table .ag-box')].slice(0, 3).map((b) => Math.round(b.getBoundingClientRect().height))");
+    check(`${tag}: Kästchen gross genug zum Antippen (mindestens 28 px, Zelle 44)`, sizes.every((h) => h >= 28), JSON.stringify(sizes));
+    await s.tap('.ag-table [data-box][data-ent="binary_sensor.fenster_bad"][data-mode="home"]');
+    check(`${tag}: Antippen setzt Zone`, await s.ev(`return r.querySelector('.ag-table [data-box][data-ent="binary_sensor.fenster_bad"][data-mode="home"]').classList.contains('on')`));
     check(`${tag}: 1 Änderung`, (await s.ev("return r.querySelector('.ag-foot').innerText")).includes(t.one));
     // Eingangsverzögerung im Blatt von unten (Details des Sensors)
     await s.tap('[data-sen="detail"][data-ent="binary_sensor.fenster_bad"]');
