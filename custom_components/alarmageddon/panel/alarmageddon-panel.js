@@ -561,8 +561,8 @@ class AlarmageddonPanel extends HTMLElement {
         // Handy (Übersicht, Sensoren, Aktionen): die Filter bzw. die Leiste mit dem Schalter scrollen weg, damit Kopfzeile und Tabellenkopf fest bleiben und genug Platz für die Zeilen bleibt
         this.hasAttribute("narrow") && (stickyOverview || (this._tab === "config" && ["sensors", "actions"].includes(this._sub))) ? null
           : stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
-        // Sensoren: Schalter und Reiter der Modi bleiben über der Tabelle stehen
-        this._tab === "config" && this._sub === "sensors" ? v?.querySelector(".ag-pmstick") : null,
+        // Sensoren am Computer: Schalter und Reiter der Modi bleiben über der Tabelle stehen (auf dem Handy scrollen sie samt Erklärung weg)
+        this._tab === "config" && this._sub === "sensors" && !this.hasAttribute("narrow") ? v?.querySelector(".ag-pmstick") : null,
       ].filter(Boolean);
       // Der Abstand zum nächsten Teil liegt im Teil selbst (Innenabstand statt Lücke, siehe CSS): so ist der Abstand fest und beim Scrollen gleich.
       // Der letzte feste Teil hat keinen, der Tabellenkopf und das Blatt der Optionen stehen direkt darunter.

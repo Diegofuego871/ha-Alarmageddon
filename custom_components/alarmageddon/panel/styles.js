@@ -256,9 +256,6 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 /* Schalter, Reiter und alles, was zu den Reitern gehört, stehen in einem umrandeten Bereich: so ist klar, bis wohin die Einstellung greift */
 .ag-pmstick { margin: var(--ag-gap, 18px) 0; }
 .ag-pmstick > .ag-pmbar { margin: 0; }
-/* Fest stehende Leisten auf dem Handy kompakt: ohne Erklärtext, sonst bleibt zu wenig Platz für die Liste */
-:host([narrow]) .ag-pmstick .ag-pmbar small, :host([narrow]) .ag-pmstick .ag-pmbar .ag-pmscope { display: none; }
-:host([narrow]) .ag-pmstick .ag-pmbar { gap: 10px; padding: 10px 14px; }
 .ag-pmgroup { margin-top: 6px; padding: 16px 18px 18px; border: 1.5px solid var(--ag-divider); border-radius: 20px; background: color-mix(in srgb, var(--ag-text) 2%, var(--ag-card)); }
 .ag-pmgroup.on { border: 2px solid color-mix(in srgb, var(--ag-primary) 45%, transparent); background: color-mix(in srgb, var(--ag-primary) 4%, var(--ag-card)); }
 .ag-pmgroup > .ag-pmbar { margin: 0 0 14px; padding: 0; border: 0; background: none; }
