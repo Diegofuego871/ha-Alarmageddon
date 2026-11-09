@@ -34,6 +34,7 @@ Ein aufgeräumteres Protokoll, besonders auf dem Handy.
 
 ### Behoben
 
+- **Aktionen auf dem Handy:** Die Erklärung zum Schalter "Einstellungen pro Modus" steht wieder da (die Leiste scrollt mit der Seite, statt fest zu stehen).
 - **Tabellenköpfe kleben auch auf dem Handy** (Übersicht und Sensoren): Die oberste Zeile einer Tabelle mit Beschriftung, Filtern und Sortieren scrollt nie weg; auf dem Handy scrollen dafür die Filter weg, und die Tabellen sind so kompakt, dass sie ohne seitliches Scrollen passen. Die Standardspalten der Übersicht auf dem Handy sind jetzt Zustand, Batterie und Empfang (Firmware lässt sich unter "Ansicht" ergänzen).
 - **Sensor-Blatt auf dem Handy:** Nur noch ein X statt zwei, und das Blatt läuft nicht mehr 22 px über den rechten Rand (die Leiste mit "Fertig" war zu breit, was den Inhalt nach links verschob).
 - **Alarmablauf:** Auch unter den Plus-Knöpfen mehr Abstand (zwischen Plus und nächster Aktion).

@@ -558,8 +558,8 @@ class AlarmageddonPanel extends HTMLElement {
         c.querySelector(":scope > .ag-head"),
         v?.querySelector(":scope > .ag-cfg"),
         stickyOverview && tall ? v.querySelector(":scope > .ag-ov-top") : null,
-        // Handy mit Tabelle (Übersicht, Sensoren): die Filter scrollen weg, damit Kopfzeile und Tabellenkopf fest bleiben und genug Platz für die Zeilen bleibt
-        this.hasAttribute("narrow") && (stickyOverview || (this._tab === "config" && this._sub === "sensors")) ? null
+        // Handy (Übersicht, Sensoren, Aktionen): die Filter bzw. die Leiste mit dem Schalter scrollen weg, damit Kopfzeile und Tabellenkopf fest bleiben und genug Platz für die Zeilen bleibt
+        this.hasAttribute("narrow") && (stickyOverview || (this._tab === "config" && ["sensors", "actions"].includes(this._sub))) ? null
           : stickyOverview ? v.querySelector(":scope > .ag-ov-tools") : v?.querySelector(".ag-pane .ag-tools:not(.ag-pick-chips), :scope > .ag-tools"),
         // Sensoren: Schalter und Reiter der Modi bleiben über der Tabelle stehen
         this._tab === "config" && this._sub === "sensors" ? v?.querySelector(".ag-pmstick") : null,

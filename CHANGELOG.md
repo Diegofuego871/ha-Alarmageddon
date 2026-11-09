@@ -34,6 +34,7 @@ A tidier log, especially on the phone.
 
 ### Fixed
 
+- **Actions on the phone:** the explanation of the switch "Settings per mode" is shown again (the bar scrolls with the page instead of staying fixed).
 - **Table headers stick on the phone too** (overview and sensors): the top row of a table with the labels, filtering and sorting never scrolls away; on the phone the filters scroll away instead and the tables are compact enough to fit without sideways scrolling. The default columns of the overview on the phone are now state, battery and signal (firmware can be added in "View").
 - **Sensor sheet on the phone:** only one X instead of two, and the sheet no longer runs 22 px over the right edge (the bar with "Done" was too wide, which shifted the content to the left).
 - **Alarm flow:** more space below the plus buttons too (between the plus and the next action).
