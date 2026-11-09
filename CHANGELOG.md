@@ -7,6 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.34.1] - 2026-11-09
+
+The scope of the settings per mode is now obvious.
+
+### Changed
+
+- **Settings per mode:** the switch, the tabs and all settings below them sit in one bordered group (Sensors, Notifications › Messages, Alarm system › Times and behaviour), with a line "Everything below applies to <mode> only".
+- **Sensor sheet:** a large banner "These settings apply only to <mode>" (or "…while the alarm system is disarmed" in the tab "Always active") replaces the small heading.
+
 ## [0.34.0] - 2026-11-09
 
 A tab "Always active" for the settings per mode, and settings per mode for messages.
@@ -509,6 +518,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[0.34.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.1
 [0.34.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.34.0
 [0.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.33.0
 [0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0

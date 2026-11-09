@@ -175,11 +175,13 @@ for (const lang of ["de", "en"]) {
       if (!mobile) {
         await s.tap(`tr[data-row="${bypassEnt}"] td:first-child .ag-nm`);
         check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 6 && !!sd.querySelector('[data-key="bypass"]') && !sd.querySelector('[data-key="always"]')`));
+        check(`${tag}: Blatt zeigt gut sichtbar den Geltungsbereich (Modus)`, await s.waitFor(`const b=r.querySelector('.ag-side .ag-pmbanner'); return !!b && parseFloat(getComputedStyle(b.querySelector('b')).fontSize) >= 17 && b.textContent.length > 8`));
         await s.tap('.ag-side [data-sen="close-detail"]');
         // Reiter "Immer aktiv": eigene Einstellungen, Spalte hervorgehoben, im Blatt alle Optionen einschliesslich "Immer aktiv"
         await s.tap('[data-sen="mt:always"]');
         await s.tap(`tr[data-row="${bypassEnt}"] td:first-child .ag-nm`);
         check(`${tag}: Reiter "Immer aktiv": Spalte hervorgehoben, Blatt mit allen 7 Optionen`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return r.querySelectorAll('.ag-gbody th.cur').length === 1 && r.querySelector('.ag-gbody th.cur').textContent.match(/Immer aktiv|Always active/) !== null && sd.querySelectorAll('[data-sen="mopt"][data-mode="always"]').length === 7`));
+        check(`${tag}: Blatt "Immer aktiv" zeigt Banner`, await s.waitFor(`return !!r.querySelector('.ag-side .ag-pmbanner')`));
         await s.tap('.ag-side [data-sen="close-detail"]');
       }
       await s.tap('[data-sen="save"]');

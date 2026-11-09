@@ -173,10 +173,10 @@ export class NotifyUi {
       <div class="ag-settx"><b>${esc(this._t("ntPerMode"))}</b><small>${esc(this._t(d.per_mode ? "ntPerModeOn" : "ntPerModeHint"))}</small></div></div>${tabs}</div>`;
     const modeList = () => MODE_KINDS.map(([kind, icon]) => this._type(kind, icon, dirty, false, this.modeTab)).join("");
     const alarmBody = d.per_mode
-      ? `<p class="ag-chap-h">${esc(this._t("ntModeHint", { mode: this._t(MODE_KEY[this.modeTab]) }))}</p><div class="ag-card ag-mtlist">${modeList()}</div>`
+      ? `<div class="ag-pmscope">${ic(MODE_ICON[this.modeTab], 18)}${esc(this._t("pmScope", { mode: this._t(MODE_KEY[this.modeTab]) }))}</div><div class="ag-card ag-mtlist">${modeList()}</div>`
       : `<div class="ag-card ag-mtlist">${list("alarm")}</div>`;
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
-      + chapter(this._t("ntChapAlarm"), `${sw}${alarmBody}`, this._t("ntChapAlarmHint"))
+      + chapter(this._t("ntChapAlarm"), `<div class="ag-pmgroup ${d.per_mode ? "on" : ""}">${sw}${alarmBody}</div>`, this._t("ntChapAlarmHint"))
       + chapter(this._t("ntChapMaint"), `<div class="ag-card ag-mtlist">${list("maintenance")}</div>`, this._t("ntChapMaintHint"));
     h._setHtml(box, html);
     h._placePills();

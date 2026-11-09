@@ -261,7 +261,8 @@ export class SensorsUi {
     // Reiter der Modi und "Immer aktiv" (Rauch, Wasser, Gas: gilt auch bei deaktivierter Anlage), jeder mit allen Einstellungen für sich
     const tabs = d.perMode ? h._segHtml("sen-mode", [...modes.map((m) => [`mt:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]]), ["mt:always", this._t("wfAlways"), "flash"]], `mt:${this.mtab}`, "data-sen", "small") : "";
     h._setHtml(bar, `<div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-sen="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("senPerMode"))}"></button>
-      <div class="ag-settx"><b>${esc(this._t("senPerMode"))}</b><small>${esc(this._t(d.perMode ? "senPerModeOn" : "senPerModeHint"))}</small></div></div>${tabs}`);
+      <div class="ag-settx"><b>${esc(this._t("senPerMode"))}</b><small>${esc(this._t(d.perMode ? "senPerModeOn" : "senPerModeHint"))}</small></div></div>${tabs}
+      ${d.perMode ? `<div class="ag-pmscope" style="flex-basis:100%;margin:0">${ic(this.mtab === "always" ? "flash" : MODE_ICON[this.mtab], 18)}${esc(this._t(this.mtab === "always" ? "pmScopeAlways" : "pmScope", { mode: this._t(MODE_KEY[this.mtab] || "wfAlways") }))}</div>` : ""}`);
     h._placePills();
   }
 
@@ -374,7 +375,7 @@ export class SensorsUi {
         <div style="flex:1;min-width:0"><h3>${esc(r.name)}</h3><div class="ag-t2 ag-small">${esc(meta)}</div></div>
         <button class="ag-iconbtn" data-sen="close-detail" aria-label="${esc(this._t("cancel"))}">${ic("close", 22)}</button></div>
       <div class="ag-side-body"><div class="ag-label">${esc(this._t("zones"))}</div><div class="ag-zline">${zones}</div>
-        <div class="ag-label">${esc(this._t("behaviour"))}${mode ? ` · ${esc(modeName)}` : ""}</div>${entryRow}${opts}
+        <div class="ag-label">${esc(this._t("behaviour"))}</div>${mode ? `<div class="ag-pmbanner">${ic(mode === "always" ? "flash" : MODE_ICON[mode], 24)}<div><small>${esc(this._t(mode === "always" ? "pmBannerAlways" : "pmBannerLabel"))}</small><b>${esc(mode === "always" ? this._t("pmBannerAlwaysB") : modeName)}</b></div></div>` : ""}${entryRow}${opts}
         <button class="ag-btn" data-sen="remove" data-ent="${esc(id)}" style="margin-top:16px">${ic("trash", 18)}${esc(this._t("removeSensor"))}</button>
         <div class="ag-t2 ag-small" style="margin-top:6px">${esc(this._t("removeSensorHint"))}</div></div>`;
   }

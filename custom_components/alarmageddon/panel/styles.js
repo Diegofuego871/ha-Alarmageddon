@@ -250,9 +250,18 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-otx b { font-weight: 500; display: block; }
 .ag-otx small { display: block; color: var(--ag-text2); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
 /* Einstellungen pro Modus: Schalter mit Text, daneben die Reiter; Punkt am Kästchen = eigener Wert dieses Modus */
-.ag-pmbar { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin: 22px 0 22px; }
+.ag-pmbar { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin: 22px 0; padding: 14px 18px; border: 1px solid var(--ag-divider); border-radius: 16px; background: var(--ag-card); }
 .ag-pmsw { display: flex; align-items: center; gap: 12px; }
 .ag-pmsw .ag-toggle { margin: 0; flex: none; }
+/* Schalter, Reiter und alles, was zu den Reitern gehört, stehen in einem umrandeten Bereich: so ist klar, bis wohin die Einstellung greift */
+.ag-pmgroup { margin-top: 6px; padding: 16px 18px 18px; border: 1.5px solid var(--ag-divider); border-radius: 20px; background: color-mix(in srgb, var(--ag-text) 2%, var(--ag-card)); }
+.ag-pmgroup.on { border: 2px solid color-mix(in srgb, var(--ag-primary) 45%, transparent); background: color-mix(in srgb, var(--ag-primary) 4%, var(--ag-card)); }
+.ag-pmgroup > .ag-pmbar { margin: 0 0 14px; padding: 0; border: 0; background: none; }
+.ag-pmbanner { display: flex; align-items: center; gap: 12px; margin: 4px 0 12px; padding: 12px 14px; border: 2px solid var(--ag-primary); border-radius: 14px; background: var(--ag-primary-soft); color: var(--ag-primary); }
+.ag-pmbanner small { display: block; font-size: 12px; font-weight: 500; opacity: .85; }
+.ag-pmbanner b { display: block; font-size: 18px; font-weight: 600; line-height: 1.25; }
+.ag-pmscope { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--ag-primary); font-weight: 500; font-size: 13.5px; }
+.ag-pmgroup .ag-subh:first-of-type { margin-top: 4px; }
 .ag-box.own { position: relative; }
 .ag-box.own::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ag-warning); border: 2px solid var(--ag-card); }
 th.cur, td.cur { background: color-mix(in srgb, var(--ag-primary) 9%, transparent); }
