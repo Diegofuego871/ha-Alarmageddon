@@ -121,12 +121,15 @@ async def test_stored_backups_create_list_get_delete_and_limit(hass: HomeAssista
 
     entry = await setup_alarm(hass, "Haus", exit_delay_away=45)
     client = await hass_ws_client(hass)
-    first = await _ws(client, type="alarmageddon/backup_create")
+    first = await _ws(client, type="alarmageddon/backup_create", name="  Vor dem   Umbau ")
+    assert first["result"]["created"]["name"] == "Vor dem Umbau"
     assert first["success"] and first["result"]["max"] == MAX_BACKUPS == 10
     first_id = first["result"]["created"]["id"]
     assert first["result"]["created"]["systems"] == ["Haus"]
     listing = (await _ws(client, type="alarmageddon/backups"))["result"]["backups"]
-    assert [b["id"] for b in listing] == [first_id] and listing[0]["created"]
+    assert [b["id"] for b in listing] == [first_id] and listing[0]["created"] and listing[0]["name"] == "Vor dem Umbau"
+    assert (await _ws(client, type="alarmageddon/backup_create"))["result"]["created"]["name"] == ""
+    await _ws(client, type="alarmageddon/backup_delete", backup_id=(await _ws(client, type="alarmageddon/backups"))["result"]["backups"][0]["id"])
     got = await _ws(client, type="alarmageddon/backup_get", backup_id=first_id)
     assert got["success"] and got["result"]["format"] == "alarmageddon" and got["result"]["systems"][0]["options"]["exit_delay_away"] == 45
     assert "code_hash" not in json.dumps(got["result"])

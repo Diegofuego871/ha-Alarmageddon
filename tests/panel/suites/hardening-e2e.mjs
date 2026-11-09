@@ -97,9 +97,16 @@ for (const lang of ["de", "en"]) {
     // ----- Sicherungen in der Integration: Sichern, Liste, Herunterladen, Wiederherstellen, Löschen, höchstens 10 -----
     const bkRows = () => s.ev("return r.querySelectorAll('.ag-bktable tr[data-bk]').length");
     check(`${tag}: Sichern: Knopf da, noch keine Sicherung`, await s.ev("return !!r.querySelector('[data-sys=\"bk-create\"]') && !r.querySelector('.ag-bktable') && r.querySelector('.ag-bkbody')?.innerText.length > 10"));
-    await s.tap('[data-sys="bk-create"]');
-    check(`${tag}: Sicherung abgelegt, Meldung`, await s.waitFor("return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 1 && !!r.querySelector('.ag-toast')"));
-    await s.tap('[data-sys="bk-create"]');
+    const makeBk = async (name) => {
+      await s.tap('[data-sys="bk-create"]');
+      await s.waitFor("return r.getElementById('ag-codes').open && !!r.querySelector('#ag-codes [data-form=\"backup\"]')");
+      if (name) await s.ev(`r.querySelector('#ag-codes [data-form="backup"] input').value = ${JSON.stringify(name)}`);
+      await s.ev("r.querySelector('#ag-codes [data-form=\"backup\"]').requestSubmit()");
+      await s.waitFor("return !r.getElementById('ag-codes').open");
+    };
+    await makeBk("Vor dem Umbau");
+    check(`${tag}: Sicherung mit Name abgelegt, Meldung, Name und Datum in der Liste`, await s.waitFor("return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 1 && !!r.querySelector('.ag-toast') && r.querySelector('.ag-bktable .ag-bkname').textContent === 'Vor dem Umbau' && !!r.querySelector('.ag-bktable .ag-bkdate')"));
+    await makeBk("");
     check(`${tag}: zwei Sicherungen mit Datum und Anlagen, drei Knöpfe je Zeile`, await s.waitFor("const row=r.querySelector('.ag-bktable tr[data-bk]'); return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 2 && /\\d{4}/.test(row.cells[0].textContent) && row.cells[1].textContent.includes('Haus') && row.querySelectorAll('.ag-iconbtn').length === 3"));
     check(`${tag}: Tabelle im festen Kopf-Rahmen und passt in die Breite`, await s.ev("const w=r.querySelector('.ag-bktable').closest('.ag-stickwrap'); return !!w && !w.classList.contains('hscroll') && r.querySelector('.ag-bktable').scrollWidth <= w.clientWidth + 1"));
     const [bkDownload] = await Promise.all([s.page.waitForEvent("download", { timeout: 5000 }).catch(() => null), s.tap('.ag-bktable tr[data-bk] [data-sys="bk-download"]')]);
@@ -111,7 +118,7 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Löschen fragt nach`, await s.waitFor("const d=r.getElementById('ag-codes'); return d.open && !!d.querySelector('[data-sys=\"bk-delete-go\"]')"));
     await s.tap('#ag-codes [data-sys="bk-delete-go"]');
     check(`${tag}: gelöscht`, await s.waitFor("return !r.getElementById('ag-codes').open && r.querySelectorAll('.ag-bktable tr[data-bk]').length === 1"));
-    for (let i = 0; i < 11; i += 1) await s.tap('[data-sys="bk-create"]');
+    for (let i = 0; i < 11; i += 1) await makeBk("");
     check(`${tag}: höchstens 10 Sicherungen`, await s.waitFor("return r.querySelectorAll('.ag-bktable tr[data-bk]').length === 10 && /10/.test(r.querySelector('.ag-bkbody .ag-small').textContent)"));
 
     // ----- Wartungsmeldungen -----

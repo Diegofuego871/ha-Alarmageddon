@@ -1157,6 +1157,12 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   _onSubmit(ev) {
+    const bform = ev.target.closest('[data-form="backup"]');
+    if (bform) {
+      ev.preventDefault();
+      this.systemUi.createBackup(bform.querySelector("input").value);
+      return;
+    }
     const rform = ev.target.closest('[data-form="rename"]');
     if (rform) {
       ev.preventDefault();

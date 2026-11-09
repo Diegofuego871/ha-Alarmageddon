@@ -756,14 +756,14 @@ async def ws_backups(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     connection.send_result(msg["id"], {"backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
 
 
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backup_create"})
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backup_create", vol.Optional("name", default=""): vol.All(str, vol.Length(max=60))})
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_backup_create(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Legt die aktuelle Konfiguration (ohne Codes) in der Integration ab; es bleiben höchstens MAX_BACKUPS."""
     entries = backup.loaded_entries(hass)
     version = entries[0].runtime_data.version if entries else None
-    created = await backup.async_create_backup(hass, version)
+    created = await backup.async_create_backup(hass, version, msg["name"])
     connection.send_result(msg["id"], {"created": created, "backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
 
 

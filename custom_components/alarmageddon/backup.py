@@ -123,18 +123,19 @@ async def _load(hass: HomeAssistant) -> list[dict[str, Any]]:
 async def async_list_backups(hass: HomeAssistant) -> list[dict[str, Any]]:
     """Ohne den Inhalt: Kennung, Zeitpunkt und die Namen der gesicherten Anlagen."""
     return [
-        {"id": b["id"], "created": b.get("created"), "systems": [s.get("title") for s in b["data"].get("systems", []) if isinstance(s, dict)]}
+        {"id": b["id"], "name": b.get("name") or "", "created": b.get("created"), "systems": [s.get("title") for s in b["data"].get("systems", []) if isinstance(s, dict)]}
         for b in await _load(hass)
     ]
 
 
-async def async_create_backup(hass: HomeAssistant, integration_version: str | None) -> dict[str, Any]:
+async def async_create_backup(hass: HomeAssistant, integration_version: str | None, name: str = "") -> dict[str, Any]:
     data = await async_export(hass, integration_version)
     items = await _load(hass)
-    item = {"id": uuid.uuid4().hex[:12], "created": data["created"], "data": data}
+    name = " ".join(name.split())[:60]
+    item = {"id": uuid.uuid4().hex[:12], "name": name, "created": data["created"], "data": data}
     items = [item, *items][:MAX_BACKUPS]
     await _store(hass).async_save({"backups": items})
-    return {"id": item["id"], "created": item["created"], "systems": [s["title"] for s in data["systems"]]}
+    return {"id": item["id"], "name": name, "created": item["created"], "systems": [s["title"] for s in data["systems"]]}
 
 
 async def async_get_backup(hass: HomeAssistant, backup_id: str) -> dict[str, Any] | None:

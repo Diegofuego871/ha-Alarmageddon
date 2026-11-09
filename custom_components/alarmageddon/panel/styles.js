@@ -660,5 +660,7 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 :host([narrow]) .ag-table .ag-nm small { display: block; font-size: 11px; line-height: 1.3; }
 :host([narrow]) .ag-table td.ag-acts { padding-right: 8px; }
 :host([narrow]) .ag-table tr.grp td { padding: 6px 12px; }
+.ag-bkname { display: block; font-weight: 500; }
+.ag-bkdate { display: block; font-size: 12px; }
 `;
 

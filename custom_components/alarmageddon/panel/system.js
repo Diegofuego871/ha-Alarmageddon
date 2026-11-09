@@ -186,10 +186,10 @@ export class SystemUi {
     const date = (iso) => (iso ? new Date(iso).toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" }) : "–");
     if (!this.backups.length) return `<div class="ag-t2 ag-small" style="margin:10px 4px 0">${esc(this._t("bkEmpty"))}</div>`;
     const btn = (act, icon, key, id) => `<button class="ag-iconbtn" data-sys="${act}" data-id="${esc(id)}" title="${esc(this._t(key))}" aria-label="${esc(this._t(key))}">${ic(icon, 18)}</button>`;
-    const rows = this.backups.map((b) => `<tr data-bk="${esc(b.id)}"><td>${esc(date(b.created))}</td><td class="ag-t2">${esc((b.systems || []).join(", ") || "–")}</td>
+    const rows = this.backups.map((b) => `<tr data-bk="${esc(b.id)}"><td><b class="ag-bkname">${esc(b.name || date(b.created))}</b>${b.name ? `<small class="ag-t2 ag-bkdate">${esc(date(b.created))}</small>` : ""}</td><td class="ag-t2">${esc((b.systems || []).join(", ") || "–")}</td>
         <td class="ag-acts"><div class="ag-actrow">${btn("bk-download", "arrowLine", "bkDownload", b.id)}${btn("bk-restore", "restore", "bkRestoreOne", b.id)}${btn("bk-delete", "trash", "bkDelete", b.id)}</div></td></tr>`).join("");
     return `<div class="ag-t2 ag-small" style="margin:10px 4px 6px">${esc(this._t("bkCount", { count: this.backups.length, max: this.bkMax }))}</div>
-      <div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table ag-bktable"><tr><th>${esc(this._t("bkColDate"))}</th><th>${esc(this._t("bkColSystems"))}</th><th></th></tr>${rows}</table></div>`;
+      <div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table ag-bktable"><tr><th>${esc(this._t("bkColName"))}</th><th>${esc(this._t("bkColSystems"))}</th><th></th></tr>${rows}</table></div>`;
   }
 
   renderBackups() {
@@ -212,9 +212,22 @@ export class SystemUi {
     this.renderBackups();
   }
 
-  async createBackup() {
+  // "Sichern" fragt zuerst nach einem Namen (leer erlaubt: dann zeigt die Liste das Datum)
+  openCreateBackup() {
+    const dlg = this._codeDlg();
+    dlg.innerHTML = `<form class="ag-dlg-body" data-form="backup"><h3>${esc(this._t("bkNameTitle"))}</h3>
+      <label class="ag-t2 ag-small" for="ag-bk-name">${esc(this._t("bkNameLabel"))}</label>
+      <input class="ag-input" id="ag-bk-name" type="text" maxlength="60" placeholder="${esc(this._t("bkNamePlaceholder"))}" style="width:100%;box-sizing:border-box" autocomplete="off">
+      <div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-dlg-btns"><button type="button" class="ag-btn" data-sys="code-close">${esc(this._t("cancel"))}</button><button class="ag-btn primary" type="submit">${esc(this._t("bkSave"))}</button></div></form>`;
+    dlg.showModal();
+    dlg.querySelector("input").focus();
+  }
+
+  async createBackup(name = "") {
     try {
-      const res = await this.host._hass.callWS({ type: "alarmageddon/backup_create" });
+      const res = await this.host._hass.callWS({ type: "alarmageddon/backup_create", name: String(name || "").trim() });
+      this._codeDlg().close();
       this.backups = res.backups || [];
       this.bkMax = res.max || 10;
       this.renderBackups();
@@ -500,7 +513,7 @@ export class SystemUi {
     } else if (act === "code") {
       this.host._navigate("/config/integrations/integration/alarmageddon");
     } else if (act === "bk-create") {
-      this.createBackup();
+      this.openCreateBackup();
     } else if (act === "bk-download") {
       this.downloadBackup(el.dataset.id);
     } else if (act === "bk-restore") {
