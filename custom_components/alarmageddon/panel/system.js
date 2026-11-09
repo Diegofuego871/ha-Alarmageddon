@@ -6,7 +6,7 @@ const V = new URL(import.meta.url).search;
 const { ic, esc, MODE_KEY, MODE_ICON, errText, chapter } = await import(`./common.js${V}`);
 
 const MAX = 3600;
-const DEFAULTS = { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 };
+const DEFAULTS = { exit_delay: 0, entry_delay: 30, confirm_window: 60 };
 const WINDOW = [5, 600];
 const ALL_MODES = ["home", "away", "night"];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -98,16 +98,13 @@ export class SystemUi {
     const v = d.per[scope];
     const bad = new Set(this.invalid());
     const num = (field, value, min = 0, max = MAX, unit = "seconds") => `<span class="ag-num ${bad.has(`${scope}.${field}`) ? "bad" : ""}"><input type="number" min="${min}" max="${max}" step="1" inputmode="numeric" data-sys="num" data-field="${field}" value="${esc(value)}" aria-label="${esc(field)}"><span class="ag-t2">${esc(this._t(unit))}</span></span>`;
-    // Auswahl als Aufklappmenü, nicht als Reiterleiste: Reiter stehen hier zu nah an der Navigation und wirken wie ein Seitenwechsel
-    const openSeg = `<select class="ag-input ag-open-sel" data-sys="open-sel" aria-label="${esc(this._t("sysOpen"))}">${[["block", "sysOpenBlock"], ["bypass", "sysOpenBypass"]]
-      .map(([val, label]) => `<option value="${val}" ${v.open_sensors === val ? "selected" : ""}>${esc(this._t(label))}</option>`).join("")}</select>`;
     const scopeSeg = h._segHtml("sys-scope", modes.map((m) => [m, this._t(MODE_KEY[m]), MODE_ICON[m]]), scope, "data-scope", "small");
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
     const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
           ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
     const row = (title, hint, control) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(title))}</b>${hint ? `<small>${esc(this._t(hint))}</small>` : ""}</div>${control}</div>`;
     const timesRows = row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay));
-    const behaviourRows = row("sysOpen", "", openSeg) + row("sysConfirm", "sysConfirmHint", num("confirm_window", v.confirm_window, WINDOW[0], WINDOW[1]));
+    const behaviourRows = row("sysConfirm", "sysConfirmHint", num("confirm_window", v.confirm_window, WINDOW[0], WINDOW[1]));
     const perMode = chapter(this._t("chapPerMode"), `<div class="ag-scopebar">${scopeSeg}</div>
         <div class="ag-subh">${esc(this._t("chapTimes"))}</div>${card(timesRows)}
         <div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}`, this._t("chapPerModeHint"));
@@ -407,15 +404,6 @@ export class SystemUi {
     } else {
       return false;
     }
-    return true;
-  }
-
-  // Auswahl "Offener Sensor beim Scharfschalten" (Aufklappmenü)
-  onChange(el) {
-    if (el?.dataset?.sys !== "open-sel") return false;
-    this.ensureDraft().per[this.scope].open_sensors = el.value;
-    this.saveState = null;
-    this.render();
     return true;
   }
 

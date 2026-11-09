@@ -19,7 +19,7 @@ Alarmanlage für Home Assistant mit geführter Einrichtung und eingebauter Wartu
 
 - **Seitenpanel, Übersicht:** Steuerung aller Alarmanlagen mit "Bereit für" je Modus, eine Kachel mit dem Status (alles in Ordnung oder Warnungen) und eine Liste aller Sensoren mit Suche, Filtern und Ansichtseinstellung (Spalten, Gruppierung, Sortierung). Sie zeigt Zustand, Batterie, Empfang, Firmware, Modell und letzte Änderung, als Liste (Standard) oder als Karten (Umschalter neben "Ansicht"); ein Klick auf einen Spaltenkopf sortiert, "Offen" und "Belegung" sind getrennte Filter. Die Spalten werden wie in Device Panel für Computer und Handy getrennt gewählt und pro Benutzer gespeichert.
 - **Seitenpanel, Konfiguration:** Sensoren (Zonen als Raster mit Ziehen über Felder, Optionen pro Sensor im Seitenblatt, Voreinstellungen je Sensorart) und Anlage (Modi, Verzögerungen, Verhalten bei offenen Sensoren, Zeitplan, Codes, Sicherung). Auf dem Handy als Karten und Blätter von unten.
-- **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht einen zweiten Sensor, stiller Alarm. Voreinstellungen je Sensorart, eigene Werte pro Sensor.
+- **Optionen pro Sensor:** immer aktiv (Rauch, Wasser), darf beim Scharfschalten offen sein, beim Scharfschalten umgehen, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht einen zweiten Sensor, stiller Alarm. Voreinstellungen je Sensorart, eigene Werte pro Sensor. Auf Wunsch eigene Werte je Modus (Schalter "Einstellungen pro Modus" in Konfiguration › Sensoren).
 - **Bereit zum Scharfschalten:** eine Entität pro Modus mit den verhindernden Sensoren.
 - **Protokoll und Alarm-Aufzeichnung:** jeder Alarm als grafische Zeitachse (welcher Sensor wann angesprochen hat, bis zum Quittieren) und alle Ereignisse in einem eigenen Reiter.
 - **Alarmaktionen:** ein grafischer Ablauf pro Alarm: Push-Meldung, Geräte schalten, Rollläden, Alarmton auf Medienplayern (Sonos und andere), Warten, Skript, jede Aktion. Geräte kehren nach dem Alarm in den Zustand davor zurück.
@@ -44,7 +44,7 @@ Vorabversionen: Alarmageddon erscheint vorerst als Vorabversion. In HACS beim Re
 3. **Optionen** (Einstellungen → Geräte & Dienste → Alarmageddon → "Konfigurieren"):
    - **Zonen:** Sensoren für "Anwesend", "Abwesend" und "Nacht" (dasselbe wie im Seitenpanel). Ein Sensor kann in mehreren Zonen sein.
    - **Verzögerungen:** Ausgangsverzögerung pro Modus, Eingangsverzögerung, Sensoren mit Eingangsverzögerung (zum Beispiel die Haustür). Der Alarm dauert, bis er deaktiviert wird; wie lange eine Sirene oder ein Ton läuft, steht je Schritt in den Aktionen.
-   - **Verhalten:** Modus "Nacht", offener Sensor beim Scharfschalten (verhindern oder umgehen), Code zum Scharfschalten.
+   - **Verhalten:** Modus "Nacht", Code zum Scharfschalten.
    - **Code:** neuen Hauptcode setzen oder entfernen. Persönliche Codes: siehe "Codes pro Person".
 
 Nur ein echter Wechsel von "zu" auf "offen" löst aus. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
@@ -112,7 +112,6 @@ Seitenpanel › Konfiguration › Anlage › "Einstellungen je Modus": "Anwesend
 | --- | --- |
 | Ausgangsverzögerung | Zeit zum Verlassen, bevor die Anlage scharf ist |
 | Eingangsverzögerung | Zeit zum Deaktivieren, nachdem ein Eingangssensor aufging |
-| Offener Sensor beim Scharfschalten | Scharfschalten verhindern oder die offenen Sensoren umgehen |
 | Bestätigungsfenster | Zeit für den zweiten Sensor bei "Braucht einen zweiten Sensor" |
 
 Am Ende jedes Ablaufs kann das Element "Alarm endet" beim Deaktivieren eine eigene Meldung senden (dieselben Optionen wie die Alarmmeldung). Ob Geräte zurückkehren, entscheidet "Rückgängig beim Deaktivieren/Quittieren" im jeweiligen Schritt. Der Alarm dauert in jedem Modus, bis er deaktiviert wird (es gibt keine Alarmdauer; alte Werte werden ignoriert). Anlagen aus früheren Versionen verhalten sich wie bisher: Bis ein Modus einen eigenen Wert hat, gilt der gemeinsame. Der Optionsdialog von Home Assistant setzt gemeinsame Werte und wendet einen geänderten Wert auf alle Modi an.

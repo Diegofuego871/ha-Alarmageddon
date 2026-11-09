@@ -19,7 +19,7 @@ Alarm system for Home Assistant with a guided setup and built-in sensor maintena
 
 - **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change, as a list (default) or as cards (switch next to "View"); a click on a column header sorts, and "Open" and "Occupancy" are separate filters. Columns are chosen separately for the computer and the phone, as in Device Panel, and stored per user.
 - **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (modes, delays, behaviour for open sensors, schedule, codes, backup). On the phone as cards and sheets from the bottom.
-- **Options per sensor:** always active (smoke, water), may be open when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, silent alarm. Defaults per sensor type, own values per sensor.
+- **Options per sensor:** always active (smoke, water), may be open when arming, bypass when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, silent alarm. Defaults per sensor type, own values per sensor, and on request own values per mode (switch "Settings per mode" in Configuration › Sensors).
 - **Ready to arm:** one entity per mode with the blocking sensors.
 - **Log and alarm recording:** every alarm as a graphical timeline (which sensor responded when, until acknowledged) and all events in their own tab.
 - **Alarm actions:** a graphical workflow per alarm: push notification, switch devices, covers, alarm sound on media players (Sonos and others), wait, script, any action. Devices return to their previous state after the alarm.
@@ -44,7 +44,7 @@ Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switc
 3. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
    - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
    - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door). The alarm lasts until it is disarmed; how long a siren or sound plays is set per step in the actions.
-   - **Behaviour:** night mode, open sensor when arming (block or bypass), code required to arm.
+   - **Behaviour:** night mode, code required to arm.
    - **Code:** set a new main code or remove it. Personal codes: see "Codes per person".
 
 Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not trigger.
@@ -112,7 +112,6 @@ Side panel › Configuration › Alarm system › "Settings per mode": choose "H
 | --- | --- |
 | Exit delay | Time to leave before the alarm system is armed |
 | Entry delay | Time to disarm after an entry sensor opened |
-| Open sensor when arming | Block arming or bypass the open sensors |
 | Confirmation window | Time for the second sensor with "Needs a second sensor" |
 
 At the end of each action flow the element "Alarm ends" can send an own message when someone disarms (the same options as the alarm message). Whether devices return is decided by "Undo on disarm / acknowledge" in each step. The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.

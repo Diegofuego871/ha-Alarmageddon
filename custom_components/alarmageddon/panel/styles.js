@@ -249,6 +249,14 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-otx { flex: 1; min-width: 0; }
 .ag-otx b { font-weight: 500; display: block; }
 .ag-otx small { display: block; color: var(--ag-text2); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
+/* Einstellungen pro Modus: Schalter mit Text, daneben die Reiter; Punkt am Kästchen = eigener Wert dieses Modus */
+.ag-pmbar { display: flex; align-items: center; gap: 12px 22px; flex-wrap: wrap; margin: 0 0 14px; }
+.ag-pmsw { display: flex; align-items: center; gap: 12px; }
+.ag-pmsw .ag-toggle { margin: 0; flex: none; }
+.ag-box.own { position: relative; }
+.ag-box.own::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ag-warning); border: 2px solid var(--ag-card); }
+.ag-optth { white-space: normal; max-width: 92px; line-height: 1.2; font-size: 11px; }
+.ag-obtns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
 .ag-block { display: block; margin-top: 2px; font-size: 12px; }
 .ag-origin { display: inline-flex; gap: 4px; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--ag-text2); border: 0; background: transparent; padding: 0; font-family: inherit; }
 .ag-origin.own { color: var(--ag-primary); font-weight: 500; cursor: pointer; }
@@ -438,7 +446,6 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-fld input[type="range"], .ag-range { width: 100%; max-width: 320px; accent-color: var(--ag-primary); }
 .ag-input { height: 40px; border-radius: 10px; border: 1px solid var(--ag-divider); background: var(--ag-bg); color: var(--ag-text); font: inherit; padding: 0 12px; }
 textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
-.ag-open-sel { min-width: 200px; max-width: 100%; }
 .ag-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 .ag-evgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 24px; margin-top: 6px; }
 .ag-warntext { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }

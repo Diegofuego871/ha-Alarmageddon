@@ -115,16 +115,16 @@ for (const mobile of [false, true]) {
   check("Anlage: ungültig gesperrt", await s.ev(`return r.querySelector('[data-sys="save"]').disabled && r.querySelector('.ag-num.bad') !== null`));
   await input.fill("");
   await input.type("45");
-  check("Anlage: offener Sensor als Aufklappmenü, nicht als Reiterleiste", await s.ev(`const sel=r.querySelector('select[data-sys="open-sel"]'); return !!sel && sel.options.length === 2 && sel.value === 'block' && !r.querySelector('[data-seg="sys-open"]')`));
-  await (await s.el('select[data-sys="open-sel"]')).selectOption("bypass");
+  check("Anlage: keine globale Wahl für den offenen Sensor mehr (gilt je Sensor)", await s.ev(`return !r.querySelector('select[data-sys="open-sel"]') && !r.querySelector('[data-seg="sys-open"]')`));
+  await (await s.el('[data-field="confirm_window"]')).fill("30");
   await s.tap('[data-sys="save"]');
   check("Anlage: gespeichert", await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')"));
   const sys = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
   const away = sys?.mode_settings?.away;
-  check("Anlage: gesendet je Modus", away?.entry_delay === 45 && away.open_sensors === "bypass" && sys.mode_settings.home.entry_delay === 30 && sys.mode_settings.home.open_sensors === "block" && sys.night_enabled === true, JSON.stringify(sys));
+  check("Anlage: gesendet je Modus", away?.entry_delay === 45 && away.confirm_window === 30 && !("open_sensors" in away) && sys.mode_settings.home.entry_delay === 30 && sys.night_enabled === true, JSON.stringify(sys));
   // Anderer Modus: eigene Werte, Entwurf bleibt beim Wechsel der Ansicht
   await s.tap('[data-scope="home"]');
-  check("Anlage: Anwesend zeigt eigene Werte", await s.waitFor(`return r.querySelector('[data-field="entry_delay"]').value === "30" && r.querySelector('select[data-sys="open-sel"]').value === 'block'`));
+  check("Anlage: Anwesend zeigt eigene Werte", await s.waitFor(`return r.querySelector('[data-field="entry_delay"]').value === "30"`));
   await (await s.el('[data-field="confirm_window"]')).fill("20");
   await s.tap('[data-scope="away"]');
   check("Anlage: Abwesend noch mit 45", await s.ev(`return r.querySelector('[data-field="entry_delay"]').value === "45"`));
@@ -133,7 +133,7 @@ for (const mobile of [false, true]) {
   await s.tap('[data-sys="save"]');
   await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')");
   const sys2 = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
-  check("Anlage: Bestätigungsfenster Anwesend gesendet, Abwesend unberührt, keine Alarmdauer", sys2?.mode_settings?.home?.confirm_window === 20 && sys2.mode_settings.away.confirm_window === 60 && !("always" in sys2.mode_settings) && !("trigger_time" in sys2.mode_settings.home) && sys2.mode_settings.away.entry_delay === 45, JSON.stringify(sys2));
+  check("Anlage: Bestätigungsfenster Anwesend gesendet, Abwesend unberührt, keine Alarmdauer", sys2?.mode_settings?.home?.confirm_window === 20 && sys2.mode_settings.away.confirm_window === 30 && !("always" in sys2.mode_settings) && !("trigger_time" in sys2.mode_settings.home) && sys2.mode_settings.away.entry_delay === 45, JSON.stringify(sys2));
   await s.tap('[data-scope="away"]');
   // Wechsel mit Änderungen verliert nichts
   await s.tap('[data-sys="mode"][data-mode="night"]');

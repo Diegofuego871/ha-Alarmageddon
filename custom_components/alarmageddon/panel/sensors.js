@@ -19,6 +19,7 @@ export class SensorsUi {
     this.paint = null;
     this.skipClick = false;
     this.presetDraft = null;
+    this.mtab = "all"; // Ansicht: "all" (Werte für alle Modi) oder ein Modus mit eigenen Werten (nur mit eingeschaltetem Schalter)
   }
 
   _t(key, vars) {
@@ -50,13 +51,16 @@ export class SensorsUi {
         // Liste der Konfiguration: Auswahl des Nutzers plus alles, was schon in einer Zone steht oder eigene Werte hat
         sensors: new Set(this.baseSensors(s)),
         opts: JSON.parse(JSON.stringify(s.sensor_options || {})),
+        // Einstellungen pro Modus: Schalter und eigene Werte je Modus (nur Abweichungen von den Werten für alle Modi)
+        perMode: Boolean(s.per_mode_sensors),
+        modeOpts: JSON.parse(JSON.stringify(s.sensor_modes || {})),
       };
     }
     return this.draft;
   }
 
   baseSensors(s) {
-    return [...new Set([...(s.sensors || []), ...Object.values(s.zones || {}).flat(), ...Object.keys(s.sensor_options || {})])];
+    return [...new Set([...(s.sensors || []), ...Object.values(s.zones || {}).flat(), ...Object.keys(s.sensor_options || {}), ...Object.values(s.sensor_modes || {}).flatMap((m) => Object.keys(m))])];
   }
 
   reset() {
@@ -86,11 +90,26 @@ export class SensorsUi {
     for (const id of new Set([...Object.keys(baseOpts), ...Object.keys(d.opts)])) {
       if (JSON.stringify(sortKeys(baseOpts[id] || {})) !== JSON.stringify(sortKeys(d.opts[id] || {}))) out.add(id);
     }
+    const baseModes = s.sensor_modes || {};
+    for (const m of ALL_MODES) {
+      for (const id of new Set([...Object.keys(baseModes[m] || {}), ...Object.keys(d.modeOpts[m] || {})])) {
+        if (JSON.stringify(sortKeys((baseModes[m] || {})[id] || {})) !== JSON.stringify(sortKeys((d.modeOpts[m] || {})[id] || {}))) out.add(id);
+      }
+    }
     return out;
   }
 
   dirtyCount() {
-    return this.changedIds().size;
+    const s = this.system;
+    const d = this.draft;
+    const n = this.changedIds().size;
+    // Der Schalter "Einstellungen pro Modus" zählt als eigene Änderung
+    return n + (s && d && d.entry === s.entry_id && d.perMode !== Boolean(s.per_mode_sensors) ? 1 : 0);
+  }
+
+  // Modus der Ansicht: nur mit eingeschaltetem Schalter und gewähltem Reiter (sonst gelten die Werte für alle Modi)
+  activeMode() {
+    return this.draft?.perMode && this.mtab !== "all" ? this.mtab : null;
   }
 
   preset(id) {
@@ -98,13 +117,41 @@ export class SensorsUi {
   }
 
   // Wirksamer Wert: eigener Wert, sonst Voreinstellung der Sensorart
-  eff(id, key) {
+  eff(id, key, mode = null) {
+    if (mode) {
+      const m = this.draft?.modeOpts[mode]?.[id]?.[key];
+      if (m !== undefined) return m;
+    }
     const own = this.draft?.opts[id]?.[key];
     return own !== undefined ? own : this.preset(id).includes(key);
   }
 
-  own(id, key) {
-    return this.draft?.opts[id]?.[key] !== undefined;
+  own(id, key, mode = null) {
+    return mode ? this.draft?.modeOpts[mode]?.[id]?.[key] !== undefined : this.draft?.opts[id]?.[key] !== undefined;
+  }
+
+  // Eigenen Wert eines Modus setzen; entspricht er dem Wert für alle Modi, entfällt er (der Modus folgt dann späteren Änderungen mit)
+  setModeOption(mode, id, key, value) {
+    const d = this.ensureDraft();
+    const per = { ...(d.modeOpts[mode] || {}) };
+    const opts = { ...(per[id] || {}) };
+    if (value === this.eff(id, key)) delete opts[key];
+    else opts[key] = value;
+    if (Object.keys(opts).length) per[id] = opts;
+    else delete per[id];
+    if (Object.keys(per).length) d.modeOpts[mode] = per;
+    else delete d.modeOpts[mode];
+    this.saveState = null;
+  }
+
+  resetModeOption(mode, id, key) {
+    const d = this.ensureDraft();
+    const opts = d.modeOpts[mode]?.[id];
+    if (!opts) return;
+    delete opts[key];
+    if (!Object.keys(opts).length) delete d.modeOpts[mode][id];
+    if (!Object.keys(d.modeOpts[mode]).length) delete d.modeOpts[mode];
+    this.saveState = null;
   }
 
   inActive(id) {
@@ -176,6 +223,7 @@ export class SensorsUi {
         ${filters}<span class="ag-grow"></span>${narrow ? "" : `<span class="ag-hint">${ic("hand", 16)}${esc(this._t("dragHint"))}</span>`}
         <button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>
         <button class="ag-btn" data-sen="presets">${ic("tune", 18)}${esc(this._t("presets"))}</button></div>
+      <div class="ag-pmbar"></div>
       <div class="ag-sen-layout"><div class="ag-gbody"></div><div class="ag-side"></div></div><div class="ag-foot"></div>`;
   }
 
@@ -186,13 +234,75 @@ export class SensorsUi {
     const rows = this.rows();
     const narrow = this.host.hasAttribute("narrow");
     const changed = this.changedIds();
+    this.renderModeBar();
+    const mode = this.activeMode();
     if (!rows.length) {
       const none = !this.draft.sensors.size;
       this.host._setHtml(body, `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(none ? "noSensorsChosen" : "noSensors"))}</span>${none ? `<button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>` : ""}</div>`);
     }
+    else if (mode) this.host._setHtml(body, narrow ? this._modeCards(rows, mode) : this._modeTable(rows, changed, mode));
     else this.host._setHtml(body, narrow ? this._cards(rows) : this._table(rows, changed));
     this.renderSide();
     this.renderFoot();
+  }
+
+  // Schalter "Einstellungen pro Modus" und Reiter (Alle Modi, Anwesend, Abwesend, Nacht); die Modus-Reiter sind ohne Schalter gesperrt
+  renderModeBar() {
+    const h = this.host;
+    const bar = h._view?.querySelector(".ag-pmbar");
+    const d = this.draft;
+    if (!bar || !d) return;
+    if (!d.perMode) this.mtab = "all";
+    const modes = this.modes().filter((m) => ALL_MODES.includes(m));
+    if (this.mtab !== "all" && !modes.includes(this.mtab)) this.mtab = "all";
+    let tabs = h._segHtml("sen-mode", [["mt:all", this._t("senModeAll")], ...modes.map((m) => [`mt:${m}`, this._t(MODE_KEY[m]), MODE_ICON[m]])], `mt:${this.mtab}`, "data-sen", "small");
+    if (!d.perMode) tabs = tabs.replace(/<button role="tab" data-sen="mt:(home|away|night)"/g, '<button role="tab" disabled data-sen="mt:$1"');
+    h._setHtml(bar, `<div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-sen="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("senPerMode"))}"></button>
+      <div class="ag-settx"><b>${esc(this._t("senPerMode"))}</b><small>${esc(this._t(d.perMode ? "senPerModeOn" : "senPerModeHint"))}</small></div></div>${tabs}`);
+    h._placePills();
+  }
+
+  // Tabelle eines Modus: alle Optionen als Kästchen mit dem Wert dieses Modus (eigener Wert als Punkt), Klick setzt einen eigenen Wert
+  _modeTable(rows, changed, mode) {
+    const head = `<tr><th>${esc(this._t("colSensor"))}</th>${OPTIONS.map((o) => `<th class="z ag-optth">${esc(this._t(o.name))}</th>`).join("")}<th></th></tr>`;
+    let area = null;
+    const body = [];
+    for (const r of rows) {
+      if (r.area !== area) {
+        area = r.area;
+        body.push(`<tr class="grp"><td colspan="${OPTIONS.length + 2}">${esc(area)} · ${rows.filter((x) => x.area === area).length}</td></tr>`);
+      }
+      const bits = this._bits(r);
+      body.push(`<tr class="ag-clickrow ${changed.has(r.id) ? "changed" : ""} ${this.detail === r.id ? "sel" : ""}" data-row="${esc(r.id)}"><td><div class="ag-nm">${bits.av}<div>${esc(r.name)}${bits.ownDot}<small>${esc(bits.sub)}</small></div></div></td>
+        ${OPTIONS.map((o) => this._modeBox(r, o, mode)).join("")}
+        <td class="ag-acts"><div class="ag-actrow"><button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div></td></tr>`);
+    }
+    return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table">${head}${body.join("")}</table></div>`;
+  }
+
+  _modeBox(r, o, mode) {
+    const on = this.eff(r.id, o.key, mode);
+    const own = this.own(r.id, o.key, mode);
+    return `<td class="z"><button class="ag-box ${on ? "on" : ""} ${own ? "own" : ""}" data-sen="mopt" data-mode="${mode}" data-key="${o.key}" data-ent="${esc(r.id)}" role="checkbox" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(o.name)}`)}" title="${esc(this._t(own ? "originModeOwn" : "originModeAll", { mode: this._t(MODE_KEY[mode]) }))}">${on ? ic("check", 18) : ""}</button></td>`;
+  }
+
+  _modeCards(rows, mode) {
+    let area = null;
+    const out = [];
+    for (const r of rows) {
+      if (r.area !== area) {
+        area = r.area;
+        out.push(`<div class="ag-group-label">${esc(area)}</div>`);
+      }
+      const bits = this._bits(r);
+      out.push(`<div class="ag-card ag-mcard ag-clickrow" data-row="${esc(r.id)}"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>
+          <button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
+        <div class="ag-obtns">${OPTIONS.map((o) => {
+          const on = this.eff(r.id, o.key, mode);
+          return `<button class="ag-zbtn ${on ? "on" : ""} ${this.own(r.id, o.key, mode) ? "own" : ""}" data-sen="mopt" data-mode="${mode}" data-key="${o.key}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(o.icon, 16)}${esc(this._t(o.name))}</button>`;
+        }).join("")}</div></div>`);
+    }
+    return `<div class="ag-mcards">${out.join("")}</div>`;
   }
 
   _bits(r) {
@@ -279,20 +389,27 @@ export class SensorsUi {
     const meta = [this._t(label), info.area, info.integration].filter(Boolean).join(" · ");
     const zones = this.modes().map((m) => `<button class="ag-chip ${d.zones[m].has(id) ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(id)}" aria-pressed="${d.zones[m].has(id)}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("");
     const entryRow = `<div class="ag-orow"><span class="ag-oav ${d.entrySensors.has(id) ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("colEntry"))}</b><small>${esc(this._t("optEntryHint"))}</small></div>${this._entryToggle(r)}</div>`;
+    const mode = this.activeMode();
+    const modeName = mode ? this._t(MODE_KEY[mode]) : "";
     const opts = OPTIONS.map((o) => {
-      const on = this.eff(id, o.key);
-      const own = this.own(id, o.key);
-      const origin = own
-        ? `<button class="ag-origin own" data-sen="reset-opt" data-ent="${esc(id)}" data-key="${o.key}">${ic("undo", 14)} ${esc(this._t("originOwn"))} · ${esc(this._t("resetToPreset"))}</button>`
-        : `<span class="ag-origin">${esc(this._t("originPreset", { type: typeLabel }))}</span>`;
+      const on = this.eff(id, o.key, mode);
+      const own = this.own(id, o.key, mode);
+      // Im Reiter eines Modus: Herkunft ist "eigener Wert für den Modus" oder der Wert für alle Modi; sonst wie bisher die Voreinstellung der Art
+      const origin = mode
+        ? (own
+          ? `<button class="ag-origin own" data-sen="reset-mopt" data-mode="${mode}" data-ent="${esc(id)}" data-key="${o.key}">${ic("undo", 14)} ${esc(this._t("originModeOwn", { mode: modeName }))} · ${esc(this._t("resetToAll"))}</button>`
+          : `<span class="ag-origin">${esc(this._t("originModeAll"))}</span>`)
+        : (own
+          ? `<button class="ag-origin own" data-sen="reset-opt" data-ent="${esc(id)}" data-key="${o.key}">${ic("undo", 14)} ${esc(this._t("originOwn"))} · ${esc(this._t("resetToPreset"))}</button>`
+          : `<span class="ag-origin">${esc(this._t("originPreset", { type: typeLabel }))}</span>`);
       return `<div class="ag-orow"><span class="ag-oav ${on ? "on" : ""}">${ic(o.icon, 18)}</span><div class="ag-otx"><b>${esc(this._t(o.name))}</b><small>${esc(this._t(o.hint))}</small>${origin}</div>
-        <button class="ag-toggle ${on ? "on" : ""}" data-sen="opt" data-ent="${esc(id)}" data-key="${o.key}" role="switch" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(o.name)}`)}"></button></div>`;
+        <button class="ag-toggle ${on ? "on" : ""}" data-sen="${mode ? "mopt" : "opt"}" ${mode ? `data-mode="${mode}"` : ""} data-ent="${esc(id)}" data-key="${o.key}" role="switch" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(o.name)}`)}"></button></div>`;
     }).join("");
     return `<div class="ag-side-head"><span class="ag-shield" style="width:46px;height:46px;border-radius:14px;background:var(--ag-primary-soft);color:var(--ag-primary)">${ic(icon, 24)}</span>
         <div style="flex:1;min-width:0"><h3>${esc(r.name)}</h3><div class="ag-t2 ag-small">${esc(meta)}</div></div>
         <button class="ag-iconbtn" data-sen="close-detail" aria-label="${esc(this._t("cancel"))}">${ic("close", 22)}</button></div>
       <div class="ag-side-body"><div class="ag-label">${esc(this._t("zones"))}</div><div class="ag-zline">${zones}</div>
-        <div class="ag-label">${esc(this._t("behaviour"))}</div>${entryRow}${opts}
+        <div class="ag-label">${esc(this._t("behaviour"))}${mode ? ` · ${esc(modeName)}` : ""}</div>${entryRow}${opts}
         <button class="ag-btn" data-sen="remove" data-ent="${esc(id)}" style="margin-top:16px">${ic("trash", 18)}${esc(this._t("removeSensor"))}</button>
         <div class="ag-t2 ag-small" style="margin-top:6px">${esc(this._t("removeSensorHint"))}</div></div>`;
   }
@@ -346,11 +463,13 @@ export class SensorsUi {
     this.saving = true;
     this.renderFoot();
     try {
-      await h._hass.callWS({ type: "alarmageddon/save_zones", entry_id: s.entry_id, zones, entry_sensors: [...d.entrySensors].sort(), sensor_options: d.opts, sensors: [...d.sensors].sort() });
+      await h._hass.callWS({ type: "alarmageddon/save_zones", entry_id: s.entry_id, zones, entry_sensors: [...d.entrySensors].sort(), sensor_options: d.opts, sensors: [...d.sensors].sort(), per_mode_sensors: d.perMode, sensor_modes: d.modeOpts });
       // Sofort als gespeichert zeigen; die Anlage lädt neu, die Daten kommen gleich nach
       s.zones = zones;
       s.entry_sensors = [...d.entrySensors].sort();
       s.sensor_options = JSON.parse(JSON.stringify(d.opts));
+      s.per_mode_sensors = d.perMode;
+      s.sensor_modes = JSON.parse(JSON.stringify(d.modeOpts));
       s.sensors = [...d.sensors].sort();
       this.draft = null;
       this.saveState = "saved";
@@ -371,6 +490,10 @@ export class SensorsUi {
     for (const m of ALL_MODES) d.zones[m].delete(id);
     d.entrySensors.delete(id);
     delete d.opts[id];
+    for (const m of ALL_MODES) {
+      if (d.modeOpts[m]) delete d.modeOpts[m][id];
+      if (d.modeOpts[m] && !Object.keys(d.modeOpts[m]).length) delete d.modeOpts[m];
+    }
     if (this.detail === id) this.detail = null;
     this.saveState = null;
     this.render();
@@ -553,6 +676,22 @@ export class SensorsUi {
       if (d.entrySensors.has(id)) d.entrySensors.delete(id);
       else d.entrySensors.add(id);
       this.saveState = null;
+      this.render();
+    } else if (act === "permode") {
+      const d = this.ensureDraft();
+      d.perMode = !d.perMode;
+      if (!d.perMode) this.mtab = "all";
+      this.saveState = null;
+      this.render();
+    } else if (act.startsWith("mt:")) {
+      this.mtab = act.slice(3);
+      this.render();
+    } else if (act === "mopt") {
+      const mode = el.dataset.mode;
+      this.setModeOption(mode, id, el.dataset.key, !this.eff(id, el.dataset.key, mode));
+      this.render();
+    } else if (act === "reset-mopt") {
+      this.resetModeOption(el.dataset.mode, id, el.dataset.key);
       this.render();
     } else if (act === "opt") {
       this.setOption(id, el.dataset.key, !this.eff(id, el.dataset.key));

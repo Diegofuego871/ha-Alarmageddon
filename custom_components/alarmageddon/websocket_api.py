@@ -45,7 +45,8 @@ from .const import (
     CONF_SCHEDULES,
     MODE_ENABLED_DEFAULT,
     MODE_ENABLED_KEY,
-    CONF_OPEN_SENSORS,
+    CONF_PER_MODE_SENSORS,
+    CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     CONF_WORKFLOW_END,
     CONF_WORKFLOWS,
@@ -188,11 +189,13 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 # Einstellungen je Modus (0.10.0); "always": Alarm durch einen immer aktiven Sensor bei deaktivierter Anlage
                 "mode_settings": {
                     **{mode: {"exit_delay": ctl.exit_delay(mode), "entry_delay": ctl.entry_delay_for(mode),
-                              "open_sensors": ctl.open_sensors_for(mode), "confirm_window": ctl.confirm_window_for(mode)} for mode in ctl.modes},
+                              "confirm_window": ctl.confirm_window_for(mode)} for mode in ctl.modes},
                 },
                 "night_enabled": ctl.night_enabled,
                 "schedules": entry.options.get(CONF_SCHEDULES) or [],
                 "sensor_options": ctl.sensor_overrides,
+                "per_mode_sensors": bool(entry.options.get(CONF_PER_MODE_SENSORS)),
+                "sensor_modes": entry.options.get(CONF_SENSOR_MODES) or {},
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
                 "workflow_end": entry.options.get(CONF_WORKFLOW_END) or {},
                 "workflow_running": (entry.runtime_data.workflow.running or {}).get("trigger") if entry.runtime_data.workflow else None,
@@ -239,6 +242,9 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         vol.Optional("sensors"): [str],
         # Eigene Werte der Optionen pro Sensor; fehlt ein Sensor, gilt die Voreinstellung seiner Art
         vol.Optional("sensor_options"): {str: {vol.In(SENSOR_OPTIONS): bool}},
+        # Einstellungen je Modus: Schalter und eigene Werte je Modus (nur Abweichungen von den Werten für alle Modi)
+        vol.Optional("per_mode_sensors"): bool,
+        vol.Optional("sensor_modes"): {vol.In(MODES): {str: {vol.In(SENSOR_OPTIONS): bool}}},
     }
 )
 @websocket_api.require_admin
@@ -271,6 +277,13 @@ async def ws_save_zones(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
             connection.send_error(msg["id"], "invalid_entity", "Only binary sensors can have sensor options")
             return
         options[CONF_SENSOR_OPTIONS] = {e: dict(o) for e, o in msg["sensor_options"].items() if o}
+    if "per_mode_sensors" in msg:
+        options[CONF_PER_MODE_SENSORS] = msg["per_mode_sensors"]
+    if "sensor_modes" in msg:
+        if any(not e.startswith("binary_sensor.") for per in msg["sensor_modes"].values() for e in per):
+            connection.send_error(msg["id"], "invalid_entity", "Only binary sensors can have sensor options")
+            return
+        options[CONF_SENSOR_MODES] = {m: {e: dict(o) for e, o in per.items() if o} for m, per in msg["sensor_modes"].items() if any(per.values())}
     # Neuladen übernimmt der Update-Listener; der Zustand der Anlage übersteht es (RestoreEntity)
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
@@ -328,10 +341,17 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     if kinds:
         for entry in hass.config_entries.async_entries(DOMAIN):
             own = dict(entry.options.get(CONF_SENSOR_OPTIONS) or {})
-            drop = [e for e in own if sensor_type(hass, e) in kinds]
+            per_mode = {m: dict(v) for m, v in (entry.options.get(CONF_SENSOR_MODES) or {}).items()}
+            drop = [e for e in {*own, *(e for v in per_mode.values() for e in v)} if sensor_type(hass, e) in kinds]
             if drop:
                 reset += len(drop)
-                hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_SENSOR_OPTIONS: {e: o for e, o in own.items() if e not in drop}})
+                # Auch die eigenen Werte je Modus fallen weg: der Sensor folgt danach wieder der Voreinstellung
+                new_modes = {m: {e: o for e, o in v.items() if e not in drop} for m, v in per_mode.items()}
+                hass.config_entries.async_update_entry(entry, options={
+                    **entry.options,
+                    CONF_SENSOR_OPTIONS: {e: o for e, o in own.items() if e not in drop},
+                    CONF_SENSOR_MODES: {m: v for m, v in new_modes.items() if v},
+                })
     connection.send_result(msg["id"], {"presets": settings.presets, "reset": reset})
 
 
@@ -344,7 +364,7 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             vol.Optional("exit_delay"): _SECONDS,
             vol.Optional("entry_delay"): _SECONDS,
             vol.Optional("trigger_time"): _SECONDS,
-            vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),
+            vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),  # alt (bis 0.31.0), wird ignoriert
             vol.Optional("confirm_window"): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
         }},
         # Kurzform: gilt für alle Modi (und als gemeinsamer Wert für Modi, die es noch nicht gibt)
@@ -370,7 +390,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         options[f"{CONF_EXIT_DELAY_PREFIX}{mode}"] = seconds
     if "schedules" in msg:
         options[CONF_SCHEDULES] = msg["schedules"]
-    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("open_sensors", CONF_OPEN_SENSORS), ("confirm_window", CONF_CONFIRM_WINDOW)):
+    for key, conf in (("entry_delay", CONF_ENTRY_DELAY), ("confirm_window", CONF_CONFIRM_WINDOW)):
         if key in msg:
             # Kurzform: für alle Modi (der gemeinsame Wert bleibt der Rückfall)
             options[conf] = msg[key]
@@ -383,7 +403,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
             if field == "exit_delay":
                 if scope in MODES:
                     options[f"{CONF_EXIT_DELAY_PREFIX}{scope}"] = value
-            elif scope in MODES and field != "trigger_time":
+            elif scope in MODES and field not in ("trigger_time", "open_sensors"):
                 options[f"{field}_{scope}"] = value
     # Modi: mindestens einer, und nie den Modus abschalten, in dem die Anlage gerade scharf ist oder wird
     # (nach dem Neuladen fände der Zustand keinen Modus mehr und die Anlage wäre still deaktiviert)

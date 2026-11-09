@@ -14,7 +14,7 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
 from . import websocket_api
-from .const import DOMAIN, MODES
+from .const import CONF_PER_MODE_SENSORS, CONF_SENSOR_MODES, CONF_SENSOR_OPTIONS, CONF_SENSORS, CONF_ZONE_PREFIX, DOMAIN, MODES, OPT_BYPASS
 from .controller import AlarmController
 from .events import EventLog, async_remove_events
 from .recording import AlarmRecorder, async_remove_recordings
@@ -49,7 +49,40 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
+def _migrate_open_sensors(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """
+    Bis 0.31.0 gab es für die Anlage die Wahl "Offener Sensor beim Scharfschalten" (verhindern oder umgehen). Seit 0.32.0 ist "Umgehen"
+    eine Option je Sensor (auch je Modus). Alte Werte werden einmal übertragen und gelöscht; das Verhalten bleibt dasselbe.
+    """
+    options = dict(entry.options)
+    legacy = [k for k in options if k == "open_sensors" or k.startswith("open_sensors_")]
+    if not legacy:
+        return
+    common = options.pop("open_sensors", "block")
+    values = {mode: (options.pop(f"open_sensors_{mode}", None) or common) for mode in MODES}
+    sensors = {e for mode in MODES for e in options.get(f"{CONF_ZONE_PREFIX}{mode}", [])} | set(options.get(CONF_SENSORS) or [])
+    sensors |= set(options.get(CONF_SENSOR_OPTIONS) or {})
+    sensor_options = {e: dict(o) for e, o in (options.get(CONF_SENSOR_OPTIONS) or {}).items()}
+    if len(set(values.values())) == 1:
+        if next(iter(values.values())) == "bypass":
+            for entity in sensors:
+                sensor_options.setdefault(entity, {}).setdefault(OPT_BYPASS, True)
+    else:
+        # Je Modus verschieden: Einstellungen je Modus einschalten, "Umgehen" nur in den Modi, die es hatten
+        per_mode = {m: dict(v) for m, v in (options.get(CONF_SENSOR_MODES) or {}).items()}
+        for mode, value in values.items():
+            if value == "bypass":
+                for entity in sensors:
+                    per_mode.setdefault(mode, {}).setdefault(entity, {}).setdefault(OPT_BYPASS, True)
+        options[CONF_PER_MODE_SENSORS] = True
+        options[CONF_SENSOR_MODES] = per_mode
+    options[CONF_SENSOR_OPTIONS] = {e: o for e, o in sensor_options.items() if o}
+    hass.config_entries.async_update_entry(entry, options=options)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> bool:
+    # Vor dem Controller und vor dem Update-Listener: die Änderung der Optionen löst so kein zusätzliches Neuladen aus
+    _migrate_open_sensors(hass, entry)
     integration = await async_get_integration(hass, DOMAIN)
     settings = await async_get_settings(hass)
     controller = AlarmController(hass, entry, settings)

@@ -58,8 +58,8 @@
                night: ["binary_sensor.haustuer", "binary_sensor.terrassentuer"] },
       sensors: params.get("sensors") === "few" ? [] : Object.keys(SENSORS),
       entry_sensors: ["binary_sensor.haustuer"],
-      mode_settings: { home: { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 }, away: { exit_delay: 60, entry_delay: 30, open_sensors: "block", confirm_window: 60 },
-        night: { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 } }, has_code: true, code_arm_required: false, code: "1234",
+      mode_settings: { home: { exit_delay: 0, entry_delay: 30, confirm_window: 60 }, away: { exit_delay: 60, entry_delay: 30, confirm_window: 60 },
+        night: { exit_delay: 0, entry_delay: 30, confirm_window: 60 } }, has_code: true, code_arm_required: false, code: "1234",
       main_code: true, codes: [{ id: "c_anna", name: "Anna", user_id: "u_anna" }], pcodes: { c_anna: "2468" },
       schedules: [{ id: "s_nacht", enabled: true, action: "night", time: "22:30", days: [0, 1, 2, 3, 4, 5, 6] }, { id: "s_morgen", enabled: true, action: "off", time: "06:45", days: [0, 1, 2, 3, 4] }],
       night_enabled: true, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
@@ -77,7 +77,7 @@
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
       sensors: params.get("sensors") === "few" ? [] : Object.keys(SENSORS),
       entry_sensors: [],
-      mode_settings: { home: { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 }, away: { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 } }, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [],
+      mode_settings: { home: { exit_delay: 0, entry_delay: 30, confirm_window: 60 }, away: { exit_delay: 0, entry_delay: 30, confirm_window: 60 } }, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [],
       night_enabled: false, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
       events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
   ];
@@ -287,6 +287,8 @@
       sys.entry_sensors = [...msg.entry_sensors];
       if (msg.sensors) sys.sensors = [...msg.sensors];
       if (msg.sensor_options) sys.sensor_options = JSON.parse(JSON.stringify(msg.sensor_options));
+      if (typeof msg.per_mode_sensors === "boolean") sys.per_mode_sensors = msg.per_mode_sensors;
+      if (msg.sensor_modes) sys.sensor_modes = JSON.parse(JSON.stringify(msg.sensor_modes));
       return { ok: true };
     }
     if (msg.type === "alarmageddon/save_workflows") {
@@ -325,7 +327,7 @@
     }
     if (msg.type === "alarmageddon/save_system") {
       for (const [scope, vals] of Object.entries(msg.mode_settings || {})) {
-        if (!sys.mode_settings[scope]) sys.mode_settings[scope] = { exit_delay: 0, entry_delay: 30, open_sensors: "block", confirm_window: 60 };
+        if (!sys.mode_settings[scope]) sys.mode_settings[scope] = { exit_delay: 0, entry_delay: 30, confirm_window: 60 };
         if (sys.mode_settings[scope]) Object.assign(sys.mode_settings[scope], vals);
       }
       if (msg.schedules) sys.schedules = JSON.parse(JSON.stringify(msg.schedules));

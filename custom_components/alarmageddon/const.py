@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 37  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 38  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -87,6 +87,13 @@ SENSOR_CLASSES: Final = (
 CONF_SENSOR_OPTIONS: Final = "sensor_options"
 OPT_ALWAYS: Final = "always"  # löst auch unscharf aus (Rauch, Wasser, Gas)
 OPT_OPEN_OK: Final = "open_ok"  # darf beim Scharfschalten offen sein
+# Umgehen (0.32.0, ersetzt die globale Wahl "Offener Sensor beim Scharfschalten"): ist der Sensor beim Scharfschalten offen und darf nicht
+# offen sein, wird er bis zum Deaktivieren übergangen, statt das Scharfschalten zu verhindern. Nie voreingestellt.
+OPT_BYPASS: Final = "bypass"
+# Einstellungen pro Sensor je Modus (0.32.0): Schalter CONF_PER_MODE_SENSORS; dann gelten CONF_SENSOR_MODES[modus][sensor][option] vor den
+# Werten für alle Modi (CONF_SENSOR_OPTIONS) und der Voreinstellung der Sensorart.
+CONF_PER_MODE_SENSORS: Final = "per_mode_sensors"
+CONF_SENSOR_MODES: Final = "sensor_modes"
 OPT_ARM_ON_CLOSE: Final = "arm_on_close"  # Schliessen während der Ausgangsverzögerung schaltet sofort scharf
 OPT_OFFLINE_ALARM: Final = "offline_alarm"  # nicht erreichbar im scharfen Zustand löst aus
 # Löst im scharfen Zustand erst aus, wenn ein zweiter Sensor innerhalb des Zeitfensters anspricht (gegen Fehlalarm
@@ -96,12 +103,12 @@ OPT_CONFIRM: Final = "confirm"
 # Für Sensoren, die oft ohne Einbruch ansprechen (Haustier, Sonnenlicht, Batterie zur Neige). Nie voreingestellt.
 OPT_REPORT_ONLY: Final = "report_only"
 REPORT_THROTTLE: Final = 60  # höchstens eine Meldung pro Sensor und Minute
-SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM, OPT_REPORT_ONLY)
+SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_BYPASS, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM, OPT_REPORT_ONLY)
 CONF_CONFIRM_WINDOW: Final = "confirm_window"
 # Einstellungen je Modus (0.10.0): Schlüssel "<name>_<modus>" (entry_delay_away …), "always" für Alarme durch immer aktive Sensoren
 # bei deaktivierter Anlage (nur Alarmdauer). Fehlt der Wert, gilt der alte gemeinsame Schlüssel ohne Modus, dann die Grundeinstellung.
 SCOPE_ALWAYS: Final = "always"
-PER_MODE_FIELDS: Final = ("entry_delay", "open_sensors", "confirm_window")
+PER_MODE_FIELDS: Final = ("entry_delay", "confirm_window")
 DEFAULT_CONFIRM_WINDOW: Final = 60
 MAX_CONFIRM_WINDOW: Final = 600
 # Zeit nach dem Schliessen, bevor "scharf, sobald geschlossen" greift: eine zufallende Tür prellt (wie Alarmo: Kontakt-Prellen)

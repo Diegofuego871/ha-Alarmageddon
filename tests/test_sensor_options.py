@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.core import HomeAssistant
 
 from .conftest import ALARM, FRONT_DOOR, MOTION, WINDOW, setup_alarm
@@ -205,11 +207,76 @@ async def test_save_sensor_options_and_system(hass: HomeAssistant, hass_ws_clien
     await hass.async_block_till_done()
     assert entry.options["sensor_options"] == {SMOKE: {"always": True}}
     await client.send_json({"id": 2, "type": "alarmageddon/save_system", "entry_id": entry.entry_id,
-                            "exit_delay": {"away": 90}, "entry_delay": 15, "night_enabled": True, "open_sensors": "bypass"})
+                            "exit_delay": {"away": 90}, "entry_delay": 15, "night_enabled": True, "open_sensors": "bypass"})  # open_sensors: alt, ignoriert
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
     assert entry.options["exit_delay_away"] == 90 and entry.options["entry_delay"] == 15
-    assert entry.options["night_enabled"] is True and entry.options["open_sensors"] == "bypass"
+    assert entry.options["night_enabled"] is True and "open_sensors" not in entry.options
     assert hass.states.get("binary_sensor.haus_ready_to_arm_night") is not None
     await client.send_json({"id": 3, "type": "alarmageddon/save_system", "entry_id": entry.entry_id, "entry_delay": 99999})
+    assert not (await client.receive_json())["success"]
+
+
+# ----- Umgehen je Sensor und Einstellungen je Modus (0.32.0) -----
+
+async def test_bypass_is_an_option_per_sensor(hass: HomeAssistant) -> None:
+    """Nur der Sensor mit "Umgehen" wird übergangen; ein anderer offener Sensor verhindert das Scharfschalten weiter."""
+    await setup_alarm(hass, exit_delay_away=0, sensor_options={WINDOW: {"bypass": True}})
+    hass.states.async_set(WINDOW, "on")
+    await call(hass, "alarm_arm_home")
+    assert hass.states.get(ALARM).attributes["bypassed_sensors"] == [WINDOW]
+    await call(hass, "alarm_disarm")
+    hass.states.async_set(FRONT_DOOR, "on")
+    with pytest.raises(ServiceValidationError):
+        await call(hass, "alarm_arm_home")
+
+
+async def test_sensor_options_per_mode(hass: HomeAssistant) -> None:
+    """Mit Einstellungen je Modus gilt der Wert des Modus vor dem Wert für alle Modi und der Voreinstellung."""
+    await setup_alarm(
+        hass, exit_delay_away=0, per_mode_sensors=True,
+        sensor_options={WINDOW: {"bypass": True}}, sensor_modes={"away": {WINDOW: {"bypass": False}}},
+    )
+    hass.states.async_set(WINDOW, "on")
+    await call(hass, "alarm_arm_home")  # Anwesend: Wert für alle Modi, umgehen
+    assert hass.states.get(ALARM).attributes["bypassed_sensors"] == [WINDOW]
+    await call(hass, "alarm_disarm")
+    with pytest.raises(ServiceValidationError):  # Abwesend: eigener Wert, nicht umgehen
+        await call(hass, "alarm_arm_away")
+
+
+async def test_sensor_modes_ignored_when_switch_is_off(hass: HomeAssistant) -> None:
+    await setup_alarm(hass, exit_delay_away=0, sensor_options={WINDOW: {"bypass": True}}, sensor_modes={"away": {WINDOW: {"bypass": False}}})
+    hass.states.async_set(WINDOW, "on")
+    await call(hass, "alarm_arm_away")  # Schalter aus: nur die Werte für alle Modi
+    assert hass.states.get(ALARM).attributes["bypassed_sensors"] == [WINDOW]
+
+
+async def test_legacy_open_sensors_bypass_is_migrated(hass: HomeAssistant) -> None:
+    entry = await setup_alarm(hass, exit_delay_away=0, open_sensors="bypass")
+    assert "open_sensors" not in entry.options and entry.options["sensor_options"][WINDOW]["bypass"] is True
+    hass.states.async_set(WINDOW, "on")
+    await call(hass, "alarm_arm_home")
+    assert hass.states.get(ALARM).attributes["bypassed_sensors"] == [WINDOW]
+
+
+async def test_save_zones_per_mode_and_backup(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({
+        "id": 1, "type": "alarmageddon/save_zones", "entry_id": entry.entry_id,
+        "zones": {"home": [WINDOW], "away": [WINDOW]}, "entry_sensors": [],
+        "per_mode_sensors": True, "sensor_modes": {"away": {WINDOW: {"report_only": True}}, "home": {WINDOW: {}}},
+    })
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["per_mode_sensors"] is True and entry.options["sensor_modes"] == {"away": {WINDOW: {"report_only": True}}}
+    await client.send_json({"id": 2, "type": "alarmageddon/data"})
+    system = (await client.receive_json())["result"]["systems"][0]
+    assert system["per_mode_sensors"] is True and system["sensor_modes"] == {"away": {WINDOW: {"report_only": True}}}
+    await client.send_json({"id": 3, "type": "alarmageddon/export"})
+    options = (await client.receive_json())["result"]["systems"][0]["options"]
+    assert options["per_mode_sensors"] is True and options["sensor_modes"] == {"away": {WINDOW: {"report_only": True}}}
+    await client.send_json({"id": 4, "type": "alarmageddon/save_zones", "entry_id": entry.entry_id, "zones": {"home": [WINDOW], "away": [WINDOW]},
+                            "entry_sensors": [], "sensor_modes": {"away": {"sensor.kein_binary": {"always": True}}}})
     assert not (await client.receive_json())["success"]

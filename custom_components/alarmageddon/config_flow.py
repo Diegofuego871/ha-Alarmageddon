@@ -30,17 +30,14 @@ from .const import (
     CONF_EXIT_DELAY_PREFIX,
     CONF_NAME,
     CONF_NIGHT_ENABLED,
-    CONF_OPEN_SENSORS,
     CONF_ZONE_PREFIX,
     DEFAULT_ENTRY_DELAY,
     DEFAULT_EXIT_DELAY,
-    DEFAULT_OPEN_SENSORS,
     DOMAIN,
     FIELD_CODE,
     FIELD_REMOVE_CODE,
     MAX_DELAY,
     MODES,
-    OPEN_SENSOR_MODES,
 )
 
 SECTION_ZONES = "zones"
@@ -62,7 +59,6 @@ def default_options() -> dict[str, Any]:
         CONF_NIGHT_ENABLED: False,
         CONF_ENTRY_SENSORS: [],
         CONF_ENTRY_DELAY: DEFAULT_ENTRY_DELAY,
-        CONF_OPEN_SENSORS: DEFAULT_OPEN_SENSORS,
         CONF_CODE_ARM_REQUIRED: False,
     }
     return options
@@ -135,10 +131,6 @@ class AlarmageddonOptionsFlow(OptionsFlow):
                     for scope in MODES:
                         options[f"{key}_{scope}"] = options[key]
             options[CONF_NIGHT_ENABLED] = bool(behaviour.get(CONF_NIGHT_ENABLED, False))
-            options[CONF_OPEN_SENSORS] = behaviour.get(CONF_OPEN_SENSORS, DEFAULT_OPEN_SENSORS)
-            if options[CONF_OPEN_SENSORS] != current[CONF_OPEN_SENSORS]:
-                for scope in MODES:
-                    options[f"{CONF_OPEN_SENSORS}_{scope}"] = options[CONF_OPEN_SENSORS]
             options[CONF_CODE_ARM_REQUIRED] = bool(behaviour.get(CONF_CODE_ARM_REQUIRED, False))
 
             active = [m for m in MODES if m != "night" or options[CONF_NIGHT_ENABLED]]
@@ -181,11 +173,6 @@ class AlarmageddonOptionsFlow(OptionsFlow):
         behaviour = vol.Schema(
             {
                 vol.Required(CONF_NIGHT_ENABLED, default=o[CONF_NIGHT_ENABLED]): selector.BooleanSelector(),
-                vol.Required(CONF_OPEN_SENSORS, default=o[CONF_OPEN_SENSORS]): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=list(OPEN_SENSOR_MODES), translation_key=CONF_OPEN_SENSORS, mode=selector.SelectSelectorMode.LIST
-                    )
-                ),
                 vol.Required(CONF_CODE_ARM_REQUIRED, default=o[CONF_CODE_ARM_REQUIRED]): selector.BooleanSelector(),
             }
         )

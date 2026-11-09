@@ -35,10 +35,13 @@ from .const import (
     CONF_CONFIRM_WINDOW,
     DEFAULT_CONFIRM_WINDOW,
     OPT_CONFIRM,
+    CONF_PER_MODE_SENSORS,
+    CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     DEFAULT_PRESETS,
     OPT_ALWAYS,
     OPT_ARM_ON_CLOSE,
+    OPT_BYPASS,
     OPT_OFFLINE_ALARM,
     OPT_REPORT_ONLY,
     REPORT_THROTTLE,
@@ -55,17 +58,14 @@ from .const import (
     MODE_ENABLED_DEFAULT,
     MODE_ENABLED_KEY,
     CONF_NIGHT_ENABLED,
-    CONF_OPEN_SENSORS,
     CONF_ZONE_PREFIX,
     DEFAULT_ENTRY_DELAY,
     DEFAULT_EXIT_DELAY,
-    DEFAULT_OPEN_SENSORS,
     DOMAIN,
     MODE_AWAY,
     MODE_HOME,
     MODE_NIGHT,
     MODES,
-    OPEN_BYPASS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -158,9 +158,6 @@ class AlarmController:
     def entry_delay_for(self, mode: str | None) -> int:
         return int(self.mode_value(CONF_ENTRY_DELAY, mode, DEFAULT_ENTRY_DELAY))
 
-    def open_sensors_for(self, mode: str | None) -> str:
-        return str(self.mode_value(CONF_OPEN_SENSORS, mode, DEFAULT_OPEN_SENSORS))
-
     def confirm_window_for(self, mode: str | None) -> int:
         return int(self.mode_value(CONF_CONFIRM_WINDOW, mode, DEFAULT_CONFIRM_WINDOW))
 
@@ -212,32 +209,51 @@ class AlarmController:
         presets = self.settings.presets if self.settings else DEFAULT_PRESETS
         return presets.get(sensor_type(self.hass, entity_id), [])
 
-    def option(self, entity_id: str, key: str) -> bool:
-        """Eigener Wert des Sensors, sonst Voreinstellung seiner Sensorart."""
+    def option(self, entity_id: str, key: str, mode: str | None = None) -> bool:
+        """
+        Wirksamer Wert einer Sensor-Option: bei eingeschalteten Einstellungen je Modus der eigene Wert für diesen Modus, dann der eigene
+        Wert des Sensors (für alle Modi), sonst die Voreinstellung seiner Sensorart. Ohne Modus (deaktiviert) gelten die Werte für alle Modi.
+        """
+        if mode and self.options.get(CONF_PER_MODE_SENSORS):
+            own_mode = ((self.options.get(CONF_SENSOR_MODES) or {}).get(mode) or {}).get(entity_id, {}).get(key)
+            if own_mode is not None:
+                return bool(own_mode)
         own = self.sensor_overrides.get(entity_id, {}).get(key)
         if own is not None:
             return bool(own)
         return key in self.preset(entity_id)
 
-    def always_sensors(self) -> set[str]:
+    def always_sensors(self, mode: str | None = None) -> set[str]:
         """
         Immer aktiv sind Sensoren einer Zone mit dieser Option und alle, bei
         denen der Nutzer sie ausdrücklich eingeschaltet hat (Rauchmelder
-        müssen dafür in keiner Zone sein).
+        müssen dafür in keiner Zone sein). Mit Einstellungen je Modus gilt der Wert des Modus,
+        in dem die Anlage scharf ist; deaktiviert gilt der Wert für alle Modi.
         """
-        zoned = {e for mode in self.modes for e in self.zone(mode)}
+        zoned = {e for m in self.modes for e in self.zone(m)}
         explicit = {e for e, opts in self.sensor_overrides.items() if opts.get(OPT_ALWAYS)}
-        return {e for e in zoned | explicit if self.option(e, OPT_ALWAYS)}
+        if self.options.get(CONF_PER_MODE_SENSORS):
+            for per_entity in (self.options.get(CONF_SENSOR_MODES) or {}).values():
+                explicit |= {e for e, opts in per_entity.items() if opts.get(OPT_ALWAYS)}
+        return {e for e in zoned | explicit if self.option(e, OPT_ALWAYS, mode)}
 
     def all_sensors(self) -> set[str]:
-        return {entity for mode in self.modes for entity in self.zone(mode)} | self.always_sensors()
+        """Alle Sensoren, auf die gehört wird: die der Zonen und alle, die in irgendeinem Modus immer aktiv sein können."""
+        always = set(self.always_sensors())
+        for mode in self.modes:
+            always |= self.always_sensors(mode)
+        return {entity for mode in self.modes for entity in self.zone(mode)} | always
 
     def open_sensors(self, mode: str) -> list[str]:
         return [entity for entity in self.zone(mode) if (s := self.hass.states.get(entity)) and s.state == STATE_ON]
 
+    def bypassable_sensors(self, mode: str) -> list[str]:
+        """Offene Sensoren, die nicht offen sein dürfen ("darf offen sein" zählt nicht)."""
+        return [e for e in self.open_sensors(mode) if not self.option(e, OPT_OPEN_OK, mode)]
+
     def blocking_sensors(self, mode: str) -> list[str]:
-        """Offene Sensoren, die das Scharfschalten verhindern ("darf offen sein" zählt nicht)."""
-        return [e for e in self.open_sensors(mode) if not self.option(e, OPT_OPEN_OK)]
+        """Offene Sensoren, die das Scharfschalten verhindern (weder "darf offen sein" noch "umgehen")."""
+        return [e for e in self.bypassable_sensors(mode) if not self.option(e, OPT_BYPASS, mode)]
 
     def ready(self, mode: str) -> bool:
         return not self.blocking_sensors(mode)
@@ -356,8 +372,8 @@ class AlarmController:
         went_away = old.state in (STATE_ON, STATE_OFF) and new.state in GONE
 
         # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort. Mit "Stiller Alarm" nur eine Meldung.
-        if went_on and entity in self.always_sensors() and self.state != AlarmControlPanelState.TRIGGERED:
-            if self.option(entity, OPT_REPORT_ONLY):
+        if went_on and entity in self.always_sensors(self.mode) and self.state != AlarmControlPanelState.TRIGGERED:
+            if self.option(entity, OPT_REPORT_ONLY, self.mode):
                 self._report(entity)
                 return
             self.triggered_by = entity
@@ -375,14 +391,14 @@ class AlarmController:
 
         if went_away:
             self._emit("sensor_offline", sensor=entity)
-            if self.option(entity, OPT_OFFLINE_ALARM):
+            if self.option(entity, OPT_OFFLINE_ALARM, self.mode):
                 self.triggered_by = entity
                 self._go_triggered()
             return
         if not went_on:
             return
         # "Stiller Alarm": der Sensor löst nie aus (auch nicht mit Bestätigung), er meldet nur
-        if self.option(entity, OPT_REPORT_ONLY):
+        if self.option(entity, OPT_REPORT_ONLY, self.mode):
             self._report(entity)
             return
         if self.state != AlarmControlPanelState.PENDING and not self._confirmed(entity):
@@ -418,7 +434,7 @@ class AlarmController:
         angesprochen hat. Sensoren ohne die Option lösen wie immer allein aus.
         Während der Eingangsverzögerung gilt sie nicht (die Tür war der erste Sensor).
         """
-        if not self.option(entity, OPT_CONFIRM):
+        if not self.option(entity, OPT_CONFIRM, self.mode):
             return True
         now = dt_util.utcnow()
         window = timedelta(seconds=self.confirm_window)
@@ -437,7 +453,7 @@ class AlarmController:
         nicht die ganze Ausgangsverzögerung abwarten. Kurze Wartezeit gegen
         Prellen; geht die Tür wieder auf, gilt die ursprüngliche Verzögerung.
         """
-        if not self.option(entity, OPT_ARM_ON_CLOSE):
+        if not self.option(entity, OPT_ARM_ON_CLOSE, self.mode):
             return
         if went_off:
             if self._arming_deadline is None:
@@ -480,13 +496,12 @@ class AlarmController:
             raise _error("disarm_first")
         if self.code_arm_required and not skip_code:
             changed_by = await self._async_check_code(code) or changed_by
+        # Offen und nicht erlaubt: mit der Option "Umgehen" bis zum Deaktivieren übergangen, sonst verhindert der Sensor das Scharfschalten
         open_now = self.blocking_sensors(mode)
-        bypassed: set[str] = set()
         if open_now:
-            if self.open_sensors_for(mode) != OPEN_BYPASS:
-                self._emit("arm_failed", mode=mode, sensors=list(open_now))
-                raise _error("open_sensors", sensors=", ".join(self._name(e) for e in open_now))
-            bypassed = set(open_now)
+            self._emit("arm_failed", mode=mode, sensors=list(open_now))
+            raise _error("open_sensors", sensors=", ".join(self._name(e) for e in open_now))
+        bypassed = {e for e in self.bypassable_sensors(mode)}
         self._cancel_timer()
         self.mode = mode
         self._arming_deadline = None

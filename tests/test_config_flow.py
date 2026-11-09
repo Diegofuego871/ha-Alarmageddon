@@ -54,7 +54,7 @@ def _sections(**changes):
             "entry_delay": 25.0,
             "entry_sensors": [FRONT_DOOR],
         },
-        "behaviour": {"night_enabled": False, "open_sensors": "bypass", "code_arm_required": False},
+        "behaviour": {"night_enabled": False, "code_arm_required": False},
         "code_section": {"remove_code": False},
     }
     for key, value in changes.items():
@@ -71,7 +71,7 @@ async def test_options(hass: HomeAssistant) -> None:
     assert entry.options["zone_away"] == [FRONT_DOOR, WINDOW, MOTION]
     # Ganze Zahlen, wie später das Panel sie schreibt
     assert entry.options["exit_delay_away"] == 45 and isinstance(entry.options["exit_delay_away"], int)
-    assert entry.options["open_sensors"] == "bypass"
+    assert "open_sensors" not in entry.options
 
 
 async def test_options_entry_sensor_must_be_in_zone(hass: HomeAssistant) -> None:

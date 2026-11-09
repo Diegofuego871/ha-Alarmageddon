@@ -7,9 +7,24 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.32.0] - 2026-11-09
+
+Sensor-Einstellungen pro Modus, und "Umgehen" ist jetzt eine Einstellung pro Sensor.
+
+### Hinzugefügt
+
+- **Einstellungen pro Modus** in Konfiguration › Sensoren: Ein Schalter "Einstellungen pro Modus" über der Tabelle. Aus (Standard): Die Einstellungen eines Sensors gelten für alle Modi, wie bisher. Ein: Die Reiter "Alle Modi", "Anwesend", "Abwesend" und "Nacht" sind wählbar, und jeder Modus kann für **alle** Sensor-Optionen eigene Werte haben (immer aktiv, darf offen sein, umgehen, scharf sobald geschlossen, Ausfall gilt als Alarm, braucht zweiten Sensor, stiller Alarm). Der Reiter eines Modus zeigt die Tabelle mit allen Optionen als Kästchen (ein Punkt markiert einen eigenen Wert dieses Modus), das Blatt eines Sensors zeigt die Werte des gewählten Modus mit Herkunft ("Eigener Wert für Abwesend" / "Wie bei Alle Modi") und "zurück zu Alle Modi". Ohne eigenen Wert gilt der Wert für alle Modi, dann die Voreinstellung der Sensorart. Beim Ausschalten bleiben die Werte erhalten (sie gelten nur nicht). Teil des Entwurfs und der Sicherung.
+- **Neue Sensor-Option "Beim Scharfschalten umgehen":** Ist der Sensor beim Scharfschalten offen und darf nicht offen sein, wird er bis zum Deaktivieren übergangen, statt das Scharfschalten zu verhindern. Sie gehört auch zu den Voreinstellungen je Sensorart.
+
+### Entfernt
+
+- **Die Einstellung "Offener Sensor beim Scharfschalten"** (verhindern oder umgehen) der Alarmanlage, im Panel und im Optionsdialog von Home Assistant. Das entscheidet jetzt jeder Sensor und, wenn du willst, jeder Modus. Bestehende Alarmanlagen behalten ihr Verhalten: Ein früheres "Umgehen" wird einmal auf die Option "Umgehen" der Sensoren übertragen (je Modus, wenn die Modi sich unterschieden); die alten Werte verschwinden.
+
 ## [0.31.0] - 2026-11-09
 
 Meldungen können in Home Assistant stehen bleiben, "Nur melden" heisst neu "Stiller Alarm", und die Scrollposition springt nicht mehr.
+
+Nicht veröffentlicht; enthalten in 0.32.0.
 
 ### Hinzugefügt
 
@@ -470,7 +485,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[0.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.31.0
+[0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0

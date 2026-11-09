@@ -3,6 +3,7 @@
 import { check, done, launch, open, outDir, DESKTOP, PORT, R } from "../lib.mjs";
 
 const browser = await launch();
+const mobileModeCheck = (mobile) => `return r.querySelectorAll('.ag-gbody [data-sen="mopt"][data-key="bypass"]').length >= 3 && r.querySelectorAll('.ag-gbody [data-sen="mopt"][data-mode="away"]').length >= 3 * 7`;
 for (const lang of ["de", "en"]) {
   for (const mobile of [false, true]) {
     const tag = `${lang}/${mobile ? "Handy" : "Desktop"}`;
@@ -157,6 +158,28 @@ for (const lang of ["de", "en"]) {
       const away = wfSent?.workflow_end?.away;
       check(`${tag}: workflow_end gesendet (nur die eigene Meldung)`, away?.notify?.enabled === true && away.notify.title === "Ruhe in {name}" && away.notify.critical === true && !("undo" in away) && !wfSent.workflow_end.home.notify, JSON.stringify(wfSent?.workflow_end));
       await s.tap('[data-sub="sensors"]');
+
+      // Einstellungen pro Modus in der Sensorübersicht: Schalter (aus), Modus-Reiter gesperrt, danach eigene Werte je Modus
+      check(`${tag}: Schalter "Einstellungen pro Modus" aus, Modus-Reiter gesperrt`, await s.ev("const sw=r.querySelector('[data-sen=\"permode\"]'); const t=[...r.querySelectorAll('[data-seg=\"sen-mode\"] > button')]; return sw.getAttribute('aria-checked') === 'false' && t.length >= 3 && t[0].dataset.sen === 'mt:all' && t.slice(1).every((b) => b.disabled) && !t[0].disabled"));
+      await s.tap('[data-sen="permode"]');
+      check(`${tag}: Schalter ein: Modus-Reiter wählbar, Entwurf (Punkt am Reiter)`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"sen-mode\"] > button')]; return t.slice(1).every((b) => !b.disabled) && r.querySelector('[data-sub=\"sensors\"]').classList.contains('has-edit')"));
+      await s.tap('[data-sen="mt:away"]');
+      check(`${tag}: Reiter Abwesend zeigt alle Optionen je Sensor, auch "Umgehen"`, await s.waitFor(mobileModeCheck(mobile)));
+      const modeBox = mobile ? '.ag-gbody [data-sen="mopt"][data-key="bypass"][data-mode="away"]' : '.ag-gbody [data-sen="mopt"][data-key="bypass"][data-mode="away"]';
+      const bypassEnt = await s.ev(`return r.querySelector('${modeBox}').dataset.ent`);
+      await s.tap(`${modeBox}[data-ent="${bypassEnt}"]`);
+      check(`${tag}: Klick setzt einen eigenen Wert für den Modus (Punkt/Herkunft)`, await s.waitFor(`const b=r.querySelector('${modeBox}[data-ent="${bypassEnt}"]'); return b.classList.contains('own') && (b.getAttribute('aria-checked') || b.getAttribute('aria-pressed')) === 'true'`));
+      await s.tap('[data-sen="mt:all"]');
+      await s.tap('[data-sen="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
+      const pmSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");
+      check(`${tag}: per_mode_sensors und sensor_modes gesendet (nur die Abweichung)`, pmSent?.per_mode_sensors === true && pmSent.sensor_modes?.away?.[bypassEnt]?.bypass === true && !pmSent.sensor_modes.home, JSON.stringify(pmSent?.sensor_modes));
+      // Schalter wieder aus: die Werte bleiben gespeichert, Reiter gesperrt
+      await s.tap('[data-sen="permode"]');
+      await s.tap('[data-sen="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
+      const pmOff = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");
+      check(`${tag}: Schalter aus gespeichert, eigene Werte bleiben erhalten`, pmOff?.per_mode_sensors === false && pmOff.sensor_modes?.away?.[bypassEnt]?.bypass === true);
 
       // Meldungen je Modus (Unterreiter): eigene Werte für Arten im scharfen Zustand, Herkunft, Zurücksetzen, Entwurf
       await s.tap('[data-sub="notify"]');

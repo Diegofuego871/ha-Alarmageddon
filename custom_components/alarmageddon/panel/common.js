@@ -93,6 +93,7 @@ export const isConnectionError = (err) => err === 1 || err === 3 || err?.code ==
 export const OPTIONS = [
   { key: "always", icon: "flash", name: "optAlways", hint: "optAlwaysHint", short: "optAlwaysShort" },
   { key: "open_ok", icon: "doorOpen", name: "optOpenOk", hint: "optOpenOkHint", short: "optOpenOkShort" },
+  { key: "bypass", icon: "shieldOff", name: "optBypass", hint: "optBypassHint", short: "optBypassShort" },
   { key: "arm_on_close", icon: "lockClosed", name: "optArmOnClose", hint: "optArmOnCloseHint", short: "optArmOnCloseShort" },
   { key: "offline_alarm", icon: "offline", name: "optOffline", hint: "optOfflineHint", short: "optOfflineShort" },
   { key: "confirm", icon: "groups", name: "optConfirm", hint: "optConfirmHint", short: "optConfirmShort" },

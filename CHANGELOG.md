@@ -7,9 +7,24 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.32.0] - 2026-11-09
+
+Sensor settings per mode, and "Bypass" is now a setting per sensor.
+
+### Added
+
+- **Settings per mode** in Configuration › Sensors: a switch "Settings per mode" above the table. Off (default): the settings of a sensor apply to all modes, as before. On: the tabs "All modes", "Home", "Away" and "Night" become selectable, and every mode can have its own values for **all** sensor options (always active, may be open, bypass, arm as soon as closed, failure counts as alarm, needs a second sensor, silent alarm). The tab of a mode shows the table with all options as checkboxes (a dot marks an own value of this mode), the sheet of a sensor shows the values of the chosen mode with their origin ("Own value for Away" / "Same as in All modes") and "back to All modes". Without an own value the value for all modes applies, then the default of the sensor type. Switching off keeps the values (they just do not apply). Part of the draft and the backup.
+- **New sensor option "Bypass when arming":** if the sensor is open when arming and may not be open, it is skipped until disarmed, instead of preventing arming. It is also part of the defaults per sensor type.
+
+### Removed
+
+- **The setting "Open sensor when arming"** (block or bypass) of the alarm system, in the panel and in the options dialog of Home Assistant. It is now decided per sensor and, if you want, per mode. Existing alarm systems keep their behaviour: a former "Bypass" is moved once to the option "Bypass" of the sensors (per mode, if the modes differed); the old values disappear.
+
 ## [0.31.0] - 2026-11-09
 
 Notifications can stay in Home Assistant, "Report only" is now "Silent alarm", and the scroll position no longer jumps.
+
+Not released; included in 0.32.0.
 
 ### Added
 
@@ -470,7 +485,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[0.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.31.0
+[0.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.32.0
 [0.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.30.0
 [0.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.29.0
 [0.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.27.0

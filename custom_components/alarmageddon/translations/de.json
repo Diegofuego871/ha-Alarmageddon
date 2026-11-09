@@ -67,12 +67,10 @@
             "description": "Modi und Scharfschalten.",
             "data": {
               "night_enabled": "Modus \"Nacht\"",
-              "open_sensors": "Offener Sensor beim Scharfschalten",
               "code_arm_required": "Code zum Scharfschalten"
             },
             "data_description": {
               "night_enabled": "Ergänzt den Modus \"Nacht\" mit eigener Zone. Standardmässig aus.",
-              "open_sensors": "Was passiert, wenn beim Scharfschalten ein Sensor der Zone offen ist.",
               "code_arm_required": "Auch das Scharfschalten verlangt den Code. Nur mit Code möglich."
             }
           },
@@ -96,14 +94,6 @@
       "invalid_code_format": "Der Code muss 4 bis 8 Ziffern haben.",
       "code_and_remove": "Gib einen neuen Code ein oder entferne den Code, nicht beides.",
       "code_missing": "\"Code zum Scharfschalten\" braucht einen Code."
-    }
-  },
-  "selector": {
-    "open_sensors": {
-      "options": {
-        "block": "Scharfschalten verhindern",
-        "bypass": "Offene Sensoren bis zum Deaktivieren umgehen"
-      }
     }
   },
   "entity": {

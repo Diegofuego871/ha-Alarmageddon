@@ -67,12 +67,10 @@
             "description": "Modes and arming.",
             "data": {
               "night_enabled": "Night mode",
-              "open_sensors": "Open sensor when arming",
               "code_arm_required": "Code required to arm"
             },
             "data_description": {
               "night_enabled": "Adds the mode \"Night\" with its own zone. Off by default.",
-              "open_sensors": "What happens if a sensor of the zone is open when arming.",
               "code_arm_required": "Arming also asks for the code. Only possible with a code."
             }
           },
@@ -96,14 +94,6 @@
       "invalid_code_format": "The code must have 4 to 8 digits.",
       "code_and_remove": "Enter a new code or remove the code, not both.",
       "code_missing": "\"Code required to arm\" needs a code."
-    }
-  },
-  "selector": {
-    "open_sensors": {
-      "options": {
-        "block": "Block arming",
-        "bypass": "Bypass open sensors until disarmed"
-      }
     }
   },
   "entity": {
