@@ -77,11 +77,11 @@ for (const mobile of [false, true]) {
   await s.tap(`${sheet} [data-sen="reset-opt"][data-key="offline_alarm"]`);
   check(`${tag}: zurück zur Voreinstellung`, await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Keine Änderungen')"));
   // Bewegungsmelder: "darf offen sein" aus der Voreinstellung ausschalten und speichern
-  if (mobile) await s.tap('[data-sen="close-detail"]');
+  if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
   await s.tap('[data-sen="detail"][data-ent="binary_sensor.bewegung_flur"]');
   await s.waitFor(`return r.querySelector('${sheet}')?.innerText.includes('Bewegung Flur')`);
   await s.tap(`${sheet} [data-sen="opt"][data-key="open_ok"]`);
-  if (mobile) await s.tap('#ag-sheet [data-sen="close-detail"]');
+  if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
   await s.tap('[data-sen="save"]');
   check(`${tag}: gespeichert`, await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert')"));
   const saved = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");

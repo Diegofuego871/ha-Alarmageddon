@@ -32,7 +32,7 @@ for (const lang of ["de", "en"]) {
     await s.tap(`${sheet} [data-sen="opt"][data-key="confirm"]`);
     check(`${tag}: Option "Stiller Alarm" im Seitenblatt`, await s.ev(`return !!r.querySelector('${sheet} [data-sen="opt"][data-key="report_only"]')`));
     await s.tap(`${sheet} [data-sen="opt"][data-key="report_only"]`);
-    if (mobile) await s.tap('#ag-sheet [data-sen="close-detail"]');
+    if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
     await s.tap('[data-sen="save"]');
     check(`${tag}: Option gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`));
     const zones = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_zones').at(-1)");

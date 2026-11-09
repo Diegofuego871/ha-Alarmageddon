@@ -33,6 +33,7 @@ A tidier log, especially on the phone.
 
 ### Fixed
 
+- **Sensor sheet on the phone:** only one X instead of two, and the sheet no longer runs 22 px over the right edge (the bar with "Done" was too wide, which shifted the content to the left).
 - **Alarm flow:** more space below the plus buttons too (between the plus and the next action).
 - **Phone:** the four tabs of the settings per mode (modes and "Always active") sit in two rows instead of overlapping.
 - **Several alarm systems at startup:** when Home Assistant loaded two or more alarm systems at once, one of them failed with "Setup error" ("Overwriting panel alarmageddon") and was missing in the panel. The panel is now registered once, safely.

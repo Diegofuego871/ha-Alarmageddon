@@ -110,7 +110,8 @@ for (const lang of ["de", "en"]) {
       } else {
         await s.tap('.ag-mcard[data-row="binary_sensor.fenster_bad"] .ag-nm, .ag-mcard[data-row="binary_sensor.fenster_bad"] .ag-mcard-top');
         check(`${tag}: Karte antippen öffnet das Blatt`, await s.waitFor("return r.getElementById('ag-sheet').open"));
-        await s.tap('#ag-sheet [data-sen="close-detail"]');
+        check(`${tag}: Blatt hat nur ein X und läuft nicht über den Rand`, await s.ev("const d=r.getElementById('ag-sheet'); const xs=[...d.querySelectorAll('.ag-dlg-x, .ag-side-head [data-sen=\"close-detail\"]')].filter((e) => e.getBoundingClientRect().width > 0); return xs.length === 1 && d.scrollWidth <= d.clientWidth"));
+        await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
       }
 
       // Scrollposition bleibt beim Markieren (kein Sprung nach oben)

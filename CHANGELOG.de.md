@@ -33,6 +33,7 @@ Ein aufgeräumteres Protokoll, besonders auf dem Handy.
 
 ### Behoben
 
+- **Sensor-Blatt auf dem Handy:** Nur noch ein X statt zwei, und das Blatt läuft nicht mehr 22 px über den rechten Rand (die Leiste mit "Fertig" war zu breit, was den Inhalt nach links verschob).
 - **Alarmablauf:** Auch unter den Plus-Knöpfen mehr Abstand (zwischen Plus und nächster Aktion).
 - **Handy:** Die vier Reiter der Einstellungen pro Modus (Modi und "Immer aktiv") stehen in zwei Reihen statt sich zu überlappen.
 - **Mehrere Alarmanlagen beim Start:** Lud Home Assistant zwei oder mehr Alarmanlagen zugleich, scheiterte eine mit "Einrichtungsfehler" ("Overwriting panel alarmageddon") und fehlte im Panel. Das Panel wird jetzt sicher nur einmal registriert.

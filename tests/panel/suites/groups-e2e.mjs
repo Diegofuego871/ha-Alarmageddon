@@ -146,7 +146,7 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-sen="detail"][data-ent="binary_sensor.fenster_bad"]');
     await s.waitFor(`return r.getElementById("ag-sheet").open`);
     await s.tap('#ag-sheet [data-sen="entry"][data-ent="binary_sensor.fenster_bad"]');
-    await s.tap('#ag-sheet [data-sen="close-detail"]');
+    await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
     check(`${tag}: Blatt geschlossen`, await s.waitFor(`return !r.getElementById("ag-sheet").open`));
     await s.tap('[data-sen="save"]');
     check(`${tag}: Gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes(${JSON.stringify(t.saved)})`));

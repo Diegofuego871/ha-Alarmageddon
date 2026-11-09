@@ -603,6 +603,9 @@ select.ag-select[data-act="system"] { height: 52px; padding-left: 22px; font-siz
 /* Blatt (Handy): X rechts oben im Kopf, der Kopf lässt Platz dafür */
 dialog.ag-sheetdlg .ag-dlg-x { top: 8px; right: 10px; width: 38px; height: 38px; }
 dialog.ag-sheetdlg .ag-side-head { padding-right: 58px; }
+/* Im Blatt hat der Dialog schon sein X oben rechts: das X der Kopfzeile (für das Seitenblatt am Computer) entfällt. Die Leiste "Fertig" liegt ohne den Randausgleich der anderen Dialoge bündig (sonst wird das Blatt 22 px zu breit) */
+dialog.ag-sheetdlg .ag-side-head [data-sen="close-detail"] { display: none; }
+dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 .ag-origin { display: block; margin-top: 2px; color: var(--ag-text2); font-size: 12px; }
 .ag-origin.own { color: var(--ag-primary); }
 /* Kapitel im Dialog: kleinerer Titel, Karte mit Innenabstand */
