@@ -64,6 +64,17 @@ for (const lang of ["de", "en"]) {
     const calls = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/arm')");
     check(`${tag}: Aufrufe`, JSON.stringify(calls.map((c) => [c.entry_id, c.mode, c.code || null])) === JSON.stringify([["e_garage", "away", null], ["e_garage", "home", null], ["e_haus", "off", null], ["e_haus", "off", "9999"], ["e_haus", "off", "1234"]]), JSON.stringify(calls));
 
+    // Kachel der Anlage: scharf roter Verlauf von unten, mit dem Modus dunkler (Anwesend < Nacht < Abwesend); deaktiviert grüner Verlauf
+    const tint = async (state, mode) => {
+      await s.sim(`window.__setState("alarm_control_panel.haus", "${state}", { arm_mode: ${mode ? `"${mode}"` : "null"}, changed_by: "Diego", deadline: null })`);
+      await s.page.waitForTimeout(300);
+      return s.ev(`const c=r.querySelector('[data-system="e_haus"]'); const bg=getComputedStyle(c).backgroundImage; const m=bg.match(/color\\(srgb ([0-9. ]+) \\/ ([0-9.]+)\\)/); return bg.includes('gradient') && m ? { a: parseFloat(m[2]), rgb: m[1].split(' ').map(Number) } : null`);
+    };
+    const aHome = await tint("armed_home", "home"); const aNight = await tint("armed_night", "night"); const aAway = await tint("armed_away", "away"); const aOff = await tint("disarmed", null);
+    check(`${tag}: Kachel scharf: roter Verlauf, dunkler je Modus (Anwesend < Nacht < Abwesend)`, !!aHome && !!aNight && !!aAway && aHome.a > 0.05 && aHome.a < aNight.a && aNight.a < aAway.a && aHome.rgb[0] > aHome.rgb[1], JSON.stringify([aHome, aNight, aAway]));
+    check(`${tag}: Kachel deaktiviert: grüner Verlauf`, !!aOff && aOff.rgb[1] > aOff.rgb[0], JSON.stringify(aOff));
+    await s.sim(`window.__setState("alarm_control_panel.haus", "disarmed", { arm_mode: null, changed_by: "Diego", deadline: null })`);
+
     // Alarm: rotes Band zuoberst mit Deaktivieren
     await s.sim(`window.__setState("alarm_control_panel.haus", "triggered", { arm_mode: "home", triggered_by: "binary_sensor.fenster_kueche" })`);
     check(`${tag}: Alarm-Band`, await s.waitFor(`const a=r.querySelector('.ag-alarm'); return a && a.innerText.includes(${JSON.stringify(t.alarm)}) && a.innerText.includes("Fenster Küche") && a.innerText.includes(${JSON.stringify(t.disarm)})`));

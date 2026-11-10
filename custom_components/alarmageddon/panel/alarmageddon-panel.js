@@ -799,7 +799,9 @@ class AlarmageddonPanel extends HTMLElement {
       const open = [...new Set(per.flatMap(([, b]) => b))];
       blockers = open.map((id) => `<div class="ag-row"><span class="ag-mini warn">${ic((DC[this._sensor(id).device_class] || ["sensor"])[0], 16)}</span><span class="ag-grow">${esc(this._t("isOpen", { name: this._name(id) }))}</span></div>`).join("");
     }
-    return `<div class="ag-card ag-sys" data-system="${esc(s.entry_id)}"><div class="ag-sys-top"><div class="ag-shield" style="background:${look.soft};color:${look.color}">${ic(look.icon, 28)}</div>
+    // Scharf: schwacher roter Verlauf von unten wie bei den Karten der Sensoren; je Modus dunkler (Anwesend hell, Nacht mittel, Abwesend dunkel). Deaktiviert: grün
+    const armedClass = ARMED[state] ? ` ag-armed ag-armed-${ARMED[state]}` : state === "disarmed" ? " ag-disarmed" : "";
+    return `<div class="ag-card ag-sys${armedClass}" data-system="${esc(s.entry_id)}"><div class="ag-sys-top"><div class="ag-shield" style="background:${look.soft};color:${look.color}">${ic(look.icon, 28)}</div>
       <div style="flex:1;min-width:0"><h2>${esc(s.title)}</h2><div class="ag-sys-state" style="color:${look.color}">${esc(look.text)}</div><div class="ag-sys-sub">${sub.join(" · ")}</div></div>
       <button class="ag-cbtn" data-act="more" data-entity="${esc(s.entity_id)}" aria-label="${esc(s.title)}">${ic("chevRight", 16)}</button></div>
       ${seg}${ready || blockers ? `<div class="ag-rows">${ready}${blockers}</div>` : ""}</div>`;

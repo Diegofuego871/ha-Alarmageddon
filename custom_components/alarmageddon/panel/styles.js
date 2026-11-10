@@ -228,6 +228,12 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-lrow, .ag-lcard { cursor: pointer; }
 .ag-lrow:hover td { background: var(--ag-hover); }
 /* Offen oder Bewegung erkannt: schwacher Farbverlauf von unten in der Warnfarbe (Karte und Zeile) */
+/* Karte der Anlage, wenn sie scharf ist: roter Verlauf von unten, mit dem Modus dunkler */
+.ag-sys.ag-armed { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-error) var(--ag-armed-tint, 14%), transparent), transparent 80%); }
+.ag-sys.ag-disarmed { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-success) 14%, transparent), transparent 80%); }
+.ag-sys.ag-armed-home { --ag-armed-tint: 13%; }
+.ag-sys.ag-armed-night { --ag-armed-tint: 22%; }
+.ag-sys.ag-armed-away { --ag-armed-tint: 32%; }
 .ag-lcard.act { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-warning) 16%, transparent), transparent 75%); }
 .ag-lrow.act td { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-warning) 14%, transparent), transparent 90%); }
 .ag-lrow.act:hover td { background-color: var(--ag-hover); }

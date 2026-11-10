@@ -18,6 +18,10 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - 1.1.0 (1.0.1 übersprungen, nie getaggt): Eingangsverzögerung pro Sensor (`controller.sensor_entry_delay`, `schemas.SENSOR_VALUES`, Option `entry_delay` in `sensor_options`/`sensor_modes`, Blatt `sensors.js _delayRow`, bleibt bei "Auf alle Sensoren anwenden"); eigene Empfänger je Push-Schritt und bei "Alarm endet" (`targets`, `notify._alarm_recipients`, `actions.js _ntRecipients`); Emoji in allen Standardtiteln (Test `test_every_default_title_starts_with_an_emoji`). In 1.2.0 umgesetzt.
 - 1.0.1: Kopfzeile (`.ag-headsys`, `_fillHeadSys`) in jedem Reiter; `.ag-sen-layout.open` mit `minmax(420px, 1fr)` und rechtsbündigem Blatt; Sortierschlüssel `state` mit Rang und Text (`_stateLabel`); Pfeil der Auswahlfelder als SVG; Abstand der Leiste `.ag-pmstick` als Innenabstand.
 
+## Stand (1.8.0, Kachel der Anlage mit Farbverlauf)
+
+Kachel der Anlage in der Übersicht (`_sysCard`): scharf roter Verlauf von unten (`ag-armed-<modus>`, `--ag-armed-tint`: Anwesend 13 %, Nacht 22 %, Abwesend 32 %), deaktiviert grüner (`ag-disarmed`, 14 %); sonst keiner (Verzögerung, Alarm). Test in `overview-e2e.mjs`.
+
 ## Stand (1.7.0, "Immer aktiv" und Modus: eine Regel, zwei Abläufe; Punkte; Linien im Ablauf)
 
 Ausführlich: `docs/UEBERGABE-1.7.0.md` (Entscheide des Nutzers, Regeln, Dateien, Tests, offene Punkte).

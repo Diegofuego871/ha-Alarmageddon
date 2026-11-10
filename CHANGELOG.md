@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] - 2026-11-10
+
+### Added
+
+- **Overview, tile of the alarm system:** the tile gets a faint gradient from the bottom, like the cards of the sensors: red while the alarm system is armed (darker with the mode: light for Home, medium for Night, dark for Away), green while it is disarmed.
+
 ## [1.7.0] - 2026-11-10
 
 One clear rule for sensors that are "Always active" and also in the zone of a mode, both flows of alarm actions side by side, consistent dots for unsaved changes, a flow drawing that can no longer go wrong, and the sensor cards on the overview grouped the way you choose.
@@ -812,6 +818,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.7.0
 [1.6.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.5
 [1.6.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.4
