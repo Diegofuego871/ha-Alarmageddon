@@ -29,7 +29,7 @@ for (const lang of ["de", "en"]) {
       if (!mobile) check(`${tag}: Umschalter Liste/Karten mit Kapsel`, await s.ev("const g=r.querySelector('[data-seg=\"layout\"]'); return !!g && !!g.querySelector('.ag-pill') && g.querySelectorAll('button').length === 2 && g.querySelector('button.on').dataset.listLayout === 'list'"));
       check(`${tag}: Standard ist die Liste`, await s.ev("return !!r.querySelector('.ag-ltable') && !r.querySelector('.ag-mcards')"));
       await setLayout("cards");
-      check(`${tag}: Karten, eine je Sensor${mobile ? "" : " (Raster)"}`, await s.waitFor(`const g=r.querySelector('.ag-mcards${mobile ? "" : ".grid"}'); return !!g && g.querySelectorAll('.ag-lcard').length === 9 && !r.querySelector('.ag-ltable')`));
+      check(`${tag}: Karten, eine je Sensor${mobile ? "" : " (Raster)"}`, await s.waitFor(`const g=r.querySelector('.ag-mcards${mobile ? "" : ".grid"}'); return !!g && g.querySelectorAll('.ag-lcard').length === 10 && !r.querySelector('.ag-ltable')`));
       check(`${tag}: Karten gruppiert nach Bereich`, await s.ev("return r.querySelectorAll('.ag-mcards .ag-group-label').length >= 3"));
       check(`${tag}: Karte mit allen Angaben`, await s.ev("const c=[...r.querySelectorAll('.ag-lcard')].find((x) => x.innerText.includes('Haustür')); const t=c.innerText; return t.includes('Haustür') && !!c.querySelector('.ag-tag') && !!c.querySelector('.ag-bat') && !!c.querySelector('.ag-lz') && !!c.querySelector('.ag-lfacts')"));
       if (!mobile) check(`${tag}: mehrere Spalten nebeneinander`, await s.ev("const cs=[...r.querySelectorAll('.ag-mcards.grid .ag-lcard')].slice(0, 3).map((c) => Math.round(c.getBoundingClientRect().top)); return new Set(cs).size < 3"));

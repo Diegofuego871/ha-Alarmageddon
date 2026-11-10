@@ -66,6 +66,7 @@ from .const import (
     MODES,
     OPEN_SENSOR_MODES,
     SENSOR_CLASSES,
+    OPT_ALWAYS_OFF,
     OPT_ENTRY_DELAY,
     SENSOR_OPTIONS,
     SENSOR_TYPES,
@@ -415,9 +416,9 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             if drop:
                 reset += len(drop)
                 # Auch die eigenen Werte je Modus fallen weg: der Sensor folgt danach wieder der Voreinstellung
-                # Die eigene Eingangsverzögerung gehört nicht zu den Voreinstellungen und bleibt stehen
+                # Eigene Eingangsverzögerung und "Immer aktiv ignorieren" gehören nicht zu den Voreinstellungen und bleiben stehen
                 def keep(o: dict[str, Any]) -> dict[str, Any]:
-                    return {k: v for k, v in o.items() if k == OPT_ENTRY_DELAY} if isinstance(o, dict) else {}
+                    return {k: v for k, v in o.items() if k in (OPT_ENTRY_DELAY, OPT_ALWAYS_OFF)} if isinstance(o, dict) else {}
 
                 new_modes = {m: {e: (keep(o) if e in drop else o) for e, o in v.items() if e not in drop or keep(o)} for m, v in per_mode.items()}
                 kept_own = {e: (keep(o) if e in drop else o) for e, o in own.items() if e not in drop or keep(o)}

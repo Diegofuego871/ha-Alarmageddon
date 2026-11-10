@@ -298,7 +298,7 @@ async def test_save_zones_per_mode_and_backup(hass: HomeAssistant, hass_ws_clien
 
 
 async def test_always_active_tab_has_own_settings(hass: HomeAssistant) -> None:
-    """Der Reiter "Immer aktiv": gilt bei deaktivierter Anlage; "Immer aktiv" selbst hängt nie an einem Modus."""
+    """Der Reiter "Immer aktiv": gilt in jedem Zustand der Anlage für Sensoren mit "Immer aktiv"; "Immer aktiv" selbst hängt nie an einem Modus."""
     _classes(hass)
     await setup_alarm(
         hass, exit_delay_away=0, per_mode_sensors=True,
@@ -309,10 +309,11 @@ async def test_always_active_tab_has_own_settings(hass: HomeAssistant) -> None:
     await open_sensor(hass, SMOKE)
     assert state(hass) == AlarmControlPanelState.DISARMED
     await open_sensor(hass, SMOKE, "off")
-    # Scharf in Abwesend: der Wert "stiller Alarm" gilt nur im Reiter "Immer aktiv", also löst der Rauchmelder aus
+    # Scharf in Abwesend (seit 1.4.0): "Immer aktiv" ist immer aktiv und liest seine Optionen immer aus dem Reiter "Immer aktiv":
+    # der Rauchmelder meldet auch scharf nur still
     await call(hass, "alarm_arm_away")
     await open_sensor(hass, SMOKE)
-    assert state(hass) == AlarmControlPanelState.TRIGGERED
+    assert state(hass) == AlarmControlPanelState.ARMED_AWAY
 
 
 async def test_always_scope_is_accepted_and_saved(hass: HomeAssistant, hass_ws_client) -> None:

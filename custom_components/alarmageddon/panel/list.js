@@ -167,9 +167,16 @@ export class ListUi {
     const out = new Map();
     for (const s of this.host._systems()) {
       const ids = new Set(s.modes.flatMap((m) => s.zones?.[m] || []));
-      for (const [id, o] of Object.entries(s.sensor_options || {})) if (o?.always) ids.add(id);
-      // "Immer aktiv" aus dem Bereich "always" der Einstellungen je Modus (wie controller.always_sensors)
-      if (s.per_mode_sensors) for (const [id, o] of Object.entries(s.sensor_modes?.always || {})) if (o?.always) ids.add(id);
+      // "Immer aktiv" wie controller.always_sensors: alle Sensoren der Anlage (Liste der Konfiguration, Zonen, eigene Werte), bei denen
+      // die Option wirkt, also mit eigenem Wert (je Modus: Reiter "Immer aktiv") oder sonst der Voreinstellung der Sensorart
+      const known = new Set([...ids, ...(s.sensors || []), ...Object.keys(s.sensor_options || {})]);
+      if (s.per_mode_sensors) for (const per of Object.values(s.sensor_modes || {})) for (const id of Object.keys(per || {})) known.add(id);
+      const presets = this.host._data?.presets || {};
+      for (const id of known) {
+        const own = (s.per_mode_sensors ? s.sensor_modes?.always?.[id]?.always : undefined) ?? s.sensor_options?.[id]?.always;
+        const on = own !== undefined ? own : (presets[this.host._sensor(id).type || "other"] || []).includes("always");
+        if (on) ids.add(id);
+      }
       for (const id of ids) {
         if (!out.has(id)) out.set(id, []);
         out.get(id).push({ entry: s.entry_id, title: s.title, modes: s.modes.filter((m) => (s.zones?.[m] || []).includes(id)) });

@@ -7,6 +7,23 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-10
+
+### Added
+
+- **Copy actions from another mode:** in Configuration › Actions, with "Settings per mode" on, the footer offers "Copy actions from …". It replaces all actions of the open tab (steps and "Alarm ends") with those of another mode or "Always active", after a confirmation if the tab has its own actions. Nothing is saved until you press "Save".
+- **Switch "Ignore 'Always active'":** for a sensor that is "Always active" and also in the zone of a mode, a switch in the sensor options (per mode with "Settings per mode"; default off) lets only the rule of that mode apply while the alarm system is armed in it. It does nothing in modes whose zone does not contain the sensor, so a smoke detector stays active there.
+
+### Changed
+
+- **"Always active" is always active:** a sensor with this option triggers in every state of the alarm system, armed or disarmed, and at once. Its options (for example "Silent alarm") now always come from the tab "Always active", also while the alarm system is armed. Before, an armed alarm system read them from the tab of the active mode. If the sensor is also in the zone of the armed mode, both rules run and the stronger effect wins (an alarm beats a silent report).
+
+### Fixed
+
+- **Smoke and water detectors were not listened to or shown:** a sensor whose type is "always active" by default (smoke, water, gas) was only listened to when it was in a zone or had an own value "Always active". One that was merely in the list of the configuration did not trigger an alarm and did not appear in the overview. Now every sensor of the system for which "Always active" applies (own value or default of its type) is listened to and listed.
+- **Dialog "View":** the field "Sort by" was squeezed thin; it now has the same height and rounding as the selection bars above it.
+- **Flow graphic:** after a step that "runs alongside", the dashed line reached into the card above and ran on top of the solid line. It now sits exactly between the card and the plus button, and the solid line no longer shows through.
+
 ## [1.3.0] - 2026-11-10
 
 ### Added
@@ -16,11 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - **Button "Acknowledge" in the push message is on by default** (it can be switched off per push step). It switches nothing off, so unlike "Disarm" it needs no opt-in; it still works only while the alarm is running and only from the phone of a configured alarm recipient.
-
-### Fixed
-
-- **Dialog "View":** the field "Sort by" was squeezed thin; it now has the same height and rounding as the selection bars above it.
-- **Flow graphic:** after a step that "runs alongside", the dashed line reached into the card above and ran on top of the solid line. It now sits exactly between the card and the plus button, and the solid line no longer shows through.
 
 ## [1.2.0] - 2026-11-10
 
@@ -733,6 +745,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.4.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.3.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0

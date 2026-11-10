@@ -33,6 +33,7 @@ from .const import (
     MAX_DELAY,
     MAX_STEPS,
     MODES,
+    OPT_ALWAYS_OFF,
     OPT_ENTRY_DELAY,
     OPEN_SENSOR_MODES,
     SCOPE_ALWAYS,
@@ -44,7 +45,7 @@ from .const import (
 SECONDS = vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))
 ENTITY_LIST = [cv.entity_id]
 # Werte eines Sensors: die Schalter (SENSOR_OPTIONS) und die eigene Eingangsverzögerung in Sekunden
-SENSOR_VALUES = vol.Schema({vol.Optional(vol.In(SENSOR_OPTIONS)): bool, vol.Optional(OPT_ENTRY_DELAY): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))})
+SENSOR_VALUES = vol.Schema({vol.Optional(vol.In(SENSOR_OPTIONS)): bool, vol.Optional(OPT_ALWAYS_OFF): bool, vol.Optional(OPT_ENTRY_DELAY): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))})
 # Eigene Empfänger einer Meldung (statt der Alarm-Empfänger aus der Konfiguration): nur notify-Dienste, höchstens 20
 NOTIFY_TARGETS = vol.All([vol.All(str, vol.Match(r"^notify\.[a-z0-9_]+$"))], vol.Length(max=20))
 STEP_SCHEMAS = {

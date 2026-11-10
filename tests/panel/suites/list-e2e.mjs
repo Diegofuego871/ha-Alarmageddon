@@ -9,7 +9,7 @@ for (const lang of ["de", "en"]) {
     const s = await open(browser, { mobile, lang });
     const rowSel = ".ag-lrow"; // Standard ist die Liste, auch auf dem Handy
     const count = () => s.ev(`return r.querySelectorAll('${rowSel}').length`);
-    check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 9, String(await count()));
+    check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 10, String(await count()));
     check(`${tag}: offene Sensoren mit schwachem Farbverlauf von unten, ruhige ohne`, await s.ev(`const rows=[...r.querySelectorAll('${rowSel}')]; const act=rows.filter((x) => x.classList.contains('act')); const bg=(x) => getComputedStyle(x.querySelector('td')).backgroundImage.includes('gradient'); return act.length > 0 && act.length < rows.length && act.every((x) => bg(x) && x.querySelector('.ag-av.open')) && rows.filter((x) => !x.classList.contains('act')).every((x) => !bg(x))`));
     if (mobile) {
       await s.ev("const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop += th.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 20;");
@@ -38,7 +38,7 @@ for (const lang of ["de", "en"]) {
     await s.page.keyboard.type("garage");
     check(`${tag}: Suche`, await s.waitFor(`return r.querySelectorAll('${rowSel}').length === 2`));
     await s.tap('[data-list="clear"]');
-    check(`${tag}: X leert, Fokus bleibt`, await s.waitFor(`const i=r.querySelector('[data-list="search"]'); return i.value === "" && r.activeElement === i && r.querySelectorAll('${rowSel}').length === 9`));
+    check(`${tag}: X leert, Fokus bleibt`, await s.waitFor(`const i=r.querySelector('[data-list="search"]'); return i.value === "" && r.activeElement === i && r.querySelectorAll('${rowSel}').length === 10`));
     // Sortieren nach Zustand: gleiche Zustände stehen beieinander ("ruhig" und "zu" nicht gemischt)
     await s.tap('[data-list="sort"][data-key="state"]');
     check(`${tag}: nach Zustand sortiert: gleiche Zustände zusammen (je Gruppe)`, await s.waitFor("const rows=[...r.querySelectorAll('.ag-ov-list tr')]; let seen=new Set(), prev=null, ok=true, kinds=new Set(); for (const tr of rows) { if (tr.classList.contains('grp')) { seen=new Set(); prev=null; continue; } const l=(tr.querySelector('.ag-tag.ok, .ag-tag.warn, .ag-tag.err')?.textContent || '').trim(); kinds.add(l); if (l !== prev && seen.has(l)) ok=false; seen.add(l); prev=l; } return ok && kinds.size >= 2"));

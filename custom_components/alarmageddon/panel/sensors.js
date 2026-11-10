@@ -8,6 +8,9 @@ const { ic, esc, DC, OPENINGS, MOTION, MODE_KEY, MODE_ICON, OPTIONS, TYPES, DEFA
 const ALL_MODES = ["home", "away", "night"];
 const SCOPES = [...ALL_MODES, "always"]; // Bereiche mit eigenen Werten: die Modi und der Reiter "Immer aktiv" (deaktivierter Zustand)
 // "Immer aktiv" selbst hängt nie an einem Modus: sein Wert steht immer im Bereich "always"
+// Schalter "Immer aktiv ignorieren" (1.4.0): nur für Sensoren mit "Immer aktiv", die zugleich in der Zone des scharfen Modus stehen; Standard aus.
+// Keine Voreinstellung der Sensorart, darum nicht in OPTIONS (die auch die Voreinstellungen füllt)
+const ALWAYS_OFF = { key: "always_off", icon: "shieldOff", name: "optAlwaysOff", hint: "optAlwaysOffHint" };
 const scopeOf = (key, mode) => (key === "always" ? "always" : mode);
 
 export class SensorsUi {
@@ -367,7 +370,9 @@ export class SensorsUi {
     const delayRow = d.entrySensors.has(id) && mode !== "always" ? this._delayRow(id, mode) : "";
     const modeName = mode === "always" ? this._t("wfAlways") : mode ? this._t(MODE_KEY[mode]) : "";
     // In den Reitern der Modi gibt es "Immer aktiv" nicht (es gilt unabhängig vom Modus und steht im Reiter "Immer aktiv")
-    const opts = OPTIONS.filter((o) => !(mode && mode !== "always" && o.key === "always")).map((o) => {
+    const alwaysOn = this.eff(id, "always", mode);
+    const showOff = alwaysOn && mode !== "always" && (mode ? d.zones[mode]?.has(id) : this.inActive(id));
+    const opts = [...OPTIONS.filter((o) => !(mode && mode !== "always" && o.key === "always")), ...(showOff ? [ALWAYS_OFF] : [])].map((o) => {
       const on = this.eff(id, o.key, mode);
       const own = this.own(id, o.key, mode);
       // Im Reiter eines Modus: Herkunft ist "eigener Wert für den Modus" oder der Wert für alle Modi; sonst wie bisher die Voreinstellung der Art

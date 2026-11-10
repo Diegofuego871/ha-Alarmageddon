@@ -102,6 +102,9 @@ button { font: inherit; color: inherit; }
 .ag-mini.err { background: var(--ag-error-soft); color: var(--ag-error); }
 .ag-alarm { border-radius: 18px; padding: 16px 18px; background: var(--ag-error); color: #fff; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .ag-alarm b { font-size: 18px; font-weight: 500; }
+.ag-copyfrom { height: 40px; min-width: 190px; max-width: 260px; flex: 0 1 auto; border-radius: 999px; }
+:host([narrow]) .ag-foot:has(.ag-copyfrom) { flex-wrap: wrap; }
+:host([narrow]) .ag-copyfrom { min-width: 0; flex: 1 1 100%; max-width: none; order: -1; }
 .ag-alarm-btns { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
 .ag-alarm .ag-btn { background: #fff; color: var(--ag-error); border-color: #fff; min-height: 44px; font-size: 15px; }
 .ag-alarm [data-act="ack"] { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .8); }

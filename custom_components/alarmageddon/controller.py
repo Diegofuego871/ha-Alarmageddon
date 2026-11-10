@@ -39,9 +39,11 @@ from .const import (
     SCOPE_ALWAYS,
     CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
+    CONF_SENSORS,
     DEFAULT_PRESETS,
     MAX_DELAY,
     OPT_ALWAYS,
+    OPT_ALWAYS_OFF,
     OPT_ENTRY_DELAY,
     OPT_ARM_ON_CLOSE,
     OPT_BYPASS,
@@ -258,18 +260,22 @@ class AlarmController:
             return bool(own)
         return key in self.preset(entity_id)
 
+    def always_ignored(self, entity_id: str) -> bool:
+        """"Immer aktiv" ignorieren: nur im scharfen Modus, in dessen Zone der Sensor steht, und nur wenn der Nutzer es eingeschaltet hat."""
+        return self.mode is not None and entity_id in self.zone(self.mode) and self.option(entity_id, OPT_ALWAYS_OFF, self.mode)
+
     def always_sensors(self, mode: str | None = None) -> set[str]:  # noqa: ARG002 - "Immer aktiv" hängt an keinem Modus
         """
-        Immer aktiv sind Sensoren einer Zone mit dieser Option und alle, bei
-        denen der Nutzer sie ausdrücklich eingeschaltet hat (Rauchmelder
-        müssen dafür in keiner Zone sein). Die Option hängt an keinem Modus: mit Einstellungen je Modus
-        steht ihr Wert immer im Bereich "Immer aktiv" (SCOPE_ALWAYS), darum ist `mode` hier ohne Wirkung.
+        Immer aktiv sind alle Sensoren der Anlage, bei denen die Option wirkt: die einer Zone, die in der Liste der Konfiguration
+        stehen und alle mit eigenen Werten. Der Wert kommt wie überall aus dem eigenen Wert oder der Voreinstellung der Sensorart,
+        auch ein Rauchmelder ohne eigene Einstellung und ohne Zone ist also immer aktiv (bis 1.4.0 fehlte er dann). Die Option hängt
+        an keinem Modus: mit Einstellungen je Modus steht ihr Wert immer im Bereich "Immer aktiv" (SCOPE_ALWAYS), darum ist `mode`
+        hier ohne Wirkung.
         """
-        zoned = {e for m in self.modes for e in self.zone(m)}
-        explicit = {e for e, opts in self.sensor_overrides.items() if opts.get(OPT_ALWAYS)}
+        known = {e for m in self.modes for e in self.zone(m)} | set(self.options.get(CONF_SENSORS) or []) | set(self.sensor_overrides)
         if self.options.get(CONF_PER_MODE_SENSORS):
-            explicit |= {e for e, opts in ((self.options.get(CONF_SENSOR_MODES) or {}).get(SCOPE_ALWAYS) or {}).items() if opts.get(OPT_ALWAYS)}
-        return {e for e in zoned | explicit if self.option(e, OPT_ALWAYS, mode)}
+            known |= {e for per in (self.options.get(CONF_SENSOR_MODES) or {}).values() if isinstance(per, dict) for e in per}
+        return {e for e in known if isinstance(e, str) and self.option(e, OPT_ALWAYS, mode)}
 
     def all_sensors(self) -> set[str]:
         """Alle Sensoren, auf die gehört wird: die der Zonen und alle, die in irgendeinem Modus immer aktiv sein können."""
@@ -412,14 +418,16 @@ class AlarmController:
         went_off = old.state == STATE_ON and new.state == STATE_OFF
         went_away = old.state in (STATE_ON, STATE_OFF) and new.state in GONE
 
-        # Immer aktiv (Rauch, Wasser): löst in jedem Zustand aus, sofort. Mit "Stiller Alarm" nur eine Meldung.
-        if went_on and entity in self.always_sensors(self.mode) and self.state != AlarmControlPanelState.TRIGGERED:
-            if self.option(entity, OPT_REPORT_ONLY, self.mode):
-                self._report(entity)
+        # Immer aktiv (Rauch, Wasser): gilt in jedem Zustand der Anlage und löst sofort aus. Seine Optionen stehen im Reiter "Immer aktiv"
+        # (Modus None), auch wenn die Anlage scharf ist. Mit "Stiller Alarm" nur eine Meldung: steht der Sensor zugleich in der Zone
+        # des scharfen Modus, gilt danach zusätzlich dessen Regel (beide Regeln laufen, die stärkere Wirkung zählt). Ein Schalter am
+        # Sensor ("Immer aktiv ignorieren", Standard aus) lässt in einem Modus nur die Regel dieses Modus gelten.
+        if went_on and entity in self.always_sensors(self.mode) and self.state != AlarmControlPanelState.TRIGGERED and not self.always_ignored(entity):
+            if not self.option(entity, OPT_REPORT_ONLY, None):
+                self.triggered_by = entity
+                self._go_triggered()
                 return
-            self.triggered_by = entity
-            self._go_triggered()
-            return
+            self._report(entity)
 
         if self.state == AlarmControlPanelState.ARMING and self.mode and entity in self.zone(self.mode):
             self._on_arming_change(entity, went_on, went_off)

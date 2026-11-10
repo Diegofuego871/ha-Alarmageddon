@@ -156,7 +156,7 @@ Details für alle, die es genau wissen wollen. Zum Öffnen anklicken.
 <details>
 <summary><b>Optionen pro Sensor</b></summary>
 
-- **Immer aktiv:** löst in jedem Zustand aus, auch deaktiviert (Rauch, Wasser, Gas).
+- **Immer aktiv:** löst in jedem Zustand aus, scharf wie deaktiviert, und zwar sofort (Rauch, Wasser, Gas), mit den Optionen aus dem Reiter "Immer aktiv". Steht der Sensor zugleich in der Zone eines Modus, laufen beide Regeln; ein Schalter "Immer aktiv ignorieren" lässt nur die Regel dieses Modus gelten.
 - **Darf beim Scharfschalten offen sein:** ein offener Sensor verhindert das Scharfschalten nicht und löst aus, nachdem er geschlossen und wieder geöffnet wurde.
 - **Beim Scharfschalten umgehen:** ein offener Sensor wird bis zum nächsten Deaktivieren ignoriert.
 - **Scharf, sobald geschlossen:** wird dieser Sensor in der Ausgangsverzögerung geschlossen (die Haustür hinter dir), ist die Anlage sofort scharf, statt das Ende der Verzögerung abzuwarten.

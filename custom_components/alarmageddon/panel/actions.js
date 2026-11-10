@@ -426,7 +426,13 @@ export class ActionsUi {
     if (this.saveState === "saved" && !n) status = `<span class="ag-saved">${ic("check", 16)} ${esc(this._t("saved"))}</span>`;
     else if (this.saveState && this.saveState !== "saved") status = `<span class="ag-err">${esc(this.saveState)}</span>`;
     else status = `<span class="ag-t2">${esc(n === 0 ? this._t("noChanges") : n === 1 ? this._t("change") : this._t("changes", { count: n }))}</span>`;
-    h._setHtml(foot, `${status}<span class="ag-grow"></span>${this._testBtnHtml(n > 0)}<button class="ag-btn" data-wf="cancel" ${n ? "" : "disabled"}>${esc(this._t("cancel"))}</button>
+    // "Aktionen übernehmen von": nur mit "Einstellungen pro Modus" (sonst gilt ohnehin ein Ablauf für alle)
+    const others = this.draft?.perMode ? this.triggers().filter((t) => t !== this.trigger) : [];
+    const name = (t) => (t === "always" ? this._t("wfAlways") : this._t(MODE_KEY[t]));
+    const copy = others.length
+      ? `<select class="ag-input ag-copyfrom" data-wf="copy-from" aria-label="${esc(this._t("wfCopyFrom"))}"><option value="">${esc(this._t("wfCopyFrom"))}</option>${others.map((t) => `<option value="${t}">${esc(name(t))}</option>`).join("")}</select>`
+      : "";
+    h._setHtml(foot, `${status}<span class="ag-grow"></span>${copy}${this._testBtnHtml(n > 0)}<button class="ag-btn" data-wf="cancel" ${n ? "" : "disabled"}>${esc(this._t("cancel"))}</button>
       <button class="ag-btn primary" data-wf="save" ${n && !this.saving ? "" : "disabled"}>${ic("check", 18)}${esc(this._t("save"))}</button>`);
   }
 
@@ -1240,8 +1246,35 @@ export class ActionsUi {
     return true;
   }
 
+  // Alle Aktionen (Schritte und "Alarm endet") eines anderen Modus in den Reiter übernehmen; gespeichert wird erst mit "Speichern"
+  async _copyFrom(from) {
+    const d = this.ensureDraft();
+    const to = this.trigger;
+    if (!d?.perMode || !from || from === to || !this.triggers().includes(from)) return;
+    const name = (t) => (t === "always" ? this._t("wfAlways") : this._t(MODE_KEY[t]));
+    const steps = JSON.parse(JSON.stringify(d.wf[from] || []));
+    const end = JSON.parse(JSON.stringify(normEnd(d.end?.[from])));
+    const same = JSON.stringify([d.wf[to] || [], normEnd(d.end?.[to])]) === JSON.stringify([steps, end]);
+    if (same) return;
+    // Rückfrage nur, wenn der Entwurf dieses Reiters wirklich ersetzt würde
+    const hasOwn = (d.wf[to] || []).length > 0 || Object.keys(normEnd(d.end?.[to])).length > 0;
+    if (hasOwn && !(await this.host._confirm(this._t("wfCopyTitle"), this._t("wfCopyText", { from: name(from), to: name(to) }), this._t("wfCopyOk")))) return;
+    if (this.trigger !== to || this.draft !== d) return; // während der Rückfrage gewechselt
+    d.wf = { ...d.wf, [to]: steps };
+    d.end = { ...(d.end || {}), [to]: end };
+    this.saveState = null;
+    this.render();
+    this.host._renderDots();
+  }
+
   onInput(el) {
     const act = el.dataset.wf;
+    if (act === "copy-from") {
+      const value = el.value;
+      el.value = "";
+      this._copyFrom(value);
+      return true;
+    }
     if (!act || !this.edit?.form) return false;
     const f = this.edit.form;
     if (act === "eq") {

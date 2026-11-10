@@ -43,13 +43,18 @@ for (const lang of ["de", "en"]) {
       // Fehlermeldung beim Scharfschalten nennt das Hindernis des gewählten Modus
       // ----- Sensorliste: "Immer aktiv" aus dem Reiter "Immer aktiv" -----
       const row = () => s.ev(`return !!r.querySelector('.ag-ov-list [data-entity="${WATER}"]')`);
-      check(`${tag}: Wassermelder ohne Zone steht noch nicht in der Liste`, !(await row()));
-      await s.sim(`const h = window.__systems[0]; h.per_mode_sensors = true; h.sensor_modes = { always: { "${WATER}": { always: true } } }`);
+      check(`${tag}: Wassermelder ohne Zone und ohne eigenen Wert steht in der Liste (Voreinstellung der Art: immer aktiv)`, await row());
+      await s.sim(`for (const sys of window.__systems) sys.sensor_options = { "${WATER}": { always: false } }`);
       await refetch();
-      check(`${tag}: "Immer aktiv" aus den Einstellungen je Modus bringt ihn in die Liste`, await row());
+      check(`${tag}: mit eigenem Wert "Immer aktiv" aus steht er nicht in der Liste`, !(await row()));
+      await s.sim(`for (const h of window.__systems) { h.per_mode_sensors = false; h.sensor_modes = {} } const h0 = window.__systems[0]; h0.per_mode_sensors = true; h0.sensor_modes = { always: { "${WATER}": { always: true } } }`);
+      await refetch();
+      check(`${tag}: "Immer aktiv" aus dem Reiter "Immer aktiv" bringt ihn zurück in die Liste`, await row());
       await s.sim(`window.__systems[0].per_mode_sensors = false`);
       await refetch();
-      check(`${tag}: ohne Schalter zählt der Bereich nicht`, !(await row()));
+      check(`${tag}: ohne Schalter zählt der Bereich nicht (der eigene Wert "aus" gilt wieder)`, !(await row()));
+      await s.sim(`for (const sys of window.__systems) sys.sensor_options = {}`);
+      await refetch();
 
       // ----- Verbindungsfehler: Daten bleiben, Hinweis statt "[object Object]" -----
       const cards = () => s.ev("return r.querySelectorAll('.ag-sys[data-system]').length");

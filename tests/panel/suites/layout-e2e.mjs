@@ -191,7 +191,12 @@ for (const lang of ["de", "en"]) {
       // Alle anderen Optionen im Blatt, für den gewählten Modus
       if (!mobile) {
         await s.tap(`tr[data-row="${bypassEnt}"] td:first-child .ag-nm`);
-        check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 6 && !!sd.querySelector('[data-key="bypass"]') && !sd.querySelector('[data-key="always"]')`));
+        check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen" und, bei Immer aktiv in der Zone, "Immer aktiv ignorieren") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 7 && !!sd.querySelector('[data-key="bypass"]') && !sd.querySelector('[data-key="always"]') && !!sd.querySelector('[data-key="always_off"]')`));
+        check(`${tag}: "Immer aktiv ignorieren" ist standardmässig aus`, await s.ev(`const b=r.querySelector('.ag-side [data-sen="mopt"][data-key="always_off"]'); return b.getAttribute('aria-checked') === 'false'`));
+        await s.tap('.ag-side [data-sen="mopt"][data-key="always_off"][data-mode="away"]');
+        check(`${tag}: Schalter setzt den Wert nur für diesen Modus`, await s.waitFor(`const d=r.host.sensors.draft; return d.modeOpts.away?.["${bypassEnt}"]?.always_off === true && !d.opts["${bypassEnt}"]?.always_off`));
+        await s.tap('.ag-side [data-sen="mopt"][data-key="always_off"][data-mode="away"]');
+        check(`${tag}: ausgeschaltet entfällt der Wert wieder`, await s.waitFor(`const d=r.host.sensors.draft; return !d.modeOpts.away?.["${bypassEnt}"]?.always_off`));
         check(`${tag}: Blatt zeigt gut sichtbar den Geltungsbereich (Modus)`, await s.waitFor(`const b=r.querySelector('.ag-side .ag-pmbanner'); return !!b && parseFloat(getComputedStyle(b.querySelector('b')).fontSize) >= 17 && b.textContent.length > 8`));
         await s.tap('.ag-side [data-sen="close-detail"]');
         // Reiter "Immer aktiv": eigene Einstellungen, Spalte hervorgehoben, im Blatt alle Optionen einschliesslich "Immer aktiv"

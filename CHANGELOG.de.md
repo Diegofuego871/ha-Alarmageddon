@@ -7,6 +7,23 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.4.0] - 2026-11-10
+
+### Hinzugefügt
+
+- **Aktionen von einem anderen Modus übernehmen:** In Konfiguration › Aktionen bietet die Fusszeile mit "Einstellungen pro Modus" "Aktionen übernehmen von …". Sie ersetzt alle Aktionen des offenen Reiters (Schritte und "Alarm endet") durch die eines anderen Modus oder von "Immer aktiv", mit Rückfrage, wenn der Reiter eigene Aktionen hat. Gespeichert wird erst mit "Speichern".
+- **Schalter "Immer aktiv ignorieren":** Für einen Sensor mit "Immer aktiv", der zugleich in der Zone eines Modus steht, lässt ein Schalter in den Sensor-Optionen (je Modus mit "Einstellungen pro Modus"; Standard aus) nur die Regel dieses Modus gelten, solange die Anlage darin scharf ist. In Modi, deren Zone den Sensor nicht enthält, tut er nichts, ein Rauchmelder bleibt dort also aktiv.
+
+### Geändert
+
+- **"Immer aktiv" ist immer aktiv:** Ein Sensor mit dieser Option löst in jedem Zustand der Anlage aus, scharf wie deaktiviert, und zwar sofort. Seine Optionen (zum Beispiel "Stiller Alarm") kommen jetzt immer aus dem Reiter "Immer aktiv", auch bei scharfer Anlage. Vorher las eine scharfe Anlage sie aus dem Reiter des aktiven Modus. Steht der Sensor zugleich in der Zone des scharfen Modus, laufen beide Regeln und die stärkere Wirkung zählt (ein Alarm schlägt eine stille Meldung).
+
+### Behoben
+
+- **Rauch- und Wassermelder wurden nicht beachtet und nicht angezeigt:** Ein Sensor, dessen Art standardmässig "immer aktiv" ist (Rauch, Wasser, Gas), wurde nur beachtet, wenn er in einer Zone stand oder einen eigenen Wert "Immer aktiv" hatte. Stand er nur in der Liste der Konfiguration, löste er keinen Alarm aus und erschien nicht in der Übersicht. Jetzt wird jeder Sensor der Anlage beachtet und aufgelistet, für den "Immer aktiv" gilt (eigener Wert oder Standard der Art).
+- **Fenster "Ansicht":** Das Feld "Sortieren nach" war zusammengedrückt; es hat jetzt dieselbe Höhe und Rundung wie die Auswahlleisten darüber.
+- **Grafik im Ablauf:** Nach einem Schritt, der "nebenher läuft", ragte die gestrichelte Linie in die Karte darüber und lag auf der durchgehenden Linie. Sie liegt jetzt genau zwischen Karte und Plus-Knopf, und die durchgehende Linie scheint nicht mehr durch.
+
 ## [1.3.0] - 2026-11-10
 
 ### Hinzugefügt
@@ -16,11 +33,6 @@ die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 ### Geändert
 
 - **Der Knopf "Quittieren" in der Push-Meldung ist standardmässig an** (pro Push-Schritt abschaltbar). Er schaltet nichts ab, braucht also anders als "Deaktivieren" keine Freigabe; er wirkt weiterhin nur, solange der Alarm läuft, und nur vom Handy eines konfigurierten Alarm-Empfängers.
-
-### Behoben
-
-- **Fenster "Ansicht":** Das Feld "Sortieren nach" war zusammengedrückt; es hat jetzt dieselbe Höhe und Rundung wie die Auswahlleisten darüber.
-- **Grafik im Ablauf:** Nach einem Schritt, der "nebenher läuft", ragte die gestrichelte Linie in die Karte darüber und lag auf der durchgehenden Linie. Sie liegt jetzt genau zwischen Karte und Plus-Knopf, und die durchgehende Linie scheint nicht mehr durch.
 
 ## [1.2.0] - 2026-11-10
 
@@ -733,6 +745,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.4.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.3.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0

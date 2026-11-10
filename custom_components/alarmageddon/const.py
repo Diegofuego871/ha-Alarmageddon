@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 76  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 77  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -110,6 +110,9 @@ REPORT_THROTTLE: Final = 60  # höchstens eine Meldung pro Sensor und Minute
 # Eigene Eingangsverzögerung eines Sensors in Sekunden (1.1.0): ein Wert, kein Schalter, darum nicht in SENSOR_OPTIONS.
 # Fehlt er, gilt die Eingangsverzögerung der Anlage für den Modus.
 OPT_ENTRY_DELAY: Final = "entry_delay"
+# "Immer aktiv" in diesem Modus ignorieren (1.4.0): ein Schalter, aber keine Voreinstellung der Sensorart, darum nicht in SENSOR_OPTIONS.
+# Wirkt nur in Modi, in deren Zone der Sensor steht; dort gilt dann allein die Regel des Modus.
+OPT_ALWAYS_OFF: Final = "always_off"
 SENSOR_OPTIONS: Final = (OPT_ALWAYS, OPT_OPEN_OK, OPT_BYPASS, OPT_ARM_ON_CLOSE, OPT_OFFLINE_ALARM, OPT_CONFIRM, OPT_REPORT_ONLY)
 CONF_CONFIRM_WINDOW: Final = "confirm_window"
 # Einstellungen je Modus (0.10.0): Schlüssel "<name>_<modus>" (entry_delay_away …), "always" für Alarme durch immer aktive Sensoren
