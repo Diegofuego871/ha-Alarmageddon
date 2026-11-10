@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -25,6 +26,8 @@ from .scheduler import Scheduler
 from .sensor_history import async_get_stats
 from .settings import async_get_settings
 from .workflow import WorkflowRunner, async_remove_workflow_store
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.ALARM_CONTROL_PANEL, Platform.BINARY_SENSOR]
 
@@ -116,7 +119,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     # Neue Voreinstellungen ändern, welche Sensoren immer aktiv sind und wem zugehört wird: neu laden
     entry.async_on_unload(settings.add_listener(lambda: hass.async_create_task(hass.config_entries.async_reload(entry.entry_id)), entry.entry_id))
-    await async_register_panel(hass)
+    # Das Panel ist Bequemlichkeit, die Alarmanlage nicht: scheitert die Anmeldung (zum Beispiel "frozen router", wenn der
+    # Webserver schon steht), läuft die Anlage ohne Panel weiter, statt gar nicht zu laden (Sicherheitsregel: im Zweifel alarmieren)
+    try:
+        await async_register_panel(hass)
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("%s: the panel could not be registered; the alarm system runs without it", entry.title)
     await async_start_maintenance(hass, settings)
     # Reste der früheren Update-Prüfung (bis 0.27.0): die Meldung unter "Reparaturen" verschwindet mit der Funktion
     ir.async_delete_issue(hass, DOMAIN, "update_available")

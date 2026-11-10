@@ -7,6 +7,12 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.10.1] - 2026-11-10
+
+### Behoben
+
+- **Die Alarmanlage lädt auch, wenn sich das Panel nicht anmelden lässt.** Scheiterte die Anmeldung des Seitenpanels (zum Beispiel "Cannot register a resource into frozen router", wenn der Webserver schon eingefroren ist), lud die ganze Alarmanlage nicht. Das Panel ist Bequemlichkeit, die Alarmanlage nicht: Der Fehler wird jetzt als Fehler protokolliert, und die Anlage läuft ohne Panel weiter, scharf und alarmierend.
+
 ## [1.10.0] - 2026-11-10
 
 Aktionen nach dem Quittieren, und Schritte, die standardmässig weiterlaufen.
@@ -853,6 +859,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.10.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0
 [1.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.9.0
 [1.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.8.0

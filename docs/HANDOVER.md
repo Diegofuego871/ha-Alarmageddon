@@ -18,6 +18,10 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - 1.1.0 (1.0.1 übersprungen, nie getaggt): Eingangsverzögerung pro Sensor (`controller.sensor_entry_delay`, `schemas.SENSOR_VALUES`, Option `entry_delay` in `sensor_options`/`sensor_modes`, Blatt `sensors.js _delayRow`, bleibt bei "Auf alle Sensoren anwenden"); eigene Empfänger je Push-Schritt und bei "Alarm endet" (`targets`, `notify._alarm_recipients`, `actions.js _ntRecipients`); Emoji in allen Standardtiteln (Test `test_every_default_title_starts_with_an_emoji`). In 1.2.0 umgesetzt.
 - 1.0.1: Kopfzeile (`.ag-headsys`, `_fillHeadSys`) in jedem Reiter; `.ag-sen-layout.open` mit `minmax(420px, 1fr)` und rechtsbündigem Blatt; Sortierschlüssel `state` mit Rang und Text (`_stateLabel`); Pfeil der Auswahlfelder als SVG; Abstand der Leiste `.ag-pmstick` als Innenabstand.
 
+## Stand (1.10.1, Panel-Anmeldung darf die Anlage nicht am Laden hindern)
+
+CI-Fehler bei 1.10.0: `test_state_history_from_recorder_event_log_and_recordings` scheiterte nur in der CI ("Cannot register a resource into frozen router": der Test meldet zuerst den WebSocket-Client an, danach lädt die Anlage und meldet das Panel an). Ursache im Code: `async_register_panel` in `async_setup_entry` ohne Schutz, ein Fehler dort liess die Anlage nicht laden. Jetzt `try/except` mit Fehlerprotokoll (`__init__.py`), Test `tests/test_panel_failure.py`, Mutationszeile. Nachgestellt mit einem Plugin, das `async_register_static_paths` scheitern lässt (ohne Korrektur 4 Tests rot, mit Korrektur grün).
+
 ## Stand (1.10.0, Aktionen nach dem Quittieren; Schritte laufen standardmässig weiter)
 
 Ausführlich: `docs/UEBERGABE-1.10.0.md`.

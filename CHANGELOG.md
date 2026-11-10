@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.1] - 2026-11-10
+
+### Fixed
+
+- **The alarm system loads even if the panel cannot be registered.** If registering the side panel failed (for example "Cannot register a resource into frozen router" when the web server is already frozen), the whole alarm system failed to load. The panel is a convenience, the alarm system is not: the failure is now logged as an error and the system runs on, armed and alarming, without the panel.
+
 ## [1.10.0] - 2026-11-10
 
 Actions after acknowledging, and steps that keep running by default.
@@ -853,6 +859,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.10.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0
 [1.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.9.0
 [1.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.8.0
