@@ -370,6 +370,12 @@ export class SensorsUi {
     const r = { id, name: h._name(id) };
     const meta = [this._t(label), info.area, info.integration].filter(Boolean).join(" · ");
     const zones = this.modes().map((m) => `<button class="ag-chip ${d.zones[m].has(id) ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(id)}" aria-pressed="${d.zones[m].has(id)}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("");
+    // "Immer aktiv" steht als Pille bei den Modi: es gilt in jedem Zustand der Anlage (mit Einstellungen je Modus im Bereich "always")
+    const pm = Boolean(this.draft?.perMode);
+    const alwaysChip = this.alwaysOn ? (() => {
+      const on = this.eff(id, "always", pm ? "always" : null);
+      return `<button class="ag-chip ${on ? "on" : ""}" data-sen="${pm ? "mopt" : "opt"}" ${pm ? 'data-mode="always"' : ""} data-ent="${esc(id)}" data-key="always" aria-pressed="${on}">${ic("flash", 16)}${esc(this._t("wfAlways"))}</button>`;
+    })() : "";
     const entryRow = `<div class="ag-orow"><span class="ag-oav ${d.entrySensors.has(id) ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("colEntry"))}</b><small>${esc(this._t("optEntryHint"))}</small></div>${this._entryToggle(r)}</div>`;
     const mode = this.activeMode();
     const delayRow = d.entrySensors.has(id) && mode !== "always" ? this._delayRow(id, mode) : "";
@@ -377,7 +383,7 @@ export class SensorsUi {
     // In den Reitern der Modi gibt es "Immer aktiv" nicht (es gilt unabhängig vom Modus und steht im Reiter "Immer aktiv")
     const alwaysOn = this.alwaysOn && this.eff(id, "always", mode);
     const showOff = alwaysOn && mode !== "always" && (mode ? d.zones[mode]?.has(id) : this.inActive(id));
-    const opts = [...OPTIONS.filter((o) => !(o.key === "always" && ((mode && mode !== "always") || !this.alwaysOn))), ...(showOff ? [ALWAYS_OFF] : [])].map((o) => {
+    const optRow = (o) => {
       const on = this.eff(id, o.key, mode);
       const own = this.own(id, o.key, mode);
       // Im Reiter eines Modus: Herkunft ist "eigener Wert für den Modus" oder der Wert für alle Modi; sonst wie bisher die Voreinstellung der Art
@@ -390,11 +396,20 @@ export class SensorsUi {
           : `<span class="ag-origin">${esc(this._t("originPreset", { type: typeLabel }))}</span>`);
       return `<div class="ag-orow"><span class="ag-oav ${on ? "on" : ""}">${ic(o.icon, 18)}</span><div class="ag-otx"><b>${esc(this._t(o.name))}</b><small>${esc(this._t(o.hint))}</small>${origin}</div>
         <button class="ag-toggle ${on ? "on" : ""}" data-sen="${mode ? "mopt" : "opt"}" ${mode ? `data-mode="${mode}"` : ""} data-ent="${esc(id)}" data-key="${o.key}" role="switch" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t(o.name)}`)}"></button></div>`;
-    }).join("");
+    };
+    // "Immer aktiv" ist eine Pille bei den Modi, darum keine eigene Zeile mehr in der Liste der Optionen
+    const opts = OPTIONS.filter((o) => o.key !== "always").map(optRow).join("");
+    // Schalter "Immer aktiv ignorieren": direkt unter den Modi, sobald der Sensor "Immer aktiv" ist und in einer Zone steht
+    const inAnyZone = this.modes().some((m) => d.zones[m].has(id));
+    let offBlock = "";
+    if (alwaysOn && mode !== "always" && inAnyZone) {
+      offBlock = showOff ? optRow(ALWAYS_OFF) : `<div class="ag-t2 ag-small" style="margin-top:6px">${esc(this._t("optAlwaysOffNotHere", { mode: modeName }))}</div>`;
+    }
     return `<div class="ag-side-head"><span class="ag-shield" style="width:46px;height:46px;border-radius:14px;background:var(--ag-primary-soft);color:var(--ag-primary)">${ic(icon, 24)}</span>
         <div style="flex:1;min-width:0"><h3>${esc(r.name)}</h3><div class="ag-t2 ag-small">${esc(meta)}</div></div>
         <button class="ag-iconbtn" data-sen="close-detail" aria-label="${esc(this._t("cancel"))}">${ic("close", 22)}</button></div>
-      <div class="ag-side-body"><div class="ag-label">${esc(this._t("zones"))}</div><div class="ag-zline">${zones}</div>
+      <div class="ag-side-body"><div class="ag-label">${esc(this._t("senModes"))}</div><div class="ag-zline">${zones}${alwaysChip}</div>
+        <div class="ag-t2 ag-small" style="margin:6px 0 10px">${esc(this._t("senModesHint"))}</div>${offBlock}
         <div class="ag-label">${esc(this._t("behaviour"))}</div>${mode ? `<div class="ag-pmbanner">${ic(mode === "always" ? "flash" : MODE_ICON[mode], 24)}<div><small>${esc(this._t(mode === "always" ? "pmBannerAlways" : "pmBannerLabel"))}</small><b>${esc(mode === "always" ? this._t("pmBannerAlwaysB") : modeName)}</b></div></div>` : ""}${entryRow}${delayRow}${opts}
         <button class="ag-btn" data-sen="remove" data-ent="${esc(id)}" style="margin-top:16px">${ic("trash", 18)}${esc(this._t("removeSensor"))}</button>
         <div class="ag-t2 ag-small" style="margin-top:6px">${esc(this._t("removeSensorHint"))}</div></div>`;

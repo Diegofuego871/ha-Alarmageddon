@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.2] - 2026-11-10
+
+### Changed
+
+- **Sensor options sheet:** the section "Zones" is now "Alarm modes" and shows "Always active" as a pill next to Home, Away and Night, so it is clear in which states a sensor applies (the separate row "Always active" in the list is gone). The switch "Ignore 'Always active'" sits right below, as soon as the sensor is "Always active" and in a zone; in a tab whose mode does not contain the sensor, a note says there is nothing to override.
+
 ## [1.6.1] - 2026-11-10
 
 ### Fixed
@@ -769,6 +775,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.6.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.2
 [1.6.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.0
 [1.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.5.0

@@ -191,7 +191,7 @@ for (const lang of ["de", "en"]) {
       // Alle anderen Optionen im Blatt, für den gewählten Modus
       if (!mobile) {
         await s.tap(`tr[data-row="${bypassEnt}"] td:first-child .ag-nm`);
-        check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen" und, bei Immer aktiv in der Zone, "Immer aktiv ignorieren") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 7 && !!sd.querySelector('[data-key="bypass"]') && !sd.querySelector('[data-key="always"]') && !!sd.querySelector('[data-key="always_off"]')`));
+        check(`${tag}: Blatt zeigt alle Optionen (auch "Umgehen" und, bei Immer aktiv in der Zone, "Immer aktiv ignorieren") für den gewählten Modus`, await s.waitFor(`const sd=r.querySelector('.ag-side'); return sd.querySelectorAll('[data-sen="mopt"][data-mode="away"]').length === 7 && !!sd.querySelector('[data-key="bypass"]') && !sd.querySelector('[data-key="always"]:not(.ag-chip)') && !!sd.querySelector('[data-key="always_off"]') && !!sd.querySelector('.ag-chip[data-key="always"]')`));
         check(`${tag}: "Immer aktiv ignorieren" ist standardmässig aus`, await s.ev(`const b=r.querySelector('.ag-side [data-sen="mopt"][data-key="always_off"]'); return b.getAttribute('aria-checked') === 'false'`));
         await s.tap('.ag-side [data-sen="mopt"][data-key="always_off"][data-mode="away"]');
         check(`${tag}: Schalter setzt den Wert nur für diesen Modus`, await s.waitFor(`const d=r.host.sensors.draft; return d.modeOpts.away?.["${bypassEnt}"]?.always_off === true && !d.opts["${bypassEnt}"]?.always_off`));

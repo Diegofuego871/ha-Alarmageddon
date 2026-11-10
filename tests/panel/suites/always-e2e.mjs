@@ -9,6 +9,22 @@ for (const lang of ["de", "en"]) {
     const saved = lang === "de" ? "Gespeichert" : "Saved";
     const pill = '[data-sys="always"]';
 
+    // Sensor-Blatt: "Immer aktiv" als Pille bei den Modi, "Immer aktiv ignorieren" direkt darunter, sobald der Sensor in einer Zone steht
+    const smoke = "binary_sensor.rauchmelder_flur";
+    const sheet = mobile ? "#ag-sheet" : ".ag-side";
+    await s.tap(`[data-sen="detail"][data-ent="${smoke}"]`);
+    await s.waitFor(`return !!r.querySelector('${sheet} .ag-zline')`);
+    check(`${tag}: Blatt: Modi und "Immer aktiv" als Pillen in einer Zeile, "Immer aktiv" an`, await s.ev(`const c=[...r.querySelectorAll('${sheet} .ag-zline .ag-chip')]; return c.length >= 3 && c.at(-1).dataset.key === 'always' && c.at(-1).getAttribute('aria-pressed') === 'true'`));
+    check(`${tag}: ohne Zone kein Schalter "Immer aktiv ignorieren"`, await s.ev(`return !r.querySelector('${sheet} [data-key="always_off"]')`));
+    await s.tap(`${sheet} .ag-zline .ag-chip[data-mode="away"]`);
+    check(`${tag}: mit Zone steht der Schalter direkt unter den Modi (vor "Verhalten"), standardmässig aus`, await s.waitFor(`const off=r.querySelector('${sheet} [data-key="always_off"]'); const lab=[...r.querySelectorAll('${sheet} .ag-label')].find((x) => x.textContent.trim().toLowerCase().startsWith(${JSON.stringify(lang === "de" ? "verhalten" : "behaviour")})); return !!off && !!lab && off.getAttribute('aria-checked') === 'false' && (off.compareDocumentPosition(lab) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0`));
+    await s.tap(`${sheet} [data-key="always_off"]`);
+    check(`${tag}: Schalter setzt "Immer aktiv ignorieren" für den Sensor`, await s.waitFor(`return r.host.sensors.draft.opts["${smoke}"]?.always_off === true`));
+    await s.tap(`${sheet} .ag-zline .ag-chip[data-key="always"]`);
+    check(`${tag}: Pille "Immer aktiv" ausgeschaltet: der Schalter dazu verschwindet`, await s.waitFor(`return !r.querySelector('${sheet} [data-key="always_off"]') && r.querySelector('${sheet} .ag-zline .ag-chip[data-key="always"]').getAttribute('aria-pressed') === 'false'`));
+    if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
+    await s.tap('.ag-foot [data-sen="cancel"]');
+
     // Anlage › Modi: Pille neben den Modi, Standard an
     await s.tap('[data-sub="system"]');
     check(`${tag}: Pille "Immer aktiv" bei den Modi, standardmässig an`, await s.waitFor(`const b=r.querySelector('${pill}'); return !!b && b.getAttribute('aria-pressed') === 'true' && !r.querySelector('.ag-warntext')`));
