@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Dialog "View":** the field "Sort by" was squeezed thin; it now has the same height and rounding as the selection bars above it.
 - **Flow graphic:** after a step that "runs alongside", the dashed line reached into the card above and ran on top of the solid line. It now sits exactly between the card and the plus button, and the solid line no longer shows through.
 
 ## [1.2.0] - 2026-11-10

@@ -51,8 +51,9 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Hinweis, für welches Gerät die Ansicht gilt`, await s.ev(`return r.querySelector('#ag-view').innerText.includes('${mobile ? (lang === "de" ? "Handy" : "phone") : (lang === "de" ? "Desktop" : "desktop")}')`));
     const hide = mobile ? "signal" : "firmware";
     const hideRe = mobile ? /empfang|signal/i : /firmware/i;
+    check(`${tag}: Fenster "Ansicht": Sortierfeld so hoch wie die Auswahlleisten`, await s.ev("const q=r.querySelector('#ag-view select[data-list=\"vsort\"]').getBoundingClientRect().height; return q >= 40 && Math.abs(q - r.querySelector('#ag-view .ag-seg').getBoundingClientRect().height) <= 8"));
     // Scrollposition des Fensters "Ansicht": ein Klick auf einen Schalter darf sie nicht ändern
-    await s.ev("const b=r.querySelector('#ag-view .ag-dlg-body'); b.scrollTop = 90;");
+    await s.ev(`const b=r.querySelector('#ag-view .ag-dlg-body'); b.scrollTop = 90; r.querySelector('#ag-view [data-list="col"][data-key="${hide}"]').scrollIntoView({ block: 'center' });`);
     const before = await s.ev("return Math.round(r.querySelector('#ag-view .ag-dlg-body').scrollTop)");
     await s.tap(`[data-list="col"][data-set="cols"][data-key="${hide}"]`);
     const after = await s.ev("return Math.round(r.querySelector('#ag-view .ag-dlg-body').scrollTop)");

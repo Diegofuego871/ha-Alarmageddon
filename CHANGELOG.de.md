@@ -19,6 +19,7 @@ die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Behoben
 
+- **Fenster "Ansicht":** Das Feld "Sortieren nach" war zusammengedrückt; es hat jetzt dieselbe Höhe und Rundung wie die Auswahlleisten darüber.
 - **Grafik im Ablauf:** Nach einem Schritt, der "nebenher läuft", ragte die gestrichelte Linie in die Karte darüber und lag auf der durchgehenden Linie. Sie liegt jetzt genau zwischen Karte und Plus-Knopf, und die durchgehende Linie scheint nicht mehr durch.
 
 ## [1.2.0] - 2026-11-10
