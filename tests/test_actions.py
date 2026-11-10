@@ -49,8 +49,9 @@ async def test_critical_push_on_alarm(hass: HomeAssistant, hass_ws_client) -> No
     assert data["title"] == "🚨 Alarm: Haus"
     assert data["data"]["push"]["sound"] == {"name": "default", "critical": 1, "volume": 0.6}
     assert data["data"]["channel"] == "alarm_stream" and data["data"]["priority"] == "high"
-    # Deaktivieren per Push ist standardmässig aus (Sicherheitsregel)
-    assert [a["action"] for a in data["data"]["actions"]] == ["ALARMAGEDDON_OPEN"]
+    # Deaktivieren per Push ist standardmässig aus (Sicherheitsregel); Quittieren (beendet nur den Alarm) ist an
+    names = [a["action"] for a in data["data"]["actions"]]
+    assert len(names) == 2 and names[0].startswith("ALARMAGEDDON_ACK_") and names[1] == "ALARMAGEDDON_OPEN"
     tag = data["data"]["tag"]
     # Deaktivieren ersetzt die Meldung (gleicher tag), nicht mehr kritisch
     await call(hass, "alarm_disarm")
@@ -447,11 +448,11 @@ async def test_alarm_buttons_follow_settings(hass: HomeAssistant, hass_ws_client
         await hass.async_block_till_done()
         return titles
 
-    assert await actions() == ["ALARMAGEDDON_OPEN"]
-    await _notify_settings(hass, hass_ws_client, silence_action=True, open_action=False)
+    assert await actions() == [f"ALARMAGEDDON_ACK_{entry.entry_id}", "ALARMAGEDDON_OPEN"]
+    await _notify_settings(hass, hass_ws_client, silence_action=True, open_action=False, acknowledge_action=False)
     assert await actions() == [f"ALARMAGEDDON_SILENCE_{entry.entry_id}"]
-    await _notify_settings(hass, hass_ws_client, silence_action=True, open_action=True, disarm_action=True)
-    assert await actions() == [f"ALARMAGEDDON_DISARM_{entry.entry_id}", f"ALARMAGEDDON_SILENCE_{entry.entry_id}", "ALARMAGEDDON_OPEN"]
+    await _notify_settings(hass, hass_ws_client, silence_action=True, open_action=True, disarm_action=True, acknowledge_action=True)
+    assert await actions() == [f"ALARMAGEDDON_DISARM_{entry.entry_id}", f"ALARMAGEDDON_ACK_{entry.entry_id}", f"ALARMAGEDDON_SILENCE_{entry.entry_id}", "ALARMAGEDDON_OPEN"]
 
 
 async def test_silence_from_push_stops_steps_keeps_alarm(hass: HomeAssistant, hass_ws_client, freezer) -> None:
@@ -584,7 +585,7 @@ async def test_custom_alarm_message_text(hass: HomeAssistant, hass_ws_client) ->
 async def test_alarm_message_settings_in_the_push_step(hass: HomeAssistant, hass_ws_client) -> None:
     """Kritisch, Lautstärke und Knöpfe stehen im Push-Schritt (0.20.0) und gelten vor den globalen Werten."""
     pushes = async_mock_service(hass, "notify", "handy")
-    entry = await setup_alarm(hass, workflows={"home": [{"type": "notify", "critical": False, "volume": 0.3, "buttons": {"open": False, "silence": True, "disarm": False}}]})
+    entry = await setup_alarm(hass, workflows={"home": [{"type": "notify", "critical": False, "volume": 0.3, "buttons": {"open": False, "silence": True, "acknowledge": False, "disarm": False}}]})
     await _notify_settings(hass, hass_ws_client)
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
@@ -602,7 +603,7 @@ async def test_alarm_message_settings_in_the_push_step(hass: HomeAssistant, hass
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     assert pushes[-1].data["data"]["push"]["sound"]["volume"] == 0.3
-    assert [a["action"] for a in pushes[-1].data["data"]["actions"]] == ["ALARMAGEDDON_OPEN"]  # Knöpfe ohne Angabe: globale Werte
+    assert [a["action"] for a in pushes[-1].data["data"]["actions"]] == [f"ALARMAGEDDON_ACK_{entry.entry_id}", "ALARMAGEDDON_OPEN"]  # Knöpfe ohne Angabe: globale Werte
 
 
 async def test_buttons_only_work_when_the_message_offers_them(hass: HomeAssistant, hass_ws_client) -> None:
@@ -664,7 +665,7 @@ async def test_click_target_of_the_alarm_message(hass: HomeAssistant, hass_ws_cl
 
     data = await fire(None)  # automatische Meldung ohne Push-Schritt
     assert data["url"] == data["clickAction"] == "/alarmageddon?view=log"
-    assert data["actions"][0]["uri"] == "/alarmageddon?view=log"
+    assert next(a for a in data["actions"] if a["action"] == "ALARMAGEDDON_OPEN")["uri"] == "/alarmageddon?view=log"
     assert (await fire([{"type": "notify"}]))["url"] == "/alarmageddon?view=log"
     assert (await fire([{"type": "notify", "click": "overview"}]))["clickAction"] == "/alarmageddon"
     assert (await fire([{"type": "notify", "click": "custom", "click_path": "/lovelace/alarm"}]))["url"] == "/lovelace/alarm"

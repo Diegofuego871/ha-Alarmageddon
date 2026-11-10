@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 73  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 74  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -180,8 +180,9 @@ DEFAULT_NOTIFY: Final = {
     # Weitere Knöpfe der Alarmmeldung (0.16.0): "Öffnen" (Panel) standardmässig an, "Sirene stumm" aus
     "open_action": True,
     "silence_action": False,
-    # "Alarm quittieren" (1.1.0): beendet den Alarm, die Anlage bleibt scharf; standardmässig aus wie "Sirene stumm"
-    "acknowledge_action": False,
+    # "Alarm quittieren" (1.2.0): beendet den Alarm, die Anlage bleibt scharf. Standardmässig an: es schaltet nichts ab
+    # (anders als "Deaktivieren"), ein neuer Auslöser alarmiert wieder
+    "acknowledge_action": True,
     # Wartung (0.5.0): Batterie schwach unter dieser Schwelle (%), nicht erreichbar ab so vielen Minuten
     "battery_threshold": 20,
     "offline_minutes": 60,

@@ -352,6 +352,12 @@
       sys.events.unshift({ t: new Date().toISOString(), state: delay ? "arming" : ARM_STATE[msg.mode], mode: msg.mode, by: "Diego" });
       return { ok: true };
     }
+    if (msg.type === "alarmageddon/acknowledge") {
+      if (states[sys.entity_id]?.state !== "triggered") throw err("not_triggered", "There is no running alarm");
+      const mode = states[sys.entity_id].attributes.arm_mode;
+      window.__setState(sys.entity_id, mode ? ARM_STATE[mode] : "disarmed", { arm_mode: mode || null, changed_by: "Diego", deadline: null, triggered_by: null });
+      return { ok: true };
+    }
     throw err("unknown_command");
   }
 

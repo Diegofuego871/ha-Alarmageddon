@@ -86,7 +86,7 @@ An alarm system has to work when something else does not. These mechanisms are b
 | Safe on restart | State, delays and a running alarm continue after a restart; the alarm actions go on at the step they had reached |
 | Codes | 4 to 8 digits, stored only as a salted hash, never shown, never in a backup or a log. Five wrong codes lock the alarm system for one minute, also for the right code |
 | Administrators only | The side panel and every one of its commands need administrator rights |
-| Buttons in the alarm notification | "Disarm", "Silence siren" and "Acknowledge" are off by default. They only work while the alarm is running and only from the phone of a configured alarm recipient |
+| Buttons in the alarm notification | "Disarm" and "Silence siren" are off by default, "Acknowledge" is on. They only work while the alarm is running and only from the phone of a configured alarm recipient |
 | Nothing holds up the siren | A device that does not answer is skipped after 10 seconds, a push notification is never waited for, and a failing step, log, recording or notification never stops the rest |
 | Watchdog | The alarm actions are supervised as a whole: the first step starts within 8 seconds, no step delays the next one beyond its limit, and a flow that breaks off goes on with the next step. Interventions appear in the timeline of the alarm |
 | You decide how long the siren sounds | There is no fixed duration in the code. You set it in the flow ("wait" between on and off, or a duration for a sound, up to an hour per step). It is kept exactly and counts from the first start, also across a restart |
@@ -173,7 +173,7 @@ Details for those who want to know exactly. Click to open.
 - **Back to the previous state:** on or off, brightness, position, volume and source; Sonos with its own snapshot including groups.
 - **Test:** runs the saved flow without an alarm and stops after 60 seconds at the latest. A real alarm during a test starts the real flow at once.
 - **Media players** fetch the sounds from Home Assistant, so they must reach its local URL (Settings → System → Network).
-- **Buttons of the alarm notification:** "Open" (on by default), "Silence siren" (stops the steps, the alarm stays), "Acknowledge" (ends the alarm, the alarm system stays armed and alarms again at the next trigger) and "Disarm" (iOS asks for Face ID or the passcode, Android does not).
+- **Buttons of the alarm notification:** "Open" (on by default), "Silence siren" (stops the steps, the alarm stays), "Acknowledge" (on by default; ends the alarm, the alarm system stays armed and alarms again at the next trigger) and "Disarm" (iOS asks for Face ID or the passcode, Android does not).
 - **Critical notifications:** the volume applies to iOS; Android plays them on the alarm channel, set its volume on the phone.
 - **Maintenance messages:** each problem once, several in one notification, again after the battery was replaced or the sensor responded.
 - **Battery forecast:** from the recorder history of the last 90 days; empty without enough history.

@@ -102,7 +102,9 @@ button { font: inherit; color: inherit; }
 .ag-mini.err { background: var(--ag-error-soft); color: var(--ag-error); }
 .ag-alarm { border-radius: 18px; padding: 16px 18px; background: var(--ag-error); color: #fff; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .ag-alarm b { font-size: 18px; font-weight: 500; }
-.ag-alarm .ag-btn { background: #fff; color: var(--ag-error); border-color: #fff; margin-left: auto; min-height: 44px; font-size: 15px; }
+.ag-alarm-btns { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.ag-alarm .ag-btn { background: #fff; color: var(--ag-error); border-color: #fff; min-height: 44px; font-size: 15px; }
+.ag-alarm [data-act="ack"] { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .8); }
 .ag-log { padding: 4px 18px; }
 .ag-log time { color: var(--ag-text2); min-width: 64px; font-variant-numeric: tabular-nums; flex: none; }
 .ag-empty { padding: 28px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 640px; }
@@ -190,7 +192,8 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 :host([narrow]) .ag-sysgrid { grid-template-columns: 1fr; gap: 12px; }
 :host([narrow]) .ag-sys { padding: 14px; gap: 12px; }
 :host([narrow]) .ag-tabs { flex: 1 1 100%; }
-:host([narrow]) .ag-alarm .ag-btn { margin-left: 0; width: 100%; }
+:host([narrow]) .ag-alarm-btns { margin-left: 0; width: 100%; flex-direction: column; }
+:host([narrow]) .ag-alarm .ag-btn { width: 100%; }
 :host([narrow]) .list-search { flex: 1 1 100%; min-width: 0; }
 :host([narrow]) .ag-foot { margin: auto -12px calc(-24px - env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); bottom: calc(-24px - env(safe-area-inset-bottom, 0px)); }
 :host([narrow]) dialog.ag-dlg { margin: auto 0 0; width: 100vw; max-width: 100vw; border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }

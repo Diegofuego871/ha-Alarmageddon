@@ -61,6 +61,7 @@ COMMANDS: dict[str, dict[str, Any]] = {
     "save_workflows": {"entry_id": "ENTRY", "workflows": {}},
     "test_workflow": {"entry_id": "ENTRY", "trigger": "home"},
     "stop_workflow": {"entry_id": "ENTRY"},
+    "acknowledge": {"entry_id": "ENTRY"},
     "battery_forecast": {},
     "log": {},
     "export": {},

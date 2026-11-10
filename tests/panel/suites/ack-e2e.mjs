@@ -17,13 +17,13 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Schritt angehängt (grünes Symbol)`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step').length === 6 && !!r.querySelectorAll('.ag-wf-step')[5].querySelector('.ag-wf-icon.k-acknowledge')"));
     check(`${tag}: im Entwurf als Schritt "acknowledge"`, await s.ev("return JSON.stringify(r.host.actions.draft.wf.away[5]) === JSON.stringify({ type: 'acknowledge' })"));
 
-    // Knopf "Quittieren" im Push-Schritt: Standard aus, einschaltbar, im Schritt gespeichert
+    // Knopf "Quittieren" im Push-Schritt: Standard an, abschaltbar, im Schritt gespeichert
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open");
-    check(`${tag}: Knopf "Quittieren" im Push-Schritt, aus`, await s.ev("const b=r.querySelector('#ag-step [data-wf=\"nt-btn\"][data-key=\"acknowledge\"]'); return !!b && b.getAttribute('aria-checked') === 'false'"));
+    check(`${tag}: Knopf "Quittieren" im Push-Schritt, standardmässig an`, await s.ev("const b=r.querySelector('#ag-step [data-wf=\"nt-btn\"][data-key=\"acknowledge\"]'); return !!b && b.getAttribute('aria-checked') === 'true'"));
     await s.tap('#ag-step [data-wf="nt-btn"][data-key="acknowledge"]');
     await s.tap('#ag-step [data-wf="apply"]');
-    check(`${tag}: Knopf im Schritt gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && st.buttons?.acknowledge === true"));
+    check(`${tag}: Knopf im Schritt gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && st.buttons?.acknowledge === false"));
     await s.ctx.close();
   }
 }

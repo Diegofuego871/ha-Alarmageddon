@@ -672,7 +672,7 @@ export class ActionsUi {
   // Wirksame Werte der Alarmmeldung: aus dem Schritt, sonst der frühere globale Wert (so ändert sich bei bestehenden Schritten nichts)
   _ntGlobal() {
     const g = this.host._data?.notify || {};
-    return { critical: g.types?.triggered?.critical ?? true, volume: g.types?.triggered?.volume ?? 0.8, open: g.open_action ?? true, silence: g.silence_action ?? false, acknowledge: g.acknowledge_action ?? false, disarm: g.disarm_action ?? false };
+    return { critical: g.types?.triggered?.critical ?? true, volume: g.types?.triggered?.volume ?? 0.8, open: g.open_action ?? true, silence: g.silence_action ?? false, acknowledge: g.acknowledge_action ?? true, disarm: g.disarm_action ?? false };
   }
 
   // Empfänger der Meldung: Standard sind die Alarm-Empfänger der Konfiguration; hier lassen sie sich für diese Meldung ersetzen

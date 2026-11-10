@@ -97,6 +97,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_workflows)
     websocket_api.async_register_command(hass, ws_test_workflow)
     websocket_api.async_register_command(hass, ws_stop_workflow)
+    websocket_api.async_register_command(hass, ws_acknowledge)
     websocket_api.async_register_command(hass, ws_battery_forecast)
     websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_export)
@@ -630,6 +631,19 @@ async def ws_test_workflow(hass: HomeAssistant, connection, msg: dict[str, Any])
         return
     if not await runner.async_run(msg["trigger"], test=True, steps=[msg["step"]] if "step" in msg else None):
         connection.send_error(msg["id"], "empty", "No steps for this alarm")
+        return
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/acknowledge", vol.Required("entry_id"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_acknowledge(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Alarm quittieren (Knopf im Panel): nur bei laufendem Alarm; die Anlage bleibt scharf."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    if not entry.runtime_data.controller.acknowledge(connection.user.name if connection.user else None):
+        connection.send_error(msg["id"], "not_triggered", "There is no running alarm")
         return
     connection.send_result(msg["id"], {"ok": True})
 

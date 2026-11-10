@@ -68,6 +68,13 @@ for (const lang of ["de", "en"]) {
     await s.sim(`window.__setState("alarm_control_panel.haus", "triggered", { arm_mode: "home", triggered_by: "binary_sensor.fenster_kueche" })`);
     check(`${tag}: Alarm-Band`, await s.waitFor(`const a=r.querySelector('.ag-alarm'); return a && a.innerText.includes(${JSON.stringify(t.alarm)}) && a.innerText.includes("Fenster Küche") && a.innerText.includes(${JSON.stringify(t.disarm)})`));
     check(`${tag}: Alarm-Band vor den Karten`, await s.ev(`return r.querySelector('.ag-ov-top').firstElementChild.classList.contains('ag-alarm')`));
+    check(`${tag}: Alarm-Band mit Knopf "Quittieren" neben Deaktivieren`, await s.ev(`const b=r.querySelector('.ag-alarm [data-act="ack"]'); return !!b && !!r.querySelector('.ag-alarm [data-act="mode"][data-mode="off"]') && b.getBoundingClientRect().width > 40`));
+    await s.tap('.ag-alarm [data-act="ack"]');
+    check(`${tag}: Quittieren beendet den Alarm, die Anlage bleibt scharf (Band weg)`, await s.waitFor(`return !r.querySelector('.ag-alarm') && r.querySelector('[data-system="e_haus"]').innerText.length > 0`));
+    check(`${tag}: Befehl gesendet`, await s.sim("return window.__calls.some((c) => c.type === 'alarmageddon/acknowledge' && c.entry_id === 'e_haus')"));
+    check(`${tag}: Knopf nur bei Alarm (ohne Alarm kein Band)`, await s.ev(`return !r.querySelector('[data-act="ack"]')`));
+    await s.sim(`window.__setState("alarm_control_panel.haus", "triggered", { arm_mode: "home", triggered_by: "binary_sensor.fenster_kueche" })`);
+    await s.waitFor("return !!r.querySelector('.ag-alarm')");
     check(`${tag}: Alarm in der Warnkachel`, await s.waitFor(`return r.querySelector('.ag-status').innerText.includes("Haus")`));
 
     if (mobile) {

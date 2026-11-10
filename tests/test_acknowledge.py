@@ -115,12 +115,12 @@ async def test_end_message_says_acknowledged_and_replaces_the_alarm(hass: HomeAs
 
 
 async def test_push_button_acknowledge_follows_settings_and_sender(hass: HomeAssistant, hass_ws_client) -> None:
-    """Knopf "Quittieren": standardmässig aus, nur für Empfänger des Alarms, nur während des Alarms."""
+    """Knopf "Quittieren" (standardmässig an, abschaltbar): nur für Empfänger des Alarms, nur während des Alarms."""
     pushes = async_mock_service(hass, "notify", "handy")
     ctx = await _phone(hass)
     stranger = await _phone(hass, device="Fremd", user="Fremder")
     entry, _ = await _setup_workflow(hass, [])
-    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE])
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE], acknowledge_action=False)
     await call(hass, "alarm_arm_home")
     action = f"ALARMAGEDDON_ACK_{entry.entry_id}"
     # Aus: kein Knopf, ein alter Knopf wirkt nicht
@@ -157,8 +157,28 @@ async def test_push_button_acknowledge_follows_settings_and_sender(hass: HomeAss
 async def test_push_step_can_offer_the_acknowledge_button(hass: HomeAssistant, hass_ws_client) -> None:
     pushes = async_mock_service(hass, "notify", "handy")
     entry = await setup_alarm(hass, workflows={"home": [{"type": "notify", "buttons": {"acknowledge": True}}]})
-    await _notify_settings(hass, hass_ws_client)
+    await _notify_settings(hass, hass_ws_client, acknowledge_action=False)  # global aus, der Schritt schaltet ihn ein
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     assert [a["action"] for a in pushes[0].data["data"]["actions"]] == [f"ALARMAGEDDON_ACK_{entry.entry_id}", "ALARMAGEDDON_OPEN"]
+
+
+async def test_panel_command_acknowledges_only_a_running_alarm(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/acknowledge", "entry_id": entry.entry_id})
+    result = await client.receive_json()
+    assert not result["success"] and result["error"]["code"] == "not_triggered"
+    await call(hass, "alarm_arm_home")
+    await client.send_json({"id": 2, "type": "alarmageddon/acknowledge", "entry_id": entry.entry_id})
+    assert not (await client.receive_json())["success"]  # scharf, aber kein Alarm
+    assert state(hass) == AlarmControlPanelState.ARMED_HOME
+    await open_sensor(hass, WINDOW)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+    await client.send_json({"id": 3, "type": "alarmageddon/acknowledge", "entry_id": entry.entry_id})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert state(hass) == AlarmControlPanelState.ARMED_HOME
+    record = entry.runtime_data.recorder.recordings[0]
+    assert record["reason"] == "acknowledged" and record["ended_by"]

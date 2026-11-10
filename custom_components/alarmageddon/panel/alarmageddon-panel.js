@@ -803,7 +803,8 @@ class AlarmageddonPanel extends HTMLElement {
     const sensor = st?.attributes?.triggered_by;
     const text = sensor ? this._t("alarmBy", { sensor: this._name(sensor), time: this._fmtTime(st.last_changed) }) : "";
     return `<div class="ag-alarm" role="alert">${ic("alert", 30)}<div><b>${esc(this._t("alarmTitle", { name: s.title }))}</b><div style="opacity:.9;font-size:13px;margin-top:2px">${esc(text)}</div></div>
-      <button class="ag-btn" data-act="mode" data-entry="${esc(s.entry_id)}" data-mode="off">${ic("shieldOff", 18)}${esc(this._t("disarm"))}</button></div>`;
+      <div class="ag-alarm-btns"><button class="ag-btn" data-act="ack" data-entry="${esc(s.entry_id)}" title="${esc(this._t("ackHint"))}">${ic("check", 18)}${esc(this._t("ack"))}</button>
+      <button class="ag-btn" data-act="mode" data-entry="${esc(s.entry_id)}" data-mode="off">${ic("shieldOff", 18)}${esc(this._t("disarm"))}</button></div></div>`;
   }
 
   _eventText(e) {
@@ -1019,6 +1020,17 @@ class AlarmageddonPanel extends HTMLElement {
 
   // ----- Scharfschalten -----
 
+  // Alarm quittieren: beendet den Alarm, die Anlage bleibt scharf (der Knopf steht nur bei laufendem Alarm da)
+  async _ack(entryId) {
+    try {
+      await this._hass.callWS({ type: "alarmageddon/acknowledge", entry_id: entryId });
+      this._toast(this._t("ackDone"));
+      this._fetch();
+    } catch (err) {
+      this._toast(this._t("errGeneric", { message: errText(err) }));
+    }
+  }
+
   async _arm(entryId, mode, code) {
     const s = this._system(entryId);
     if (!s) return;
@@ -1130,7 +1142,9 @@ class AlarmageddonPanel extends HTMLElement {
     const el = ev.target.closest("[data-act]");
     if (!el) return;
     const act = el.dataset.act;
-    if (act === "mode") {
+    if (act === "ack") {
+      this._ack(el.dataset.entry);
+    } else if (act === "mode") {
       const seg = el.closest(".ag-seg");
       if (seg && !el.classList.contains("on")) {
         // Kapsel sofort zum gewählten Knopf: Rückmeldung ohne auf HA zu warten
