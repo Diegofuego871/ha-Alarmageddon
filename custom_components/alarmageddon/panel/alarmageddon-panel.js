@@ -587,7 +587,9 @@ class AlarmageddonPanel extends HTMLElement {
       // Der letzte feste Teil hat keinen, der Tabellenkopf und das Blatt der Optionen stehen direkt darunter.
       items.forEach((el, i) => {
         el.classList.add("ag-stk");
-        el.classList.toggle("ag-stk-last", i === items.length - 1);
+        // Übersicht: der Abstand zwischen Filtern und Tabellenkopf bleibt auch beim Scrollen (der Teil behält seinen Innenabstand in der Seitenfarbe,
+        // so scheinen die Zeilen nicht in der Lücke durch); sonst stünde der letzte feste Teil ohne Abstand über dem Kopf
+        el.classList.toggle("ag-stk-last", i === items.length - 1 && !stickyOverview);
       });
       let top = 0;
       items.forEach((el, i) => {
