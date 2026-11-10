@@ -17,6 +17,10 @@ die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
 - **Der Knopf "Quittieren" in der Push-Meldung ist standardmässig an** (pro Push-Schritt abschaltbar). Er schaltet nichts ab, braucht also anders als "Deaktivieren" keine Freigabe; er wirkt weiterhin nur, solange der Alarm läuft, und nur vom Handy eines konfigurierten Alarm-Empfängers.
 
+### Behoben
+
+- **Grafik im Ablauf:** Nach einem Schritt, der "nebenher läuft", ragte die gestrichelte Linie in die Karte darüber und lag auf der durchgehenden Linie. Sie liegt jetzt genau zwischen Karte und Plus-Knopf, und die durchgehende Linie scheint nicht mehr durch.
+
 ## [1.2.0] - 2026-11-10
 
 Nicht veröffentlicht; enthalten in 1.3.0.

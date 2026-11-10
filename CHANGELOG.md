@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Button "Acknowledge" in the push message is on by default** (it can be switched off per push step). It switches nothing off, so unlike "Disarm" it needs no opt-in; it still works only while the alarm is running and only from the phone of a configured alarm recipient.
 
+### Fixed
+
+- **Flow graphic:** after a step that "runs alongside", the dashed line reached into the card above and ran on top of the solid line. It now sits exactly between the card and the plus button, and the solid line no longer shows through.
+
 ## [1.2.0] - 2026-11-10
 
 Not released; included in 1.3.0.

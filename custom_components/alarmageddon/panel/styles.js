@@ -323,7 +323,9 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-flow:disabled { cursor: default; opacity: .75; }
 .ag-flow.par { border-color: transparent; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-flow:hover { border-color: var(--ag-primary); }
-.ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: -14px; height: 32px; width: 0; border-left: 2px dashed var(--ag-primary); z-index: 0; }
+/* Läuft nebenher: gestrichelte Linie genau zwischen Karte und Plus (nie in die Karte hinein). Die Lücken sind deckend in der Seitenfarbe,
+   so scheint die durchgehende Hauptlinie dahinter nicht durch und es entsteht keine doppelte Linie */
+.ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: 0; height: 18px; width: 2px; background: repeating-linear-gradient(to bottom, var(--ag-primary) 0 4px, var(--ag-bg) 4px 7px); z-index: 0; }
 .ag-wf-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; z-index: 1; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }

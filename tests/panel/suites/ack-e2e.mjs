@@ -17,6 +17,9 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Schritt angehängt (grünes Symbol)`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step').length === 6 && !!r.querySelectorAll('.ag-wf-step')[5].querySelector('.ag-wf-icon.k-acknowledge')"));
     check(`${tag}: im Entwurf als Schritt "acknowledge"`, await s.ev("return JSON.stringify(r.host.actions.draft.wf.away[5]) === JSON.stringify({ type: 'acknowledge' })"));
 
+    // Linie nach einem Schritt "läuft nebenher": gestrichelt zwischen Karte und Plus, nie in die Karte hinein, ohne durchscheinende Hauptlinie
+    await s.ev(`const a=r.host.actions; const d=a.ensureDraft(); d.wf[a.trigger]=[{type:"notify"},{type:"action",action:"switch.turn_on",target:["switch.steckdose_flur"],detach:true}]; a.render(); return 1`);
+    check(`${tag}: gestrichelte Linie liegt zwischen Karte und Plus, nicht in der Karte`, await s.waitFor(`const p=r.querySelector('.ag-wf-plus.par'); if (!p) return false; const cs=getComputedStyle(p,'::before'); const card=p.previousElementSibling.getBoundingClientRect(); const pr=p.getBoundingClientRect(); return parseFloat(cs.top) === 0 && parseFloat(cs.height) <= 18 && pr.top >= card.bottom - 0.5 && cs.backgroundImage.includes('repeating-linear-gradient')`));
     // Knopf "Quittieren" im Push-Schritt: Standard an, abschaltbar, im Schritt gespeichert
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open");
