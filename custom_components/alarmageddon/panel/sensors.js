@@ -123,6 +123,14 @@ export class SensorsUi {
     return this.draft?.perMode ? this.mtab : null;
   }
 
+  // Bereich der Werte im Blatt eines Sensors: der gewählte Reiter. Ist der Sensor "Immer aktiv" und steht nicht in der Zone dieses Modus,
+  // hätten Werte des Modus keine Wirkung: dann gilt der Bereich "Immer aktiv" (in jedem Zustand der Anlage)
+  sheetMode(id) {
+    const m = this.activeMode();
+    if (!m || m === "always") return m;
+    return this.alwaysOn && this.eff(id, "always", "always") && !this.draft.zones[m]?.has(id) ? "always" : m;
+  }
+
   preset(id) {
     return this.presets[this.host._sensor(id).type || "other"] || [];
   }
@@ -377,7 +385,7 @@ export class SensorsUi {
       return `<button class="ag-chip ${on ? "on" : ""}" data-sen="${pm ? "mopt" : "opt"}" ${pm ? 'data-mode="always"' : ""} data-ent="${esc(id)}" data-key="always" aria-pressed="${on}">${ic("flash", 16)}${esc(this._t("wfAlways"))}</button>`;
     })() : "";
     const entryRow = `<div class="ag-orow"><span class="ag-oav ${d.entrySensors.has(id) ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("colEntry"))}</b><small>${esc(this._t("optEntryHint"))}</small></div>${this._entryToggle(r)}</div>`;
-    const mode = this.activeMode();
+    const mode = this.sheetMode(id);
     const delayRow = d.entrySensors.has(id) && mode !== "always" ? this._delayRow(id, mode) : "";
     const modeName = mode === "always" ? this._t("wfAlways") : mode ? this._t(MODE_KEY[mode]) : "";
     // In den Reitern der Modi gibt es "Immer aktiv" nicht (es gilt unabhängig vom Modus und steht im Reiter "Immer aktiv")

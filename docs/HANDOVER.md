@@ -5,6 +5,7 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+- 1.6.3: Sensor-Blatt mit Einstellungen pro Modus: `sensors.js sheetMode(id)` zeigt für einen nur "Immer aktiv"-Sensor ausserhalb der Zone des Reiters den Bereich "always". Test in `always-e2e.mjs`.
 - 1.6.2: Sensor-Blatt: Abschnitt "Alarmmodi" mit Pille "Immer aktiv" (`sensors.js sideHtml`, `alwaysChip`), Schalter `always_off` direkt darunter (`offBlock`), Zeile "Immer aktiv" aus der Liste entfernt. Test in `always-e2e.mjs`.
 - 1.6.1: Übersicht: der letzte feste Teil (`.ag-ov-tools`) behält den Innenabstand (`ag-stk-last` nicht gesetzt in der Übersicht), damit der Abstand zum Tabellenkopf beim Scrollen bleibt (`_stickySync`). Test in `list-e2e.mjs`.
 - 1.6.0 (1.5.0 getaggt auf 918adfb): "Immer aktiv" als Ganzes abschaltbar (`always_enabled`, `controller.always_enabled`/`always_sensors`, Panel: Pille in Anlage › Modi, Reiter/Spalte/Option ausgeblendet); `ws_save_workflows` behält Abläufe fehlender Auslöser. Tests in `test_always_active.py`, `always-e2e.mjs`.

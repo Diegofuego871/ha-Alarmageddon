@@ -7,6 +7,12 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.6.3] - 2026-11-10
+
+### Behoben
+
+- **Sensor-Blatt mit "Einstellungen pro Modus":** Ein Sensor, der nur "Immer aktiv" ist und im gewählten Reiter (zum Beispiel "Anwesend") in keiner Zone steht, zeigte die Einstellungen dieses Modus, die für ihn keine Wirkung haben. Das Blatt zeigt für einen solchen Sensor jetzt den Bereich "Immer aktiv" ("in jedem Zustand der Anlage", blauer Rahmen); steht er in der Zone des Reiters, zeigt es wieder den Modus.
+
 ## [1.6.2] - 2026-11-10
 
 ### Geändert
@@ -775,6 +781,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.6.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.3
 [1.6.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.2
 [1.6.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.0

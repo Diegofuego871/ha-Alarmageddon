@@ -25,6 +25,17 @@ for (const lang of ["de", "en"]) {
     if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
     await s.tap('.ag-foot [data-sen="cancel"]');
 
+    // Mit "Einstellungen pro Modus": ein Sensor, der nur "Immer aktiv" ist und im gewählten Reiter (Anwesend) in keiner Zone steht,
+    // zeigt im Blatt den Bereich "Immer aktiv" (Werte des Modus hätten für ihn keine Wirkung)
+    await s.tap('[data-sen="permode"]');
+    await s.waitFor("return !!r.querySelector('[data-seg=\"sen-mode\"]')");
+    if (mobile || !(await s.ev("return !!r.querySelector('.ag-side .ag-zline')"))) await s.tap(`[data-sen="detail"][data-ent="${smoke}"]`); // auf dem Desktop bleibt das Blatt offen
+    check(`${tag}: Blatt eines nur "Immer aktiv"-Sensors im Reiter "Anwesend" zeigt den Bereich "Immer aktiv"`, await s.waitFor(`const b=r.querySelector('${sheet} .ag-pmbanner'); return !!b && b.innerText.includes(${JSON.stringify(lang === "de" ? "in jedem Zustand" : "every state")}) && !!r.querySelector('${sheet} [data-sen="mopt"][data-mode="always"][data-key="report_only"]') && !r.querySelector('${sheet} [data-sen="mopt"][data-mode="home"]')`));
+    await s.tap(`${sheet} .ag-zline .ag-chip[data-mode="home"]`);
+    check(`${tag}: steht er dort in der Zone, zeigt das Blatt den Modus "Anwesend"`, await s.waitFor(`const b=r.querySelector('${sheet} .ag-pmbanner'); return !!b && !b.innerText.includes(${JSON.stringify(lang === "de" ? "in jedem Zustand" : "every state")}) && !!r.querySelector('${sheet} [data-sen="mopt"][data-mode="home"]')`));
+    if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
+    await s.tap('.ag-foot [data-sen="cancel"]');
+
     // Anlage › Modi: Pille neben den Modi, Standard an
     await s.tap('[data-sub="system"]');
     check(`${tag}: Pille "Immer aktiv" bei den Modi, standardmässig an`, await s.waitFor(`const b=r.querySelector('${pill}'); return !!b && b.getAttribute('aria-pressed') === 'true' && !r.querySelector('.ag-warntext')`));
