@@ -172,8 +172,12 @@ export class NotifyUi {
     const sw = `<div class="ag-pmbar"><div class="ag-pmsw"><button class="ag-toggle ${d.per_mode ? "on" : ""}" data-nt="permode" role="switch" aria-checked="${d.per_mode}" aria-label="${esc(this._t("ntPerMode"))}"></button>
       <div class="ag-settx"><b>${esc(this._t("ntPerMode"))}</b><small>${esc(this._t(d.per_mode ? "ntPerModeOn" : "ntPerModeHint"))}</small></div></div>${tabs}</div>`;
     const modeList = () => MODE_KINDS.map(([kind, icon]) => this._type(kind, icon, dirty, false, this.modeTab)).join("");
+    // Arten, die nicht vom Modus abhängen (Scharfschalten nicht möglich, Deaktiviert): mit Schalter unter den Reitern, sonst in der Liste
+    const modeKinds = new Set(MODE_KINDS.map(([k]) => k));
+    const restList = () => GROUPS.alarm.filter(([kind]) => !modeKinds.has(kind)).map(([kind, icon]) => this._type(kind, icon, dirty)).join("");
     const alarmBody = d.per_mode
-      ? `<div class="ag-pmscope">${ic(MODE_ICON[this.modeTab], 18)}${esc(this._t("pmScope", { mode: this._t(MODE_KEY[this.modeTab]) }))}</div><div class="ag-card ag-mtlist">${modeList()}</div>`
+      ? `<div class="ag-pmscope">${ic(MODE_ICON[this.modeTab], 18)}${esc(this._t("pmScope", { mode: this._t(MODE_KEY[this.modeTab]) }))}</div><div class="ag-card ag-mtlist">${modeList()}</div>
+        <div class="ag-pmscope">${ic("shield", 18)}${esc(this._t("ntAllModesScope"))}</div><div class="ag-card ag-mtlist">${restList()}</div>`
       : `<div class="ag-card ag-mtlist">${list("alarm")}</div>`;
     const html = chapter(this._t("ntChapRecipients"), card(this._recipients("alarm") + this._recipients("maintenance")), this._t("ntChapRecipientsHint"))
       + chapter(this._t("ntChapAlarm"), `<div class="ag-pmgroup ${d.per_mode ? "on" : ""}">${sw}${alarmBody}</div>`, this._t("ntChapAlarmHint"))

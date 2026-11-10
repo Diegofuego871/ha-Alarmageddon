@@ -1,174 +1,212 @@
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/brand/logo.svg" alt="Alarmageddon" width="110"></p>
+
 # Alarmageddon
 
 [Deutsch](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.de.md)
 
-Alarm system for Home Assistant with a guided setup and built-in sensor maintenance.
+An alarm system for Home Assistant that you set up in one place, and that keeps an eye on its own sensors.
 
-> **Status:** early pre-release (0.24.0). Alarm core, side panel, alarm actions, notifications, maintenance, schedule and backup work. Not yet tested by many users: report problems as an issue.
+> **Status:** stable (1.0.0). Everything described here is covered by automated tests, and the whole code was reviewed by an external code review. It has not yet been tried with every kind of device: please report problems as an issue.
 
-## Features
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/overview-en.png" alt="Overview with two alarm systems, the status tile and the sensor list" width="100%"></p>
 
-- **Alarm entity:** an `alarm_control_panel` with the modes "Home", "Away" and "Night", each switchable on and off per alarm system (default: Home and Away), exit and entry delay.
-- **Schedule:** arm in a chosen mode or disarm at set times on chosen weekdays.
-- **Several alarm systems:** add as many as you need (for example house and garage). Each one is its own device with its own alarm entity.
-- **Apple HomeKit:** every alarm system can be passed to Apple Home through the HomeKit Bridge of Home Assistant.
-- **Zones:** one entity per zone that is on as soon as a sensor of the zone is open.
-- **Safe on restart:** delays and alarms continue after a restart. An entry delay that ran out during the restart becomes an alarm.
-- **Code:** optional, 4 to 8 digits, stored only as a hash. Locked for one minute after five wrong codes.
-- **Any radio technology:** Alarmageddon only uses Home Assistant entities. Wi-Fi, Thread/Matter, Zigbee, Z-Wave and Bluetooth all work.
+## Why Alarmageddon
 
-- **Side panel, overview:** control of all alarm systems with "Ready for" per mode, a status tile (all good or warnings) and a list of all sensors with search, filters and view settings (columns, grouping, sorting). It shows state, battery, signal, firmware, model and last change, as a list (default) or as cards (switch next to "View"); a click on a column header sorts, and "Open" and "Occupancy" are separate filters. Columns are chosen separately for the computer and the phone, as in Device Panel, and stored per user.
-- **Side panel, configuration:** sensors (zones as a grid with drag across boxes, options per sensor in a side sheet, defaults per sensor type) and alarm system (modes, delays, behaviour for open sensors, schedule, codes, backup). On the phone the same table, compact (tick boxes, the arrow opens a sheet from the bottom with all options, the delay and "Remove sensor").
-- **Options per sensor:** always active (smoke, water), may be open when arming, bypass when arming, arm as soon as closed, failure counts as alarm, needs a second sensor, silent alarm. Defaults per sensor type, own values per sensor, and on request own values per mode (switch "Settings per mode" in Configuration › Sensors: tabs per mode, same table, the other options in the sheet).
-- **Ready to arm:** one entity per mode with the blocking sensors.
-- **Log and alarm recording:** every alarm as a graphical timeline (which sensor responded when, until acknowledged) and all events in their own tab.
-- **Alarm actions:** a graphical workflow per alarm: push notification, switch devices, covers, alarm sound on media players (Sonos and others), wait, script, any action. Devices return to their previous state after the alarm.
-- **Notifications:** critical push notifications with volume, recipients separately for alarms and maintenance, selectable events.
-- **Maintenance:** notifications for low battery and unreachable sensors (once per problem), battery forecast in the list.
-- **Two-sensor confirmation:** motion sensors can require a second sensor before they trigger, against false alarms.
-- **Codes per person:** own code per person, optionally linked to a Home Assistant user; "changed by" shows the person.
-- **Backup:** all settings as a file, without codes.
+- **One interface for everything.** Sensors, zones, delays, alarm actions, notifications, schedule, codes and backup are set in one side panel. No YAML, no helpers, no automations to wire together.
+- **Your sensors are watched, not only used.** Battery level with a forecast, unreachable sensors, signal, firmware and the last change of every sensor in one list. A sensor that fails while armed is reported, or counts as an alarm if you want.
+- **Built to alarm when in doubt.** Delays and alarms survive a restart, nothing can hold up the siren, and a watchdog supervises the alarm actions. See [Safety mechanisms](#safety-mechanisms).
+- **Fits into Home Assistant.** Every alarm system is a standard `alarm_control_panel` entity for dashboards, automations and Apple Home. Any sensor Home Assistant knows works: Zigbee, Z-Wave, Thread/Matter, Wi-Fi or Bluetooth.
+- **Stays at home.** No cloud and no account: everything runs inside your Home Assistant.
 
-## Installation
+## Quick start
 
-1. HACS → three dots → "Custom repositories" → `https://github.com/Diegofuego871/ha-Alarmageddon`, type "Integration".
-2. Install "Alarmageddon" and restart Home Assistant.
-3. Settings → Devices & services → "Add integration" → "Alarmageddon".
+1. **Install:** HACS → three dots → "Custom repositories" → `https://github.com/Diegofuego871/ha-Alarmageddon`, type "Integration". Install "Alarmageddon" and restart Home Assistant.
+2. **Add an alarm system:** Settings → Devices & services → "Add integration" → "Alarmageddon". Give it a name and, if you like, a code.
+3. **Choose the sensors:** open "Alarmageddon" in the sidebar (administrators only), then Configuration › Sensors › "Add sensors", and tick the zones "Home", "Away" and "Night".
+4. **Decide what happens on an alarm:** Configuration › Actions, for example "push notification, siren on, wait 3 minutes, siren off".
+5. **Choose who is notified:** Configuration › Notifications. "Send test message" and the play button of a step let you try everything without an alarm.
 
-Pre-releases: Alarmageddon is published as a pre-release for now. In HACS, switch on "Pre-release" for the repository (switch on the HACS device of the repository).
+## A tour
 
-## Setup
+### Overview
 
-1. **New alarm system:** name, night mode and an optional code.
-2. **Side panel "Alarmageddon"** (appears in the sidebar for administrators): Configuration › Sensors: "Add sensors" lists everything Alarmageddon recognises and you choose the sensors of this alarm system (the bin button removes one again); then assign them to the zones "Home", "Away" and "Night"; the arrow at the end of a row opens the options of the sensor. Configuration › Alarm system sets the modes, delays, behaviour and the schedule. Changes apply with "Save". At the top of Configuration the name of the alarm system is shown large; the pencil renames it (config entry, device and entities, optionally also the entity IDs), "Open integration in HA" jumps to the integration page. With several alarm systems the name is a dropdown to switch.
-3. **Options** (Settings → Devices & services → Alarmageddon → "Configure"):
-   - **Zones:** sensors for "Home", "Away" and "Night" (same as in the side panel). A sensor can be in several zones.
-   - **Delays:** exit delay per mode, entry delay, sensors with entry delay (for example the front door). The alarm lasts until it is disarmed; how long a siren or sound plays is set per step in the actions.
-   - **Behaviour:** night mode, code required to arm.
-   - **Code:** set a new main code or remove it. Personal codes: see "Codes per person".
+All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and the list of all sensors with search, filters, sorting and a choice of columns. The same on the phone:
 
-Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not trigger.
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-en.png" alt="Overview on the phone" width="270"></p>
 
-## Alarm actions
+### Sensors and zones
 
-Side panel › Configuration › Actions. Choose the alarm system and the alarm ("Home", "Away", "Night" or "always active" for smoke, water and gas), then add steps with "+":
+One table for sensors and zones: tick where a sensor belongs, or drag across several boxes. Every sensor type has sensible defaults (a smoke detector is always active, a motion sensor may still report motion when arming), each sensor can have its own values, and the switch "Settings per mode" adds a tab per mode for those who want more.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensors-en.png" alt="Sensors and zones" width="100%"></p>
+
+### Alarm actions
+
+What happens on an alarm is a flow you build from steps, per mode if you like. Devices marked with the arrow return to their previous state when you disarm, and every step can be tested on the real devices with its play button.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-en.png" alt="Alarm actions as a flow: push notification, siren on, wait, siren off" width="100%"></p>
 
 | Step | Does |
 | --- | --- |
-| Push notification | Alarm notification to the alarm recipients (see Notifications). Title and text can be changed with the pencil, with the placeholders `{name}`, `{sensor}`, `{time}`, `{mode}`; the tap target is by default the log with the running alarm (or the overview or an own path) |
-| Switch device | Lights, sockets, covers, locks, fans, sirens and more. You choose the devices and see only what they can do (on, off, toggle, open, close, lock) and, when turning on, the settings they support (brightness, colour temperature, position, speed, temperature) |
-| Play alarm sound | One of five sounds on media players: tone as a dropdown with a preview on this phone or computer (not on the real system), volume, duration in seconds or until disarmed |
-| Wait | Pauses the following steps |
-| Scene or script | Starts a scene or script |
-| Own action | Any Home Assistant action with its fields (no JSON) |
+| Push notification | Critical alarm notification to the alarm recipients, with your own title and text and optional buttons |
+| Switch device | Lights, sockets, sirens, covers, locks and more: on, off, open, close, with brightness or position |
+| Play alarm sound | One of five sounds on media players (Sonos and others), with volume, for a duration or until disarmed |
+| Wait | Pauses the following steps, for example between "siren on" and "siren off" |
+| Scene, script or own action | Anything else Home Assistant can do |
 
-- **Do not wait for this step:** a step can run alongside, so the next one starts right away (long alarm sound, slow device). Disarming stops it too; after a restart in the middle of an alarm only the steps after it continue.
-- **Test per step:** the play button on a step runs only this step on the real devices, after a confirmation. Move steps with the handle on the left (drag with finger or mouse, or arrow keys on the handle).
-- **Back to the previous state:** devices with the arrow symbol return to their state before the alarm when you disarm (on/off, brightness, position, volume, source; Sonos with its own snapshot including groups). On by default for alarm sounds.
-- **Disarming stops everything,** also after a restart of Home Assistant in the middle of an alarm. A failing step does not stop the other steps.
-- **Test** runs the saved workflow without alarm and stops after 60 seconds at the latest.
-- **Media players** fetch the sounds from Home Assistant (`/alarmageddon_sounds/…`). The player must reach the local URL of Home Assistant (Settings → System → Network).
+### Notifications
 
-## Notifications
+Recipients are chosen separately for alarms and for maintenance messages. Every kind of message (entry delay, armed, disarmed, arming not possible, silent alarm, sensor unreachable, low battery) can be switched on or off, be critical (sounds in silent mode) and have its own volume, per mode if you like.
 
-Side panel › Configuration › Notifications, for all alarm systems:
+### Log and alarm timeline
 
-- **Recipients** separately for alarms and maintenance messages: pick every `notify` service (for example `notify.mobile_app_<phone>` of the companion app) from a dropdown; the chosen ones appear as tags with an x.
-- **Messages per mode:** silent alarm, entry delay, armed and "sensor unreachable while armed" can have their own values (on/off, critical, volume) for "Home", "Away" and "Night" in sub-tabs; without an own value the common value applies.
-- **Keep in Home Assistant:** every kind of message can additionally appear as a notification in the bell of Home Assistant (stays until dismissed, independent of the recipients).
-- **Settings per kind of message:** silent alarm (no alarm), sensor unreachable while armed, entry delay, arming not possible, armed, disarmed, low battery, sensor unreachable, update available. Each kind can be switched on or off, be **critical** (sounds in silent mode and do not disturb) or not, and has its own **volume**. The volume applies to iOS; Android plays critical messages on the alarm channel (`alarm_stream`), set its volume on the phone. Each kind has a "Send test message" button (with the saved settings).
-- **Silent alarm** (option per sensor): a sensor that often responds without a break-in, or whose battery runs low, sends the message "Silent alarm" while armed instead of triggering the alarm. At most one message per sensor and minute.
-- **Icon in notifications:** every notification carries the icon of the integration (Android; iOS always shows the icon of the Home Assistant app).
-- **Alarm message** (Configuration › Actions, step "Push notification", set per mode): title and text, critical, volume and the buttons "Open" (on by default), "Silence siren" (off by default; stops all steps of the alarm actions and returns the devices, the alarm system stays in alarm) and "Disarm" (off by default; iOS asks for Face ID or the passcode, Android does not). Anyone holding the unlocked phone can use the last two. A button only works if the message offers it. Without a push step a default message goes out (critical, button "Open"); the alarm message cannot be switched off. The other kinds of messages stay under Configuration › Notifications.
-- **Maintenance:** low battery (threshold, default 20 %) and sensors unreachable for longer than a set time (default 60 minutes) go to the maintenance recipients. Each problem once, several in one notification; again after the battery was replaced or the sensor responded.
+Every alarm is recorded from the first trigger until someone acknowledges it: which sensor responded when, which steps ran, which notifications went out. All other events (armed, disarmed, schedule, sensor failures) are listed below, with a filter by period and a CSV export.
 
-## Log and alarm recording
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/log-en.png" alt="Log with the timeline of an alarm" width="100%"></p>
 
-Side panel › Log. Every alarm is recorded from the first trigger (entry delay or alarm) until it is acknowledged by disarming:
+### More
 
-- **Timeline per alarm:** one lane per sensor with a bar for the time it responded, lines for the state changes (entry delay, alarm, acknowledged) and the time axis. Below, the order with the time of day and the time since the start ("window contact 18:03:07, motion sensor +1 min 20 s"). The running alarm grows live; older ones are collapsed.
-- **What is recorded:** actions started and notifications sent during the alarm, state changes and every change of the sensors of the alarm system (responded, calm again, unreachable), including sensors that report only. Recording continues after a restart of Home Assistant in the middle of an alarm. At most 20 alarms per alarm system and 300 entries per alarm; with a flapping sensor the first entries and the end are kept.
-- **All events** (arming, disarming, sensor failures, schedule) are listed below, no longer on the overview. Up to 1000 events and 30 alarms per alarm system are kept.
-- **Period and export:** filter by "Last 3 hours", "Today", "Last 7 days" and more, by a chosen day or period, and by alarm system. The labelled period shows the dates it covers. The download symbol at the bottom ("Download log (CSV)", for Excel) saves exactly what the filter shows.
-- The recordings are runtime data and not part of the backup.
+- **Schedule:** arm or disarm at set times on chosen weekdays. A running alarm is never disarmed by the schedule.
+- **Codes per person:** everyone gets their own code; the log shows who armed and disarmed.
+- **Modes:** "Home", "Away" and "Night", each switchable on and off, each with its own zone, delays and actions.
+- **Two-sensor confirmation:** a motion sensor can require a second sensor before it triggers, against false alarms.
+- **Backup:** all settings as a file or stored in the integration, never with codes.
+- **Several alarm systems:** house and garage, each as its own device.
 
-## Maintenance and battery forecast
+## Safety mechanisms
 
-The sensor list on the overview shows a battery forecast ("~3 months"): the time until the battery falls below the threshold, from the recorder history of the last 90 days since the last battery change. Without enough history (less than three days or no drop) the column stays empty. Requires the recorder (on by default in Home Assistant).
+An alarm system has to work when something else does not. These mechanisms are built in and checked by tests on every change.
 
-## Codes per person
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/safety-en.svg" alt="What secures the alarm actions" width="100%"></p>
 
-Side panel › Configuration › Alarm system › "Codes per person": each person gets their own code (4 to 8 digits), optionally linked to a Home Assistant user. Arming or disarming with that code shows the person as "changed by", in the recent events and in the notifications. Actions of a linked user without a code show the same name. The main code from the options keeps working. Codes are stored only as a hash and never shown. Wrong codes count together: after five wrong codes the alarm system is locked for one minute.
-
-## Two-sensor confirmation
-
-Option per sensor "Needs a second sensor" (side sheet of the sensor or defaults per sensor type). While armed such a sensor triggers only if another sensor with this option responds within the confirmation window (Configuration › Alarm system, default 60 seconds). The same sensor twice does not count. Sensors without the option trigger alone as before; during the entry delay the option does not apply, and "failure counts as alarm" still triggers at once. Off by default: an alarm system should rather alarm in doubt.
-
-## Settings per mode
-
-Side panel › Configuration › Alarm system › "Settings per mode": choose "Home", "Away" or "Night" and set the values of that mode:
-
-| Value | Meaning |
+| Mechanism | What it guarantees |
 | --- | --- |
-| Exit delay | Time to leave before the alarm system is armed |
-| Entry delay | Time to disarm after an entry sensor opened |
-| Confirmation window | Time for the second sensor with "Needs a second sensor" |
+| When in doubt, alarm | An entry delay that ran out while Home Assistant restarted becomes an alarm. During an entry delay or an alarm, arming is refused: only disarming leads out |
+| Safe on restart | State, delays and a running alarm continue after a restart; the alarm actions go on at the step they had reached |
+| Codes | 4 to 8 digits, stored only as a salted hash, never shown, never in a backup or a log. Five wrong codes lock the alarm system for one minute, also for the right code |
+| Administrators only | The side panel and every one of its commands need administrator rights |
+| Buttons in the alarm notification | "Disarm" and "Silence siren" are off by default. They only work while the alarm is running and only from the phone of a configured alarm recipient |
+| Nothing holds up the siren | A device that does not answer is skipped after 10 seconds, a push notification is never waited for, and a failing step, log, recording or notification never stops the rest |
+| Watchdog | The alarm actions are supervised as a whole: the first step starts within 8 seconds, no step delays the next one beyond its limit, and a flow that breaks off goes on with the next step. Interventions appear in the timeline of the alarm |
+| You decide how long the siren sounds | There is no fixed duration in the code. You set it in the flow ("wait" between on and off, or a duration for a sound, up to an hour per step). It is kept exactly and counts from the first start, also across a restart |
+| Sensors that fail | A sensor that becomes unreachable while armed is reported at once, or triggers the alarm with the option "failure counts as alarm". Low batteries are reported before they are empty |
+| Tested | More than 450 automated tests against a real Home Assistant, about 1,700 checks of the interface on computer and phone, and a mutation check that removes each of 29 safeguards and requires a test to fail |
 
-At the end of each action flow the element "Alarm ends" can send an own message when someone disarms (the same options as the alarm message). Whether devices return is decided by "Undo on disarm / acknowledge" in each step. The alarm lasts until it is disarmed in every mode (there is no alarm duration; old values are ignored). Alarm systems from earlier versions keep their behaviour: until a mode has its own value, the common value applies. The options dialog of Home Assistant sets common values and applies a changed value to all modes.
+### Limits
 
-## Modes
+Alarmageddon is not a certified alarm system. Please keep in mind:
 
-Side panel › Configuration › Alarm system › "Modes": "Home", "Away" and "Night" can each be switched on and off. At least one mode stays on. Apple Home, the overview, the zones, "Ready to arm" and the actions offer only the modes switched on. A mode switched off keeps its zone and actions and gets them back when switched on again. The mode the alarm system is currently armed in cannot be switched off: disarm first.
-
-## Schedule
-
-Side panel › Configuration › Alarm system › "Schedule": "Add time" creates a rule with time, action (arm "Home", "Away" or "Night", or disarm) and weekdays. Each time can be switched off without deleting it. Rules:
-
-- A running alarm or entry delay is never disarmed or overridden by the schedule; the skipped time appears in the recent events.
-- Open sensors block arming as usual (or are bypassed, depending on the setting); the notification "arming not possible" follows.
-- No code is needed. "Changed by" shows "Schedule".
-- A time for a mode that is switched off is skipped.
-- Times missed while Home Assistant was off are not made up.
-- Disarming by schedule means: at that time the alarm system is off, whoever is at home. Use it only where that is wanted.
-
-## Backup
-
-Side panel › Configuration › Alarm system › "Backup": "Back up" (with an optional name) stores the current configuration (all alarm systems, defaults, notifications; no codes) in the integration. A table below lists the backups with the date and the alarm systems; each one can be restored, downloaded as a file or deleted. Up to 10 backups are kept, the oldest one is dropped when an eleventh is added. "Export" saves all settings of all alarm systems as a JSON file (zones, delays, options per sensor, actions, defaults, notifications). "Import" shows first which alarm systems are found (matched by name) and replaces their settings after confirming. Codes are never part of a backup, and the codes of the target alarm system stay as they are. The backup of Home Assistant contains all settings including codes anyway.
+- If Home Assistant, the power, the network or the radio coordinator fails, there is no alarm. A siren with its own battery helps for critical use.
+- How long a siren may sound is regulated differently from place to place. Check what applies to you and set the duration in the alarm actions; a siren with its own time limit is the safest choice.
+- A sound "until disarmed" and a siren without an "off" step run until someone disarms. That is your choice in the flow.
 
 ## Apple HomeKit
 
 1. Add the alarm entity to the HomeKit Bridge of Home Assistant (include the domain `alarm_control_panel` or the entity).
-2. Apple Home shows "Off" and the modes switched on ("Home", "Away", "Night").
-3. **With a code:** HomeKit does not ask for the code. Either set the code in the HomeKit Bridge configuration (`entity_config` → `code`) or enter it as default code in the entity settings of the alarm entity in Home Assistant.
-
-Known behaviour of the HomeKit Bridge:
-
-- During the exit delay Apple Home shows "Off" with the target "Away", also when arming "Home". Use no exit delay for "Home" and "Night" (default).
-- During the entry delay Apple Home keeps showing "armed" and switches to "Alarm" when the alarm starts.
+2. Apple Home shows "Off" and the modes that are switched on.
+3. With a code: HomeKit does not ask for it. Set it in the HomeKit Bridge configuration (`entity_config` → `code`) or as default code in the entity settings.
 
 ## Entities
 
 | Entity | Content |
 | --- | --- |
 | `alarm_control_panel.<name>` | The alarm system. Attributes: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by` |
-| `binary_sensor.<name>_zone_home` | On when a sensor of the zone "Home" is open |
-| `binary_sensor.<name>_zone_away` | On when a sensor of the zone "Away" is open |
-| `binary_sensor.<name>_zone_night` | On when a sensor of the zone "Night" is open |
-| "Ready to arm home/away/night" | On when no open sensor blocks arming in this mode. Attribute: `blocking_sensors` |
+| `binary_sensor.<name>_zone_<mode>` | On when a sensor of the zone of this mode is open |
+| "Ready to arm" per mode | On when no open sensor blocks arming in this mode. Attribute: `blocking_sensors` |
 
-Zone and "Ready" entities exist only for the modes switched on.
+Zone and "Ready" entities exist only for the modes that are switched on.
+
+## Good to know
+
+Details for those who want to know exactly. Click to open.
+
+<details>
+<summary><b>How an alarm runs</b></summary>
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/flow-en.svg" alt="States of an alarm system" width="100%"></p>
+
+- Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not.
+- A sensor with entry delay (for example the front door) starts the entry delay; every other sensor triggers at once. A second entry sensor does not extend the delay.
+- Sensors set to "always active" (smoke, water, gas) trigger in every state, also when disarmed.
+- The alarm lasts until someone disarms. How long siren, light and sound run is set in the alarm actions.
+- Open sensors block arming, unless they may be open or are bypassed until the next disarming.
+
+</details>
+
+<details>
+<summary><b>Numbers and limits</b></summary>
+
+| What | Value |
+| --- | --- |
+| Exit delay | Default 60 s for "Away", none for "Home" and "Night"; up to 3600 s per mode |
+| Entry delay | Default 30 s, per mode and per sensor if you like |
+| Confirmation window for the second sensor | Default 60 s |
+| Wrong codes | Five, then locked for 60 s |
+| Code storage | PBKDF2-SHA256 with 120,000 rounds and a salt per code |
+| Device does not answer | Next step after 10 s |
+| First step after the alarm triggers | 8 s at most (watchdog) |
+| Wait and sound duration | 0 to 3600 s per step, up to 40 steps per flow |
+| Test of the alarm actions | Ends after 60 s at the latest |
+| Low battery, sensor unreachable | Below 20 %, after 60 minutes (both adjustable) |
+| Kept per alarm system | 1000 events, 30 alarms with 300 entries each; 10 backups in total |
+
+</details>
+
+<details>
+<summary><b>Options per sensor</b></summary>
+
+- **Always active:** triggers in every state, also when disarmed (smoke, water, gas).
+- **May be open when arming:** an open sensor does not block arming and triggers after it was closed and opened again.
+- **Bypass when arming:** an open sensor is ignored until the next disarming.
+- **Arm as soon as closed:** closing this sensor during the exit delay (the front door behind you) arms at once instead of waiting for the delay to end.
+- **Failure counts as alarm:** an unreachable sensor triggers the alarm while armed.
+- **Needs a second sensor:** triggers only if another sensor with this option responds within the confirmation window.
+- **Silent alarm:** sends a message instead of triggering the alarm, at most once per minute.
+
+</details>
+
+<details>
+<summary><b>Alarm actions and notifications in detail</b></summary>
+
+- **Do not wait for this step:** a step can run alongside, so the next one starts right away. A sound "until disarmed" always runs alongside.
+- **Back to the previous state:** on or off, brightness, position, volume and source; Sonos with its own snapshot including groups.
+- **Test:** runs the saved flow without an alarm and stops after 60 seconds at the latest. A real alarm during a test starts the real flow at once.
+- **Media players** fetch the sounds from Home Assistant, so they must reach its local URL (Settings → System → Network).
+- **Buttons of the alarm notification:** "Open" (on by default), "Silence siren" (stops the steps, the alarm stays) and "Disarm" (iOS asks for Face ID or the passcode, Android does not).
+- **Critical notifications:** the volume applies to iOS; Android plays them on the alarm channel, set its volume on the phone.
+- **Maintenance messages:** each problem once, several in one notification, again after the battery was replaced or the sensor responded.
+- **Battery forecast:** from the recorder history of the last 90 days; empty without enough history.
+
+</details>
+
+<details>
+<summary><b>Schedule, backup and HomeKit in detail</b></summary>
+
+- **Schedule:** open sensors block arming as usual; no code is needed; times missed while Home Assistant was off are not made up. Disarming by schedule means the alarm system is off at that time, whoever is at home.
+- **Backup:** up to 10 backups in the integration, plus export and import as a file. Import shows first what it would change. Codes are never included; the backup of Home Assistant itself contains everything.
+- **HomeKit, exit delay:** Apple Home shows "Off" with the target "Away" during the exit delay. Use no exit delay for "Home" and "Night" (default).
+- **HomeKit, entry delay:** Apple Home keeps showing "armed" and switches to "Alarm" when the alarm starts.
+
+</details>
+
+<details>
+<summary><b>For developers</b></summary>
+
+```bash
+pip install -r requirements_test.txt
+python -m pytest                      # tests against a real Home Assistant
+python scripts/mutation_check.py      # removes each safeguard, a test must fail
+cd tests/panel && npm ci && node run.mjs   # interface tests (Playwright)
+```
+
+- The images of this page come from the simulator: `node tests/panel/readme-shots.mjs`, then `python scripts/optimize_images.py`; the diagrams from `python scripts/make_diagrams.py`.
+- Concept and decisions: [docs/CONCEPT.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/docs/CONCEPT.md) (German). Changes: [CHANGELOG.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/CHANGELOG.md).
+
+</details>
 
 ## Languages
 
 The integration is in English and switches to German when Home Assistant runs in German.
-
-## Limitations
-
-Alarmageddon is not a certified alarm system. If Home Assistant, the network or the radio coordinator fails, there is no alarm. Use a siren with its own battery for critical use.
-
-## Concept
-
-See [docs/CONCEPT.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/docs/CONCEPT.md) (German) and the mockups in [docs/mockups/konzept-v1](https://github.com/Diegofuego871/ha-Alarmageddon/tree/main/docs/mockups/konzept-v1).
 
 ## License
 

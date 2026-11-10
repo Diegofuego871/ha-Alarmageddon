@@ -272,9 +272,11 @@ export class SensorsUi {
     const st = h._state(r.id)?.state;
     const [icon, label] = DC[r.info.device_class] || ["sensor", "dcOther"];
     const cls = r.info.missing ? "missing" : st === "on" ? "open" : "";
+    // Im Reiter eines Modus zeigt die Zeile die dort wirksamen Werte (wie das Blatt), sonst die Werte für alle Modi
+    const mode = this.activeMode();
     const active = [
       ...(this.draft.entrySensors.has(r.id) ? [this._t("optEntryShort")] : []),
-      ...OPTIONS.filter((o) => this.eff(r.id, o.key)).map((o) => this._t(o.short)),
+      ...OPTIONS.filter((o) => this.eff(r.id, o.key, mode)).map((o) => this._t(o.short)),
     ];
     const sub = r.info.missing ? this._t("missing") : [this._t(label), ...active].join(" · ");
     const b = h._battery(r.id);
@@ -323,28 +325,6 @@ export class SensorsUi {
     const d = this.draft;
     const on = d.entrySensors.has(r.id);
     return `<button class="ag-toggle ${on ? "on" : ""}" data-sen="entry" data-ent="${esc(r.id)}" role="switch" aria-checked="${on}" aria-label="${esc(`${r.name}: ${this._t("colEntry")}`)}" ${this.inActive(r.id) ? "" : `disabled title="${esc(this._t("entryHint"))}"`} ${extra}></button>`;
-  }
-
-  _cards(rows) {
-    const d = this.draft;
-    const modes = this.modes();
-    const cur = this.activeMode();
-    let area = null;
-    const out = [];
-    for (const r of rows) {
-      if (r.area !== area) {
-        area = r.area;
-        out.push(`<div class="ag-group-label">${esc(area)}</div>`);
-      }
-      const bits = this._bits(r);
-      out.push(`<div class="ag-card ag-mcard ag-clickrow" data-row="${esc(r.id)}"><div class="ag-mcard-top">${bits.av}<div style="flex:1;min-width:0">${esc(r.name)}${bits.ownDot}<div class="ag-t2 ag-small">${esc(bits.sub)}</div></div>${bits.batt}
-          <button class="ag-iconbtn" data-sen="remove" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("removeSensor")}`)}" title="${esc(this._t("removeSensor"))}">${ic("trash", 18)}</button><button class="ag-cbtn" data-sen="detail" data-ent="${esc(r.id)}" aria-label="${esc(`${r.name}: ${this._t("details")}`)}">${ic("chevRight", 16)}</button></div>
-        <div class="ag-zbtns" style="--n:${modes.length + 1}">${modes.map((m) => {
-          const on = d.zones[m].has(r.id);
-          return `<button class="ag-zbtn ${on ? "on" : ""} ${m === cur ? "cur" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(r.id)}" aria-pressed="${on}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`;
-        }).join("")}<button class="ag-zbtn ${this.eff(r.id, "always", cur) ? "on" : ""} ${cur === "always" ? "cur" : ""}" data-sen="${cur ? "mopt" : "opt"}" ${cur ? `data-mode="always"` : ""} data-key="always" data-ent="${esc(r.id)}" aria-pressed="${this.eff(r.id, "always", cur)}">${ic("flash", 16)}${esc(this._t("optAlways"))}</button></div></div>`);
-    }
-    return `<div class="ag-mcards">${out.join("")}</div>`;
   }
 
   // Seitenblatt (Desktop rechts neben der Tabelle, Handy als Blatt von unten)

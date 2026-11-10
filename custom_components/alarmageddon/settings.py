@@ -5,6 +5,7 @@ Globale Einstellungen, für alle Anlagen gleich: Voreinstellungen je Sensorart
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 import copy
 from typing import Any
@@ -15,6 +16,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import (
     DATA_SETTINGS,
+    DATA_SETTINGS_LOCK,
     BATTERY_THRESHOLD_RANGE,
     DEFAULT_NOTIFY,
     OFFLINE_MINUTES_RANGE,
@@ -124,7 +126,30 @@ class Settings:
             # Letzte echte Änderung (offen <-> zu) je Sensor, ISO-Zeit; intern, nicht in der Sicherung (Laufzeitdaten)
             "last_changes": {},
         }
-        self._listeners: list[Callable[[], None]] = []
+        # (Schlüssel, Funktion): der Schlüssel ist die Anlage (entry_id), damit eine Anlage, die ohnehin neu lädt, ausgelassen werden kann
+        self._listeners: list[tuple[str | None, Callable[[], None]]] = []
+        # Ein verzögertes Schreiben steht aus (siehe _save_soon)
+        self._save_pending = False
+
+    def _save_soon(self) -> None:
+        """
+        Verzögert schreiben, ohne den Termin hinauszuschieben: Store.async_delay_save verschiebt ihn bei jedem Aufruf neu
+        (LEARNINGS), bei dauernd wechselnden Sensoren würde sonst erst beim Beenden von Home Assistant geschrieben. Darum
+        nur einen Termin planen; er schreibt den Stand, der dann gilt.
+        """
+        if self._save_pending:
+            return
+        self._save_pending = True
+        self._store.async_delay_save(self._data_for_save, 5)
+
+    def _data_for_save(self) -> dict[str, Any]:
+        self._save_pending = False
+        return self.data
+
+    async def _async_write(self) -> None:
+        # Sofort schreiben verwirft einen geplanten Termin: der Merker muss mit, sonst plante _save_soon nie wieder einen
+        self._save_pending = False
+        await self._store.async_save(self.data)
 
     async def async_load(self) -> None:
         stored = await self._store.async_load()
@@ -145,14 +170,14 @@ class Settings:
     def note_change(self, entity_id: str, when: str) -> None:
         """Echte Änderung eines Sensors merken (aus dem Zustandsautomaten); selten, verzögertes Speichern genügt."""
         self.data["last_changes"][entity_id] = when
-        self._store.async_delay_save(lambda: self.data, 5)
+        self._save_soon()
 
     def seed_changes(self, found: dict[str, str]) -> None:
         """Aus dem Verlauf geholte Zeitpunkte nur für Sensoren ohne gemerkten Wert übernehmen."""
         added = {k: v for k, v in found.items() if k not in self.data["last_changes"]}
         if added:
             self.data["last_changes"].update(added)
-            self._store.async_delay_save(lambda: self.data, 5)
+            self._save_soon()
 
     @property
     def presets(self) -> dict[str, list[str]]:
@@ -165,27 +190,46 @@ class Settings:
     async def async_set_notify(self, notify: dict[str, Any]) -> None:
         # Benachrichtigungen ändern nichts an Zonen oder Entitäten: speichern ohne die Anlagen neu zu laden
         self.data["notify"] = valid_notify(notify)
-        await self._store.async_save(self.data)
+        await self._async_write()
 
-    async def async_set_presets(self, presets: dict[str, list[str]]) -> None:
-        self.data["presets"] = valid_presets(presets)
-        await self._async_save()
-
-    async def _async_save(self) -> None:
+    async def async_store_presets(self, presets: dict[str, list[str]]) -> bool:
+        """
+        Voreinstellungen übernehmen und schreiben, ohne die Anlagen zu benachrichtigen. Gibt zurück, ob sie sich geändert haben.
+        Für Abläufe, die danach auch Optionen von Anlagen ändern (Zurücksetzen eigener Werte, Sicherung einspielen): diese Anlagen
+        laden über ihre Optionsänderung neu und sehen dabei schon die neuen Voreinstellungen; die übrigen meldet
+        async_notify_listeners. So lädt jede Anlage genau einmal.
+        """
+        new = valid_presets(presets)
+        if new == self.data["presets"]:
+            return False
+        self.data["presets"] = new
         # Selten geändert: sofort schreiben, damit nichts beim Neustart verloren geht
-        await self._store.async_save(self.data)
-        for listener in list(self._listeners):
-            listener()
+        await self._async_write()
+        return True
 
     @callback
-    def add_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
-        self._listeners.append(listener)
-        return lambda: self._listeners.remove(listener)
+    def async_notify_listeners(self, skip: set[str] | frozenset[str] = frozenset()) -> None:
+        """Anlagen neu laden lassen (neue Voreinstellungen); `skip`: Anlagen, die wegen geänderter Optionen ohnehin neu laden."""
+        for key, listener in list(self._listeners):
+            if key is None or key not in skip:
+                listener()
+
+    @callback
+    def add_listener(self, listener: Callable[[], None], key: str | None = None) -> Callable[[], None]:
+        item = (key, listener)
+        self._listeners.append(item)
+        return lambda: self._listeners.remove(item)
 
 
 async def async_get_settings(hass: HomeAssistant) -> Settings:
-    if (settings := hass.data.get(DATA_SETTINGS)) is None:
-        settings = Settings(hass)
-        await settings.async_load()
-        hass.data[DATA_SETTINGS] = settings
+    if (settings := hass.data.get(DATA_SETTINGS)) is not None:
+        return settings
+    # Beim Start laden alle Anlagen zugleich: ohne Sperre entstünden zwei Instanzen auf derselben Datei, und die Listener
+    # (Neuladen bei neuen Voreinstellungen) hingen an der falschen (wie beim Panel, siehe panel.py)
+    lock = hass.data.setdefault(DATA_SETTINGS_LOCK, asyncio.Lock())
+    async with lock:
+        if (settings := hass.data.get(DATA_SETTINGS)) is None:
+            settings = Settings(hass)
+            await settings.async_load()
+            hass.data[DATA_SETTINGS] = settings
     return settings

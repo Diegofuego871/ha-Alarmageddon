@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
-from homeassistant.core import HomeAssistant, State
-from pytest_homeassistant_custom_component.common import async_mock_service, mock_restore_cache_with_extra_data
+from homeassistant.core import Context, HomeAssistant, State
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service, mock_restore_cache_with_extra_data
 
 from custom_components.alarmageddon.code import hash_code
 
@@ -15,6 +15,20 @@ from .test_alarm import advance, call, open_sensor, state
 
 SIREN = "switch.sirene"
 PLAYER = "media_player.wohnzimmer"
+
+
+PHONE = "notify.mobile_app_handy"
+
+
+async def _phone(hass: HomeAssistant, device: str = "Handy", user: str = "Anna") -> Context:
+    """
+    Ein Companion-Gerät (Dienst notify.mobile_app_<gerät>), registriert von einem HA-Benutzer. Rückgabe: der Kontext, mit dem
+    Home Assistant die Knöpfe dieses Geräts meldet (mobile_app feuert das Ereignis mit dem Benutzer der Registrierung).
+    """
+    owner = await hass.auth.async_create_user(user)
+    MockConfigEntry(domain="mobile_app", title=device, data={"device_name": device, "user_id": owner.id}).add_to_hass(hass)
+    async_mock_service(hass, "notify", f"mobile_app_{device.lower()}")
+    return Context(user_id=owner.id)
 
 
 async def _notify_settings(hass: HomeAssistant, hass_ws_client, **notify: Any) -> None:
@@ -56,18 +70,41 @@ async def test_german_texts(hass: HomeAssistant, hass_ws_client) -> None:
 
 
 async def test_disarm_from_push(hass: HomeAssistant, hass_ws_client) -> None:
-    """Knopf "Deaktivieren": nur wenn eingeschaltet, dann auch ohne Code."""
+    """Knopf "Deaktivieren": nur wenn eingeschaltet und nur während des Alarms, dann auch ohne Code."""
     async_mock_service(hass, "notify", "handy")
+    ctx = await _phone(hass)
     code_hash, salt = hash_code("1234")
     entry = await setup_alarm(hass, code_hash=code_hash, code_salt=salt)
-    await _notify_settings(hass, hass_ws_client)
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE])
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+    action = f"ALARMAGEDDON_DISARM_{entry.entry_id}"
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action}, context=ctx)
+    await hass.async_block_till_done()
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # Knopf aus: nichts passiert
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE], disarm_action=True)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action}, context=ctx)
+    await hass.async_block_till_done()
+    assert state(hass) == AlarmControlPanelState.DISARMED
+
+
+async def test_stale_disarm_push_does_not_disarm_an_armed_system(hass: HomeAssistant, hass_ws_client) -> None:
+    """
+    Eine alte Alarmmeldung auf dem Handy (das "Alarm beendet" kam nie an) darf eine inzwischen wieder scharfe Anlage nicht
+    deaktivieren: der Knopf wirkt nur, solange der Alarm läuft (Sicherheitsregel).
+    """
+    async_mock_service(hass, "notify", "handy")
+    ctx = await _phone(hass)
+    entry = await setup_alarm(hass)
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE], disarm_action=True)
     await call(hass, "alarm_arm_home")
     action = f"ALARMAGEDDON_DISARM_{entry.entry_id}"
-    hass.bus.async_fire("mobile_app_notification_action", {"action": action})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action}, context=ctx)
     await hass.async_block_till_done()
     assert state(hass) == AlarmControlPanelState.ARMED_HOME
-    await _notify_settings(hass, hass_ws_client, disarm_action=True)
-    hass.bus.async_fire("mobile_app_notification_action", {"action": action})
+    await open_sensor(hass, WINDOW)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action}, context=ctx)
     await hass.async_block_till_done()
     assert state(hass) == AlarmControlPanelState.DISARMED
 
@@ -420,17 +457,18 @@ async def test_alarm_buttons_follow_settings(hass: HomeAssistant, hass_ws_client
 async def test_silence_from_push_stops_steps_keeps_alarm(hass: HomeAssistant, hass_ws_client, freezer) -> None:
     """Sirene stumm: nur wenn eingeschaltet; stoppt die Schritte und stellt Geräte zurück, die Anlage bleibt im Alarm."""
     async_mock_service(hass, "notify", "handy")
+    ctx = await _phone(hass)
     entry, services = await _setup_workflow(hass, [{"type": "action", "action": "switch.turn_on", "target": [SIREN], "restore": True}, {"type": "wait", "seconds": 300}])
-    await _notify_settings(hass, hass_ws_client)
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE])
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     action = f"ALARMAGEDDON_SILENCE_{entry.entry_id}"
-    hass.bus.async_fire("mobile_app_notification_action", {"action": action})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action}, context=ctx)
     await hass.async_block_till_done()
     assert entry.runtime_data.workflow.running  # aus: nichts passiert
-    await _notify_settings(hass, hass_ws_client, silence_action=True)
-    hass.bus.async_fire("mobile_app_notification_action", {"action": action})
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE], silence_action=True)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": action}, context=ctx)
     await hass.async_block_till_done()
     assert entry.runtime_data.workflow.running is None
     assert len(services["switch.turn_off"]) == 1  # Sirene zurückgestellt
@@ -492,8 +530,9 @@ async def test_sound_for_seconds_then_stops(hass: HomeAssistant, freezer) -> Non
 async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_client, freezer) -> None:
     """Dauer 0: der Ton läuft, bis deaktiviert wird; "Sirene stumm" stoppt ihn jederzeit, auch ohne laufenden Ablauf."""
     async_mock_service(hass, "notify", "handy")
+    ctx = await _phone(hass)
     entry, s = await _setup_workflow(hass, [{"type": "sound", "players": [PLAYER], "sound": "siren", "duration": 0}])
-    await _notify_settings(hass, hass_ws_client, silence_action=True)
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE], silence_action=True)
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
@@ -501,7 +540,7 @@ async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_cli
         await advance(hass, freezer, 4)
     assert len(s["media_player.play_media"]) > 10  # läuft weiter, ohne Ende
     stops = len(s["media_player.media_stop"])
-    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"}, context=ctx)
     await hass.async_block_till_done()
     assert len(s["media_player.media_stop"]) > stops and entry.runtime_data.workflow.running is None
     count = len(s["media_player.play_media"])
@@ -511,7 +550,7 @@ async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_cli
     assert state(hass) == AlarmControlPanelState.TRIGGERED
     # Zweiter Druck, obwohl nichts mehr läuft: stoppt die Player trotzdem (der Ton könnte noch klingen)
     stops = len(s["media_player.media_stop"])
-    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"}, context=ctx)
     await hass.async_block_till_done()
     assert len(s["media_player.media_stop"]) == stops + 1
 
@@ -569,12 +608,13 @@ async def test_alarm_message_settings_in_the_push_step(hass: HomeAssistant, hass
 async def test_buttons_only_work_when_the_message_offers_them(hass: HomeAssistant, hass_ws_client) -> None:
     """Knopf "Deaktivieren" wirkt nur, wenn der Push-Schritt ihn anbietet; abgeleitet aus der Konfiguration (auch nach Neustart)."""
     async_mock_service(hass, "notify", "handy")
+    ctx = await _phone(hass)
     entry = await setup_alarm(hass, workflows={"home": [{"type": "notify", "buttons": {"disarm": True}}]})
-    await _notify_settings(hass, hass_ws_client)
+    await _notify_settings(hass, hass_ws_client, alarm_targets=[PHONE])
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
-    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"}, context=ctx)
     await hass.async_block_till_done()
     assert state(hass) == AlarmControlPanelState.DISARMED
     # Schritt ohne Knopf: die Aktion wird ignoriert
@@ -584,7 +624,7 @@ async def test_buttons_only_work_when_the_message_offers_them(hass: HomeAssistan
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
-    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_DISARM_{entry.entry_id}"}, context=ctx)
     await hass.async_block_till_done()
     assert state(hass) == AlarmControlPanelState.TRIGGERED
 

@@ -17,7 +17,7 @@ from typing import Any
 from homeassistant.components import persistent_notification
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
-from homeassistant.util import dt as dt_util
+from homeassistant.util import dt as dt_util, slugify
 
 from .const import ICON_URL_PATH, NOTIFY_MODE_KINDS, NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
 from .controller import AlarmController
@@ -121,6 +121,52 @@ def text(hass: HomeAssistant, key: str, **values: Any) -> str:
     return TEXTS[language(hass)][key].format(**values)
 
 
+# Companion App: Domäne der Config Entries und Schlüssel ihrer Daten (homeassistant/components/mobile_app/const.py)
+MOBILE_APP = "mobile_app"
+# hass.data-Schlüssel der alten notify-Plattformen (homeassistant/components/notify/legacy.py: NOTIFY_SERVICES); dort stehen notify-Gruppen
+NOTIFY_SERVICES_KEY = "notify_services"
+
+
+def recipient_users(hass: HomeAssistant, targets: list[str]) -> set[str]:
+    """
+    HA-Benutzer der Companion-Geräte hinter den Empfängern: `notify.mobile_app_<gerät>` direkt oder als Mitglied einer
+    notify-Gruppe (Plattform "group", auch verschachtelt).
+
+    Wozu: Ein Knopf der Alarmmeldung ("Deaktivieren", "Sirene stumm") kommt als Ereignis `mobile_app_notification_action`
+    zurück. Home Assistant (geprüft: 2026.2, mobile_app/webhook.py `webhook_fire_event`) übernimmt die Daten des Ereignisses
+    ungeprüft von der App und beglaubigt nur den Absender: den Benutzer, der das Gerät registriert hat (Kontext des
+    Ereignisses). Jedes registrierte Companion-Gerät kann das Ereignis also feuern; darum zählt nur, ob sein Benutzer zu
+    einem konfigurierten Alarm-Empfänger gehört. Eine Gerätekennung gibt Home Assistant nicht mit: zwei Geräte desselben
+    Benutzers lassen sich nicht unterscheiden.
+    """
+    by_service: dict[str, str] = {}
+    for entry in hass.config_entries.async_entries(MOBILE_APP):
+        name, user_id = entry.data.get("device_name"), entry.data.get("user_id")
+        if name and user_id:
+            # Derselbe Name wie der Dienst der Companion App (notify/legacy.py: slugify(f"{prefix}_{name}"))
+            by_service[slugify(f"{MOBILE_APP}_{name}")] = user_id
+    groups: dict[str, list[str]] = {}
+    platforms = hass.data.get(NOTIFY_SERVICES_KEY)
+    for services in platforms.values() if isinstance(platforms, dict) else ():
+        for service in services if isinstance(services, list) else ():
+            members = getattr(service, "entities", None)  # GroupNotifyPlatform: [{"action": "<dienst>"}]
+            name = getattr(service, "_service_name", None)
+            if isinstance(name, str) and isinstance(members, list):
+                groups[name] = [m.get("action") or m.get("service") for m in members if isinstance(m, dict)]
+    users: set[str] = set()
+    seen: set[str] = set()
+    stack = [t.partition(".")[2] for t in targets if isinstance(t, str) and t.startswith("notify.")]
+    while stack:
+        name = stack.pop()
+        if not isinstance(name, str) or not name or name in seen:
+            continue
+        seen.add(name)
+        if name in by_service:
+            users.add(by_service[name])
+        stack.extend(groups.get(name, ()))
+    return users
+
+
 @callback
 def async_send(hass: HomeAssistant, targets: list[str], payload: dict[str, Any]) -> list[str]:
     """An jeden Empfänger einzeln und nicht blockierend; gibt die erreichbaren Dienste zurück."""
@@ -217,6 +263,9 @@ class Notifier:
     @callback
     def async_start(self) -> None:
         self._last_state = str(self._ctl.state)
+        # Neustart mitten im Alarm: der Auslöser für "Alarm endet" ist der Modus, in dem die Anlage noch steht
+        if self._ctl.state == AlarmControlPanelState.TRIGGERED:
+            self._alarm_trigger = self._ctl.mode or "always"
         self._unsubs.append(self._ctl.add_listener(self._on_change))
         self._unsubs.append(self._ctl.add_event_listener(self._on_event))
         self._unsubs.append(self.hass.bus.async_listen("mobile_app_notification_action", self._on_action))
@@ -286,11 +335,23 @@ class Notifier:
         """
         Knöpfe der Meldung. "Deaktivieren" und "Sirene stumm" nur, wenn ausdrücklich eingeschaltet (Sicherheitsregel).
         "Sirene stumm" lässt die Anlage im Alarm und stoppt nur die Schritte (Geräte kehren zurück).
+        Beide wirken nur, solange der Alarm läuft: eine alte Alarmmeldung, die auf dem Handy liegen blieb (das "Alarm beendet"
+        kam nie an), darf eine inzwischen wieder scharfe Anlage nicht deaktivieren. Und nur von einem Gerät, dessen Benutzer
+        zu den konfigurierten Alarm-Empfängern gehört.
         """
         action = event.data.get("action")
-        if action == f"{PUSH_ACTION_DISARM}{self.entry.entry_id}" and self._button_allowed("disarm"):
+        key = {f"{PUSH_ACTION_DISARM}{self.entry.entry_id}": "disarm", f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}": "silence"}.get(action)
+        if key is None or self._ctl.state != AlarmControlPanelState.TRIGGERED or not self._button_allowed(key):
+            return
+        # Nur ein konfigurierter Alarm-Empfänger darf antworten: das Ereignis kann jedes registrierte Companion-Gerät feuern
+        # (siehe recipient_users). Ohne beglaubigten Absender (Automation, Entwicklerwerkzeuge ohne Benutzer) passiert nichts.
+        user_id = event.context.user_id
+        if not user_id or user_id not in recipient_users(self.hass, self.cfg["alarm_targets"]):
+            _LOGGER.warning("%s: push action '%s' ignored, the sender is not a configured alarm recipient", self.entry.title, key)
+            return
+        if key == "disarm":
             self.hass.async_create_task(self._ctl.async_disarm(None, self._t("by_push"), skip_code=True))
-        elif action == f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}" and self._button_allowed("silence") and self.silence:
+        elif self.silence:
             self.hass.async_create_task(self._silence())
 
     def _alarm_steps(self) -> list[dict[str, Any]]:
@@ -417,5 +478,8 @@ class Notifier:
         self._ctl.record("notified", type=kind)
         # Eigene Werte je Modus gelten nur für Arten im scharfen Zustand; ohne Angabe der Modus der Anlage
         mode = mode or (self._ctl.mode if kind in NOTIFY_MODE_KINDS else None)
-        async_persist(self.hass, self.cfg, kind, title, message, tag or f"alarmageddon_{self.entry.entry_id}_{kind}", mode)
+        try:
+            async_persist(self.hass, self.cfg, kind, title, message, tag or f"alarmageddon_{self.entry.entry_id}_{kind}", mode)
+        except Exception:  # noqa: BLE001 - die Benachrichtigung in Home Assistant ist Zusatz: die Meldung aufs Handy geht trotzdem hinaus
+            _LOGGER.exception("%s: persistent notification failed", self.entry.title)
         async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))

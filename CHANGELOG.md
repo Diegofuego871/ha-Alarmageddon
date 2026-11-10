@@ -7,6 +7,56 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-11-10
+
+First stable release. No new function compared with 0.40.0: the version number and the status in the README change, because the whole integration was reviewed by an external code review (see 0.40.0) and is no longer a pre-release.
+
+### Changed
+
+- **Version 1.0.0, no longer a pre-release.** The README no longer calls Alarmageddon an early pre-release, and the install steps no longer ask for "Pre-release" in HACS. Everything from 0.24.0 to 0.40.0 is included; the sections below list it.
+
+## [0.40.0] - 2026-11-09
+
+Not released; included in 1.0.0.
+
+Hardening after an external code review: race conditions in the state machine, a test that could swallow a real alarm, a stale "Disarm" button, buttons of the alarm notification only for the configured recipients, and the panel now mirrors the server when it shows what blocks arming.
+
+### Added
+
+- **Watchdog for the alarm actions.** The flow of the alarm actions is now supervised as a whole, whatever the reason for a delay: after the alarm triggers, the first step starts within 8 seconds at most (if the start hangs or fails, the watchdog starts the steps itself, without the snapshot of the devices); no step holds up the next one longer than its own limit (an action 12 seconds, a wait its time plus 2 seconds, a sound its duration plus the time the player may take to answer); and if the flow itself stops unexpectedly, it goes on with the next step. Every intervention is written to the Home Assistant log and shown in the timeline of the alarm ("Watchdog: …"). A hanging step is not cancelled (a script may finish) but no longer waited for; disarming ends it.
+
+### Security
+
+- **Buttons of the alarm notification only for configured recipients:** "Disarm" and "Silence siren" are accepted only from a phone whose Home Assistant user belongs to a configured alarm recipient: a `notify.mobile_app_<device>` service chosen directly, or a member of a chosen notify group (platform `group`, also nested). Before, every Companion App registered with Home Assistant could send the event behind the buttons, also the phone of a user who gets no alarm notifications. Home Assistant confirms only the user who registered the phone, not the single device: two phones of the same user cannot be told apart. An ignored attempt is written to the Home Assistant log. Recipients that are not Companion App services cannot use the buttons (they never could send them).
+
+### Changed
+
+- **A sound "until disarmed" always runs alongside.** It never ends by itself; saved as "wait for this step", the steps after it (for example the siren) never started. The flow shows it as "runs alongside" and the switch is fixed; existing flows behave like this without saving again.
+- **"Disarm" and "Silence siren" in the alarm notification** work only while the alarm is running. A stale alarm notification left on the phone (the "Alarm ended" message never arrived) can no longer disarm an alarm system that was armed again later.
+- **A real alarm during a test of the alarm actions:** the test ends at once and the real flow starts without waiting for anything; the devices return to their state from before the test when you disarm. Before, the flow and, with a push step in the flow, also the alarm notification were skipped while the test (up to 60 s) was running.
+- **Notifications, settings per mode:** with the switch on, the kinds that do not depend on the mode ("Arming not possible", "Disarmed") are listed below the mode tabs under "For all modes"; they were not reachable at all while the switch was on. With the switch off nothing changes.
+- **Sensor table, mode tab:** the small line under the sensor name shows the options that apply in the chosen mode (as the sheet does), not the values for all modes.
+
+### Fixed
+
+- **The duration you set counts from the first start.** How long a siren or sound runs is set in the alarm actions ("siren on, wait, siren off", or a sound with a duration). If settings were saved in the middle of an alarm (the alarm system reloads) or Home Assistant restarted, the waiting time or the sound started again in full, so a siren could run up to twice as long as set. Now only the rest runs; if the time is already over, the next step follows at once.
+- **Nothing holds up the alarm actions any more.** A hanging device or push notification never did (10 seconds at most, a push not at all). Now the same holds for everything else that runs when the alarm triggers: if the event log, the alarm recording, the notification or the notification inside Home Assistant fails, the alarm actions still start and the other parts still run (before, one failing part stopped everything after it, the siren included). If the storage hangs or fails before the first step, the steps start anyway (after 3 seconds at most), and a failure while writing the timeline no longer stops the following steps.
+- **Arming while the code is being checked:** the code check runs in a worker thread. If an entry sensor opened in that moment (entry delay running), arming in another mode silently cancelled the entry delay and the alarm system became armed instead of alarming. Arming is now refused ("Disarm first") and the entry delay runs on to the alarm.
+- **Several alarm systems loading together at startup** created two copies of the global settings (defaults per sensor type, notifications) on the same file; a changed default could then skip reloading an alarm system. One copy, as for the panel.
+- **"Alarm ends" after a restart of Home Assistant in the middle of an alarm** used the message of "always active" instead of the one of the mode the alarm ran in.
+- **Overview, "Ready for" and open sensors:** the panel now applies the same rules as the alarm system: "bypass" and the values per mode (switch "Settings per mode") count. Before, a sensor that the alarm system would bypass was shown as blocking.
+- **Sensor list on the overview:** sensors set to "always active" only in the tab "Always active" (settings per mode) were missing from the list.
+- **Alarm recording:** an alarm that ended without disarming (old alarm duration restored from before 0.25.0) was never closed, and the next alarm was not recorded. Entries of a sensor that keeps failing and returning during the entry delay (including the notifications it causes) now count against the limit per alarm like sensor entries; state changes, steps and the alarm message are always kept.
+- **Panel:** a failed arming showed its error in the wrong dialog in rare cases; the request timer of the data query is released; a removed panel stops its timers; the icons for the sensor classes heat, lock and moving; the summary of an alarm sound without volume had a missing space; the CSV export of the log quotes cells that start like a spreadsheet formula.
+- **Options dialog of Home Assistant:** entry sensors are checked against the modes that are really switched on (home and away can be switched off in the panel); the entered code is not sent back to the form after an input error.
+- **Configuration:** a personal code without a salt or a damaged code entry no longer breaks the code check or the panel.
+- **Log tab:** the panel asks every 5 seconds while the tab is open; the server now answers "unchanged" until an event or an alarm entry was added, instead of sending up to 1000 events and 30 alarms per alarm system every time.
+- **"Last change" of the sensors** is written to disk within 5 seconds also when sensors change all the time (before, every change postponed the write, so it happened only when Home Assistant stopped).
+- **Saving defaults with "Apply to all sensors" and restoring a backup** reload every alarm system once instead of twice; saving unchanged defaults reloads nothing.
+- **Code:** the remains of the removed update function (`http_limit.py`), the unused card view of the sensor table and 61 unused texts of the panel are gone; the own values per sensor are looked up once per options state instead of on every sensor event.
+- **README:** rewritten and restructured: why to use it, a quick start, a tour with screenshots, the safety mechanisms with a diagram, the limits, and the details in a "Good to know" section that opens on a click. The images are created from the simulator (`tests/panel/readme-shots.mjs`).
+- **Tests:** a systematic security test suite (every panel command only for administrators and only for its own alarm system, codes and hashes never leave the server, code lockout, state machine, hostile backups and inputs, paths without login) and a mutation check that removes each safeguard and requires a test to fail; both run on every push.
+
 ## [0.39.0] - 2026-11-09
 
 Backups can have a name.
@@ -623,6 +673,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2

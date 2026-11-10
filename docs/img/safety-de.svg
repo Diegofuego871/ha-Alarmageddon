@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 962 176" width="962" height="176" role="img" aria-label="Was die Alarmaktionen absichert">
+<title>Was die Alarmaktionen absichert</title>
+<style>
+  text { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  .box { font-size: 14px; font-weight: 600; fill: #ffffff; }
+  .label { font-size: 12px; fill: #4b5563; }
+  .head { font-size: 13px; font-weight: 600; fill: #1f2937; }
+  .line { stroke: #6b7280; stroke-width: 1.6; fill: none; }
+  .tip { fill: #6b7280; }
+  .card { fill: rgba(107,114,128,.10); stroke: rgba(107,114,128,.35); stroke-width: 1; }
+  @media (prefers-color-scheme: dark) {
+    .label { fill: #c5cad3; } .head { fill: #f3f4f6; } .line { stroke: #9ca3af; } .tip { fill: #9ca3af; }
+  }
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<rect class="card" x="8" y="44" width="150" height="118" rx="12"/><rect x="8" y="14" width="150" height="44" rx="12" fill="#d93025"/><text class="box" x="83.0" y="41.0" text-anchor="middle">Alarm löst aus</text>
+<text class="label" x="83.0" y="86" text-anchor="middle">Protokoll, Aufzeichnung</text>
+<text class="label" x="83.0" y="104" text-anchor="middle">und Meldung laufen</text>
+<text class="label" x="83.0" y="122" text-anchor="middle">einzeln: ein Fehler</text>
+<text class="label" x="83.0" y="140" text-anchor="middle">stoppt die anderen nie</text>
+<rect class="card" x="167" y="44" width="150" height="118" rx="12"/><rect x="167" y="14" width="150" height="44" rx="12" fill="#d98a00"/><text class="box" x="242.0" y="41.0" text-anchor="middle">Aktionen starten</text>
+<text class="label" x="242.0" y="86" text-anchor="middle">innert 8 Sekunden,</text>
+<text class="label" x="242.0" y="104" text-anchor="middle">auch wenn die</text>
+<text class="label" x="242.0" y="122" text-anchor="middle">Vorbereitung hängt</text>
+<text class="label" x="242.0" y="140" text-anchor="middle">oder scheitert</text>
+<path class="line" d="M159 36 L166 36" marker-end="url(#tip)"/>
+<rect class="card" x="326" y="44" width="150" height="118" rx="12"/><rect x="326" y="14" width="150" height="44" rx="12" fill="#0b8fd9"/><text class="box" x="401.0" y="41.0" text-anchor="middle">Jeder Schritt</text>
+<text class="label" x="401.0" y="86" text-anchor="middle">Gerät antwortet nicht:</text>
+<text class="label" x="401.0" y="104" text-anchor="middle">nächster Schritt nach</text>
+<text class="label" x="401.0" y="122" text-anchor="middle">10 Sekunden; auf Push</text>
+<text class="label" x="401.0" y="140" text-anchor="middle">wird nie gewartet</text>
+<path class="line" d="M318 36 L325 36" marker-end="url(#tip)"/>
+<rect class="card" x="485" y="44" width="150" height="118" rx="12"/><rect x="485" y="14" width="150" height="44" rx="12" fill="#0b8fd9"/><text class="box" x="560.0" y="41.0" text-anchor="middle">Wächter</text>
+<text class="label" x="560.0" y="86" text-anchor="middle">kein Schritt verzögert</text>
+<text class="label" x="560.0" y="104" text-anchor="middle">den nächsten über seine</text>
+<text class="label" x="560.0" y="122" text-anchor="middle">Grenze; ein Abbruch</text>
+<text class="label" x="560.0" y="140" text-anchor="middle">wird fortgesetzt</text>
+<path class="line" d="M477 36 L484 36" marker-end="url(#tip)"/>
+<rect class="card" x="644" y="44" width="150" height="118" rx="12"/><rect x="644" y="14" width="150" height="44" rx="12" fill="#2e9e5b"/><text class="box" x="719.0" y="41.0" text-anchor="middle">Sirene aus</text>
+<text class="label" x="719.0" y="86" text-anchor="middle">nach der Zeit, die du</text>
+<text class="label" x="719.0" y="104" text-anchor="middle">einstellst, gezählt ab</text>
+<text class="label" x="719.0" y="122" text-anchor="middle">dem ersten Start, auch</text>
+<text class="label" x="719.0" y="140" text-anchor="middle">über einen Neustart</text>
+<path class="line" d="M636 36 L643 36" marker-end="url(#tip)"/>
+<rect class="card" x="803" y="44" width="150" height="118" rx="12"/><rect x="803" y="14" width="150" height="44" rx="12" fill="#6b7280"/><text class="box" x="878.0" y="41.0" text-anchor="middle">Deaktivieren</text>
+<text class="label" x="878.0" y="86" text-anchor="middle">stoppt alles; Geräte</text>
+<text class="label" x="878.0" y="104" text-anchor="middle">kehren in den Zustand</text>
+<text class="label" x="878.0" y="122" text-anchor="middle">vor dem Alarm</text>
+<text class="label" x="878.0" y="140" text-anchor="middle">zurück</text>
+<path class="line" d="M795 36 L802 36" marker-end="url(#tip)"/>
+</svg>

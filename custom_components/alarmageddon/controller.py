@@ -122,6 +122,9 @@ class AlarmController:
         self._unconfirmed: dict[str, datetime] = {}
         # Wann ein Sensor mit "Stiller Alarm" zuletzt gemeldet hat (höchstens eine Meldung pro Minute)
         self._last_report: dict[str, datetime] = {}
+        # Eigene Werte der Sensoren, gemerkt je Stand der Optionen (siehe sensor_overrides)
+        self._overrides: dict[str, dict[str, bool]] = {}
+        self._overrides_for: Any = None
 
     # ----- Einstellungen (immer frisch aus den Optionen) -----
 
@@ -177,7 +180,8 @@ class AlarmController:
 
     @property
     def codes(self) -> list[dict[str, Any]]:
-        return [c for c in self.options.get(CONF_CODES, []) or [] if isinstance(c, dict) and c.get("hash")]
+        # Nur vollständige Einträge (Hash und Salz): ein beschädigter Eintrag darf die Code-Prüfung nicht stören
+        return [c for c in self.options.get(CONF_CODES, []) or [] if isinstance(c, dict) and c.get("hash") and c.get("salt")]
 
     @property
     def has_code(self) -> bool:
@@ -202,8 +206,14 @@ class AlarmController:
 
     @property
     def sensor_overrides(self) -> dict[str, dict[str, bool]]:
-        # Nur Wörterbücher: ein beschädigter Eintrag darf die Anlage nicht am Laden hindern
-        return {e: o for e, o in (self.options.get(CONF_SENSOR_OPTIONS) or {}).items() if isinstance(o, dict)}
+        # Nur Wörterbücher: ein beschädigter Eintrag darf die Anlage nicht am Laden hindern.
+        # Gemerkt je Stand der Optionen (Home Assistant ersetzt das Objekt bei jeder Änderung): option() fragt bei jedem
+        # Sensorereignis für jeden Sensor, ohne Merker entstünde das Wörterbuch jedes Mal neu
+        options = self.options
+        if self._overrides_for is not options:
+            self._overrides = {e: o for e, o in (options.get(CONF_SENSOR_OPTIONS) or {}).items() if isinstance(o, dict)}
+            self._overrides_for = options
+        return self._overrides
 
     def preset(self, entity_id: str) -> list[str]:
         from .settings import sensor_type  # noqa: PLC0415 - vermeidet Kreisimport beim Laden
@@ -234,8 +244,8 @@ class AlarmController:
         """
         Immer aktiv sind Sensoren einer Zone mit dieser Option und alle, bei
         denen der Nutzer sie ausdrücklich eingeschaltet hat (Rauchmelder
-        müssen dafür in keiner Zone sein). Mit Einstellungen je Modus gilt der Wert des Modus,
-        in dem die Anlage scharf ist; deaktiviert gilt der Wert für alle Modi.
+        müssen dafür in keiner Zone sein). Die Option hängt an keinem Modus: mit Einstellungen je Modus
+        steht ihr Wert immer im Bereich "Immer aktiv" (SCOPE_ALWAYS), darum ist `mode` hier ohne Wirkung.
         """
         zoned = {e for m in self.modes for e in self.zone(m)}
         explicit = {e for e, opts in self.sensor_overrides.items() if opts.get(OPT_ALWAYS)}
@@ -272,10 +282,22 @@ class AlarmController:
         return partial(self._record_listeners.remove, listener)
 
     @callback
+    def _call_each(self, listeners: list[Callable[..., None]], *args: Any) -> None:
+        """
+        Jeden Zuhörer einzeln aufrufen. Scheitert einer (Protokoll, Aufzeichnung, Meldung, Entität), laufen die übrigen
+        trotzdem: Die Alarmaktionen hängen als letzter Zuhörer an derselben Liste, und ein Fehler beim Mitschreiben darf nie
+        verhindern, dass die Sirene schaltet (Sicherheitsregel: im Zweifel alarmieren).
+        """
+        for listener in list(listeners):
+            try:
+                listener(*args)
+            except Exception:  # noqa: BLE001 - ein Zuhörer hält die anderen nie auf
+                _LOGGER.exception("%s: a listener failed, the others still run", self.entry.title)
+
+    @callback
     def record(self, kind: str, **data: Any) -> None:
         """Hinweis für die Zeitachse eines laufenden Alarms."""
-        for listener in list(self._record_listeners):
-            listener(kind, data)
+        self._call_each(self._record_listeners, kind, data)
 
     @callback
     def emit(self, kind: str, **data: Any) -> None:
@@ -284,8 +306,7 @@ class AlarmController:
 
     @callback
     def _emit(self, kind: str, **data: Any) -> None:
-        for listener in list(self._event_listeners):
-            listener(kind, data)
+        self._call_each(self._event_listeners, kind, data)
 
     # ----- Lebenszyklus -----
 
@@ -309,8 +330,7 @@ class AlarmController:
 
     @callback
     def _notify(self) -> None:
-        for listener in list(self._listeners):
-            listener()
+        self._call_each(self._listeners)
 
     # ----- Zeitgeber -----
 
@@ -499,6 +519,10 @@ class AlarmController:
             raise _error("disarm_first")
         if self.code_arm_required and not skip_code:
             changed_by = await self._async_check_code(code) or changed_by
+            # Die Code-Prüfung läuft im Executor: löst währenddessen ein Sensor aus, darf das Scharfschalten die laufende
+            # Eingangsverzögerung oder den Alarm nicht still beenden (Sicherheitsregel: im Zweifel alarmieren)
+            if self.state in (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED):
+                raise _error("disarm_first")
         # Offen und nicht erlaubt: mit der Option "Umgehen" bis zum Deaktivieren übergangen, sonst verhindert der Sensor das Scharfschalten
         open_now = self.blocking_sensors(mode)
         if open_now:

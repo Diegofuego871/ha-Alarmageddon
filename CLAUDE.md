@@ -106,10 +106,42 @@ Umsetzung:
   Ablauf weiter; Deaktivieren beendet hängende Aufrufe, auch solche, die
   Abbrüche ignorieren. Jeder neue Schritt im Ablauf braucht einen Test mit
   hängendem Gerät (`tests/test_action_hang.py`).
+- Nichts, was beim Auslösen mitläuft, darf die Alarmaktionen aufhalten oder verhindern (seit 0.40.0): Zuhörer des
+  Automaten werden einzeln aufgerufen (`controller._call_each`; die Alarmaktionen hängen als letzter Zuhörer an derselben
+  Liste wie Protokoll, Aufzeichnung und Meldung), Meldungen gehen ohne Abwarten hinaus, die Ablage vor dem ersten Schritt
+  wartet höchstens `SNAPSHOT_TIMEOUT`, Mitschreiben (Zeitachse, gespeicherter Stand) steht im `try`. Ein Schritt, der nie
+  von selbst endet (Ton "bis zum Deaktivieren"), läuft immer nebenher (`workflow._runs_alongside`). Darüber wacht der
+  Wächter (`workflow._watched`, `step_budget`, `start_budget`, `_check_started`, `_on_flow_done`): in `async_run` und
+  `_execute` steht jedes `await` unter `self._watched(...)` (ein Test prüft das am Quelltext), jeder Schritttyp hat eine
+  Grenze in `step_budget`. Jeder neue Zuhörer,
+  jeder neue Schritt und alles, was vor dem ersten Schritt läuft, braucht einen Test "scheitert" und "hängt" in
+  `tests/test_action_hang.py` und eine Zeile in `scripts/mutation_check.py`.
+- Wie lange Sirene und Ton laufen, bestimmt allein der Nutzer (rechtlich wichtig: eine Sirene endet nach der gewählten Zeit).
+  Nie eine feste Dauer in den Code schreiben. Die Dauer steht im Ablauf (Schritt "Warten", "Dauer" beim Ton), gilt genau und
+  zählt ab dem ersten Start des Schritts, auch über Neuladen und Neustart (`workflow._remaining`). Die Grenzen des Wächters
+  begrenzen nur Antwortzeiten und liegen immer über der eingestellten Zeit. Jede Änderung an Schritten mit Dauer braucht einen
+  Test in `tests/test_duration.py`.
 - Deaktivieren per Push-Aktion ist standardmässig aus.
 - Jede Änderung am Zustandsautomaten oder an der Szenario-Engine braucht
   Tests für: Deaktivieren während Verzögerung, Neustart während Alarm,
   Sensor fällt im scharfen Zustand aus.
+
+## Sicherheitstests (seit 0.40.0, Code-Review)
+
+Alarmageddon ist ein Sicherheitsprodukt: Tests sichern Zusagen, nicht Zeilen. Verbindlich:
+
+- `tests/test_security.py` prüft Zusagen vollständig statt am Beispiel. Jeder neue WebSocket-Befehl bekommt einen Eintrag
+  in `COMMANDS` (sonst scheitert `test_every_websocket_command_is_listed`); damit gelten für ihn automatisch
+  "nur Administratoren" und "fremde oder nicht geladene Anlage abgelehnt".
+- Jede neue Schutzmassnahme (Prüfung einer Berechtigung, eines Zustands, einer Eingabe, eines Absenders) bekommt einen
+  Test **und** eine Zeile in `scripts/mutation_check.py`. Die Mutationsprobe baut die Massnahme aus und verlangt, dass
+  ein Test scheitert; "ÜBERSEHEN" oder "FEHLT" ist ein Fehler, auch in der CI.
+- Neue Zustände, Modi oder Empfängertypen ergänzen die parametrisierten Tests (Zustandsmatrix, Wiederherstellung,
+  `recipient_users`), nicht nur einen Einzelfall.
+- Geheimnisse (Code, Hash, Salz) dürfen in keiner Antwort, Ablage oder Logzeile der Integration stehen:
+  `test_codes_and_hashes_never_leave_the_server` um jede neue Antwort und Ablage erweitern.
+- Fehlertests zuerst rot sehen (LEARNINGS); Panel-Änderungen bekommen eine Prüfung in einer Suite unter `tests/panel`
+  (`review-e2e.mjs` für Logik, die Server und Panel gleich rechnen müssen).
 
 ## Regel: Ebenen einer Einstellung
 
@@ -199,7 +231,10 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   liefert Claude die Release-Angaben für den aktuellen Stand von `main`:
   - Version (wie in `manifest.json`), Tag und Titel `vX.Y.Z`
   - Ziel: `main` mit Commit-Hash
-  - Vorabversion: standardmässig **ja**, bis der Nutzer ausdrücklich sagt,
+  - Vorabversion: Version 1.0.0 ist offiziell (Entscheid des Nutzers,
+    2026-11-10, kein "Pre-release"-Haken). Für spätere Versionen vor dem
+    Release nachfragen, ob Vorabversion oder offiziell. Bisherige Regel,
+    standardmässig **ja**, bis der Nutzer ausdrücklich sagt,
     dass eine Version offiziell wird. Versionsnummern ohne a/b/rc-Suffix;
     der Unterschied liegt nur am Haken "Pre-release". Grund: HACS zeigt
     Vorabversionen nur Nutzern, die sie einschalten.
@@ -253,6 +288,7 @@ Gelten, sobald der jeweilige Teil existiert:
 - kein "ß" in Code, Texten, README, CHANGELOG
 - README und CHANGELOG EN/DE gleich aufgebaut (Test)
 - `python -m pytest` (Python 3.13, `pip install -r requirements_test.txt`)
+- `python scripts/mutation_check.py` (Mutationsprobe der Sicherheitstests, siehe "Sicherheitstests")
 - Panel-Tests mit HA-Nachbau und Playwright, je Sprache, Desktop und Handy
   (390 × 844), echte Klicks/Taps.
 

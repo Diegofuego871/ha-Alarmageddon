@@ -27,8 +27,11 @@ class EventLog:
         self._ctl = controller
         self._store = _store(hass, entry_id)
         self.events: list[dict[str, Any]] = []
+        # Zähler der Änderungen: das Panel fragt alle 5 s und bekommt nur bei einem neuen Stand wieder alles (websocket "log")
+        self.rev = 0
         self._last_state: str | None = None
         self._unsub = None
+        self._unsub_events = None
 
     async def async_load(self) -> None:
         data = await self._store.async_load()
@@ -62,11 +65,12 @@ class EventLog:
     def _add(self, event: dict[str, Any]) -> None:
         self.events.insert(0, event)
         del self.events[EVENTS_KEEP:]
+        self.rev += 1
         # Selten (nur bei Zustandswechseln): verzögertes Speichern genügt, es wird nie dauernd verschoben
         self._store.async_delay_save(lambda: self.events, 1)
 
     async def async_stop(self) -> None:
-        for unsub in (self._unsub, getattr(self, "_unsub_events", None)):
+        for unsub in (self._unsub, self._unsub_events):
             if unsub:
                 unsub()
         self._unsub = None

@@ -309,6 +309,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; position: relative; z-index: 2; }
 .ag-wf-add:hover { background: var(--ag-primary-soft); }
 .ag-flow { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ag-divider); background: transparent; color: var(--ag-text2); font: inherit; font-size: 12px; cursor: pointer; }
+.ag-flow:disabled { cursor: default; opacity: .75; }
 .ag-flow.par { border-color: transparent; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-flow:hover { border-color: var(--ag-primary); }
 .ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: -14px; height: 32px; width: 0; border-left: 2px dashed var(--ag-primary); z-index: 0; }
@@ -320,7 +321,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-text { flex: 1; min-width: 0; }
 .ag-wf-text b { font-weight: 500; }
 .ag-wf-text .ag-small { overflow-wrap: anywhere; }
-.ag-wf-btns { display: flex; gap: 2px; flex: none; }
+.ag-wf-btns { display: flex; gap: 6px; flex: none; }
 .ag-wf-btns .ag-iconbtn { width: 36px; height: 36px; }
 .ag-wf-btns .ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-wf-empty { margin-left: 20px; }

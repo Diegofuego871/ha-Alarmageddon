@@ -26,6 +26,11 @@ const SOUND_LEN = { siren: 4, beep: 3, klaxon: 3, warning: 2, chime: 2 }; // Lä
 const SOUND_KEY = { siren: "sndSiren", beep: "sndBeep", klaxon: "sndKlaxon", warning: "sndWarning", chime: "sndChime" };
 const SCENE_DOMAINS = ["scene", "script"];
 
+// Ein Alarmton "bis zum Deaktivieren" (Dauer 0) endet nie von selbst: er läuft immer nebenher (wie der Server, workflow.py
+// _runs_alongside), sonst kämen die Schritte dahinter nie dran
+const endless = (step) => step?.type === "sound" && step.duration === 0;
+const alongside = (step) => ["action", "sound"].includes(step?.type) && (Boolean(step.detach) || endless(step));
+
 export const KINDS = [
   { kind: "notify", icon: "bell", label: "stepNotify", hint: "stepNotifyHint" },
   { kind: "device", icon: "power", label: "stepDevice", hint: "stepDeviceHint" },
@@ -50,7 +55,7 @@ export function normEnd(value) {
 const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
-  return { ...fromStepBase(step), detach: !!step.detach };
+  return { ...fromStepBase(step), detach: !!step.detach || endless(step) };
 }
 
 function fromStepBase(step) {
@@ -83,7 +88,7 @@ function fromStepBase(step) {
 export function toStep(f) {
   const step = toStepBase(f);
   // Nicht abwarten gilt nur für Schritte, die etwas ausführen (nicht für Warten und Meldung)
-  if (f.detach && (step.type === "action" || step.type === "sound")) step.detach = true;
+  if ((f.detach || (f.kind === "sound" && f.until)) && (step.type === "action" || step.type === "sound")) step.detach = true;
   return step;
 }
 
@@ -280,7 +285,7 @@ export class ActionsUi {
       ${this.trigger === "always" && d.perMode ? `<div class="ag-t2 ag-small" style="margin:-6px 4px 0">${esc(this._t("wfAlwaysHint"))}</div>` : ""}`);
     const steps = this.steps();
     // Nach einem Schritt, der nebenher läuft, ist die Verbindung gestrichelt: der nächste Schritt startet sofort
-    const plus = (i) => `<div class="ag-wf-plus ${steps[i - 1]?.detach && ["action", "sound"].includes(steps[i - 1].type) ? "par" : ""}"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
+    const plus = (i) => `<div class="ag-wf-plus ${alongside(steps[i - 1]) ? "par" : ""}"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
     const cards = steps.map((step, i) => this._card(step, i, running)).map((c, i) => c + plus(i + 1)).join("");
     h._setHtml(body, `<div class="ag-wf-line ag-wf-main">
         <div class="ag-wf-start"><span class="ag-mini err">${ic("alert", 16)}</span>${esc(this._t("wfStart"))}</div>${plus(0)}
@@ -352,7 +357,7 @@ export class ActionsUi {
     const names = f.targets.map((id) => this.host._name(id)).join(", ") || this._t("stepNoTargets");
     if (f.kind === "notify") return f.ntTitle || f.ntMessage ? [f.ntTitle, f.ntMessage].filter(Boolean).join(" – ") : this._t("stepNotifyHint");
     if (f.kind === "wait") return this._t("stepWaitSummary", { seconds: f.seconds });
-    if (f.kind === "sound") return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${Math.round(f.volume * 100)} %` : ""}· ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`;
+    if (f.kind === "sound") return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${Math.round(f.volume * 100)} %` : ""} · ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`;
     if (f.kind === "scene") return names;
     if (f.kind === "device") {
       const domains = new Set(f.targets.map((e) => e.split(".")[0]));
@@ -388,8 +393,10 @@ export class ActionsUi {
   // Ablauf auf einen Blick: wartet der Ablauf auf das Ende dieses Schritts oder läuft er nebenher? Ein Tipp schaltet um.
   _flowChip(f, i) {
     if (!["device", "sound", "scene", "custom"].includes(f.kind)) return "";
-    const par = !!f.detach;
-    return `<button type="button" class="ag-flow ${par ? "par" : "seq"}" data-wf="flow" data-index="${i}" role="switch" aria-checked="${par}" title="${esc(this._t("fldDetachHint"))}">${ic(par ? "fork" : "arrowDown", 14)}<span>${esc(this._t(par ? "wfFlowPar" : "wfFlowSeq"))}</span></button>`;
+    // Ton bis zum Deaktivieren: immer nebenher, nicht umschaltbar (der Hinweis nennt den Grund)
+    const fixed = f.kind === "sound" && f.until;
+    const par = !!f.detach || fixed;
+    return `<button type="button" class="ag-flow ${par ? "par" : "seq"}" data-wf="flow" data-index="${i}" role="switch" aria-checked="${par}" ${fixed ? "disabled" : ""} title="${esc(this._t(fixed ? "wfFlowUntil" : "fldDetachHint"))}">${ic(par ? "fork" : "arrowDown", 14)}<span>${esc(this._t(par ? "wfFlowPar" : "wfFlowSeq"))}</span></button>`;
   }
 
   // "Testen" steht unten bei den anderen Knöpfen (auf dem Handy nur das Symbol, damit alle drei Platz haben)
@@ -563,7 +570,8 @@ export class ActionsUi {
   // Nicht abwarten: der nächste Schritt startet sofort; sinnvoll für lange Töne und träge Geräte
   _detachRow(f) {
     if (!["device", "sound", "scene", "custom"].includes(f.kind)) return "";
-    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldDetach"))}</b><small>${esc(this._t("fldDetachHint"))}</small></div>${this._toggle('data-wf="detach"', f.detach, "fldDetach")}</div>`;
+    const fixed = f.kind === "sound" && f.until;
+    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldDetach"))}</b><small>${esc(this._t(fixed ? "wfFlowUntil" : "fldDetachHint"))}</small></div>${this._toggle(`data-wf="detach"${fixed ? " disabled" : ""}`, f.detach || fixed, "fldDetach")}</div>`;
   }
 
   _restoreRow(f) {
@@ -1077,11 +1085,13 @@ export class ActionsUi {
       this._dlg().showModal();
     } else if (act === "flow") {
       const step = list[i];
-      if (step?.detach) delete step.detach;
-      else if (step) step.detach = true;
-      d.wf[this.trigger] = list;
-      this.saveState = null;
-      this.render();
+      if (step && !endless(step)) {
+        if (step.detach) delete step.detach;
+        else step.detach = true;
+        d.wf[this.trigger] = list;
+        this.saveState = null;
+        this.render();
+      }
     } else if (act === "delete") {
       list.splice(i, 1);
       d.wf[this.trigger] = list;
@@ -1137,6 +1147,7 @@ export class ActionsUi {
       this.renderEditor();
     } else if (act === "until") {
       form.until = !form.until;
+      if (form.until) form.detach = true; // endet nie von selbst: läuft nebenher
       this.renderEditor();
     } else if (act === "playsecs") {
       form.playSeconds = Number(el.dataset.value);
@@ -1156,7 +1167,7 @@ export class ActionsUi {
       form.setVolume = !form.setVolume;
       this.renderEditor();
     } else if (act === "detach") {
-      form.detach = !form.detach;
+      if (!(form.kind === "sound" && form.until)) form.detach = !form.detach;
       this.renderEditor();
     } else if (act === "restore") {
       form.restore = !form.restore;

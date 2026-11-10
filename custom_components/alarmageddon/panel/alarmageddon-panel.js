@@ -142,6 +142,18 @@ class AlarmageddonPanel extends HTMLElement {
     this.list.loadRemote(); // Spalten und Ansicht des Benutzers von Home Assistant
   }
 
+  // Das Panel lebt so lange wie das iframe; wird es doch entfernt, laufen keine Zeitgeber und Beobachter weiter
+  disconnectedCallback() {
+    clearInterval(this._poll);
+    clearInterval(this._tick);
+    clearTimeout(this._toastTimer);
+    window.cancelAnimationFrame(this._stickyRaf);
+    this._stickyRO?.disconnect();
+    this._segRO?.disconnect();
+    this._segMO?.disconnect();
+    this.log.stop();
+  }
+
   _checkNarrow(initial = false) {
     const narrow = this.clientWidth > 0 && this.clientWidth < 600;
     if (narrow === this.hasAttribute("narrow") && !initial) return;
@@ -187,11 +199,14 @@ class AlarmageddonPanel extends HTMLElement {
   async _fetch() {
     if (!this._hass) return;
     const seq = ++this._fetchSeq;
+    let timer = 0;
     try {
+      // Eine Abfrage kann auch nie antworten (LEARNINGS): nach WS_TIMEOUT_MS gilt sie als Verbindungsfehler
       const data = await Promise.race([
         this._hass.callWS({ type: "alarmageddon/data" }),
-        new Promise((_ok, fail) => setTimeout(() => fail(new Error("timeout")), WS_TIMEOUT_MS)),
+        new Promise((_ok, fail) => (timer = setTimeout(() => fail(new Error("timeout")), WS_TIMEOUT_MS))),
       ]);
+      clearTimeout(timer);
       // Nie eine ältere Antwort über eine neuere legen (LEARNINGS)
       if (seq !== this._fetchSeq) return;
       // Während HA eine Anlage neu lädt (nach dem Speichern), fehlt sie kurz in der Antwort: die letzten Daten behalten, Ladeanzeige,
@@ -221,6 +236,7 @@ class AlarmageddonPanel extends HTMLElement {
         this._renderView(false);
       }
     } catch (err) {
+      clearTimeout(timer);
       if (seq !== this._fetchSeq) return;
       if (isConnectionError(err) || String(err?.message) === "timeout") {
         if (!this._connError) this._toast(this._t("errConnection"));
@@ -710,12 +726,20 @@ class AlarmageddonPanel extends HTMLElement {
     return s.zones?.[mode] || [];
   }
 
-  // Wie der Server: offene Sensoren der Zone ohne "darf offen sein" verhindern das Scharfschalten
+  // Wie der Server (controller.blocking_sensors): offene Sensoren der Zone, die weder "darf offen sein" noch "umgehen" haben,
+  // verhindern das Scharfschalten; mit Einstellungen je Modus zählt der Wert des Modus
   _blocking(s, mode) {
-    return this._members(s, mode).filter((id) => this._state(id)?.state === "on" && !this._optionOf(s, id, "open_ok"));
+    return this._members(s, mode).filter((id) => this._state(id)?.state === "on" && !this._optionOf(s, id, "open_ok", mode) && !this._optionOf(s, id, "bypass", mode));
   }
 
-  _optionOf(s, id, key) {
+  // Wirksamer Wert einer Sensor-Option wie controller.option(): eigener Wert des Modus (nur mit Schalter), eigener Wert des
+  // Sensors, sonst die Voreinstellung seiner Sensorart. "Immer aktiv" hängt an keinem Modus (Bereich "always").
+  _optionOf(s, id, key, mode = null) {
+    if (s.per_mode_sensors) {
+      const scope = key === "always" || !mode ? "always" : mode;
+      const perMode = s.sensor_modes?.[scope]?.[id]?.[key];
+      if (perMode !== undefined) return perMode;
+    }
     const own = s.sensor_options?.[id]?.[key];
     if (own !== undefined) return own;
     return (this._data?.presets?.[this._sensor(id).type || "other"] || []).includes(key);
@@ -1010,7 +1034,9 @@ class AlarmageddonPanel extends HTMLElement {
         return;
       }
       const text = this._armError(s, mode, err);
-      if (this._root.getElementById("ag-code").open) this._root.querySelector(".ag-dlg-err").textContent = text;
+      const codeDlg = this._root.getElementById("ag-code");
+      // Nur die Fehlerzeile des Code-Dialogs (andere Dialoge behalten ihren Inhalt nach dem Schliessen)
+      if (codeDlg.open && codeDlg.querySelector(".ag-dlg-err")) codeDlg.querySelector(".ag-dlg-err").textContent = text;
       else this._toast(text);
       // Die Kapsel wurde schon verschoben: neu aufbauen, auch wenn der Text gleich geblieben ist
       this._renderTop(true);

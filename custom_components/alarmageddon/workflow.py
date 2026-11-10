@@ -36,8 +36,44 @@ _LOGGER = logging.getLogger(__name__)
 SERVICE_TIMEOUT = 10
 # Der Schnappschuss vor dem ersten Schritt darf den Alarm höchstens so lange verzögern
 SNAPSHOT_TIMEOUT = 3
+# Wächter: Zuschlag (Sekunden) auf die erwartete Dauer, bevor er eingreift. Die erwartete Dauer eines Schritts steht in
+# step_budget, die der Vorbereitung in start_budget. Der Wächter ist die zweite Sicherung hinter den Grenzen oben: er
+# greift auch, wenn etwas aus einem Grund hängt, den niemand vorhergesehen hat.
+WATCHDOG_GRACE = 2
 # Was vom Zustand eines Geräts für die Wiederherstellung zählt
 KEEP_ATTRS = ("brightness", "color_temp_kelvin", "current_position", "volume_level", "is_volume_muted", "source")
+
+
+def step_budget(step: dict[str, Any]) -> float:
+    """
+    So lange darf ein abgewarteter Schritt höchstens dauern, bevor der Wächter ihn verlässt und der nächste Schritt läuft.
+    Jede Art von Schritt hat eine endliche Grenze (tests/test_action_hang.py prüft das für jeden Typ aus schemas.STEP_SCHEMAS).
+    """
+    kind = step.get("type")
+    if kind == "notify":
+        return WATCHDOG_GRACE  # Meldungen gehen ohne Abwarten hinaus
+    if kind == "wait":
+        return max(0, int(step.get("seconds", 0) or 0)) + WATCHDOG_GRACE
+    if kind == "sound":
+        length = SOUNDS.get(step.get("sound"), max(SOUNDS.values()))
+        duration = step.get("duration")
+        if duration is None:  # ältere Form: so oft wiederholen, jeder Aufruf höchstens SERVICE_TIMEOUT
+            repeat = max(1, int(step.get("repeat", 1) or 1))
+            return repeat * (length + SERVICE_TIMEOUT) + SERVICE_TIMEOUT + WATCHDOG_GRACE
+        # Lautstärke, letzter Start und Stopp je höchstens SERVICE_TIMEOUT, dazu ein angefangener Ton
+        return int(duration or 0) + length + 3 * SERVICE_TIMEOUT + WATCHDOG_GRACE
+    return SERVICE_TIMEOUT + WATCHDOG_GRACE  # Aktion (und jeder künftige Typ, bis er eine eigene Grenze bekommt)
+
+
+def start_budget() -> float:
+    """So lange darf es nach dem Auslösen höchstens dauern, bis der erste Schritt beginnt (Schnappschuss, Ablage, Zuschlag)."""
+    return 2 * SNAPSHOT_TIMEOUT + WATCHDOG_GRACE
+
+
+def _retrieve(task: asyncio.Task) -> None:
+    """Ausnahme einer nicht mehr abgewarteten Aufgabe als abgeholt markieren (sonst meldet asyncio sie beim Aufräumen)."""
+    if not task.cancelled():
+        task.exception()
 
 
 def _store(hass: HomeAssistant, entry_id: str) -> Store:
@@ -71,6 +107,11 @@ class WorkflowRunner:
         self._last_state: str | None = None
         self._unsubs: list[Any] = []
         self._test_timer = None
+        # Wächter: der Lauf, dessen Schritte schon gestartet sind (nie zweimal starten), der Schritt, an dem der Ablauf steht
+        # (für das Weitermachen nach einem Abbruch), und die Aufsicht über den Start
+        self._begun: dict[str, Any] | None = None
+        self._position = 0
+        self._guard: asyncio.Task | None = None
 
     # ----- Konfiguration -----
 
@@ -99,7 +140,8 @@ class WorkflowRunner:
         if isinstance(saved, dict) and saved.get("trigger"):
             self._run = saved
             if self._ctl.state == AlarmControlPanelState.TRIGGERED and not saved.get("test"):
-                self._task = self._background(self._execute(saved["trigger"], int(saved.get("index", 0))))
+                self._begun = saved
+                self._spawn(saved, int(saved.get("index", 0) or 0))
             else:
                 await self.async_stop()
 
@@ -108,10 +150,24 @@ class WorkflowRunner:
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()
+        self._cancel_timers()
+        await self._cancel_task()
+        if self._run is not None and not self._run.get("test"):
+            # Stand des laufenden Alarms sofort schreiben (nicht erst verzögert): nach dem Neuladen geht es beim richtigen Schritt
+            # weiter, kein Schritt läuft doppelt. Unter Aufsicht: eine hängende Ablage hält das Neuladen nicht auf.
+            try:
+                await self._watched(self._store.async_save(self._run), SNAPSHOT_TIMEOUT, "store")
+            except Exception:  # noqa: BLE001 - ohne gespeicherten Stand beginnt der Ablauf nach dem Neuladen beim letzten gespeicherten Schritt
+                _LOGGER.exception("%s: saving the state of the alarm actions failed", self.entry.title)
+
+    @callback
+    def _cancel_timers(self) -> None:
         if self._test_timer:
             self._test_timer()
             self._test_timer = None
-        await self._cancel_task()
+        if self._guard is not None:
+            self._guard.cancel()
+            self._guard = None
 
     @callback
     def _on_change(self) -> None:
@@ -121,10 +177,23 @@ class WorkflowRunner:
         if state == previous:
             return
         if state == AlarmControlPanelState.TRIGGERED:
-            self.hass.async_create_task(self.async_run(self._ctl.mode or "always"))
+            trigger = self._ctl.mode or "always"
+            # Zuerst die Aufsicht, dann der Start: scheitert oder hängt der Start, beginnt der Wächter die Schritte selbst
+            self._watch_start(trigger)
+            self.hass.async_create_task(self._start(trigger))
         elif previous == AlarmControlPanelState.TRIGGERED:
             # Deaktiviert oder Alarmdauer vorbei: alles stoppen und zurücksetzen
             self.hass.async_create_task(self.async_stop())
+
+    async def _start(self, trigger: str) -> None:
+        """Ablauf beim Alarm starten. Scheitert der Start selbst, beginnt der Wächter die Schritte sofort (nicht erst nach der Startgrenze)."""
+        try:
+            await self.async_run(trigger)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - Sicherheitsregel: die Schritte laufen in jedem Fall
+            _LOGGER.exception("%s: starting the alarm actions failed; the watchdog starts them", self.entry.title)
+            self._check_started(trigger)
 
     # ----- Ablauf -----
 
@@ -132,26 +201,207 @@ class WorkflowRunner:
         """
         Ablauf starten. Mit `steps` (nur im Test) läuft genau diese Liste statt des gespeicherten Ablaufs: so lässt sich ein
         einzelner Schritt testen, auch einer, der noch nicht gespeichert ist. Test und Stopp wie beim ganzen Ablauf.
+
+        Jedes Warten hier steht unter Aufsicht des Wächters (`_watched`): nichts vor dem ersten Schritt kann ihn länger als
+        seine Grenze aufhalten (tests/test_action_hang.py prüft das auch am Quelltext).
         """
+        inherited: dict[str, Any] | None = None
+        if self._run is not None and not test and self._run.get("test"):
+            # Echter Alarm während eines Tests: der Test endet sofort, der echte Ablauf startet. Sonst liefe im Testfenster
+            # weder der Ablauf noch die Alarmmeldung (Sicherheitsregel: im Zweifel alarmieren)
+            inherited = self._run
+            try:
+                await self._watched(self._end_test(), SNAPSHOT_TIMEOUT, "test")
+            except asyncio.CancelledError:
+                raise
+            except Exception:  # noqa: BLE001 - das Ende des Tests darf den echten Alarm nie verhindern
+                _LOGGER.exception("%s: ending the test of the alarm actions failed; the real alarm goes on", self.entry.title)
+            self._run = None  # auch wenn das Ende des Tests hängt: ab hier zählt nur der echte Alarm
         if self._run is not None:
             return False  # läuft schon (kein doppelter Ablauf bei mehreren Auslösungen)
         override = steps if test and steps else None
         steps = override or self.steps(trigger)
         if not steps:
             return False
-        entities = sorted({e for s in steps for e in step_entities(s)})
-        self._run = {"trigger": trigger, "index": 0, "test": test, "snapshot": self._snapshot(entities), "sonos": [], "steps": override}
-        run = self._run
-        run["sonos"] = await self._sonos_snapshot(entities)
+        run: dict[str, Any] = {"trigger": trigger, "index": 0, "test": test, "snapshot": {}, "sonos": [], "steps": override}
+        self._run = run
+        try:
+            await self._watched(self._prepare(run, steps, inherited), start_budget() - WATCHDOG_GRACE, "prepare")
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - die Vorbereitung ist Zusatz: scheitert sie, starten die Schritte ohne sie
+            _LOGGER.exception("%s: preparing the alarm actions failed; they start without the snapshot", self.entry.title)
         if self._run is not run:
-            return False  # während des Schnappschusses deaktiviert: nichts mehr starten
-        await self._store.async_save(run)
-        if self._run is not run:
-            return False
-        self._task = self._background(self._execute(trigger, 0))
+            return False  # währenddessen deaktiviert: nichts mehr starten
+        self._begin(run)
         if test:
             self._test_timer = async_call_later(self.hass, TEST_SECONDS, partial(self._test_over))
         return True
+
+    async def _end_test(self) -> None:
+        """
+        Test beenden, weil ein echter Alarm kommt: Schritte abbrechen, nichts zurückstellen. Das Zurückstellen könnte hängen
+        und dürfte ein Gerät nicht wieder ausschalten, das der echte Alarm gerade einschaltet; der echte Lauf übernimmt
+        stattdessen den Schnappschuss des Tests (siehe _prepare).
+        """
+        self._cancel_timers()
+        self._run = None
+        await self._cancel_task()
+
+    async def _prepare(self, run: dict[str, Any], steps: list[dict[str, Any]], inherited: dict[str, Any] | None = None) -> None:
+        """
+        Vor dem ersten Schritt: Zustand der Geräte merken (für die Wiederherstellung beim Deaktivieren) und den Lauf speichern
+        (für den Neustart). Alles hier ist Zusatz: scheitert oder hängt es, starten die Schritte trotzdem (Wächter).
+        """
+        entities = sorted({e for s in steps for e in step_entities(s)})
+        before = (inherited or {}).get("snapshot") or {}
+        sonos_before = [e for e in (inherited or {}).get("sonos") or [] if isinstance(e, str)]
+        # Nach einem abgebrochenen Test gilt dessen Schnappschuss: er zeigt die Geräte vor dem Test, nicht mitten im Test
+        run["snapshot"] = {**self._snapshot(entities), **before}
+        run["sonos"] = sorted({*sonos_before, *await self._sonos_snapshot([e for e in entities if e not in sonos_before])})
+        if self._run is not run:
+            return
+        await self._save_run(run)
+
+    async def _save_run(self, run: dict[str, Any]) -> None:
+        """
+        Stand vor dem ersten Schritt speichern (für die Wiederherstellung nach einem Neustart). Die Ablage darf den Alarm nie
+        aufhalten: hängt sie, geht es nach SNAPSHOT_TIMEOUT ohne sie weiter (das Schreiben läuft weiter), scheitert sie, sofort.
+        """
+        task = self.hass.async_create_task(self._store.async_save(run), f"alarmageddon workflow store {self.entry.entry_id}")
+        done, _pending = await asyncio.wait({task}, timeout=SNAPSHOT_TIMEOUT)
+        if not done:
+            task.add_done_callback(lambda t: t.cancelled() or t.exception())  # Ausnahme als abgeholt markieren
+            _LOGGER.error("%s: saving the state of the alarm actions took too long; the actions start without it", self.entry.title)
+            return
+        if not task.cancelled() and task.exception() is not None:
+            _LOGGER.error("%s: saving the state of the alarm actions failed (%s); the actions start without it", self.entry.title, task.exception())
+
+    @staticmethod
+    def _runs_alongside(step: dict[str, Any]) -> bool:
+        """
+        Schritt läuft nebenher, der nächste startet sofort: "nicht abwarten", und immer ein Alarmton "bis zum Deaktivieren"
+        (Dauer 0). Der endet nie von selbst; abgewartet kämen die Schritte dahinter (zum Beispiel die Sirene) nie dran.
+        """
+        if step.get("type") not in ("action", "sound"):
+            return False
+        return bool(step.get("detach")) or (step.get("type") == "sound" and step.get("duration") == 0)
+
+    # ----- Wächter: Aufsicht über Start, Vorbereitung, jeden Schritt und den Ablauf als Ganzes -----
+
+    async def _watched(self, coro: Any, budget: float, label: str) -> bool:
+        """
+        Etwas abwarten, aber höchstens `budget` Sekunden. Dauert es länger, geht der Ablauf ohne es weiter: die Aufgabe läuft
+        im Hintergrund zu Ende (ein Skript soll fertig werden dürfen) und endet spätestens beim Deaktivieren; der Eingriff
+        steht im Log und auf der Zeitachse des Alarms. Gibt zurück, ob es rechtzeitig fertig wurde; ein Fehler des
+        Beaufsichtigten geht an den Aufrufer.
+        """
+        task = self._background(coro)
+        try:
+            done, _pending = await asyncio.wait({task}, timeout=budget)
+        except asyncio.CancelledError:
+            task.cancel()
+            raise
+        if not done:
+            self._late.add(task)
+            task.add_done_callback(self._late.discard)
+            task.add_done_callback(_retrieve)
+            _LOGGER.error("%s: watchdog: '%s' did not finish within %.1f s; the alarm actions go on without waiting", self.entry.title, label, budget)
+            self._note(label)
+            return False
+        if task.cancelled():
+            return False
+        task.result()
+        return True
+
+    def _note(self, label: str) -> None:
+        """Eingriff des Wächters auf der Zeitachse des Alarms festhalten (nie mit einem Fehler)."""
+        try:
+            self._ctl.record("step_failed", action=label, reason="watchdog")
+        except Exception:  # noqa: BLE001 - der Wächter selbst darf nie scheitern
+            _LOGGER.exception("%s: the watchdog could not record its intervention", self.entry.title)
+
+    @callback
+    def _begin(self, run: dict[str, Any]) -> bool:
+        """Die Schritte eines Laufs starten, genau einmal: nach der Vorbereitung oder, wenn die ausbleibt, durch den Wächter."""
+        if self._run is not run or self._begun is run:
+            return False
+        self._begun = run
+        self._spawn(run, 0)
+        return True
+
+    @callback
+    def _spawn(self, run: dict[str, Any], start: int) -> None:
+        self._position = start
+        task = self._background(self._execute(run["trigger"], start))
+        self._task = task
+        task.add_done_callback(partial(self._on_flow_done, run))
+
+    @callback
+    def _on_flow_done(self, run: dict[str, Any], task: asyncio.Task) -> None:
+        """
+        Aufsicht über den Ablauf als Ganzes: Endet er mit einem Fehler (ein Fehler ausserhalb eines Schritts, den die Schleife
+        nicht abfängt), geht es mit dem nächsten Schritt weiter. Jeder Abbruch rückt um mindestens einen Schritt vor: nach dem
+        letzten Schritt ist Schluss, eine Endlosschleife ist ausgeschlossen.
+        """
+        if task.cancelled() or self._run is not run or self._task is not task:
+            return
+        error = task.exception()
+        if error is None:
+            return
+        _LOGGER.error("%s: watchdog: the alarm actions stopped unexpectedly at step %s; continuing with the next step",
+                      self.entry.title, self._position + 1, exc_info=error)
+        self._note("flow")
+        try:
+            count = len(run.get("steps") or self.steps(run["trigger"]))
+        except Exception:  # noqa: BLE001 - ohne lesbare Schritte gibt es nichts fortzusetzen
+            return
+        if self._position + 1 < count:
+            self._spawn(run, self._position + 1)
+
+    @callback
+    def _watch_start(self, trigger: str) -> None:
+        """Aufsicht über den Start: läuft neben dem Start her und greift ein, wenn der erste Schritt ausbleibt."""
+        if self._guard is not None:
+            self._guard.cancel()
+        self._guard = self._background(self._start_guard(trigger))
+
+    async def _start_guard(self, trigger: str) -> None:
+        # Echte Zeit, nicht die Zeitgeber von HA: der Wächter misst, wie lange der Start wirklich dauert
+        await asyncio.sleep(start_budget())
+        self._guard = None
+        self._check_started(trigger)
+
+    @callback
+    def _check_started(self, trigger: str) -> None:
+        """
+        Letzte Sicherung: Ist der Alarm noch aktiv und hat kein Schritt begonnen, starten die Schritte jetzt ohne Vorbereitung
+        (kein Schnappschuss: die Geräte kehren dann beim Deaktivieren nicht von selbst zurück, aber die Sirene läuft).
+        """
+        if self._ctl.state != AlarmControlPanelState.TRIGGERED:
+            return
+        run = self._run
+        if run is not None and not run.get("test") and self._begun is run:
+            return  # die Schritte laufen oder sind durchgelaufen
+        try:
+            steps = self.steps(trigger)
+        except Exception:  # noqa: BLE001 - ohne lesbare Schritte gibt es nichts zu starten
+            _LOGGER.exception("%s: watchdog: the alarm actions cannot be read", self.entry.title)
+            return
+        if not steps:
+            return
+        _LOGGER.error("%s: watchdog: the alarm actions did not start within %.1f s; starting them now without preparation",
+                      self.entry.title, start_budget())
+        if run is None or run.get("test"):
+            # Kein Lauf (der Start ist gescheitert) oder noch der Test (sein Ende hängt): ein neuer Lauf, die Aufgaben des alten enden
+            for task in self._take_tasks():
+                task.add_done_callback(_retrieve)
+            inherited = run or {}
+            run = {"trigger": trigger, "index": 0, "test": False, "snapshot": dict(inherited.get("snapshot") or {}),
+                   "sonos": list(inherited.get("sonos") or []), "steps": None}
+            self._run = run
+        self._note("start")
+        self._begin(run)
 
     def _background(self, coro: Any) -> asyncio.Task:
         # Hintergrund-Task: Ein Ablauf kann minutenlang warten; HA soll beim Start oder in Tests nicht auf ihn warten
@@ -159,6 +409,8 @@ class WorkflowRunner:
 
     async def _sleep(self, seconds: float) -> None:
         """Warten über die Zeitgeber von HA (Ziel ist eine @callback-Funktion, keine lambda, siehe LEARNINGS)."""
+        if seconds <= 0:
+            return  # nichts zu warten (auch: die Zeit eines Schritts war beim Wiederanlauf schon um)
         future = self.hass.loop.create_future()
 
         @callback
@@ -179,31 +431,48 @@ class WorkflowRunner:
             self.hass.async_create_task(self.async_stop())
 
     async def _execute(self, trigger: str, start: int) -> None:
+        """
+        Die Schritte der Reihe nach. Jeder abgewartete Schritt läuft unter Aufsicht des Wächters (`_watched` mit der Grenze aus
+        step_budget): keiner hält den nächsten länger auf als seine eigene Grenze, gleich aus welchem Grund.
+        """
         steps = (self._run or {}).get("steps") or self.steps(trigger)
         test = bool(self._run and self._run.get("test"))
         for index in range(start, len(steps)):
             if self._run is None:
                 return
-            self._run["index"] = index
-            self._store.async_delay_save(lambda: self._run or {}, 0)
-            self._record(steps[index], test)
-            if steps[index].get("detach") and steps[index].get("type") in ("action", "sound"):
-                # Nicht abwarten: läuft nebenher, der nächste Schritt startet sofort (langer Alarmton, träges Gerät)
-                task = self._background(self._side(steps[index], test, index))
-                self._side_tasks.add(task)
-                task.add_done_callback(self._side_tasks.discard)
-                continue
+            self._position = index  # zuerst und ohne Fehlerquelle: hier macht der Wächter nach einem Abbruch weiter
+            step = steps[index]
             try:
-                await self._step(steps[index], test)
+                # Mitschreiben (gespeicherter Stand für den Neustart, Zeitachse) ist Zusatz: ein Fehler darin hält keinen Schritt auf
+                self._run["index"] = index
+                self._store.async_delay_save(lambda: self._run or {}, 0)
+                self._record(step, test)
+            except Exception:  # noqa: BLE001 - Sicherheitsregel: die Schritte laufen in jedem Fall
+                _LOGGER.exception("%s: bookkeeping for step %s of the alarm actions failed", self.entry.title, index + 1)
+            try:
+                if self._runs_alongside(step):
+                    # Nicht abwarten: läuft nebenher, der nächste Schritt startet sofort (langer Alarmton, träges Gerät)
+                    task = self._background(self._side(step, test, index))
+                    self._side_tasks.add(task)
+                    task.add_done_callback(self._side_tasks.discard)
+                    continue
+                await self._watched(self._step(step, test), step_budget(step), self._label(step))
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 - Sicherheitsregel: ein fehlerhafter Schritt stoppt die anderen nicht
                 _LOGGER.exception("%s: step %s of the alarm actions failed", self.entry.title, index + 1)
 
+    @staticmethod
+    def _label(step: dict[str, Any]) -> str:
+        """Bezeichnung eines Schritts für Log und Zeitachse (ohne Daten des Schritts)."""
+        kind = str(step.get("type") or "?")
+        return str(step.get("action") or kind) if kind == "action" else kind
+
     async def _side(self, step: dict[str, Any], test: bool, index: int) -> None:
         """Schritt ohne Abwarten: Fehler werden nur protokolliert, sie halten nichts auf."""
         try:
-            await self._step(step, test)
+            # Nicht fortsetzbar: ein Schritt nebenher läuft nach einem Neustart nicht weiter (nur die Schritte danach)
+            await self._step(step, test, resumable=False)
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001 - Sicherheitsregel: ein fehlerhafter Schritt stoppt die anderen nicht
@@ -222,10 +491,39 @@ class WorkflowRunner:
             entry["seconds"] = step.get("seconds")
         self._ctl.record("step", **entry)
 
-    async def _step(self, step: dict[str, Any], test: bool) -> None:
+    def _remaining(self, seconds: float) -> float:
+        """
+        Verbleibende Zeit eines abgewarteten Schritts mit eingestellter Dauer (Warten, Alarmton mit Dauer).
+
+        Die Dauer bestimmt der Nutzer, und sie zählt ab dem ersten Start des Schritts: Beim ersten Start wird das Ende gemerkt
+        (im gespeicherten Stand des Laufs); nach einem Neuladen (Einstellungen mitten im Alarm gespeichert) oder einem
+        Neustart von Home Assistant läuft nur der Rest. So schaltet "Sirene ein, 3 Minuten warten, Sirene aus" auch dann
+        nach 3 Minuten aus und nicht erst nach einer vollen Wartezeit obendrauf (rechtlich wichtig: die Sirene endet nach
+        der vom Betreiber gewählten Zeit).
+        """
+        run = self._run
+        if run is None:
+            return float(seconds)
+        now = dt_util.utcnow()
+        saved = run.get("until")
+        if isinstance(saved, dict) and saved.get("index") == self._position:
+            end = dt_util.parse_datetime(str(saved.get("at") or ""))
+            if end is not None:
+                # Nie länger als eingestellt (auch nicht nach einem Sprung der Uhr), nie negativ
+                return min(float(seconds), max(0.0, (end - now).total_seconds()))
+        run["until"] = {"index": self._position, "at": (now + timedelta(seconds=seconds)).isoformat()}
+        try:
+            self._store.async_delay_save(lambda: self._run or {}, 0)
+        except Exception:  # noqa: BLE001 - Mitschreiben hält den Schritt nie auf
+            _LOGGER.exception("%s: saving the end of a timed step failed", self.entry.title)
+        return float(seconds)
+
+    async def _step(self, step: dict[str, Any], test: bool, resumable: bool = True) -> None:
+        """Einen Schritt ausführen. `resumable`: abgewarteter Schritt (seine Dauer zählt über Neuladen und Neustart hinweg)."""
         kind = step.get("type")
         if kind == "wait":
-            await self._sleep(max(0, int(step.get("seconds", 0))))
+            seconds = max(0, int(step.get("seconds", 0) or 0))
+            await self._sleep(self._remaining(seconds) if resumable else seconds)
         elif kind == "notify":
             self._notifier.send_alarm(test=test, step=step)
         elif kind == "action":
@@ -235,9 +533,9 @@ class WorkflowRunner:
                 data["entity_id"] = list(step["target"])
             await self._bounded(self.hass.services.async_call(domain, service, data, blocking=True), f"{domain}.{service}")
         elif kind == "sound":
-            await self._play(step)
+            await self._play(step, resumable)
 
-    async def _play(self, step: dict[str, Any]) -> None:
+    async def _play(self, step: dict[str, Any], resumable: bool = False) -> None:
         players = list(step.get("players", []))
         sound = step.get("sound", "siren")
         if not players or sound not in SOUNDS:
@@ -260,10 +558,14 @@ class WorkflowRunner:
                 await self._call("media_player", "play_media", play)
                 await self._sleep(SOUNDS[sound])
             return
-        # Dauer in Sekunden; 0 = so lange, bis deaktiviert wird (oder die Alarmdauer endet): der Ablauf bricht den Schritt dann ab
-        end = dt_util.utcnow() + timedelta(seconds=duration)
+        # Dauer in Sekunden, vom Nutzer eingestellt; 0 = so lange, bis deaktiviert wird: der Ablauf bricht den Schritt dann ab.
+        # Ein abgewarteter Ton zählt seine Dauer ab dem ersten Start (nach Neuladen oder Neustart nur der Rest, siehe _remaining)
+        left = self._remaining(duration) if resumable and duration else duration
+        end = dt_util.utcnow() + timedelta(seconds=left)
         try:
             while True:
+                if duration and dt_util.utcnow() >= end:
+                    break  # Zeit schon um (Wiederanlauf nach dem Ende): nichts mehr spielen, nur stoppen
                 await self._call("media_player", "play_media", play)
                 if duration == 0:
                     await self._sleep(SOUNDS[sound])
@@ -310,26 +612,30 @@ class WorkflowRunner:
         except Exception:  # noqa: BLE001 - ein Gerät, das nicht antwortet, hält den Ablauf nicht auf
             _LOGGER.exception("%s: %s.%s failed", self.entry.title, domain, service)
 
-    async def _cancel_task(self) -> None:
-        # Hängende Aufrufe enden mit dem Alarm; nicht abwarten (ein Aufruf, der Abbrüche ignoriert, darf das Deaktivieren nicht aufhalten)
-        for late in list(self._late):
-            late.cancel()
-        self._late.clear()
+    @callback
+    def _take_tasks(self) -> list[asyncio.Task]:
+        """
+        Alle Aufgaben des laufenden Ablaufs übernehmen und abbrechen. Synchron, in einem Zug: ein neuer Lauf, der danach
+        startet (echter Alarm nach einem Test, Start durch den Wächter), gehört nicht mehr dazu und bleibt unberührt.
+        """
+        late, self._late = list(self._late), set()
         side, self._side_tasks = list(self._side_tasks), set()
-        for t in side:
-            t.cancel()
-        for t in side:
-            try:
-                await t
-            except (asyncio.CancelledError, Exception):  # noqa: BLE001 - nur das Ende abwarten
-                pass
         task, self._task = self._task, None
-        if task and not task.done():
-            task.cancel()
-            try:
-                await task
-            except (asyncio.CancelledError, Exception):  # noqa: BLE001 - nur das Ende abwarten
-                pass
+        for item in late:
+            item.cancel()  # hängende Aufrufe enden mit dem Alarm; nicht abwarten
+        waiting = [item for item in (*side, task) if item is not None and not item.done()]
+        for item in waiting:
+            item.cancel()
+        return waiting
+
+    async def _cancel_task(self) -> None:
+        waiting = self._take_tasks()
+        if waiting:
+            for item in waiting:
+                item.add_done_callback(_retrieve)
+            # Das Ende abwarten (ein Ton stoppt beim Abbruch noch den Player), aber nie ohne Grenze: eine Aufgabe, die
+            # Abbrüche ignoriert, darf das Deaktivieren nicht aufhalten
+            await asyncio.wait(waiting, timeout=SERVICE_TIMEOUT)
 
     async def async_silence(self) -> bool:
         """
@@ -349,14 +655,14 @@ class WorkflowRunner:
 
     async def async_stop(self) -> None:
         """Alle Schritte abbrechen und den Zustand vor dem Alarm wiederherstellen."""
-        if self._test_timer:
-            self._test_timer()
-            self._test_timer = None
-        await self._cancel_task()
+        self._cancel_timers()
+        # Zuerst und ohne Warten: ab hier gehört ein neuer Lauf (echter Alarm, Start durch den Wächter) nicht mehr zu diesem Stopp
         run, self._run = self._run, None
+        await self._cancel_task()
         if run:
             await self._restore(run)
-        await self._store.async_remove()
+        if self._run is None:
+            await self._store.async_remove()
 
     # ----- Schnappschuss und Wiederherstellung -----
 

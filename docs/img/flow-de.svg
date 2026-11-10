@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 250" width="960" height="250" role="img" aria-label="So läuft ein Alarm ab">
+<title>So läuft ein Alarm ab</title>
+<style>
+  text { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  .box { font-size: 14px; font-weight: 600; fill: #ffffff; }
+  .label { font-size: 12px; fill: #4b5563; }
+  .head { font-size: 13px; font-weight: 600; fill: #1f2937; }
+  .line { stroke: #6b7280; stroke-width: 1.6; fill: none; }
+  .tip { fill: #6b7280; }
+  .card { fill: rgba(107,114,128,.10); stroke: rgba(107,114,128,.35); stroke-width: 1; }
+  @media (prefers-color-scheme: dark) {
+    .label { fill: #c5cad3; } .head { fill: #f3f4f6; } .line { stroke: #9ca3af; } .tip { fill: #9ca3af; }
+  }
+</style>
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<rect x="12" y="104" width="172" height="50" rx="12" fill="#2e9e5b"/><text class="box" x="98.0" y="134.0" text-anchor="middle">Deaktiviert</text>
+<rect x="203" y="104" width="172" height="50" rx="12" fill="#d98a00"/><text class="box" x="289.0" y="134.0" text-anchor="middle">Ausgangsverzögerung</text>
+<rect x="394" y="104" width="172" height="50" rx="12" fill="#0b8fd9"/><text class="box" x="480.0" y="134.0" text-anchor="middle">Scharf</text>
+<rect x="585" y="104" width="172" height="50" rx="12" fill="#d98a00"/><text class="box" x="671.0" y="134.0" text-anchor="middle">Eingangsverzögerung</text>
+<rect x="776" y="104" width="172" height="50" rx="12" fill="#d93025"/><text class="box" x="862.0" y="134.0" text-anchor="middle">Alarm</text>
+<path class="line" d="M187 129.0 L200 129.0" marker-end="url(#tip)"/><text class="label" x="193.5" y="174" text-anchor="middle">scharf schalten</text>
+<path class="line" d="M378 129.0 L391 129.0" marker-end="url(#tip)"/><text class="label" x="384.5" y="174" text-anchor="middle">Zeit um</text>
+<path class="line" d="M569 129.0 L582 129.0" marker-end="url(#tip)"/><text class="label" x="575.5" y="174" text-anchor="middle">Eingangssensor öffnet</text>
+<path class="line" d="M760 129.0 L773 129.0" marker-end="url(#tip)"/><text class="label" x="766.5" y="174" text-anchor="middle">Zeit um</text>
+<path class="line" d="M480.0 101 C480.0 54, 862.0 54, 862.0 100" marker-end="url(#tip)"/><text class="label" x="671.0" y="58" text-anchor="middle">jeder andere Sensor: sofort</text>
+<text class="label" x="948" y="22" text-anchor="end">immer aktiv (Rauch, Wasser): Alarm aus jedem Zustand</text>
+<path class="line" d="M862.0 157 L862.0 216 L98.0 216 L98.0 158" marker-end="url(#tip)"/><text class="label" x="480.0" y="236" text-anchor="middle">Deaktivieren (mit Code, falls gesetzt): aus jedem Zustand zurück zu Deaktiviert</text>
+</svg>

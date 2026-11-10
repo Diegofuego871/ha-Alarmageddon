@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 65  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 66  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -147,6 +147,7 @@ DEFAULT_PRESETS: Final = {
 # Globale Einstellungen (für alle Anlagen gleich)
 SETTINGS_STORE_KEY: Final = f"{DOMAIN}.settings"
 DATA_SETTINGS: Final = f"{DOMAIN}_settings"
+DATA_SETTINGS_LOCK: Final = f"{DOMAIN}_settings_lock"
 
 # Benachrichtigungen (global). Empfänger als Dienste "notify.<name>", getrennt für Alarm und Wartung. Seit 0.9.0 je Meldungsart:
 # an/aus, kritisch ja/nein, Lautstärke (iOS). Die Art gehört zu einer Gruppe, deren Empfänger sie bekommt.

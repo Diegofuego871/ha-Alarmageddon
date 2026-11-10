@@ -37,6 +37,8 @@ from .const import (
     FIELD_CODE,
     FIELD_REMOVE_CODE,
     MAX_DELAY,
+    MODE_ENABLED_DEFAULT,
+    MODE_ENABLED_KEY,
     MODES,
 )
 
@@ -97,9 +99,9 @@ class AlarmageddonConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(FIELD_CODE): _CODE,
             }
         )
-        return self.async_show_form(
-            step_id="user", data_schema=self.add_suggested_values_to_schema(schema, user_input or {}), errors=errors
-        )
+        # Den eingegebenen Code nie als Vorschlag zurückgeben (Sicherheitsregel: der Code bleibt im Eingabefeld des Nutzers)
+        suggested = {k: v for k, v in (user_input or {}).items() if k != FIELD_CODE}
+        return self.async_show_form(step_id="user", data_schema=self.add_suggested_values_to_schema(schema, suggested), errors=errors)
 
     @staticmethod
     @callback
@@ -133,7 +135,8 @@ class AlarmageddonOptionsFlow(OptionsFlow):
             options[CONF_NIGHT_ENABLED] = bool(behaviour.get(CONF_NIGHT_ENABLED, False))
             options[CONF_CODE_ARM_REQUIRED] = bool(behaviour.get(CONF_CODE_ARM_REQUIRED, False))
 
-            active = [m for m in MODES if m != "night" or options[CONF_NIGHT_ENABLED]]
+            # Aktive Modi wie im Panel: Anwesend und Abwesend lassen sich dort abschalten, Nacht hier
+            active = [m for m in MODES if bool(options.get(MODE_ENABLED_KEY[m], MODE_ENABLED_DEFAULT[m]))]
             in_zones = {e for m in active for e in options[f"{CONF_ZONE_PREFIX}{m}"]}
             new_code = (code_input.get(FIELD_CODE) or "").strip()
             if set(options[CONF_ENTRY_SENSORS]) - in_zones:

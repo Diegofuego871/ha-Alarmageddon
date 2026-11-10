@@ -16,6 +16,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
+from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
@@ -213,7 +214,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
                 "has_code": ctl.has_code,
                 # Codes nie zum Panel: nur Name und verknüpfter Benutzer
-                "codes": [{"id": c["id"], "name": c["name"], "user_id": c.get("user_id")} for c in ctl.codes],
+                "codes": [{"id": c.get("id", ""), "name": c.get("name", ""), "user_id": c.get("user_id")} for c in ctl.codes],
                 "main_code": bool(entry.options.get(CONF_CODE_HASH)),
                 "code_arm_required": ctl.code_arm_required,
                 "events": entry.runtime_data.events.events[:20],
@@ -315,6 +316,9 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     if (entry := _entry(hass, connection, msg)) is None:
         return
     entity_id = _alarm_entity(hass, entry)
+    if entity_id is None:
+        connection.send_error(msg["id"], "not_found", "Alarm entity not found")
+        return
     data: dict[str, Any] = {"entity_id": entity_id}
     if msg.get("code"):
         data["code"] = msg["code"]
@@ -396,23 +400,29 @@ async def ws_rename(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Voreinstellungen je Sensorart, für alle Anlagen. Die Anlagen laden danach neu."""
     settings = await async_get_settings(hass)
-    await settings.async_set_presets(msg["presets"])
+    # Erst die Voreinstellungen (ohne Benachrichtigung), dann die Optionen: jede Anlage lädt genau einmal neu und sieht beides
+    presets_changed = await settings.async_store_presets(msg["presets"])
     reset = 0
+    reloading: set[str] = set()
     kinds = set(msg.get("reset_sensors") or [])
     if kinds:
         for entry in hass.config_entries.async_entries(DOMAIN):
             own = dict(entry.options.get(CONF_SENSOR_OPTIONS) or {})
-            per_mode = {m: dict(v) for m, v in (entry.options.get(CONF_SENSOR_MODES) or {}).items()}
+            per_mode = {m: dict(v) for m, v in (entry.options.get(CONF_SENSOR_MODES) or {}).items() if isinstance(v, dict)}
             drop = [e for e in {*own, *(e for v in per_mode.values() for e in v)} if sensor_type(hass, e) in kinds]
             if drop:
                 reset += len(drop)
                 # Auch die eigenen Werte je Modus fallen weg: der Sensor folgt danach wieder der Voreinstellung
                 new_modes = {m: {e: o for e, o in v.items() if e not in drop} for m, v in per_mode.items()}
-                hass.config_entries.async_update_entry(entry, options={
+                # Die Optionsänderung lädt die Anlage neu (Update-Listener); nur dann gilt sie als "lädt schon"
+                if hass.config_entries.async_update_entry(entry, options={
                     **entry.options,
                     CONF_SENSOR_OPTIONS: {e: o for e, o in own.items() if e not in drop},
                     CONF_SENSOR_MODES: {m: v for m, v in new_modes.items() if v},
-                })
+                }):
+                    reloading.add(entry.entry_id)
+    if presets_changed:
+        settings.async_notify_listeners(skip=reloading)
     connection.send_result(msg["id"], {"presets": settings.presets, "reset": reset})
 
 
@@ -479,7 +489,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if not enabled:
         connection.send_error(msg["id"], "no_mode", "At least one mode is needed")
         return
-    if ctl.mode and ctl.mode not in enabled and str(ctl.state) != "disarmed":
+    if ctl.mode and ctl.mode not in enabled and ctl.state != AlarmControlPanelState.DISARMED:
         connection.send_error(msg["id"], "mode_active", "Disarm before switching off the active mode")
         return
     hass.config_entries.async_update_entry(entry, options=options)
@@ -659,7 +669,7 @@ async def ws_add_code(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     if len(ctl.codes) >= MAX_CODES:
         connection.send_error(msg["id"], "too_many", "Too many codes")
         return
-    if any(c["name"].casefold() == msg["name"].casefold() for c in ctl.codes):
+    if any(str(c.get("name", "")).casefold() == msg["name"].casefold() for c in ctl.codes):
         connection.send_error(msg["id"], "name_taken", "Name already used")
         return
     user_id = msg.get("user_id") or None
@@ -789,15 +799,28 @@ async def ws_backup_delete(hass: HomeAssistant, connection, msg: dict[str, Any])
     connection.send_result(msg["id"], {"backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
 
 
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/log"})
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/log", vol.Optional("rev"): str})
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_log(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    """Protokoll: alle Ereignisse und die aufgezeichneten Alarme (Zeitachse) je Anlage, getrennt von "data"."""
+    """
+    Protokoll: alle Ereignisse und die aufgezeichneten Alarme (Zeitachse) je Anlage, getrennt von "data".
+
+    Das Panel fragt bei offenem Reiter alle 5 Sekunden. Mit `rev` (der Stand aus der letzten Antwort) kommt nur
+    `{"unchanged": true}` zurück, solange nichts dazukam: sonst gingen jedes Mal bis zu 1000 Ereignisse und 30 Alarme
+    je Anlage über die Leitung.
+    """
+    loaded = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
+    # Stand aller Anlagen: Kennung des Laufs (ändert sich beim Neuladen) und die Zähler von Ereignissen und Aufzeichnungen
+    rev = "|".join(
+        f"{e.entry_id}:{e.runtime_data.controller.instance}:{e.runtime_data.events.rev}:{e.runtime_data.recorder.rev if e.runtime_data.recorder else 0}:{e.title}"
+        for e in sorted(loaded, key=lambda e: e.entry_id)
+    )
+    if msg.get("rev") == rev:
+        connection.send_result(msg["id"], {"unchanged": True, "rev": rev})
+        return
     systems = []
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.state is not ConfigEntryState.LOADED:
-            continue
+    for entry in loaded:
         rt = entry.runtime_data
         systems.append({
             "entry_id": entry.entry_id,
@@ -807,5 +830,5 @@ async def ws_log(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             "recording": bool(rt.recorder and rt.recorder.current),
         })
     systems.sort(key=lambda s: s["title"].lower())
-    connection.send_result(msg["id"], {"systems": systems})
+    connection.send_result(msg["id"], {"systems": systems, "rev": rev})
 

@@ -7,6 +7,56 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.0.0] - 2026-11-10
+
+Erste stabile Version. Keine neue Funktion gegenüber 0.40.0: Versionsnummer und Status im README ändern sich, weil die ganze Integration durch einen externen Code-Review geprüft wurde (siehe 0.40.0) und keine Vorabversion mehr ist.
+
+### Geändert
+
+- **Version 1.0.0, keine Vorabversion mehr.** Das README nennt Alarmageddon nicht mehr eine frühe Vorabversion, und die Installation verlangt in HACS nicht mehr "Pre-release". Alles von 0.24.0 bis 0.40.0 ist enthalten; die Abschnitte darunter listen es auf.
+
+## [0.40.0] - 2026-11-09
+
+Nicht veröffentlicht; enthalten in 1.0.0.
+
+Härtung nach einem externen Code-Review: Wettläufe im Zustandsautomaten, ein Test, der einen echten Alarm verschlucken konnte, ein veralteter Knopf "Deaktivieren", Knöpfe der Alarmmeldung nur für die konfigurierten Empfänger, und das Panel rechnet beim Scharfschalten gleich wie die Anlage.
+
+### Hinzugefügt
+
+- **Wächter für die Alarmaktionen.** Der Ablauf der Alarmaktionen steht jetzt als Ganzes unter Aufsicht, gleich aus welchem Grund etwas dauert: Nach dem Auslösen beginnt der erste Schritt nach höchstens 8 Sekunden (hängt oder scheitert der Start, startet der Wächter die Schritte selbst, ohne den Schnappschuss der Geräte); kein Schritt hält den nächsten länger auf als seine eigene Grenze (eine Aktion 12 Sekunden, ein Warten seine Zeit plus 2 Sekunden, ein Ton seine Dauer plus die Zeit, die der Player zum Antworten haben darf); und bricht der Ablauf selbst unerwartet ab, macht er mit dem nächsten Schritt weiter. Jeder Eingriff steht im Log von Home Assistant und in der Zeitachse des Alarms ("Wächter: …"). Ein hängender Schritt wird nicht abgebrochen (ein Skript darf fertig werden), aber nicht mehr abgewartet; Deaktivieren beendet ihn.
+
+### Sicherheit
+
+- **Knöpfe der Alarmmeldung nur für konfigurierte Empfänger:** "Deaktivieren" und "Sirene stumm" werden nur von einem Handy angenommen, dessen Home-Assistant-Benutzer zu einem konfigurierten Alarm-Empfänger gehört: ein direkt gewählter Dienst `notify.mobile_app_<gerät>` oder ein Mitglied einer gewählten notify-Gruppe (Plattform `group`, auch verschachtelt). Vorher konnte jede bei Home Assistant registrierte Companion App das Ereignis hinter den Knöpfen senden, auch das Handy eines Benutzers, der keine Alarmmeldungen bekommt. Home Assistant beglaubigt nur den Benutzer, der das Handy registriert hat, nicht das einzelne Gerät: zwei Handys desselben Benutzers lassen sich nicht unterscheiden. Ein abgewiesener Versuch steht im Log von Home Assistant. Empfänger, die keine Dienste der Companion App sind, können die Knöpfe nicht benutzen (sie konnten sie nie senden).
+
+### Geändert
+
+- **Ein Ton "bis zum Deaktivieren" läuft immer nebenher.** Er endet nie von selbst; als "abwarten" gespeichert, starteten die Schritte danach (zum Beispiel die Sirene) nie. Der Ablauf zeigt ihn als "läuft nebenher", der Schalter ist fest; bestehende Abläufe verhalten sich so, ohne neu zu speichern.
+- **"Deaktivieren" und "Sirene stumm" in der Alarmmeldung** wirken nur, solange der Alarm läuft. Eine alte Alarmmeldung, die auf dem Handy liegen blieb (das "Alarm beendet" kam nie an), kann eine später wieder scharf geschaltete Anlage nicht mehr deaktivieren.
+- **Echter Alarm während eines Tests der Alarmaktionen:** der Test endet sofort und der echte Ablauf startet, ohne auf etwas zu warten; die Geräte kehren beim Deaktivieren in den Zustand von vor dem Test zurück. Vorher liefen der Ablauf und, mit einem Push-Schritt im Ablauf, auch die Alarmmeldung nicht, solange der Test (bis 60 s) lief.
+- **Meldungen, Einstellungen pro Modus:** mit eingeschaltetem Schalter stehen die Arten, die nicht vom Modus abhängen ("Scharfschalten nicht möglich", "Deaktiviert"), unter den Reitern der Modi unter "Für alle Modi"; mit eingeschaltetem Schalter waren sie gar nicht erreichbar. Mit ausgeschaltetem Schalter ändert sich nichts.
+- **Sensortabelle, Reiter eines Modus:** die kleine Zeile unter dem Sensornamen zeigt die Optionen, die im gewählten Modus gelten (wie das Blatt), nicht die Werte für alle Modi.
+
+### Behoben
+
+- **Die eingestellte Dauer zählt ab dem ersten Start.** Wie lange eine Sirene oder ein Ton läuft, steht in den Alarmaktionen ("Sirene ein, Warten, Sirene aus" oder ein Ton mit Dauer). Wurden mitten im Alarm Einstellungen gespeichert (die Anlage lädt neu) oder startete Home Assistant neu, begann die Wartezeit oder der Ton von vorn, eine Sirene konnte bis zu doppelt so lange laufen wie eingestellt. Jetzt läuft nur der Rest; ist die Zeit schon um, folgt sofort der nächste Schritt.
+- **Nichts hält die Alarmaktionen mehr auf.** Ein hängendes Gerät oder eine hängende Push-Meldung tat das schon bisher nicht (höchstens 10 Sekunden, eine Push-Meldung gar nicht). Jetzt gilt dasselbe für alles andere, was beim Auslösen mitläuft: scheitert das Ereignisprotokoll, die Alarm-Aufzeichnung, die Meldung oder die Benachrichtigung in Home Assistant, starten die Alarmaktionen trotzdem und die übrigen Teile laufen weiter (vorher stoppte ein scheiternder Teil alles danach, auch die Sirene). Hängt oder scheitert die Ablage vor dem ersten Schritt, starten die Schritte trotzdem (nach höchstens 3 Sekunden), und ein Fehler beim Schreiben der Zeitachse stoppt die folgenden Schritte nicht mehr.
+- **Scharfschalten während der Code-Prüfung:** die Code-Prüfung läuft in einem Hilfsthread. Ging in diesem Moment ein Eingangssensor auf (Eingangsverzögerung läuft), beendete das Scharfschalten in einen anderen Modus die Verzögerung still, und die Anlage war scharf statt im Alarm. Das Scharfschalten wird jetzt abgelehnt ("zuerst deaktivieren"), die Verzögerung läuft zum Alarm weiter.
+- **Mehrere Anlagen, die beim Start zugleich laden,** legten zwei Kopien der globalen Einstellungen (Voreinstellungen je Sensorart, Meldungen) auf derselben Datei an; eine geänderte Voreinstellung konnte dann das Neuladen einer Anlage auslassen. Eine Kopie, wie beim Panel.
+- **"Alarm endet" nach einem Neustart von Home Assistant mitten im Alarm** nahm die Meldung von "Immer aktiv" statt die des Modus, in dem der Alarm lief.
+- **Übersicht, "Bereit für" und offene Sensoren:** das Panel wendet dieselben Regeln an wie die Anlage: "Umgehen" und die Werte je Modus (Schalter "Einstellungen pro Modus") zählen. Vorher galt ein Sensor, den die Anlage umgehen würde, als Hindernis.
+- **Sensorliste auf der Übersicht:** Sensoren, die nur im Reiter "Immer aktiv" (Einstellungen pro Modus) auf "Immer aktiv" stehen, fehlten in der Liste.
+- **Alarm-Aufzeichnung:** ein Alarm, der ohne Deaktivieren endete (alte Alarmdauer aus der Zeit vor 0.25.0, wiederhergestellt), wurde nie abgeschlossen, und der nächste Alarm wurde nicht aufgezeichnet. Einträge eines Sensors, der in der Eingangsverzögerung dauernd ausfällt und zurückkommt (samt der Meldungen dazu), zählen jetzt wie Sensoreinträge gegen die Grenze je Alarm; Zustandswechsel, Schritte und die Alarmmeldung bleiben immer erhalten.
+- **Panel:** ein fehlgeschlagenes Scharfschalten zeigte den Fehler in seltenen Fällen im falschen Fenster; der Zeitgeber der Datenabfrage wird freigegeben; ein entferntes Panel stoppt seine Zeitgeber; die Symbole der Sensorklassen Hitze, Schloss und Bewegt sich; in der Kurzfassung eines Alarmtons ohne Lautstärke fehlte ein Leerzeichen; der CSV-Export des Protokolls entschärft Zellen, die wie eine Tabellenformel beginnen.
+- **Optionsdialog von Home Assistant:** Eingangssensoren werden gegen die wirklich eingeschalteten Modi geprüft (Anwesend und Abwesend lassen sich im Panel abschalten); der eingegebene Code wird nach einem Eingabefehler nicht in das Formular zurückgegeben.
+- **Konfiguration:** ein persönlicher Code ohne Salz oder ein beschädigter Code-Eintrag bricht weder die Code-Prüfung noch das Panel.
+- **Reiter Protokoll:** das Panel fragt bei offenem Reiter alle 5 Sekunden; der Server antwortet jetzt mit "unverändert", bis ein Ereignis oder ein Eintrag eines Alarms dazukam, statt jedes Mal bis zu 1000 Ereignisse und 30 Alarme je Anlage zu senden.
+- **"Letzte Änderung" der Sensoren** wird innert 5 Sekunden geschrieben, auch wenn sich Sensoren dauernd ändern (vorher schob jede Änderung das Schreiben hinaus, es geschah erst beim Beenden von Home Assistant).
+- **Voreinstellungen speichern mit "Auf alle Sensoren anwenden" und eine Sicherung einspielen** laden jede Anlage einmal statt zweimal neu; unveränderte Voreinstellungen laden nichts neu.
+- **Code:** die Reste der entfernten Update-Funktion (`http_limit.py`), die ungenutzte Kartenansicht der Sensortabelle und 61 ungenutzte Texte des Panels sind weg; die eigenen Werte pro Sensor werden einmal je Stand der Optionen ermittelt statt bei jedem Sensorereignis.
+- **README:** neu geschrieben und neu gegliedert: warum man es nutzt, ein Schnellstart, ein Rundgang mit Bildschirmfotos, die Sicherheitsmechanismen mit Schaubild, die Grenzen und die Details in einem Abschnitt "Gut zu wissen", der sich auf Klick öffnet. Die Bilder entstehen aus dem Nachbau (`tests/panel/readme-shots.mjs`).
+- **Tests:** eine systematische Sicherheits-Testreihe (jeder Befehl des Panels nur für Administratoren und nur für die eigene Anlage, Codes und Hashes verlassen den Server nie, Code-Sperre, Zustandsautomat, feindliche Sicherungen und Eingaben, Pfade ohne Anmeldung) und eine Mutationsprobe, die jede Schutzmassnahme ausbaut und verlangt, dass ein Test scheitert; beides läuft bei jedem Push.
+
 ## [0.39.0] - 2026-11-09
 
 Sicherungen können einen Namen haben.
@@ -623,6 +673,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0
 [0.35.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.35.2

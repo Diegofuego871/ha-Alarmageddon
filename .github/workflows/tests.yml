@@ -34,10 +34,14 @@ jobs:
         run: pip install -r requirements_test.txt
 
       - name: Pyflakes
-        run: python -m pyflakes custom_components/alarmageddon/*.py tests/*.py
+        run: python -m pyflakes custom_components/alarmageddon/*.py tests/*.py scripts/*.py
 
       - name: Tests
         run: python -m pytest -q
+
+      - name: Mutationsprobe der Sicherheitstests
+        # Baut je eine Schutzmassnahme aus und prüft, dass die Tests es merken (scripts/mutation_check.py)
+        run: python scripts/mutation_check.py
 
   panel:
     name: Panel (Playwright)

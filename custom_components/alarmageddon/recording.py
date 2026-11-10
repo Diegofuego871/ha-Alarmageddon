@@ -24,6 +24,10 @@ from .const import RECORDINGS_ENTRIES_KEEP, RECORDINGS_KEEP, RECORDINGS_STORE_KE
 from .controller import AlarmController
 
 _ACTIVE = (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED)
+# Einträge, die ein flatternder Sensor beliebig oft erzeugen kann: sie unterliegen der Grenze je Alarm
+_LIMITED = ("sensor", "sensor_offline", "sensor_report", "unconfirmed")
+# Meldungen, die ein flatternder Sensor auslöst (je Ausfall, je Stiller Alarm); die Alarmmeldung selbst zählt nie dazu
+_LIMITED_NOTIFIED = ("sensor_offline", "sensor_report")
 
 
 def _store(hass: HomeAssistant, entry_id: str) -> Store:
@@ -37,6 +41,8 @@ class AlarmRecorder:
         self._store = _store(hass, entry_id)
         # Neueste zuerst; der erste Eintrag ist offen, solange "end" fehlt
         self.recordings: list[dict[str, Any]] = []
+        # Zähler der Änderungen (wie im Ereignisprotokoll): spart dem Panel die ganze Antwort, solange nichts dazukam
+        self.rev = 0
         self._last_state: str | None = None
         self._unsubs: list[CALLBACK_TYPE] = []
         self._unsub_sensors: CALLBACK_TYPE | None = None
@@ -86,6 +92,10 @@ class AlarmRecorder:
             self._finish(self._ctl.changed_by)
             return
         self._add(entry)
+        if state not in _ACTIVE:
+            # Alarm endet ohne Deaktivieren (zum Beispiel eine alte Alarmdauer aus der Wiederherstellung): abschliessen,
+            # sonst bliebe der Alarm für immer "laufend" und der nächste würde nie aufgezeichnet
+            self._finish(None, reason="ended")
 
     @callback
     def _begin(self) -> None:
@@ -93,6 +103,7 @@ class AlarmRecorder:
         record = {"id": now, "start": now, "end": None, "ended_by": None, "mode": self._ctl.mode, "sensor": self._ctl.triggered_by, "entries": []}
         self.recordings.insert(0, record)
         del self.recordings[RECORDINGS_KEEP:]
+        self.rev += 1
         # Der erste Sensor hat schon angesprochen, bevor wir zuhören: mit dem echten Zeitpunkt nachtragen
         sensor = self._ctl.triggered_by
         if sensor and (st := self.hass.states.get(sensor)):
@@ -142,11 +153,15 @@ class AlarmRecorder:
             return
         entries = record["entries"]
         if len(entries) >= RECORDINGS_ENTRIES_KEEP:
-            # Ein flatternder Sensor darf den Anfang (die Ursache) nicht verdrängen: neue Einträge entfallen, das Ende kommt immer
-            if entry.get("kind") == "sensor":
-                record["truncated"] = True
+            # Ein flatternder Sensor darf den Anfang (die Ursache) nicht verdrängen: neue Sensor-Einträge (auch Ausfall, Stiller
+            # Alarm, nicht bestätigt) entfallen; Zustandswechsel, Schritte, Meldungen und das Ende kommen immer
+            if entry.get("kind") in _LIMITED or (entry.get("kind") == "notified" and entry.get("type") in _LIMITED_NOTIFIED):
+                if not record.get("truncated"):
+                    record["truncated"] = True
+                    self.rev += 1
                 return
         entries.append({"t": dt_util.utcnow().isoformat(), **entry})
+        self.rev += 1
         self._save()
 
     @callback
@@ -158,6 +173,7 @@ class AlarmRecorder:
         record["ended_by"] = by
         if reason:
             record["reason"] = reason
+        self.rev += 1
         self._unwatch()
         self._save()
 

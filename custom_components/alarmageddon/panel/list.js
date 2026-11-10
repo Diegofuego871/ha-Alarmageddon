@@ -167,7 +167,9 @@ export class ListUi {
     const out = new Map();
     for (const s of this.host._systems()) {
       const ids = new Set(s.modes.flatMap((m) => s.zones?.[m] || []));
-      for (const [id, o] of Object.entries(s.sensor_options || {})) if (o.always) ids.add(id);
+      for (const [id, o] of Object.entries(s.sensor_options || {})) if (o?.always) ids.add(id);
+      // "Immer aktiv" aus dem Bereich "always" der Einstellungen je Modus (wie controller.always_sensors)
+      if (s.per_mode_sensors) for (const [id, o] of Object.entries(s.sensor_modes?.always || {})) if (o?.always) ids.add(id);
       for (const id of ids) {
         if (!out.has(id)) out.set(id, []);
         out.get(id).push({ entry: s.entry_id, title: s.title, modes: s.modes.filter((m) => (s.zones?.[m] || []).includes(id)) });
@@ -201,15 +203,16 @@ export class ListUi {
     });
   }
 
-  _matches(r) {
+  // filter: der gewählte Filter oder (für die Zähler der Pillen) ein anderer; Suche und Auswahlfelder gelten immer
+  _matches(r, filter = this.filter) {
     if (this.sys && !r.systems.some((s) => s.entry === this.sys)) return false;
     if (this.area && r.area !== this.area) return false;
     if (this.type && (r.info.type || "other") !== this.type) return false;
-    if (this.filter === "problems" && !(r.gone || r.low)) return false;
-    if (this.filter === "open" && !r.open) return false;
-    if (this.filter === "occupied" && !r.occupied) return false;
-    if (this.filter === "battery" && !r.low) return false;
-    if (this.filter === "offline" && !r.gone) return false;
+    if (filter === "problems" && !(r.gone || r.low)) return false;
+    if (filter === "open" && !r.open) return false;
+    if (filter === "occupied" && !r.occupied) return false;
+    if (filter === "battery" && !r.low) return false;
+    if (filter === "offline" && !r.gone) return false;
     const q = this.q.trim().toLowerCase();
     if (!q) return true;
     return [r.name, r.id, r.area, r.info.integration, r.info.manufacturer, r.info.model, r.info.sw_version]
@@ -271,13 +274,7 @@ export class ListUi {
   }
 
   chipsHtml(rows) {
-    const n = (f) => rows.filter((r) => {
-      const saved = this.filter;
-      this.filter = f;
-      const ok = this._matches(r);
-      this.filter = saved;
-      return ok;
-    }).length;
+    const n = (f) => rows.filter((r) => this._matches(r, f)).length;
     return [["all", "filterAll"], ["problems", "filterProblems"], ["open", "filterOpen"], ["occupied", "filterOccupied"], ["battery", "filterLowBattery"], ["offline", "filterOffline"]]
       .map(([k, label]) => {
         const count = n(k);

@@ -80,6 +80,7 @@ export const DC = {
   smoke: ["smoke", "dcSmoke"], gas: ["smoke", "dcGas"], carbon_monoxide: ["smoke", "dcCo"], moisture: ["water", "dcMoisture"],
   vibration: ["sensor", "dcVibration"], tamper: ["alert", "dcTamper"], safety: ["alert", "dcSafety"], sound: ["sensor", "dcSound"],
   glass_break: ["window", "dcGlass"],
+  heat: ["smoke", "dcHeat"], lock: ["lockClosed", "dcLock"], moving: ["motion", "dcMoving"],
 };
 export const OPENINGS = new Set(["door", "window", "opening", "garage_door"]);
 export const MOTION = new Set(["motion", "occupancy", "presence"]);

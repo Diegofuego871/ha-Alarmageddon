@@ -50,12 +50,15 @@ export class LogUi {
   async load() {
     const seq = ++this.seq;
     try {
-      const res = await this.host._hass.callWS({ type: "alarmageddon/log" });
+      // Mit dem Stand der letzten Antwort: der Server schickt nur dann wieder alles, wenn etwas dazukam
+      const res = await this.host._hass.callWS({ type: "alarmageddon/log", ...(this.rev && this.systems ? { rev: this.rev } : {}) });
       if (seq !== this.seq) return;
-      this.systems = res?.systems || [];
+      if (!res?.unchanged) this.systems = res?.systems || [];
+      this.rev = res?.rev || null;
       this.error = null;
     } catch (err) {
       if (seq !== this.seq) return;
+      this.rev = null; // nach einem Fehler wieder den ganzen Stand holen
       this.error = errText(err);
     }
     // Werkzeugleiste nur neu, wenn sich die Anlagen ändern (sonst verliert eine offene Auswahl alle 5 s ihren Fokus)
@@ -153,7 +156,11 @@ export class LogUi {
     if (e.kind === "sensor") return this._t(e.to === "on" ? "logSensorOn" : e.to === "off" ? "logSensorOff" : "logSensorGone", { sensor });
     if (e.kind === "restart") return this._t("logRestart");
     if (e.kind === "notified") return this._t("logNotified", { type: this._t(`ntT_${e.type}`) });
-    if (e.kind === "step_failed") return this._t(e.reason === "timeout" ? "logStepTimeout" : "logStepError", { action: e.action || "?" });
+    if (e.kind === "step_failed") {
+      // Eingriff des Wächters (Server: workflow.py): Start, Vorbereitung, Ablauf oder ein Schritt hat zu lange gedauert
+      if (e.reason === "watchdog") return this._t({ start: "logWatchdogStart", prepare: "logWatchdogPrepare", flow: "logWatchdogFlow" }[e.action] || "logWatchdogStep", { action: e.action || "?" });
+      return this._t(e.reason === "timeout" ? "logStepTimeout" : "logStepError", { action: e.action || "?" });
+    }
     if (e.kind === "step") {
       const targets = (e.targets || []).map((id) => this.host._name(id)).join(", ");
       const test = e.test ? ` (${this._t("logTest")})` : "";
@@ -359,7 +366,11 @@ export class LogUi {
     const incidents = this.incidents().reverse();
     const base = `alarmageddon-log-${this._rangeName()}-${dayStr(new Date())}`;
     // CSV mit Semikolon und BOM: öffnet sich in Excel im deutschsprachigen Raum richtig
-    const q = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
+    // Zellen, die wie eine Formel beginnen (= + - @), bekommen ein führendes Hochkomma: Excel führt sie sonst aus (CSV-Injection)
+    const q = (v) => {
+      const text = String(v ?? "");
+      return `"${(/^[=+\-@]/.test(text) ? `'${text}` : text).replaceAll('"', '""')}"`;
+    };
     const rows = [];
     for (const e of events) rows.push([e.t, e.system, this._t("logCsvEvent"), this.host._eventText(e), e.sensor || (e.sensors || []).join(" "), e.by || "", ""]);
     for (const r of incidents) for (const e of r.entries || []) rows.push([e.t, r.system, this._t("logCsvAlarmRow"), this._text(e, r), e.sensor || "", e.by || "", stamp(new Date(r.start))]);

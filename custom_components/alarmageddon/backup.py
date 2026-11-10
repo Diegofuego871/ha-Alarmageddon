@@ -91,6 +91,10 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str
     settings = await async_get_settings(hass)
     if backup["notify"] is not None:
         await settings.async_set_notify(backup["notify"])
+    # Voreinstellungen zuerst und ohne Benachrichtigung: die Anlagen, deren Optionen sich gleich ändern, laden darüber neu
+    # und sehen schon die neuen Voreinstellungen; die übrigen werden am Ende benachrichtigt. Jede Anlage lädt genau einmal.
+    presets_changed = backup["presets"] is not None and await settings.async_store_presets(backup["presets"])
+    reloading: set[str] = set()
     for item in backup["systems"]:
         entry = by_title.get(item["title"].casefold())
         if entry is None:
@@ -100,10 +104,10 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str
         ctl = entry.runtime_data.controller
         if options.get(CONF_CODE_ARM_REQUIRED) and not ctl.has_code:
             options[CONF_CODE_ARM_REQUIRED] = False
-        hass.config_entries.async_update_entry(entry, options=options)
-    if backup["presets"] is not None:
-        # Zuletzt: Voreinstellungen laden alle Anlagen neu
-        await settings.async_set_presets(backup["presets"])
+        if hass.config_entries.async_update_entry(entry, options=options):
+            reloading.add(entry.entry_id)
+    if presets_changed:
+        settings.async_notify_listeners(skip=reloading)
     return result
 
 
