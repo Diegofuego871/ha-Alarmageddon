@@ -5,6 +5,7 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 
 - 0.13.0: `controller.record(kind, **data)` (nur für die Aufzeichnung, nicht ins Ereignisprotokoll) wird von `workflow._record` (Schritt gestartet) und `Notifier._send` (Meldung) gerufen; Einträge `step` und `notified` entfallen nie wegen der Grenze.
 
+- 1.6.5: Orange Punkte nur für Ungespeichertes (Regel in CLAUDE.md): `.ag-box.own::after` ist blau (primary). Test in `layout-e2e.mjs`.
 - 1.6.4: Blatt auf dem Handy (`dialog.ag-sheetdlg` narrow): `padding-bottom: 0`, die Leiste bringt die Safe-Area selbst mit. Im Nachbau ist die Safe-Area 0, der Test prüft nur das Padding.
 - 1.6.3: Sensor-Blatt mit Einstellungen pro Modus: `sensors.js sheetMode(id)` zeigt für einen nur "Immer aktiv"-Sensor ausserhalb der Zone des Reiters den Bereich "always". Test in `always-e2e.mjs`.
 - 1.6.2: Sensor-Blatt: Abschnitt "Alarmmodi" mit Pille "Immer aktiv" (`sensors.js sideHtml`, `alwaysChip`), Schalter `always_off` direkt darunter (`offBlock`), Zeile "Immer aktiv" aus der Liste entfernt. Test in `always-e2e.mjs`.

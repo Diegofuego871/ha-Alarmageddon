@@ -206,6 +206,7 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   seitliches Scrollen passt (ein Rollbereich mit `overflow` verhindert das
   Festkleben). Jede neue Tabelle bekommt einen Test, der auf Desktop und Handy
   scrollt und die Lage des Kopfes prüft.
+- **Orange Punkte (Vorgabe des Nutzers, 2026-11-10):** Ein orange Punkt bedeutet immer "ungespeicherte Änderung" (zum Beispiel am Reiter). Jede andere Markierung, etwa "eigener Wert", ist blau. Verschwindet ein orange Punkt nach dem Speichern nicht, ist es ein Fehler.
 - **Kapitel:** Einstellungen stehen in Kapiteln; jedes hat einen Titel mit
   einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte.
   Reiter der Konfiguration gleiten beim Wechsel seitlich herein.

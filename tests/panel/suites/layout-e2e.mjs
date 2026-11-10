@@ -187,6 +187,7 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: "Immer aktiv" gehört zum eigenen Reiter, nicht zum Modus (Wert im Bereich always)`, await s.waitFor(`return r.querySelectorAll('${alwaysSel}').length >= 3`));
       const bypassEnt = await s.ev(`return [...r.querySelectorAll('${alwaysSel}')].find((b) => (b.getAttribute('aria-checked') || b.getAttribute('aria-pressed')) === 'false').dataset.ent`);
       await s.tap(`${alwaysSel}[data-ent="${bypassEnt}"]`);
+      check(`${tag}: Punkt "eigener Wert" am Kästchen ist blau, nicht orange (Orange gilt nur für Ungespeichertes)`, await s.ev(`const b=r.querySelector('${alwaysSel}[data-ent="${bypassEnt}"]'); const dot=getComputedStyle(b,'::after').backgroundColor; const probe=(v)=>{const d=document.createElement('div'); d.style.background='var(--'+v+')'; r.querySelector('.ag-root').appendChild(d); const c=getComputedStyle(d).backgroundColor; d.remove(); return c;}; return b.classList.contains('own') && dot === probe('ag-primary') && dot !== probe('ag-warning')`));
       check(`${tag}: Klick setzt einen eigenen Wert für den Modus`, await s.waitFor(`const b=r.querySelector('${alwaysSel}[data-ent="${bypassEnt}"]'); return (b.getAttribute('aria-checked') || b.getAttribute('aria-pressed')) === 'true' && (b.classList.contains('own') || b.classList.contains('on'))`));
       // Alle anderen Optionen im Blatt, für den gewählten Modus
       if (!mobile) {

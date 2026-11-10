@@ -72,3 +72,7 @@ aus dem HA-Nachbau prüfen.
 - Icon und Logo: vorerst bleibt das Schild mit A (Entscheid des Nutzers, 2026-11-08). Vorschläge mit Katze in `docs/mockups/brand-v1`. Ein Push-Bild mit 20 % Rand fehlt noch (kommt mit den Push-Meldungen).
 - Die Konzept-Mockups (`docs/mockups/konzept-v1`) nutzen noch eine eigene
   Farbwelt; die echten Mockups pro Ansicht folgen dieser Datei.
+
+## Orange Punkte (Vorgabe des Nutzers, 2026-11-10)
+
+Ein orange Punkt bedeutet immer "ungespeicherte Änderung" (Punkt am Reiter, `has-edit`). Andere Markierungen sind blau (`--ag-primary`), zum Beispiel der Punkt für einen eigenen Wert am Sensornamen (`.ag-owndot`) und am Kästchen (`.ag-box.own`). Verschwindet ein orange Punkt nach dem Speichern nicht, ist das ein Fehler.

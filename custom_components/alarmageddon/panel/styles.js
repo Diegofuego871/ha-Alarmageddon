@@ -277,7 +277,8 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-pmscope { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--ag-primary); font-weight: 500; font-size: 13.5px; }
 .ag-pmgroup .ag-subh:first-of-type { margin-top: 4px; }
 .ag-box.own { position: relative; }
-.ag-box.own::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ag-warning); border: 2px solid var(--ag-card); }
+/* Eigener Wert (weicht von der Voreinstellung ab): blau wie der Punkt am Sensornamen. Orange steht nur für Ungespeichertes (Punkt an den Reitern) */
+.ag-box.own::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ag-primary); border: 2px solid var(--ag-card); }
 th.cur, td.cur { background: color-mix(in srgb, var(--ag-primary) 9%, transparent); }
 th.cur { box-shadow: inset 0 3px 0 var(--ag-primary); }
 /* Die Spalte des gewählten Modus: Titel zusätzlich fett */

@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.5] - 2026-11-10
+
+### Changed
+
+- **Dots:** orange dots now always mean "unsaved change" (on the tabs). The dot at a checkbox that marks an "own value" (differs from the default of the sensor type) is blue now, like the dot at the sensor name, and no longer orange.
+
 ## [1.6.4] - 2026-11-10
 
 ### Fixed
@@ -787,6 +793,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.6.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.5
 [1.6.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.4
 [1.6.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.3
 [1.6.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.2
