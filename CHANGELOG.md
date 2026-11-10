@@ -7,6 +7,41 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.0] - 2026-11-10
+
+Actions after acknowledging, and steps that keep running by default.
+
+### Added
+
+- **Actions after acknowledging.** Below "Alarm ends (acknowledged)" and its message there is now another plus: steps that run as soon as the alarm is over, whether someone acknowledged it or disarmed the system, for example close the blinds again or switch off the light. They start only after the alarm actions have stopped and the devices have returned ("Undo"), each mode has its own list like the alarm actions, and "Copy actions from" takes them along. Possible are device, sound with a duration, wait, scene and custom action; there is no alarm message, no acknowledging and no "Undo" here, because nothing follows that could take anything back. A new alarm always has priority: it cancels them and starts its own actions at once.
+
+### Changed
+
+- **Steps keep running by default.** Until now a flow waited for each step to end unless "Do not wait" was switched on. This is now the other way round: every step that carries something out (device, sound, scene, custom action) starts the next one right away, so the actions run through one after the other as fast as possible; nobody has to wait for a siren to finish. If the next step should start only when this one is done, switch on "Wait until the action has finished" in the step; it then carries a pill with that text. "Wait" still waits, and a sound "until disarmed" cannot be waited for.
+- **Existing flows behave as before.** Steps from earlier versions that waited keep waiting and now show the pill; steps that ran alongside keep doing so and no longer carry a mark. Change it in the step if you want.
+- **All connections in the flow look the same.** The dashed blue line after a step that ran alongside is gone, and so is the switch on the card: the pill on the step says whether the flow waits.
+- **"Alarm ends (acknowledged)".** The mark at the end of the flow now says what it means; the texts of its message name acknowledging and disarming.
+- **Phone: the gap below the tab bar stays while scrolling.** Below the bar with Sensors, Actions, Notifications and System there is always the same gap as above it. Until now the table header moved up against the bar without a gap, as if the two were melting together.
+
+## [1.9.0] - 2026-11-10
+
+A sensor view: tap a sensor on the overview and see what it did, how its battery is doing and how good its signal is.
+
+### Added
+
+- **Sensor view.** A tap on a sensor of the overview (list or cards) opens its own window instead of the device in Home Assistant. It is a pure overview without settings; the button "Open in HA" in the header leads to the sensor in Home Assistant. On the computer the window is as wide as the defaults window, on the phone it fills the screen with an X at the top. The header, the tiles, the period, the key figures and the chart stay in place, only the list of events scrolls.
+- **Tiles as tabs:** "History", "Battery", "Signal" and "Device". Each shows its current value; the chosen one decides chart, figures and list. A tile without data is left out (no "Battery" for a mains device).
+- **A chart for each kind of sensor,** for 3 hours, 12 hours, 1 day, 7 days or 30 days. Doors and windows: a timeline with the open times, from 7 days on one row per day from 0 to 24 h. Motion: the number of motions per hour as bars, from 7 days on a grid of day and hour that shows habits and outliers. Smoke, water and the like: reachability with outages and triggers. Blue shows when the alarm system was armed, red an event that triggered an alarm.
+- **List of events** with time, duration and the state of the alarm system at that moment, grouped by day, including "Unreachable". An event that triggered an alarm carries the mark "Alarm triggered"; a tap on it shows that alarm in the log.
+- **Battery:** the level over 30 days, 90 days or a year with the warning threshold, a mark where the battery was replaced, the consumption per day and a forecast. **Signal:** the course with the zones good, medium and weak.
+- **Device:** manufacturer, model, firmware, integration and area, and in which modes of which alarm system the sensor is monitored, with a link to its place in the configuration.
+- **30 days of history for everyone.** Home Assistant keeps the history of states for 10 days by default. The integration now remembers small hourly values per sensor (number of triggers, time open) for 30 days and discards older ones, so chart and figures always reach back 30 days; after the update the hours before are filled once from the history of Home Assistant. The list of single events reaches as far as that history does, with a note when it is shorter than the chosen period.
+
+### Changed
+
+- **Phone: every window fills the screen.** Settings windows (view, defaults, step editor, add sensors, sensor sheet, codes and the new sensor view) no longer open as a sheet with a gap at the top. The X is always at the top right, and the bar with the buttons (Cancel, Done, Save) is always at the very bottom: it sits outside the scrolling content and does not move, also when you pull past the end. Only the short questions ("Discard?") stay a small sheet from below.
+- **Armed is red, on every device and in dark mode.** Until now only the faint gradient of the tile showed it, hardly visible on the phone and in dark mode, while symbol, state and chosen mode were blue. Now the symbol, the state ("Armed away") and the chosen mode are red, the tile has a red frame, and the gradient is stronger in dark mode. Disarmed: "Off" is green. An alarm stands out from "armed" with a filled red symbol. On the phone the switch shows text only when there are four modes (Off, Home, Away, Night): with symbols the labels ran into each other.
+
 ## [1.8.0] - 2026-11-10
 
 ### Added
@@ -818,6 +853,8 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0
+[1.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.9.0
 [1.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.7.0
 [1.6.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.5

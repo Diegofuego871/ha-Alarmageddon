@@ -30,7 +30,7 @@ An alarm system for Home Assistant that you set up in one place, and that keeps 
 
 ### Overview
 
-All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and all sensors as a list or as cards, with search, filters, sorting, a choice of columns and grouping by area, sensor type or alarm system. The same on the phone:
+All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and all sensors as a list or as cards, with search, filters, sorting, a choice of columns and grouping by area, sensor type or alarm system. A tap on a sensor opens its view: what it did over the last hours or up to 30 days (with a chart for each kind of sensor and the list of events), how its battery and its signal are doing, and a button that opens it in Home Assistant. The same on the phone:
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-en.png" alt="Overview on the phone" width="270"></p>
 
@@ -169,7 +169,8 @@ Details for those who want to know exactly. Click to open.
 <details>
 <summary><b>Alarm actions and notifications in detail</b></summary>
 
-- **Do not wait for this step:** a step can run alongside, so the next one starts right away. A sound "until disarmed" always runs alongside.
+- **Steps keep running:** by default the next step starts right away, so the actions run through one after the other as fast as possible. With "Wait until the action has finished" the next one starts only when this one is done; the step then carries a pill. A sound "until disarmed" cannot be waited for. Flows from earlier versions behave as before.
+- **After acknowledging:** behind "Alarm ends (acknowledged)" there are actions of their own that run as soon as the alarm is acknowledged or the system is disarmed, for example close the blinds or switch off a light. Possible are device, sound with a duration, wait, scene and custom action. A new alarm cancels them.
 - **Back to the previous state:** on or off, brightness, position, volume and source; Sonos with its own snapshot including groups.
 - **Test:** runs the saved flow without an alarm and stops after 60 seconds at the latest. A real alarm during a test starts the real flow at once.
 - **Media players** fetch the sounds from Home Assistant, so they must reach its local URL (Settings → System → Network).

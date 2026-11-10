@@ -27,7 +27,9 @@ from .const import (
     CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     CONF_TRIGGER_TIME,
+    AFTER_STEP_TYPES,
     CONF_WORKFLOW_END,
+    CONF_WORKFLOWS_AFTER,
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_CONFIRM_WINDOW,
@@ -74,7 +76,10 @@ STEP_SCHEMAS = {
         vol.Optional("target", default=[]): ENTITY_LIST,
         vol.Optional("data", default={}): dict,
         vol.Optional("restore", default=False): bool,
-        # Nicht abwarten: der nächste Schritt startet sofort, dieser läuft nebenher (0.17.0)
+        # Auf das Ende warten (1.10.0): Schritte laufen standardmässig weiter, der nächste startet sofort; mit "wait" startet er
+        # erst, wenn dieser fertig ist. "detach" ist die ältere Angabe (0.17.0, bis 1.9.0: ohne sie wurde gewartet); beide werden
+        # gelesen (workflow.step_waits), das Panel schreibt nur noch "wait".
+        vol.Optional("wait"): bool,
         vol.Optional("detach"): bool,
     }),
     "sound": vol.Schema({
@@ -86,6 +91,7 @@ STEP_SCHEMAS = {
         # Dauer in Sekunden (0 = bis zum Deaktivieren); ohne Angabe gilt die ältere Form mit Wiederholungen (0.18.0)
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY)),
         vol.Optional("restore", default=True): bool,
+        vol.Optional("wait"): bool,
         vol.Optional("detach"): bool,
     }),
 }
@@ -116,6 +122,21 @@ def valid_step(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("type") not in STEP_SCHEMAS:
         raise vol.Invalid("unknown step type")
     return STEP_SCHEMAS[value["type"]](value)
+
+
+def valid_after_step(value: Any) -> dict[str, Any]:
+    """
+    Schritt der Aktionen nach dem Quittieren: nur Gerät, Ton und Warten. Ein Ton braucht dort eine Dauer (nach dem Alarm
+    deaktiviert niemand mehr, ein Ton "bis zum Deaktivieren" liefe endlos), und "Rückgängig" gibt es nicht (danach folgt nichts).
+    """
+    step = valid_step(value)
+    if step["type"] not in AFTER_STEP_TYPES:
+        raise vol.Invalid("this step is not possible after the alarm")
+    if step["type"] == "sound" and step.get("duration") in (0, None):
+        raise vol.Invalid("a sound after the alarm needs a duration")
+    if "restore" in step:
+        step["restore"] = False
+    return step
 
 
 def _days(value: Any) -> list[int]:
@@ -172,6 +193,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_SENSOR_MODES): {vol.In([*MODES, SCOPE_ALWAYS]): {cv.entity_id: SENSOR_VALUES}},
         vol.Optional(CONF_WORKFLOWS): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): valid_end},
+        vol.Optional(CONF_WORKFLOWS_AFTER): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
     },
     extra=vol.REMOVE_EXTRA,
 )

@@ -30,7 +30,7 @@ Eine Alarmanlage für Home Assistant, die du an einem Ort einrichtest und die ih
 
 ### Übersicht
 
-Alle Anlagen auf einen Blick: scharf schalten und deaktivieren, "Bereit für" je Modus mit den Sensoren, die das Scharfschalten noch verhindern, eine Statuskachel für Warnungen und alle Sensoren als Liste oder als Karten, mit Suche, Filtern, Sortierung, wählbaren Spalten und Gruppierung nach Bereich, Sensorart oder Anlage. Dasselbe auf dem Handy:
+Alle Anlagen auf einen Blick: scharf schalten und deaktivieren, "Bereit für" je Modus mit den Sensoren, die das Scharfschalten noch verhindern, eine Statuskachel für Warnungen und alle Sensoren als Liste oder als Karten, mit Suche, Filtern, Sortierung, wählbaren Spalten und Gruppierung nach Bereich, Sensorart oder Anlage. Ein Tipp auf einen Sensor öffnet seine Ansicht: was er in den letzten Stunden oder bis zu 30 Tagen getan hat (mit einer Grafik je Sensorart und der Liste der Ereignisse), wie es um Batterie und Empfang steht, und ein Knopf, der ihn in Home Assistant öffnet. Dasselbe auf dem Handy:
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-de.png" alt="Übersicht auf dem Handy" width="270"></p>
 
@@ -169,7 +169,8 @@ Details für alle, die es genau wissen wollen. Zum Öffnen anklicken.
 <details>
 <summary><b>Alarmaktionen und Benachrichtigungen im Detail</b></summary>
 
-- **Nicht abwarten:** ein Schritt kann nebenher laufen, der nächste startet dann sofort. Ein Ton "bis zum Deaktivieren" läuft immer nebenher.
+- **Schritte laufen weiter:** standardmässig startet der nächste Schritt sofort, die Aktionen laufen so schnell wie möglich nacheinander durch. Mit "Warten, bis die Aktion beendet ist" startet der nächste erst, wenn dieser fertig ist; der Schritt trägt dann eine Pille. Auf einen Ton "bis zum Deaktivieren" lässt sich nicht warten. Abläufe aus früheren Versionen verhalten sich wie bisher.
+- **Nach dem Quittieren:** hinter "Alarm endet (quittiert)" stehen eigene Aktionen, die laufen, sobald der Alarm quittiert oder die Anlage deaktiviert ist, zum Beispiel Storen schliessen oder Licht aus. Möglich sind Gerät, Ton mit Dauer, Warten, Szene und eigene Aktion. Ein neuer Alarm bricht sie ab.
 - **Zurück in den vorherigen Zustand:** ein oder aus, Helligkeit, Position, Lautstärke und Quelle; Sonos mit eigenem Schnappschuss samt Gruppen.
 - **Test:** führt den gespeicherten Ablauf ohne Alarm aus und endet spätestens nach 60 Sekunden. Ein echter Alarm während eines Tests startet den echten Ablauf sofort.
 - **Medienplayer** holen die Töne bei Home Assistant und müssen darum dessen lokale Adresse erreichen (Einstellungen → System → Netzwerk).

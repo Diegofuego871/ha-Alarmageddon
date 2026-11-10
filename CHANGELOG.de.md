@@ -7,6 +7,41 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.10.0] - 2026-11-10
+
+Aktionen nach dem Quittieren, und Schritte, die standardmässig weiterlaufen.
+
+### Hinzugefügt
+
+- **Aktionen nach dem Quittieren.** Unter "Alarm endet (quittiert)" und der Meldung dazu steht jetzt ein weiteres Plus: Schritte, die laufen, sobald der Alarm vorbei ist, ob jemand quittiert oder die Anlage deaktiviert hat, zum Beispiel die Storen wieder schliessen oder das Licht ausschalten. Sie starten erst, wenn die Alarmaktionen gestoppt und die Geräte zurückgekehrt sind ("Rückgängig"), jeder Modus hat seine eigene Liste wie die Alarmaktionen, und "Aktionen übernehmen von" nimmt sie mit. Möglich sind Gerät, Ton mit Dauer, Warten, Szene und eigene Aktion; eine Alarmmeldung, Quittieren und "Rückgängig" gibt es hier nicht, weil nichts mehr folgt, das etwas zurücknehmen könnte. Ein neuer Alarm hat immer Vorrang: er bricht sie ab und startet sofort seine eigenen Aktionen.
+
+### Geändert
+
+- **Schritte laufen standardmässig weiter.** Bisher wartete ein Ablauf auf das Ende jedes Schritts, ausser "Nicht abwarten" war eingeschaltet. Das ist jetzt umgekehrt: jeder Schritt, der etwas ausführt (Gerät, Ton, Szene, eigene Aktion), startet den nächsten sofort, die Aktionen laufen so schnell wie möglich nacheinander durch; niemand muss auf das Ende einer Sirene warten. Soll der nächste Schritt erst starten, wenn dieser fertig ist, schaltest du im Schritt "Warten, bis die Aktion beendet ist" ein; er trägt dann eine Pille mit diesem Text. "Warten" wartet weiterhin, und auf einen Ton "bis zum Deaktivieren" lässt sich nicht warten.
+- **Bestehende Abläufe verhalten sich wie bisher.** Schritte aus früheren Versionen, die gewartet haben, warten weiter und zeigen jetzt die Pille; Schritte, die nebenher liefen, tun das weiterhin und tragen keine Marke mehr. Ändern kannst du es im Schritt.
+- **Alle Verbindungen im Ablauf sehen gleich aus.** Die gestrichelte blaue Linie nach einem Schritt, der nebenher lief, ist weg, ebenso der Schalter an der Karte: ob der Ablauf wartet, sagt die Pille auf dem Schritt.
+- **"Alarm endet (quittiert)".** Die Marke am Ende des Ablaufs sagt jetzt, was sie meint; die Texte ihrer Meldung nennen Quittieren und Deaktivieren.
+- **Handy: der Abstand unter der Reiterleiste bleibt beim Scrollen.** Unter der Leiste mit Sensoren, Aktionen, Meldungen und Anlage steht beim Scrollen immer derselbe Abstand wie über ihr. Bisher schob sich der Tabellenkopf ohne Abstand an die Leiste, es sah aus, als würden beide zusammenschmelzen.
+
+## [1.9.0] - 2026-11-10
+
+Eine Sensoransicht: einen Sensor der Übersicht antippen und sehen, was er getan hat, wie es seiner Batterie geht und wie gut sein Empfang ist.
+
+### Hinzugefügt
+
+- **Sensoransicht.** Ein Tipp auf einen Sensor der Übersicht (Liste oder Karten) öffnet ein eigenes Fenster statt des Geräts in Home Assistant. Es ist eine reine Übersicht ohne Einstellungen; der Knopf "In HA öffnen" im Kopf führt zum Sensor in Home Assistant. Auf dem Computer ist das Fenster so breit wie das der Voreinstellungen, auf dem Handy füllt es den Bildschirm, mit einem X oben. Kopf, Kacheln, Zeitraum, Kennzahlen und Grafik bleiben stehen, nur die Liste der Ereignisse scrollt.
+- **Kacheln als Reiter:** "Verlauf", "Batterie", "Empfang" und "Gerät". Jede zeigt ihren aktuellen Wert; die gewählte bestimmt Grafik, Kennzahlen und Liste. Eine Kachel ohne Daten entfällt (keine "Batterie" bei einem Gerät am Netz).
+- **Eine Grafik je Sensorart,** für 3 Stunden, 12 Stunden, 1 Tag, 7 Tage oder 30 Tage. Türen und Fenster: eine Zeitleiste mit den offenen Zeiten, ab 7 Tagen eine Zeile je Tag von 0 bis 24 Uhr. Bewegung: die Anzahl Bewegungen je Stunde als Balken, ab 7 Tagen ein Raster aus Tag und Stunde, das Gewohnheiten und Ausreisser zeigt. Rauch, Wasser und Ähnliches: die Erreichbarkeit mit Ausfällen und Auslösungen. Blau zeigt, wann die Anlage scharf war, Rot ein Ereignis, das einen Alarm ausgelöst hat.
+- **Liste der Ereignisse** mit Zeit, Dauer und dem Zustand der Anlage in diesem Moment, nach Tagen gruppiert, auch "Nicht erreichbar". Ein Ereignis, das einen Alarm ausgelöst hat, trägt die Marke "Alarm ausgelöst"; ein Tipp darauf zeigt diesen Alarm im Protokoll.
+- **Batterie:** der Stand über 30 Tage, 90 Tage oder ein Jahr mit der Schwelle der Warnung, einer Marke beim Batteriewechsel, dem Verbrauch je Tag und einer Prognose. **Empfang:** der Verlauf mit den Zonen gut, mittel und schwach.
+- **Gerät:** Hersteller, Modell, Firmware, Integration und Bereich, dazu in welchen Modi welcher Anlage der Sensor überwacht wird, mit einem Link zu seiner Stelle in der Konfiguration.
+- **30 Tage Verlauf für alle.** Home Assistant bewahrt den Verlauf von Zuständen standardmässig 10 Tage auf. Die Integration merkt sich jetzt je Sensor kleine Stundenwerte (Anzahl Auslösungen, Zeit offen) für 30 Tage und verwirft ältere; Grafik und Kennzahlen reichen damit immer 30 Tage zurück. Nach dem Update werden die Stunden davor einmal aus dem Verlauf von Home Assistant nachgetragen. Die Liste der einzelnen Ereignisse reicht so weit wie dieser Verlauf, mit einem Hinweis, wenn er kürzer ist als der gewählte Zeitraum.
+
+### Geändert
+
+- **Handy: jedes Fenster füllt den Bildschirm.** Die Fenster der Einstellungen (Ansicht, Voreinstellungen, Schritt bearbeiten, Sensoren hinzufügen, Blatt des Sensors, Codes und die neue Sensoransicht) öffnen sich nicht mehr als Blatt mit Rand oben. Das X steht immer ganz oben rechts, die Leiste mit den Knöpfen (Abbrechen, Fertig, Speichern) immer ganz unten: sie liegt ausserhalb des scrollenden Inhalts und bewegt sich nicht, auch nicht beim Ziehen über das Ende hinaus. Nur die kurzen Rückfragen ("Verwerfen?") bleiben ein kleines Blatt von unten.
+- **Scharf ist rot, auf jedem Gerät und im dunklen Design.** Bisher zeigte das nur der schwache Farbverlauf der Kachel, auf dem Handy und im dunklen Design kaum zu sehen, während Symbol, Zustand und gewählter Modus blau waren. Jetzt sind das Symbol, der Zustand ("Abwesend scharf") und der gewählte Modus rot, die Kachel hat einen roten Rahmen, und der Verlauf ist im dunklen Design kräftiger. Deaktiviert: "Aus" ist grün. Ein Alarm hebt sich von "scharf" mit einem gefüllten roten Symbol ab. Auf dem Handy zeigt die Leiste bei vier Modi (Aus, Anwesend, Abwesend, Nacht) nur noch Text: mit Symbolen liefen die Beschriftungen ineinander.
+
 ## [1.8.0] - 2026-11-10
 
 ### Hinzugefügt
@@ -818,6 +853,8 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0
+[1.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.9.0
 [1.8.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.7.0
 [1.6.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.5

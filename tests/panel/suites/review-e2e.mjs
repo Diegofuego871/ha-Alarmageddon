@@ -120,7 +120,7 @@ for (const lang of ["de", "en"]) {
       await s.ctx.close();
     }
 
-    // ----- Aktionen: ein Ton "bis zum Deaktivieren" läuft immer nebenher -----
+    // ----- Aktionen: auf einen Ton "bis zum Deaktivieren" lässt sich nie warten -----
     {
       const s = await open(browser, { mobile, lang, tab: "config" });
       // Ablauf "Abwesend": endloser Ton, als "abwarten" gespeichert (ältere Fassung), danach die Sirene
@@ -131,25 +131,27 @@ for (const lang of ["de", "en"]) {
       await s.tap('[data-sub="actions"]');
       check(`${tag}: Aktionen offen`, await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 2"));
       await s.page.waitForTimeout(500);
-      const chip = (i) => s.ev(`const b=r.querySelector('.ag-wf-step[data-index="${i}"] [data-wf="flow"]'); return { par: b.classList.contains("par"), disabled: b.disabled, checked: b.getAttribute("aria-checked") }`);
-      const sound = await chip(0);
-      check(`${tag}: endloser Ton zeigt "läuft nebenher" und lässt sich nicht auf "abwarten" stellen`, sound.par && sound.disabled && sound.checked === "true", JSON.stringify(sound));
-      check(`${tag}: die Verbindung zum nächsten Schritt ist gestrichelt (startet sofort)`, await s.ev("return r.querySelectorAll('.ag-wf-plus')[1].classList.contains('par')"));
-      const siren = await chip(1);
-      check(`${tag}: der Schritt danach bleibt umschaltbar`, !siren.disabled && !siren.par, JSON.stringify(siren));
-      // Speichern (nach einer Änderung am zweiten Schritt): der Ton geht als "nicht abwarten" an den Server
-      await s.tap('.ag-wf-step[data-index="1"] [data-wf="flow"]');
-      await s.page.waitForTimeout(200);
+      // Ein Ton bis zum Deaktivieren endet nie von selbst: er trägt nie die Pille "Wartet …", auch wenn er (ältere Fassung) als wartend gespeichert ist
+      const pill = (i) => s.ev(`return !!r.querySelector('.ag-wf-main .ag-wf-step[data-index="${i}"] .ag-waitpill')`);
+      check(`${tag}: endloser Ton wartet nie (keine Pille)`, !(await pill(0)));
+      check(`${tag}: der ältere Schritt danach wartet wie bisher (Pille)`, await pill(1));
+      check(`${tag}: keine gestrichelte Verbindung mehr`, await s.ev("return !r.querySelector('.ag-wf-plus.par')"));
       await s.ev(`r.querySelector('.ag-wf-step[data-index="0"] [data-wf="edit"]').click()`);
       await s.page.waitForTimeout(300);
-      const row = await s.ev(`const t=r.querySelector('#ag-step [data-wf="detach"]'); return { on: t.classList.contains("on"), disabled: t.disabled }`);
-      check(`${tag}: im Editor ist "Nicht abwarten" an und fest`, row.on && row.disabled, JSON.stringify(row));
+      const row = await s.ev(`const t=r.querySelector('#ag-step [data-wf="waitend"]'); return { on: t.classList.contains("on"), disabled: t.disabled }`);
+      check(`${tag}: im Editor ist "Warten, bis die Aktion beendet ist" aus und fest`, !row.on && row.disabled, JSON.stringify(row));
+      await s.ev(`r.querySelector('#ag-step [data-wf="apply"]').click()`);
+      await s.page.waitForTimeout(300);
+      // Speichern (nach einer Änderung am zweiten Schritt: dort das Warten ausschalten)
+      await s.ev(`r.querySelector('.ag-wf-step[data-index="1"] [data-wf="edit"]').click()`);
+      await s.page.waitForTimeout(300);
+      await s.ev(`r.querySelector('#ag-step [data-wf="waitend"]').click()`);
       await s.ev(`r.querySelector('#ag-step [data-wf="apply"]').click()`);
       await s.page.waitForTimeout(300);
       await s.tap('[data-wf="save"]');
       await s.page.waitForTimeout(500);
-      const saved = await s.sim(`const c = window.__calls.filter((x) => x.type === "alarmageddon/save_workflows").pop(); return c ? c.workflows.away.map((x) => [x.type, x.duration ?? null, x.detach === true]) : null`);
-      check(`${tag}: gespeichert: Ton mit Dauer 0 und "nicht abwarten"`, saved && saved[0][0] === "sound" && saved[0][1] === 0 && saved[0][2] === true, JSON.stringify(saved));
+      const saved = await s.sim(`const c = window.__calls.filter((x) => x.type === "alarmageddon/save_workflows").pop(); return c ? c.workflows.away.map((x) => [x.type, x.duration ?? null, x.wait, "detach" in x]) : null`);
+      check(`${tag}: gespeichert: Ton mit Dauer 0 wartet nie, der zweite Schritt läuft weiter, kein "detach" mehr`, saved && saved[0][0] === "sound" && saved[0][1] === 0 && saved[0][2] === false && saved[1][2] === false && !saved[0][3] && !saved[1][3], JSON.stringify(saved));
       check(`${tag}: Aktionen ohne Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
       await s.ctx.close();
     }

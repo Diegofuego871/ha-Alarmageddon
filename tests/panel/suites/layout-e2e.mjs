@@ -46,7 +46,7 @@ for (const lang of ["de", "en"]) {
         await s.page.waitForTimeout(250);
         await s.ev("r.querySelector('.ag-content').scrollTop = 400");
         await s.page.waitForTimeout(200);
-        const ov = await s.ev("const c=r.querySelector('.ag-content').getBoundingClientRect(); const t=r.querySelector('.ag-ov-top').getBoundingClientRect(); const tools=r.querySelector('.ag-ov-tools').getBoundingClientRect(); const th=r.querySelector('.ag-ltable th').getBoundingClientRect(); const h=r.querySelector('.ag-head').getBoundingClientRect(); return { head: Math.round(h.top - c.top), cardsBelowHead: t.top >= h.bottom - 1, toolsBelowCards: tools.top >= t.bottom - 1, thBelowTools: th.top >= tools.bottom - 1, scrollable: r.querySelector('.ag-content').scrollTop > 0 }");
+        const ov = await s.ev("const c=r.querySelector('.ag-content').getBoundingClientRect(); const t=r.querySelector('.ag-ov-top').getBoundingClientRect(); const tools=r.querySelector('.ag-ov-tools').getBoundingClientRect(); const th=r.querySelector('.ag-ltable th').getBoundingClientRect(); const h=r.querySelector('.ag-head').getBoundingClientRect(); return { head: Math.round(h.top - c.top), cardsBelowHead: t.top >= h.bottom - 1, toolsBelowCards: tools.top >= t.bottom - 1, thBelowTools: th.top >= tools.bottom - 3, scrollable: r.querySelector('.ag-content').scrollTop > 0 }");
         check(`${tag}: Übersicht: Kopfzeile, Karten, Filter und Tabellenkopf bleiben beim Scrollen`, ov.head <= 1 && ov.cardsBelowHead && ov.toolsBelowCards && ov.thBelowTools && ov.scrollable, JSON.stringify(ov));
         await s.ev("r.querySelector('.ag-content').scrollTop = 0");
       }

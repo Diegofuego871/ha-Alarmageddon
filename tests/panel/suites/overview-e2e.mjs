@@ -72,6 +72,9 @@ for (const lang of ["de", "en"]) {
     };
     const aHome = await tint("armed_home", "home"); const aNight = await tint("armed_night", "night"); const aAway = await tint("armed_away", "away"); const aOff = await tint("disarmed", null);
     check(`${tag}: Kachel scharf: roter Verlauf, dunkler je Modus (Anwesend < Nacht < Abwesend)`, !!aHome && !!aNight && !!aAway && aHome.a > 0.05 && aHome.a < aNight.a && aNight.a < aAway.a && aHome.rgb[0] > aHome.rgb[1], JSON.stringify([aHome, aNight, aAway]));
+    // Vier Modi in einer Leiste: auf dem Handy nur Text (Symbol und Text passen nicht in ein Viertel), nichts läuft ineinander, die Kapsel sitzt um den gewählten Modus
+    const seg4 = `const g=r.querySelector('[data-system="e_haus"] .ag-seg'); const bs=[...g.querySelectorAll('button')]; const on=g.querySelector('button.on').getBoundingClientRect(); const pill=g.querySelector('.ag-pill')?.getBoundingClientRect(); const icons=bs.filter((b) => { const i=b.querySelector('svg'); return i && getComputedStyle(i).display !== 'none'; }).length; return bs.length === 4 && bs.every((b) => b.scrollWidth <= b.clientWidth + 1) && icons === ${mobile ? 0 : 4} && !!pill && Math.abs(pill.left - on.left) + Math.abs(pill.right - on.right) < 3`;
+    check(`${tag}: vier Modi: keine Beschriftung läuft in die nächste (${mobile ? "auf dem Handy ohne Symbole" : "mit Symbolen"}), die Kapsel sitzt um den gewählten Modus`, await s.waitFor(seg4));
     check(`${tag}: Kachel deaktiviert: grüner Verlauf`, !!aOff && aOff.rgb[1] > aOff.rgb[0], JSON.stringify(aOff));
     await s.sim(`window.__setState("alarm_control_panel.haus", "disarmed", { arm_mode: null, changed_by: "Diego", deadline: null })`);
 

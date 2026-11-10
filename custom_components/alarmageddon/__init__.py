@@ -22,6 +22,7 @@ from .maintenance import async_start_maintenance, async_stop_maintenance
 from .notify import Notifier
 from .panel import async_register_panel, async_remove_panel
 from .scheduler import Scheduler
+from .sensor_history import async_get_stats
 from .settings import async_get_settings
 from .workflow import WorkflowRunner, async_remove_workflow_store
 
@@ -87,6 +88,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     integration = await async_get_integration(hass, DOMAIN)
     settings = await async_get_settings(hass)
     controller = AlarmController(hass, entry, settings)
+    controller.stats = await async_get_stats(hass)
     events = EventLog(hass, entry.entry_id, controller)
     await events.async_load()
     recorder = AlarmRecorder(hass, entry.entry_id, controller)

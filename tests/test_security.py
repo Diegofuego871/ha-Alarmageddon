@@ -63,6 +63,7 @@ COMMANDS: dict[str, dict[str, Any]] = {
     "stop_workflow": {"entry_id": "ENTRY"},
     "acknowledge": {"entry_id": "ENTRY"},
     "battery_forecast": {},
+    "sensor_history": {"entity_id": "binary_sensor.fenster_kueche"},
     "log": {},
     "export": {},
     "import": {"data": {}},

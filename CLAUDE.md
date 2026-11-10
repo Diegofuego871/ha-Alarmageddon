@@ -109,8 +109,10 @@ Umsetzung:
 - Nichts, was beim Auslösen mitläuft, darf die Alarmaktionen aufhalten oder verhindern (seit 0.40.0): Zuhörer des
   Automaten werden einzeln aufgerufen (`controller._call_each`; die Alarmaktionen hängen als letzter Zuhörer an derselben
   Liste wie Protokoll, Aufzeichnung und Meldung), Meldungen gehen ohne Abwarten hinaus, die Ablage vor dem ersten Schritt
-  wartet höchstens `SNAPSHOT_TIMEOUT`, Mitschreiben (Zeitachse, gespeicherter Stand) steht im `try`. Ein Schritt, der nie
-  von selbst endet (Ton "bis zum Deaktivieren"), läuft immer nebenher (`workflow._runs_alongside`). Darüber wacht der
+  wartet höchstens `SNAPSHOT_TIMEOUT`, Mitschreiben (Zeitachse, gespeicherter Stand) steht im `try`. Schritte, die etwas
+  ausführen, laufen standardmässig weiter (seit 1.10.0; `workflow.step_waits`: nur mit `"wait": true` wartet der Ablauf,
+  ältere Schritte ohne die Angabe warten wie bisher); ein Schritt, der nie von selbst endet (Ton "bis zum Deaktivieren"),
+  wartet nie. Darüber wacht der
   Wächter (`workflow._watched`, `step_budget`, `start_budget`, `_check_started`, `_on_flow_done`): in `async_run` und
   `_execute` steht jedes `await` unter `self._watched(...)` (ein Test prüft das am Quelltext), jeder Schritttyp hat eine
   Grenze in `step_budget`. Jeder neue Zuhörer,

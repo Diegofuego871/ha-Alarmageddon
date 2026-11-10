@@ -106,6 +106,8 @@ class AlarmController:
         self.instance = uuid4().hex
         # Globale Einstellungen (Voreinstellungen je Sensorart); ohne sie gelten die Grundeinstellungen
         self.settings = settings
+        # Stundenwerte je Sensor für die Sensoransicht (sensor_history.SensorStats), von __init__ gesetzt
+        self.stats: Any = None
         self.state: AlarmControlPanelState = AlarmControlPanelState.DISARMED
         # Modus, der scharf ist oder scharf wird. Bleibt bei Verzögerung und Alarm erhalten,
         # damit die Anlage nach dem Alarm in denselben Modus zurückkehrt.
@@ -469,6 +471,9 @@ class AlarmController:
         if old is None or new is None:
             return
         entity = event.data["entity_id"]
+        # Stundenwerte der Sensoransicht (Anzahl Auslösungen, Zeit offen): jeder Wechsel eines überwachten Sensors
+        if self.stats is not None:
+            self.stats.note(entity, old.state, new.state, new.last_changed)
         # "Letzte Änderung" der Liste: nur ein Wechsel offen <-> zu, nicht der Neustart von Home Assistant
         if self.settings is not None and is_real_change(old.state, new.state):
             self.settings.note_change(entity, new.last_changed.isoformat())

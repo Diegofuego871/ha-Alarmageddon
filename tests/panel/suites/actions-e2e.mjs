@@ -2,8 +2,8 @@
 import { check, done, launch, open, outDir } from "../lib.mjs";
 
 const T = {
-  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", detached: "läuft nebenher", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
-  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", detached: "runs alongside", coverDesc: "Moves the cover to the chosen position." },
+  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", waits: "Wartet, bis die Aktion beendet ist", waitOpt: "Warten, bis die Aktion beendet ist", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
+  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", waits: "Waits until the action has finished", waitOpt: "Wait until the action has finished", coverDesc: "Moves the cover to the chosen position." },
 };
 
 const browser = await launch();
@@ -192,25 +192,26 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Standardtext wiederhergestellt, nichts gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && st.type === 'notify' && !('title' in st) && !('message' in st) && st.critical === true && st.buttons.silence === true"));
 
-    // Nicht abwarten: Schalter im Editor eines Alarmtons, nicht bei "Warten"
+    // Warten, bis die Aktion beendet ist (1.10.0): Standard ist aus, der Ablauf läuft weiter. Ältere Abläufe ohne diese Angabe warteten
+    // schon bisher: der Alarmton hier ist so einer und trägt darum die Pille
+    check(`${tag}: älterer Schritt ohne Angabe wartet wie bisher und trägt die Pille "${t.waits}" (kein Schalter mehr an der Karte)`, await s.ev(`const c=r.querySelectorAll('.ag-wf-main .ag-wf-step')[4]; const p=c.querySelector('.ag-waitpill'); return !!p && p.textContent.trim() === ${JSON.stringify(t.waits)} && p.tagName === 'SPAN' && !r.querySelector('.ag-flow, [data-wf="flow"]')`));
     await s.tap('.ag-wf-step[data-index="4"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open && !!r.querySelector('#ag-step .ag-tone')");
-    check(`${tag}: Option "Nicht abwarten" im Alarmton, aus`, await s.ev("const b=r.querySelector('#ag-step [data-wf=\"detach\"]'); return !!b && b.getAttribute('aria-checked') === 'false'"));
-    await s.tap('#ag-step [data-wf="detach"]');
+    check(`${tag}: Option "${t.waitOpt}" im Alarmton, hier an`, await s.ev(`const b=r.querySelector('#ag-step [data-wf="waitend"]'); return !!b && b.getAttribute('aria-checked') === 'true' && b.closest('.ag-ef-row').innerText.includes(${JSON.stringify(t.waitOpt)}) && !r.querySelector('#ag-step [data-wf="detach"]')`));
+    await s.tap('#ag-step [data-wf="waitend"]');
     await s.tap('#ag-step [data-wf="apply"]');
-    check(`${tag}: Karte zeigt "läuft nebenher"`, await s.waitFor(`return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[4].innerText.includes('${t.detached}')`));
-    // Ablauf grafisch: Schalter an der Karte und gestrichelte Verbindung nach einem Schritt, der nebenher läuft
-    check(`${tag}: Karte mit Schalter "Läuft nebenher", gestrichelte Verbindung danach`, await s.ev("const c=r.querySelectorAll('.ag-wf-step')[4]; const f=c.querySelector('.ag-flow'); const plus=[...r.querySelectorAll('.ag-wf-plus')][5]; return f.classList.contains('par') && f.getAttribute('aria-checked') === 'true' && plus.classList.contains('par') && [...plus.querySelectorAll('.ag-wf-seg')].every((x) => getComputedStyle(x).backgroundImage.includes('repeating-linear-gradient'))"));
-    check(`${tag}: Verbindung nach "läuft nebenher": beide Linienstücke gestrichelt, sie enden am Plus (nie darüber oder hindurch)`, await s.ev("const plus=[...r.querySelectorAll('.ag-wf-plus')][5]; const segs=[...plus.querySelectorAll('.ag-wf-seg')]; const add=plus.querySelector('.ag-wf-add').getBoundingClientRect(); const a=segs[0].getBoundingClientRect(), b=segs[1].getBoundingClientRect(); return segs.length === 2 && segs.every((x) => getComputedStyle(x).backgroundImage.includes('repeating-linear-gradient')) && a.bottom <= add.top + 0.5 && b.top >= add.bottom - 0.5"));
+    check(`${tag}: ausgeschaltet: keine Pille mehr, der Schritt läuft weiter ("wait": false, kein "detach")`, await s.waitFor("const st=r.host.actions.draft.wf.away[4]; return !r.getElementById('ag-step').open && !r.querySelectorAll('.ag-wf-main .ag-wf-step')[4].querySelector('.ag-waitpill') && st.wait === false && !('detach' in st)"));
+    check(`${tag}: alle Verbindungen sehen gleich aus (durchgezogen), ihre Linienstücke enden am Plus (nie darüber oder hindurch)`, await s.ev("const ps=[...r.querySelectorAll('.ag-wf-plus')]; return ps.length >= 6 && !r.querySelector('.ag-wf-plus.par, .ag-wf-end.par') && ps.every((plus) => { const segs=[...plus.querySelectorAll('.ag-wf-seg')]; const add=plus.querySelector('.ag-wf-add').getBoundingClientRect(); const a=segs[0].getBoundingClientRect(), b=segs[1].getBoundingClientRect(); return segs.length === 2 && segs.every((x) => !getComputedStyle(x).backgroundImage.includes('gradient')) && a.bottom <= add.top + 0.5 && b.top >= add.bottom - 0.5; })"));
     check(`${tag}: alles liegt auf einer Achse (Markensymbole, jedes Plus, jedes Linienstück, Linie zu "Alarm endet"), jede Verbindung hat eine Farbe, keine Linie liegt über einem Symbol`, await s.ev("const mid=(x) => { const b=x.getBoundingClientRect(); return b.left + b.width / 2; }; const end=r.querySelector('.ag-wf-end'); const cs=getComputedStyle(end, '::before'); const endMid=end.getBoundingClientRect().left + parseFloat(cs.marginLeft) + parseFloat(cs.width) / 2; const xs=[...r.querySelectorAll('.ag-wf-line > .ag-wf-start .ag-mini, .ag-wf-end .ag-mini, .ag-wf-add, .ag-wf-seg')].map(mid).concat(endMid); const axis=xs.every((x) => Math.abs(x - xs[0]) <= 1); const plain=[...r.querySelectorAll('.ag-wf-plus')].every((p) => { const k=[...p.querySelectorAll('.ag-wf-seg')].map((x) => getComputedStyle(x).backgroundImage.includes('repeating')); return k.length === 2 && k[0] === k[1] && k[0] === p.classList.contains('par'); }); const icons=[...r.querySelectorAll('.ag-wf-add, .ag-mini, .ag-wf-icon, .ag-wf-step')].map((x) => x.getBoundingClientRect()); const clear=[...r.querySelectorAll('.ag-wf-seg')].every((sg) => { const g=sg.getBoundingClientRect(); return icons.every((b) => g.bottom <= b.top + 0.5 || g.top >= b.bottom - 0.5 || g.right <= b.left || g.left >= b.right); }); return axis && plain && clear && getComputedStyle(r.querySelector('.ag-wf-line'), '::before').content === 'none'"));
-    check(`${tag}: Schritte, die warten, zeigen "Wartet auf das Ende"; Warten und Meldung haben keinen Schalter`, await s.ev("const cs=[...r.querySelectorAll('.ag-wf-step')]; const seq=cs[1].querySelector('.ag-flow'); return seq.classList.contains('seq') && !cs[2].querySelector('.ag-flow') && !cs[0].querySelector('.ag-flow')"));
-    await s.tap('.ag-wf-step[data-index="4"] .ag-flow');
-    check(`${tag}: Tipp auf den Schalter schaltet um`, await s.waitFor("const c=r.querySelectorAll('.ag-wf-step')[4].querySelector('.ag-flow'); return c.classList.contains('seq') && !r.querySelector('.ag-wf-plus.par') && !('detach' in r.host.actions.draft.wf.away[4])"));
-    await s.tap('.ag-wf-step[data-index="4"] .ag-flow');
-    check(`${tag}: wieder nebenher`, await s.waitFor("return r.host.actions.draft.wf.away[4].detach === true && !!r.querySelector('.ag-wf-plus.par')"));
+    check(`${tag}: Warten und Meldung tragen nie eine Pille`, await s.ev("const cs=[...r.querySelectorAll('.ag-wf-main .ag-wf-step')]; return !cs[2].querySelector('.ag-waitpill') && !cs[0].querySelector('.ag-waitpill')"));
+    await s.tap('.ag-wf-step[data-index="4"] [data-wf="edit"]');
+    await s.waitFor("return r.getElementById('ag-step').open");
+    await s.tap('#ag-step [data-wf="waitend"]');
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: wieder eingeschaltet: Pille auf der Karte, "wait": true`, await s.waitFor("return !r.getElementById('ag-step').open && r.host.actions.draft.wf.away[4].wait === true && !!r.querySelectorAll('.ag-wf-main .ag-wf-step')[4].querySelector('.ag-waitpill')"));
     await s.tap('.ag-wf-step[data-index="2"] [data-wf="edit"]');
     await s.waitFor("return r.getElementById('ag-step').open");
-    check(`${tag}: keine Option bei "Warten"`, await s.ev("return !r.querySelector('#ag-step [data-wf=\"detach\"]')"));
+    check(`${tag}: keine Option bei "Warten"`, await s.ev("return !r.querySelector('#ag-step [data-wf=\"waitend\"]')"));
     await s.tap('#ag-step [data-wf="close"]');
 
     // Szene
@@ -251,7 +252,7 @@ for (const lang of ["de", "en"]) {
     const away = saved?.workflows?.away || [];
     check(`${tag}: alle Auslöser gesendet`, JSON.stringify(Object.keys(saved?.workflows || {}).sort()) === JSON.stringify(["always", "away", "home", "night"]), JSON.stringify(Object.keys(saved?.workflows || {})));
     check(`${tag}: Schritte im Serverformat`, away.length === 8 && away[1].type === "wait" && away[1].seconds === 45
-      && away[3].type === "sound" && away[3].detach === true && away[3].duration === 60 && !("repeat" in away[3] && away[3].repeat > 1) && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
+      && away[3].type === "sound" && away[3].wait === false && !("detach" in away[3]) && away[3].duration === 60 && !("repeat" in away[3] && away[3].repeat > 1) && away[3].sound === "klaxon" && JSON.stringify(away[3].players) === JSON.stringify(["media_player.sonos_wohnzimmer", "media_player.sonos_kueche"]) && away[3].restore === true
       && away[4].type === "action" && away[4].action === "switch.turn_on" && JSON.stringify(away[4].target) === JSON.stringify(["switch.steckdose_flur"])
       && away[5].action === "light.turn_on" && typeof away[5].data.color_temp_kelvin === "number"
       && away[6].action === "persistent_notification.create" && away[6].data.message === "Alarm im Haus"

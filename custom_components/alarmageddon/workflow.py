@@ -28,7 +28,7 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_WORKFLOWS, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, TEST_SECONDS, WORKFLOW_STORE_KEY
+from .const import CONF_WORKFLOWS, CONF_WORKFLOWS_AFTER, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, TEST_SECONDS, WORKFLOW_STORE_KEY
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -66,6 +66,25 @@ def step_budget(step: dict[str, Any]) -> float:
         # Lautstärke, letzter Start und Stopp je höchstens SERVICE_TIMEOUT, dazu ein angefangener Ton
         return int(duration or 0) + length + 3 * SERVICE_TIMEOUT + WATCHDOG_GRACE
     return SERVICE_TIMEOUT + WATCHDOG_GRACE  # Aktion (und jeder künftige Typ, bis er eine eigene Grenze bekommt)
+
+
+def step_waits(step: dict[str, Any]) -> bool:
+    """
+    Wartet der Ablauf auf das Ende dieses Schritts, bevor der nächste startet?
+
+    Seit 1.10.0 laufen Schritte, die etwas ausführen (Gerät, Ton), standardmässig weiter: der nächste startet sofort. Nur mit
+    "wait" wartet der Ablauf. Ältere Abläufe (bis 1.9.0) kennen "wait" nicht: dort wurde gewartet, ausser mit "detach"; sie
+    verhalten sich unverändert, bis sie im Panel neu gespeichert werden. Ein Ton "bis zum Deaktivieren" (Dauer 0) endet nie von
+    selbst, auf ihn lässt sich nicht warten. Warten, Meldung und Quittieren gehören zum Ablauf selbst (kein Nebenher).
+    """
+    kind = step.get("type")
+    if kind not in ("action", "sound"):
+        return True
+    if kind == "sound" and step.get("duration") == 0:
+        return False
+    if "wait" in step:
+        return bool(step["wait"])
+    return not step.get("detach")
 
 
 def start_budget() -> float:
@@ -118,6 +137,7 @@ class WorkflowRunner:
         # Wächter: der Lauf, dessen Schritte schon gestartet sind (nie zweimal starten), der Schritt, an dem der Ablauf steht
         # (für das Weitermachen nach einem Abbruch), und die Aufsicht über den Start
         self._begun: dict[str, Any] | None = None
+        self._plan: list[str] | None = None
         # Stand je Ablauf (Schlüssel: Auslöser). Neben dem Hauptablauf kann ein zweiter laufen ("Immer aktiv" zusätzlich zum Modus)
         self._positions: dict[str, int] = {}
         self._also_task: asyncio.Task | None = None
@@ -191,13 +211,63 @@ class WorkflowRunner:
             return
         if state == AlarmControlPanelState.TRIGGERED:
             # Hauptablauf des Alarms (Modus oder "Immer aktiv"); ein zweiter Ablauf kommt in async_run aus demselben Plan dazu
-            trigger = self._ctl.alarm_plan()[0]
+            self._plan = list(self._ctl.alarm_plan())  # für die Aktionen nach dem Quittieren: am Ende ist der Plan des Automaten schon geleert
+            trigger = self._plan[0]
             # Zuerst die Aufsicht, dann der Start: scheitert oder hängt der Start, beginnt der Wächter die Schritte selbst
             self._watch_start(trigger)
             self.hass.async_create_task(self._start(trigger))
         elif previous == AlarmControlPanelState.TRIGGERED:
-            # Deaktiviert oder Alarmdauer vorbei: alles stoppen und zurücksetzen
-            self.hass.async_create_task(self.async_stop())
+            # Quittiert oder deaktiviert: alles stoppen und zurückstellen, danach die Aktionen nach dem Quittieren
+            run = self._run if self._run and not self._run.get("test") and not self._run.get("after") else None
+            plan = self._plan or ([run["trigger"], *([run["also"]["trigger"]] if isinstance(run.get("also"), dict) else [])] if run else [])
+            self._plan = None
+            self.hass.async_create_task(self._end(plan))
+
+    async def _end(self, plan: list[str]) -> None:
+        """Der Alarm ist zu Ende: Ablauf stoppen und Geräte zurückstellen; erst dann laufen die Aktionen nach dem Quittieren."""
+        await self.async_stop()
+        try:
+            await self.async_run_after(plan)
+        except Exception:  # noqa: BLE001 - das Ende des Alarms selbst ist schon erledigt
+            _LOGGER.exception("%s: the actions after the alarm could not be started", self.entry.title)
+
+    def steps_after(self, trigger: str) -> list[dict[str, Any]]:
+        return list((self.entry.options.get(CONF_WORKFLOWS_AFTER) or {}).get(trigger) or [])
+
+    async def async_run_after(self, plan: list[str]) -> bool:
+        """
+        Aktionen nach dem Quittieren starten (1.10.0): die Schritte, die der Nutzer hinter "Alarm endet" gelegt hat, für jeden
+        Ablauf des beendeten Alarms (Modus, "Immer aktiv"; derselbe Ablauf nur einmal). Sie laufen unter derselben Aufsicht wie
+        die Alarmaktionen. Ein neuer Alarm hat Vorrang: läuft schon einer, starten sie nicht, und ein Alarm bricht sie ab.
+        """
+        steps: list[dict[str, Any]] = []
+        seen: list[list[dict[str, Any]]] = []
+        for trigger in plan:
+            own = self.steps_after(trigger)
+            if own and own not in seen:
+                seen.append(own)
+                steps.extend(own)
+        if not steps or self._run is not None or self._ctl.state == AlarmControlPanelState.TRIGGERED:
+            return False
+        run: dict[str, Any] = {"trigger": plan[0], "index": 0, "test": False, "after": True, "snapshot": {}, "sonos": [], "steps": steps}
+        self._run = run
+        self._begin(run)
+        return True
+
+    @callback
+    def _finish_after(self, run: dict[str, Any], *_: Any) -> None:
+        """Die Aktionen nach dem Quittieren sind durch (auch die, die nebenher liefen): der Lauf endet von selbst, es gibt nichts zurückzustellen."""
+        if self._run is not run:
+            return
+        pending = [task for task in self._side_tasks if not task.done()]
+        if pending:
+            for task in pending:
+                task.add_done_callback(partial(self._finish_after, run))
+            return
+        self._run = None
+        self._begun = None
+        self._task = None
+        self.hass.async_create_task(self._store.async_remove())
 
     async def _start(self, trigger: str) -> None:
         """Ablauf beim Alarm starten. Scheitert der Start selbst, beginnt der Wächter die Schritte sofort (nicht erst nach der Startgrenze)."""
@@ -220,7 +290,7 @@ class WorkflowRunner:
         seine Grenze aufhalten (tests/test_action_hang.py prüft das auch am Quelltext).
         """
         inherited: dict[str, Any] | None = None
-        if self._run is not None and not test and self._run.get("test"):
+        if self._run is not None and not test and (self._run.get("test") or self._run.get("after")):
             # Echter Alarm während eines Tests: der Test endet sofort, der echte Ablauf startet. Sonst liefe im Testfenster
             # weder der Ablauf noch die Alarmmeldung (Sicherheitsregel: im Zweifel alarmieren)
             inherited = self._run
@@ -298,13 +368,8 @@ class WorkflowRunner:
 
     @staticmethod
     def _runs_alongside(step: dict[str, Any]) -> bool:
-        """
-        Schritt läuft nebenher, der nächste startet sofort: "nicht abwarten", und immer ein Alarmton "bis zum Deaktivieren"
-        (Dauer 0). Der endet nie von selbst; abgewartet kämen die Schritte dahinter (zum Beispiel die Sirene) nie dran.
-        """
-        if step.get("type") not in ("action", "sound"):
-            return False
-        return bool(step.get("detach")) or (step.get("type") == "sound" and step.get("duration") == 0)
+        """Schritt läuft nebenher, der nächste startet sofort (Standard für Gerät und Ton, siehe step_waits)."""
+        return not step_waits(step)
 
     # ----- Wächter: Aufsicht über Start, Vorbereitung, jeden Schritt und den Ablauf als Ganzes -----
 
@@ -399,6 +464,8 @@ class WorkflowRunner:
             return
         error = task.exception()
         if error is None:
+            if run.get("after"):
+                self._finish_after(run)
             return
         position = self._positions.get(trigger, 0)
         _LOGGER.error("%s: watchdog: the alarm actions (%s) stopped unexpectedly at step %s; continuing with the next step",
@@ -433,7 +500,7 @@ class WorkflowRunner:
         if self._ctl.state != AlarmControlPanelState.TRIGGERED:
             return
         run = self._run
-        if run is not None and not run.get("test") and self._begun is run:
+        if run is not None and not run.get("test") and not run.get("after") and self._begun is run:
             return  # die Schritte laufen oder sind durchgelaufen
         try:
             steps = self.steps(trigger)
@@ -444,7 +511,7 @@ class WorkflowRunner:
             return
         _LOGGER.error("%s: watchdog: the alarm actions did not start within %.1f s; starting them now without preparation",
                       self.entry.title, start_budget())
-        if run is None or run.get("test"):
+        if run is None or run.get("test") or run.get("after"):
             # Kein Lauf (der Start ist gescheitert) oder noch der Test (sein Ende hängt): ein neuer Lauf, die Aufgaben des alten enden
             for task in self._take_tasks():
                 task.add_done_callback(_retrieve)

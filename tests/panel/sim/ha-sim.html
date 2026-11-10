@@ -238,6 +238,35 @@
       }
       return { systems: found, missing, settings: !!d.settings };
     }
+    if (msg.type === "alarmageddon/sensor_history") {
+      // Sensoransicht (1.9.0): erfundener Verlauf. Tests können die Antwort mit window.__sensorHistory ersetzen (auch als abgelehntes Promise).
+      if (window.__sensorHistory) return window.__sensorHistory(msg);
+      const now = Date.now(), H = 3600e3, start = now - msg.hours * H, at = (t) => new Date(t).toISOString();
+      if (msg.kind === "state") {
+        const events = [];
+        for (let t = now - 20 * 60e3, i = 0; t > start && i < 320; t -= 5 * H, i++) {
+          events.push({ kind: "on", start: at(t), end: at(t + 120e3), seconds: 120, mode: i % 3 === 1 ? "away" : null, alarm: i === 2 ? "rec-1" : null });
+          if (i === 1) events.push({ kind: "gone", start: at(t - 2 * H), end: at(t - 2 * H + 2400e3), seconds: 2400, mode: "night", alarm: null });
+        }
+        const buckets = [];
+        for (let t = Math.floor(start / H) * H + H; t <= now; t += H) {
+          const h = new Date(t).getHours(), c = h % 5 === 0 ? 2 : h > 17 ? 3 : 0;
+          if (c) buckets.push([at(t), c, c * 60]);
+        }
+        const count = buckets.reduce((n, b) => n + b[1], 0);
+        return { kind: "state", hours: msg.hours, now: at(now), start: at(start), entry_id: window.__systems[0].entry_id, buckets, events, truncated: false,
+          events_from: at(Math.max(start, now - 240 * H)),
+          armed: [{ from: at(Math.max(start, now - 30 * H)), to: at(now - 21 * H), mode: "away" }, { from: at(Math.max(start, now - 7 * H)), to: at(now - 2 * H), mode: "away" }].filter((a) => new Date(a.to) > new Date(a.from)),
+          summary: { count, seconds: count * 60, longest: 120, last: events[0]?.start ?? null, busiest_hour: 18, per_day: msg.hours >= 24 ? Math.round((count / (msg.hours / 24)) * 10) / 10 : null,
+            gone_count: events.filter((e) => e.kind === "gone").length, gone_seconds: 2400, available: 99.4, alarms: events.filter((e) => e.alarm).length } };
+      }
+      const battery = msg.kind === "battery", n = 60, points = [];
+      for (let i = 0; i <= n; i++) points.push([at(start + ((now - start) * i) / n), battery ? (i < 8 ? 30 - i : 100 - (i - 8) * 0.55) : -60 - (i % 7) * 3]);
+      const values = points.map((p) => p[1]);
+      return { kind: msg.kind, hours: msg.hours, now: at(now), start: at(start), entity_id: battery ? "sensor.haustuer_batterie" : "sensor.haustuer_signal", unit: battery ? "%" : "dBm", points,
+        ...(battery ? { threshold: 20, changes: [points[8][0]] } : {}),
+        summary: { current: values[n], mean: -66, min: Math.min(...values), max: Math.max(...values), ...(battery ? { per_day: -0.36, days_left: 140, last_change: points[8][0] } : {}) } };
+    }
     if (msg.type === "alarmageddon/battery_forecast") {
       return { forecast: { "sensor.haustuer_batterie": 410, "sensor.bewegung_flur_batterie": 95, "sensor.fenster_bad_batterie": 0, "sensor.fenster_kueche_batterie": 21, "sensor.terrassentuer_batterie": null } };
     }
@@ -278,6 +307,7 @@
     }
     if (msg.type === "alarmageddon/save_workflows") {
       sys.workflows = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(msg.workflows))).filter(([, v]) => v.length));
+      if (msg.workflows_after) sys.workflows_after = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(msg.workflows_after))).filter(([, v]) => v.length));
       if (msg.workflow_end) sys.workflow_end = Object.fromEntries(Object.entries(msg.workflow_end).filter(([, v]) => v !== "restore_marked"));
       return { ok: true };
     }

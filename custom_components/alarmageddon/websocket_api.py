@@ -55,6 +55,7 @@ from .const import (
     CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     CONF_WORKFLOW_END,
+    CONF_WORKFLOWS_AFTER,
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
@@ -74,7 +75,8 @@ from .const import (
 )
 from .devices import battery_of, device_sensors
 from .forecast import async_forecasts
-from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_end, valid_step
+from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_end, valid_step
+from .sensor_history import BATTERY_HOURS, STATE_HOURS, async_get_stats, async_numeric_history, async_state_history
 from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
@@ -101,6 +103,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_stop_workflow)
     websocket_api.async_register_command(hass, ws_acknowledge)
     websocket_api.async_register_command(hass, ws_battery_forecast)
+    websocket_api.async_register_command(hass, ws_sensor_history)
     websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_import)
@@ -122,6 +125,12 @@ def _entry(hass: HomeAssistant, connection, msg: dict[str, Any]) -> ConfigEntry 
 
 def _alarm_entity(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
     return er.async_get(hass).async_get_entity_id("alarm_control_panel", DOMAIN, f"{entry.entry_id}_alarm")
+
+
+def _alarm_run(entry: ConfigEntry) -> dict[str, Any]:
+    """Der laufende Alarm oder Test einer Anlage; die Aktionen nach dem Quittieren gelten nicht als laufender Ablauf."""
+    run = (entry.runtime_data.workflow.running or {}) if entry.runtime_data.workflow else {}
+    return {} if run.get("after") else run
 
 
 async def _sensor_info(hass: HomeAssistant, extra: set[str]) -> dict[str, dict[str, Any]]:
@@ -215,7 +224,9 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "sensor_modes": entry.options.get(CONF_SENSOR_MODES) or {},
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
                 "workflow_end": entry.options.get(CONF_WORKFLOW_END) or {},
-                "workflow_running": (entry.runtime_data.workflow.running or {}).get("trigger") if entry.runtime_data.workflow else None,
+                "workflows_after": entry.options.get(CONF_WORKFLOWS_AFTER) or {},
+                # Läuft gerade ein Alarm oder ein Test (die Aktionen nach dem Quittieren zählen nicht dazu)
+                "workflow_running": _alarm_run(entry).get("trigger"),
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
                 "has_code": ctl.has_code,
                 # Codes nie zum Panel: nur Name und verknüpfter Benutzer
@@ -602,6 +613,7 @@ async def ws_test_end_notify(hass: HomeAssistant, connection, msg: dict[str, Any
         vol.Required("workflows"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
         # Element "Alarm endet": was Deaktivieren mit den Geräten macht, je Auslöser (fehlt: Standard)
         vol.Optional("workflow_end"): {vol.In(WORKFLOW_TRIGGERS): valid_end},
+        vol.Optional("workflows_after"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
     }
 )
 @websocket_api.require_admin
@@ -618,6 +630,9 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
     if "workflow_end" in msg:
         kept_end = {k: v for k, v in (options.get(CONF_WORKFLOW_END) or {}).items() if k not in msg["workflow_end"]}
         options[CONF_WORKFLOW_END] = {**kept_end, **{k: end for k, v in msg["workflow_end"].items() if (end := _clean_end(v))}}
+    if "workflows_after" in msg:
+        kept_after = {k: v for k, v in (options.get(CONF_WORKFLOWS_AFTER) or {}).items() if k not in msg["workflows_after"]}
+        options[CONF_WORKFLOWS_AFTER] = {**kept_after, **{k: v for k, v in msg["workflows_after"].items() if v}}
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
 
@@ -830,6 +845,52 @@ async def ws_backup_delete(hass: HomeAssistant, connection, msg: dict[str, Any])
         connection.send_error(msg["id"], "not_found", "Unknown backup")
         return
     connection.send_result(msg["id"], {"backups": await backup.async_list_backups(hass), "max": MAX_BACKUPS})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/sensor_history",
+        vol.Required("entity_id"): vol.All(str, vol.Match(r"^binary_sensor\.[a-z0-9_]+$")),
+        vol.Optional("kind", default="state"): vol.In(("state", "battery", "signal")),
+        vol.Optional("hours", default=24): vol.In((*STATE_HOURS, *BATTERY_HOURS)),
+        vol.Optional("entry_id"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_sensor_history(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Sensoransicht (1.9.0): Verlauf eines überwachten Sensors. `kind` "state" liefert Stundenwerte, Ereignisse und den Zustand
+    der Anlage, "battery" und "signal" die Werte des Batterie- bzw. Empfangssensors desselben Geräts.
+
+    Nur Sensoren, die eine geladene Anlage überwacht: der Befehl ist kein allgemeiner Zugang zum Verlauf von Home Assistant.
+    """
+    entity_id = msg["entity_id"]
+    entries = [e for e in hass.config_entries.async_entries(DOMAIN)
+               if e.state is ConfigEntryState.LOADED and entity_id in e.runtime_data.controller.all_sensors()]
+    if not entries:
+        connection.send_error(msg["id"], "not_found", "Sensor is not monitored")
+        return
+    kind, hours = msg["kind"], msg["hours"]
+    if hours not in (BATTERY_HOURS if kind == "battery" else STATE_HOURS):
+        connection.send_error(msg["id"], "invalid_format", "Period does not fit the kind")
+        return
+    if kind == "state":
+        # Zustand der Anlage ("scharf in …") aus der gewählten Anlage, sonst aus der ersten, die den Sensor überwacht
+        entry = next((e for e in entries if e.entry_id == msg.get("entry_id")), entries[0])
+        rt = entry.runtime_data
+        result = await async_state_history(hass, await async_get_stats(hass), entity_id, hours, rt.events.events, list(rt.recorder.recordings) if rt.recorder else [])
+        result["entry_id"] = entry.entry_id
+    else:
+        reg = er.async_get(hass).async_get(entity_id)
+        batteries, signals = device_sensors(hass)
+        numeric = (batteries if kind == "battery" else signals).get(reg.device_id) if reg and reg.device_id else None
+        if numeric is None:
+            connection.send_error(msg["id"], "not_found", "No such sensor on this device")
+            return
+        settings = await async_get_settings(hass)
+        result = await async_numeric_history(hass, numeric, kind, hours, settings.notify["battery_threshold"])
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/log", vol.Optional("rev"): str})

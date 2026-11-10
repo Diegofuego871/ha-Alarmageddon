@@ -14,6 +14,7 @@ const { SystemUi } = await import(`./system.js${V}`);
 const { ActionsUi } = await import(`./actions.js${V}`);
 const { NotifyUi } = await import(`./notify.js${V}`);
 const { LogUi } = await import(`./log.js${V}`);
+const { SensorView } = await import(`./sensorview.js${V}`);
 const { loaderHtml, loaderStart } = await import(`./loader.js${V}`);
 const SUBS = ["sensors", "actions", "notify", "system"];
 
@@ -40,6 +41,7 @@ class AlarmageddonPanel extends HTMLElement {
     this.actions = new ActionsUi(this);
     this.notify = new NotifyUi(this);
     this.log = new LogUi(this);
+    this.sensorView = new SensorView(this);
   }
 
   // Ansicht des gewählten Reiters unter Konfiguration
@@ -53,6 +55,11 @@ class AlarmageddonPanel extends HTMLElement {
     const first = !this._hass;
     this._hass = hass;
     this._lang = pickLang(hass);
+    if (hass.themes !== this._themes) {
+      // Design gewechselt (oder erster Aufruf): hell oder dunkel aus der Farbe, die wirklich gezeichnet wird
+      this._themes = hass.themes;
+      window.requestAnimationFrame(() => this._syncDark());
+    }
     if (first) {
       this._init();
       return;
@@ -74,7 +81,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
       <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-rename"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
-      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog></div>`;
+      <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog><dialog class="ag-dlg ag-wide ag-svdlg" id="ag-sensor"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
     if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => this._stickySync()).observe(this._content);
     this._initSeg(this._root);
@@ -608,12 +615,14 @@ class AlarmageddonPanel extends HTMLElement {
         this._tab === "config" && this._sub === "sensors" && !this.hasAttribute("narrow") ? v?.querySelector(".ag-pmstick") : null,
       ].filter(Boolean);
       // Der Abstand zum nächsten Teil liegt im Teil selbst (Innenabstand statt Lücke, siehe CSS): so ist der Abstand fest und beim Scrollen gleich.
-      // Der letzte feste Teil hat keinen, der Tabellenkopf und das Blatt der Optionen stehen direkt darunter.
+      // Am Computer hat der letzte feste Teil keinen, der Tabellenkopf und das Blatt der Optionen stehen direkt darunter.
+      // Übersicht und Handy (Vorgabe des Nutzers, 1.10.0): auch unter dem letzten festen Teil bleibt der Abstand beim Scrollen, gleich gross
+      // wie der darüber. Der Teil behält seinen Innenabstand in der Seitenfarbe: so scheinen die Zeilen nicht in der Lücke durch, und
+      // Tabellenkopf oder Karten "schmelzen" nicht mit der Reiterleiste zusammen.
+      const keepGap = Boolean(stickyOverview) || this.hasAttribute("narrow");
       items.forEach((el, i) => {
         el.classList.add("ag-stk");
-        // Übersicht: der Abstand zwischen Filtern und Tabellenkopf bleibt auch beim Scrollen (der Teil behält seinen Innenabstand in der Seitenfarbe,
-        // so scheinen die Zeilen nicht in der Lücke durch); sonst stünde der letzte feste Teil ohne Abstand über dem Kopf
-        el.classList.toggle("ag-stk-last", i === items.length - 1 && !stickyOverview);
+        el.classList.toggle("ag-stk-last", i === items.length - 1 && !keepGap);
       });
       let top = 0;
       items.forEach((el, i) => {
@@ -627,7 +636,9 @@ class AlarmageddonPanel extends HTMLElement {
         this._stickyRO.disconnect();
         items.forEach((el) => this._stickyRO.observe(el));
       }
-      c.style.setProperty("--ag-th-top", `${top}px`);
+      // Mit Streifen darüber (keepGap) beginnt der feste Tabellenkopf 2 px unter dem Streifen statt bündig an seiner Kante: sonst blitzt beim
+      // Scrollen zwischen beiden eine Pixelzeile der Tabellenzeilen auf (der Streifen liegt darüber und deckt die 2 px, der Abstand bleibt gleich)
+      c.style.setProperty("--ag-th-top", `${top - (keepGap ? 2 : 0)}px`);
       // Handy: passt die Tabelle nicht in die Breite (viele gewählte Spalten), scrollt sie seitwärts statt Spalten abzuschneiden; dann klebt der Kopf nicht
       if (this.hasAttribute("narrow")) {
         for (const wrap of c.querySelectorAll(".ag-table-wrap.ag-stickwrap")) {
@@ -742,11 +753,13 @@ class AlarmageddonPanel extends HTMLElement {
     if (state === "disarmed") return { text: this._t("stateDisarmed"), color: "var(--ag-success)", soft: "var(--ag-success-soft)", icon: "shieldOff" };
     if (ARMED[state]) {
       const key = { home: "stateArmedHome", away: "stateArmedAway", night: "stateArmedNight" }[ARMED[state]];
-      return { text: this._t(key), color: "var(--ag-primary)", soft: "var(--ag-primary-soft)", icon: MODE_ICON[ARMED[state]] };
+      // Scharf ist rot, in jedem Design und auf jedem Gerät sofort zu sehen (nicht nur als Farbverlauf der Kachel)
+      return { text: this._t(key), color: "var(--ag-error)", soft: "var(--ag-error-soft)", icon: MODE_ICON[ARMED[state]] };
     }
     if (state === "arming") return { text: this._t("stateArming", { mode: this._t(MODE_KEY[mode] || "modeAway") }), color: "var(--ag-warning)", soft: "var(--ag-warning-soft)", icon: "timer" };
     if (state === "pending") return { text: this._t("statePending"), color: "var(--ag-warning)", soft: "var(--ag-warning-soft)", icon: "timer" };
-    return { text: this._t("stateTriggered"), color: "var(--ag-error)", soft: "var(--ag-error-soft)", icon: "alert" };
+    // Alarm: gefülltes rotes Symbol mit weissem Zeichen, damit er sich von "scharf" (rot auf hellem Grund) abhebt
+    return { text: this._t("stateTriggered"), color: "var(--ag-error)", soft: "var(--ag-error-soft)", icon: "alert", solid: true };
   }
 
   _members(s, mode) {
@@ -801,7 +814,7 @@ class AlarmageddonPanel extends HTMLElement {
     }
     // Scharf: schwacher roter Verlauf von unten wie bei den Karten der Sensoren; je Modus dunkler (Anwesend hell, Nacht mittel, Abwesend dunkel). Deaktiviert: grün
     const armedClass = ARMED[state] ? ` ag-armed ag-armed-${ARMED[state]}` : state === "disarmed" ? " ag-disarmed" : "";
-    return `<div class="ag-card ag-sys${armedClass}" data-system="${esc(s.entry_id)}"><div class="ag-sys-top"><div class="ag-shield" style="background:${look.soft};color:${look.color}">${ic(look.icon, 28)}</div>
+    return `<div class="ag-card ag-sys${armedClass}" data-system="${esc(s.entry_id)}"><div class="ag-sys-top"><div class="ag-shield" style="background:${look.solid ? look.color : look.soft};color:${look.solid ? "#fff" : look.color}">${ic(look.icon, 28)}</div>
       <div style="flex:1;min-width:0"><h2>${esc(s.title)}</h2><div class="ag-sys-state" style="color:${look.color}">${esc(look.text)}</div><div class="ag-sys-sub">${sub.join(" · ")}</div></div>
       <button class="ag-cbtn" data-act="more" data-entity="${esc(s.entity_id)}" aria-label="${esc(s.title)}">${ic("chevRight", 16)}</button></div>
       ${seg}${ready || blockers ? `<div class="ag-rows">${ready}${blockers}</div>` : ""}</div>`;
@@ -954,6 +967,12 @@ class AlarmageddonPanel extends HTMLElement {
     dlg.querySelector('[data-act="keep"]').focus();
   }
 
+  // Attribut "dark" am Panel, wenn der Hintergrund dunkel ist: Farbverläufe (Kachel der Anlage) brauchen dort mehr Farbe
+  _syncDark() {
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(this).backgroundColor);
+    if (m) this.toggleAttribute("dark", 0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3] < 128);
+  }
+
   // ----- Dialoge: X oben rechts (wie Device Panel), feste Knöpfe unten, Rückfrage vor dem Verwerfen -----
 
   _initDialogs() {
@@ -961,8 +980,22 @@ class AlarmageddonPanel extends HTMLElement {
       if (dlg.id === "ag-discard" || dlg.querySelector(":scope > .ag-dlg-x") || !dlg.firstElementChild) return;
       dlg.insertAdjacentHTML("afterbegin", `<button type="button" class="ag-dlg-x" data-dlg-x title="${esc(this._t("close"))}" aria-label="${esc(this._t("close"))}">${ic("close", 18)}</button>`);
     };
+    // Handy: jedes Fenster füllt den Bildschirm, die Leiste mit den Knöpfen steht ganz unten und scrollt nie mit. Dafür kommt sie
+    // aus dem scrollenden Inhalt heraus direkt ins Fenster (nach jedem Neuzeichnen wieder). Ausnahme: ein Formular als Inhalt
+    // (Umbenennen, Code): dort bleibt sie im Formular, damit "Speichern" es abschickt; diese Fenster scrollen nicht.
+    const dock = (dlg) => {
+      if (!this.hasAttribute("narrow") || dlg.id === "ag-discard" || dlg.id === "ag-confirm") return;
+      const body = dlg.querySelector(":scope > .ag-dlg-body");
+      const bar = body && body.tagName !== "FORM" ? body.querySelector(":scope > .ag-dlg-btns:last-child") : null;
+      if (!bar) return;
+      for (const old of dlg.querySelectorAll(":scope > .ag-dlg-btns")) old.remove();
+      dlg.appendChild(bar);
+    };
     for (const dlg of this._root.querySelectorAll("dialog.ag-dlg")) {
-      new MutationObserver(() => decorate(dlg)).observe(dlg, { childList: true });
+      new MutationObserver(() => {
+        decorate(dlg);
+        dock(dlg);
+      }).observe(dlg, { childList: true, subtree: true });
       // Schliesst ein Dialog, gibt der Browser den Fokus zurück und scrollt dabei zum Auslöser (oft ganz oben): Position wie beim Öffnen
       const open = dlg.showModal.bind(dlg);
       dlg.showModal = () => {
@@ -1132,6 +1165,8 @@ class AlarmageddonPanel extends HTMLElement {
   // ----- Ereignisse -----
 
   _onClick(ev) {
+    const sv = ev.target.closest("[data-sv]");
+    if (sv && this.sensorView.onClick(sv)) return;
     // Ganze Sensorzeile (und Karte) antippen öffnet die Optionen; Kästchen, Schalter und Knöpfe in der Zeile behalten ihre Aufgabe
     if (this._tab === "config" && this._sub === "sensors") {
       const row = ev.target.closest("[data-row]");
@@ -1181,7 +1216,10 @@ class AlarmageddonPanel extends HTMLElement {
       }
       this._arm(el.dataset.entry, el.dataset.mode);
     } else if (act === "more") {
-      this._moreInfo(el.dataset.entity);
+      // Sensor der Übersicht antippen öffnet die Sensoransicht (nach Home Assistant geht es dort mit "In HA öffnen");
+      // der Pfeil an der Kachel der Anlage öffnet weiter die Alarm-Entität in Home Assistant
+      if (el.dataset.entity.startsWith("binary_sensor.")) this.sensorView.open(el.dataset.entity);
+      else this._moreInfo(el.dataset.entity);
     } else if (act === "add") {
       this._navigate("/config/integrations/integration/alarmageddon");
     } else if (act === "rename") {
