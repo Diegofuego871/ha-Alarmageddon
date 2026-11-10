@@ -52,6 +52,8 @@ def step_budget(step: dict[str, Any]) -> float:
     kind = step.get("type")
     if kind == "notify":
         return WATCHDOG_GRACE  # Meldungen gehen ohne Abwarten hinaus
+    if kind == "acknowledge":
+        return WATCHDOG_GRACE  # sofort, ohne Gerätezugriff
     if kind == "wait":
         return max(0, int(step.get("seconds", 0) or 0)) + WATCHDOG_GRACE
     if kind == "sound":
@@ -534,6 +536,11 @@ class WorkflowRunner:
             await self._bounded(self.hass.services.async_call(domain, service, data, blocking=True), f"{domain}.{service}")
         elif kind == "sound":
             await self._play(step, resumable)
+        elif kind == "acknowledge":
+            # Alarm quittieren: im Test nie (ein Test darf den echten Zustand nicht ändern). Der Stopp des Ablaufs läuft als eigene
+            # Aufgabe (_on_change), dieser Schritt kehrt vorher zurück und wird nicht selbst abgebrochen
+            if not test:
+                self._ctl.acknowledge(self._notifier.text("by_step"))
 
     async def _play(self, step: dict[str, Any], resumable: bool = False) -> None:
         players = list(step.get("players", []))

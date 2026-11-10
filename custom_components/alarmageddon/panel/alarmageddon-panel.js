@@ -812,6 +812,7 @@ class AlarmageddonPanel extends HTMLElement {
     let text;
     if (e.kind === "sensor_offline") text = this._t("evOffline", { sensor });
     else if (e.kind === "sensor_report") text = this._t("evReported", { sensor });
+    else if (e.kind === "acknowledged") text = this._t("evAcknowledged", { by: e.by || "?" });
     else if (e.kind === "silenced") text = this._t("evSilenced", { by: e.by || "?" });
     else if (e.kind === "unconfirmed") text = this._t("evUnconfirmed", { sensor });
     else if (e.kind === "schedule_skipped") {

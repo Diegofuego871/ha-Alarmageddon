@@ -337,6 +337,7 @@ HANGING_STEPS = {
     "Aktion": {"type": "action", "action": "switch.turn_on", "target": ["switch.anderes"]},
     "Warten": {"type": "wait", "seconds": 0},
     "Meldung": {"type": "notify"},
+    "Quittieren": {"type": "acknowledge"},
     "Ton mit fester Dauer": {"type": "sound", "players": ["media_player.wohnzimmer"], "sound": "siren", "duration": 1},
 }
 
@@ -387,6 +388,7 @@ def test_every_step_type_has_a_budget() -> None:
 
     examples = {
         "notify": {"type": "notify"},
+        "acknowledge": {"type": "acknowledge"},
         "wait": {"type": "wait", "seconds": 30},
         "action": {"type": "action", "action": "switch.turn_on"},
         "sound": {"type": "sound", "players": ["media_player.wohnzimmer"], "sound": "siren", "duration": 60},

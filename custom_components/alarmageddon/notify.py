@@ -19,7 +19,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util, slugify
 
-from .const import ICON_URL_PATH, NOTIFY_MODE_KINDS, NOTIFY_TYPES, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
+from .const import ICON_URL_PATH, NOTIFY_MODE_KINDS, NOTIFY_TYPES, PUSH_ACTION_ACK, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
 from .controller import AlarmController
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,6 +39,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "disarmed_noby": "The alarm system is disarmed.",
         "ended_title": "✅ Alarm ended: {name}",
         "ended": "Disarmed by {by}.",
+        "ended_ack": "Acknowledged by {by}. The alarm system stays armed.",
+        "ended_ack_noby": "Acknowledged. The alarm system stays armed.",
         "ended_noby": "The alarm is over.",
         "arm_failed_title": "⛔ {name}: cannot arm {mode}",
         "arm_failed": "Open: {sensors}.",
@@ -54,6 +56,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Away",
         "mode_night": "Night",
         "by_push": "push notification",
+        "by_step": "alarm action",
+        "action_ack": "Acknowledge",
         "report_title": "🔕 Silent alarm: {name}",
         "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Silent alarm\".",
         "type_triggered": "Alarm", "type_pending": "Entry delay", "type_armed": "Armed", "type_disarmed": "Disarmed",
@@ -81,6 +85,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "disarmed_noby": "Die Anlage ist deaktiviert.",
         "ended_title": "✅ Alarm beendet: {name}",
         "ended": "Deaktiviert von {by}.",
+        "ended_ack": "Quittiert von {by}. Die Anlage bleibt scharf.",
+        "ended_ack_noby": "Quittiert. Die Anlage bleibt scharf.",
         "ended_noby": "Der Alarm ist vorbei.",
         "arm_failed_title": "⛔ {name}: {mode} nicht möglich",
         "arm_failed": "Offen: {sensors}.",
@@ -96,6 +102,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Abwesend",
         "mode_night": "Nacht",
         "by_push": "Push-Meldung",
+        "by_step": "Alarmaktion",
+        "action_ack": "Quittieren",
         "report_title": "🔕 Stiller Alarm: {name}",
         "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Stiller Alarm\" steht.",
         "type_triggered": "Alarm", "type_pending": "Eingangsverzögerung", "type_armed": "Scharf geschaltet", "type_disarmed": "Deaktiviert",
@@ -301,7 +309,11 @@ class Notifier:
             self._send("pending", self._t("pending_title", name=name),
                        self._t("pending", sensor=self._name(self._ctl.triggered_by), seconds=self._ctl.entry_delay))
         elif state in (AlarmControlPanelState.ARMED_HOME, AlarmControlPanelState.ARMED_AWAY, AlarmControlPanelState.ARMED_NIGHT):
-            if self._on("armed", self._ctl.mode) and previous not in (AlarmControlPanelState.TRIGGERED,):
+            if previous == AlarmControlPanelState.TRIGGERED:
+                # Alarm quittiert (die Anlage bleibt scharf): wie beim Deaktivieren ersetzt "Alarm beendet" die Alarmmeldung
+                if self._on("triggered"):
+                    self.send_alarm_end(self._ctl.changed_by, acknowledged=True)
+            elif self._on("armed", self._ctl.mode):
                 by = self._ctl.changed_by
                 self._send("armed", self._t("armed_title", name=name, mode=self._mode(self._ctl.mode)),
                            self._t("armed", by=by) if by else self._t("armed_noby"))
@@ -353,7 +365,8 @@ class Notifier:
         zu den konfigurierten Alarm-Empfängern gehört.
         """
         action = event.data.get("action")
-        key = {f"{PUSH_ACTION_DISARM}{self.entry.entry_id}": "disarm", f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}": "silence"}.get(action)
+        key = {f"{PUSH_ACTION_DISARM}{self.entry.entry_id}": "disarm", f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}": "silence",
+               f"{PUSH_ACTION_ACK}{self.entry.entry_id}": "acknowledge"}.get(action)
         if key is None or self._ctl.state != AlarmControlPanelState.TRIGGERED or not self._button_allowed(key):
             return
         # Nur ein konfigurierter Alarm-Empfänger darf antworten: das Ereignis kann jedes registrierte Companion-Gerät feuern
@@ -364,6 +377,8 @@ class Notifier:
             return
         if key == "disarm":
             self.hass.async_create_task(self._ctl.async_disarm(None, self._t("by_push"), skip_code=True))
+        elif key == "acknowledge":
+            self._ctl.acknowledge(self._t("by_push"))
         elif self.silence:
             self.hass.async_create_task(self._silence())
 
@@ -375,7 +390,7 @@ class Notifier:
     def _buttons(self, step: dict[str, Any] | None) -> dict[str, bool]:
         """Welche Knöpfe eine Alarmmeldung hat: Wert aus dem Push-Schritt, sonst der frühere globale Wert."""
         own = (step or {}).get("buttons") or {}
-        return {key: bool(own.get(key, self.cfg[f"{key}_action"])) for key in ("open", "silence", "disarm")}
+        return {key: bool(own.get(key, self.cfg[f"{key}_action"])) for key in ("open", "silence", "acknowledge", "disarm")}
 
     def _button_allowed(self, key: str) -> bool:
         """
@@ -390,6 +405,10 @@ class Notifier:
             self._ctl.emit("silenced", by=self._t("by_silence"))
 
     # ----- Senden -----
+
+    def text(self, key: str) -> str:
+        """Übersetzter Text für andere Teile der Integration (zum Beispiel "von wem" bei einer Quittierung)."""
+        return self._t(key)
 
     def _tag(self) -> str:
         return f"alarmageddon_{self.entry.entry_id}"
@@ -439,6 +458,8 @@ class Notifier:
             actions.append({"action": PUSH_ACTION_OPEN, "title": self._t("action_open"), "uri": target})
         if buttons["silence"]:
             actions.insert(0, {"action": f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}", "title": self._t("action_silence")})
+        if buttons["acknowledge"]:
+            actions.insert(0, {"action": f"{PUSH_ACTION_ACK}{self.entry.entry_id}", "title": self._t("action_ack")})
         if buttons["disarm"]:
             # iOS verlangt dafür Face ID/Code (authenticationRequired); Android kennt das nicht
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),
@@ -452,7 +473,7 @@ class Notifier:
         return own if own and own.get("enabled") else None
 
     @callback
-    def send_alarm_end(self, by: str | None, test: bool = False, own: dict[str, Any] | None = None) -> None:
+    def send_alarm_end(self, by: str | None, test: bool = False, own: dict[str, Any] | None = None, acknowledged: bool = False) -> None:
         """
         "Alarm beendet": gleicher tag wie die Alarmmeldung, ersetzt also die kritische Meldung auf dem Handy. Ohne eigene Einstellung
         ein Standardtext und nie kritisch; mit eigener Meldung (Titel, Text, Kritisch, Lautstärke, Klickziel) gelten deren Werte.
@@ -461,7 +482,10 @@ class Notifier:
         own = own or self._end_notify()
         time = dt_util.as_local(dt_util.utcnow()).strftime("%H:%M")
         title = self._t("ended_title", name=name)
-        message = self._t("ended", by=by) if by else self._t("ended_noby")
+        if acknowledged:
+            message = self._t("ended_ack", by=by) if by else self._t("ended_ack_noby")
+        else:
+            message = self._t("ended", by=by) if by else self._t("ended_noby")
         critical, volume, target = False, None, "/alarmageddon?view=log"
         if own:
             sensor = self._ctl.triggered_by

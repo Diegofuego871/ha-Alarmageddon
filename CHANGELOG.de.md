@@ -7,7 +7,15 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.2.0] - 2026-11-10
+
+### Hinzugefügt
+
+- **Alarm quittieren:** eine neue Aktion "Alarm beenden (quittieren)" für den Ablauf und ein Knopf "Quittieren" in der Push-Meldung. Quittieren beendet den Alarm: Die laufenden Schritte stoppen, die Geräte gehen in den früheren Zustand zurück ("Alarm endet" läuft wie beim Deaktivieren), das Protokoll hält fest, wer quittiert hat. Die Anlage **bleibt scharf** in ihrem Modus, der nächste Auslöser alarmiert wieder. Die Push-Meldung "Alarm beendet" ersetzt die Alarmmeldung auf dem Handy. Während der Eingangsverzögerung und bei scharfer Anlage ohne Alarm gibt es nichts zu quittieren. Der Knopf ist standardmässig aus (wie "Sirene stumm"), wirkt nur, solange der Alarm läuft, und nur vom Handy eines konfigurierten Alarm-Empfängers; der Schritt tut im Test nichts. Deaktivieren beendet den Alarm weiterhin ebenfalls und schaltet die Anlage aus.
+
 ## [1.1.0] - 2026-11-10
+
+Nicht veröffentlicht; enthalten in 1.2.0.
 
 ### Hinzugefügt
 
@@ -708,7 +716,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.1.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.1.0
+[1.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.2.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0

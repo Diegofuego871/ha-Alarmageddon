@@ -7,7 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-10
+
+### Added
+
+- **Acknowledge the alarm:** a new action "End alarm (acknowledge)" for the flow and a button "Acknowledge" in the push message. Acknowledging ends the alarm: the running steps stop, the devices return to their previous state ("Alarm ends" runs like when disarming), the log records who acknowledged. The alarm system **stays armed** in its mode, and the next trigger alarms again. The push message "Alarm ended" replaces the alarm message on the phone. Nothing to acknowledge during the entry delay or when armed without an alarm. The button is off by default (like "Silence siren"), works only while the alarm is running and only from the phone of a configured alarm recipient; the step does nothing in a test. Disarming still ends the alarm too and switches the system off.
+
 ## [1.1.0] - 2026-11-10
+
+Not released; included in 1.2.0.
 
 ### Added
 
@@ -708,7 +716,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.1.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.1.0
+[1.2.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.2.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0

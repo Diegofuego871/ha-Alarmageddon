@@ -56,13 +56,15 @@ STEP_SCHEMAS = {
         # Einstellungen der Alarmmeldung nur hier (0.20.0); fehlt eine Angabe, gilt der frühere globale Wert
         vol.Optional("critical"): bool,
         vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
-        vol.Optional("buttons"): {vol.Optional(vol.In(("open", "silence", "disarm"))): bool},
+        vol.Optional("buttons"): {vol.Optional(vol.In(("open", "silence", "acknowledge", "disarm"))): bool},
         # Klickziel der Meldung (0.23.0): "log" (Standard, Protokoll mit dem laufenden Alarm), "overview" oder "custom" mit eigenem Pfad
         vol.Optional("click"): vol.In(("log", "overview", "custom")),
         vol.Optional("click_path"): vol.All(str, vol.Length(max=200), vol.Match(r"^/[^\s]*$")),
         # Eigene Empfänger nur für diesen Schritt (1.1.0); fehlt die Angabe oder ist sie leer, gelten die Alarm-Empfänger der Konfiguration
         vol.Optional("targets"): NOTIFY_TARGETS,
     }),
+    # Alarm quittieren (1.1.0): beendet den Alarm, die Anlage bleibt scharf
+    "acknowledge": vol.Schema({vol.Required("type"): "acknowledge"}),
     "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
     "action": vol.Schema({
         vol.Required("type"): "action",

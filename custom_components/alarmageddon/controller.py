@@ -577,6 +577,22 @@ class AlarmController:
         self._set(AlarmControlPanelState.DISARMED)
 
     @callback
+    def acknowledge(self, changed_by: str | None = None) -> bool:
+        """
+        Alarm quittieren (1.1.0): der Alarm endet, die Anlage bleibt scharf (im selben Modus). Der Ablauf stoppt und die
+        Gegenaktionen laufen wie beim Deaktivieren. Ohne laufenden Alarm geschieht nichts. Kein Code nötig: Quittieren schaltet
+        nichts ab, ein neuer Auslöser alarmiert wieder. Aus "deaktiviert" (Alarm von Hand) endet der Alarm im Zustand "deaktiviert".
+        """
+        if self.state != AlarmControlPanelState.TRIGGERED:
+            return False
+        self._cancel_timer()
+        self.changed_by = changed_by
+        # Zuerst das Ereignis (Aufzeichnung merkt sich, von wem), dann der Zustandswechsel
+        self.emit("acknowledged", by=changed_by)
+        self._go_armed()
+        return True
+
+    @callback
     def async_trigger(self, changed_by: str | None = None) -> None:
         """Alarm von Hand (Dienst alarm_trigger, Panik). Geht auch aus "deaktiviert"."""
         self.triggered_by = None

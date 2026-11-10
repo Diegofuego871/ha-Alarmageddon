@@ -36,6 +36,7 @@ export const KINDS = [
   { kind: "device", icon: "power", label: "stepDevice", hint: "stepDeviceHint" },
   { kind: "sound", icon: "speaker", label: "stepSound", hint: "stepSoundHint" },
   { kind: "wait", icon: "timer", label: "stepWait", hint: "stepWaitHint" },
+  { kind: "acknowledge", icon: "check", label: "stepAck", hint: "stepAckHint" },
   { kind: "scene", icon: "script", label: "stepScene", hint: "stepSceneHint" },
   { kind: "custom", icon: "cog", label: "stepCustom", hint: "stepCustomHint" },
 ];
@@ -62,6 +63,7 @@ function fromStepBase(step) {
   const f = blank();
   if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) }, ntClick: step.click ?? null, ntClickPath: step.click_path || "", ntTargets: step.targets?.length ? [...step.targets] : null };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
+  if (step.type === "acknowledge") return { ...f, kind: "acknowledge" };
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
   }
@@ -113,6 +115,7 @@ function toStepBase(f) {
     }
     return out;
   }
+  if (f.kind === "acknowledge") return { type: "acknowledge" };
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
   if (f.kind === "sound") {
     return { type: "sound", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: f.until ? 0 : Math.min(3600, Math.max(1, Math.round(Number(f.playSeconds) || 1))), restore: !!f.restore };
@@ -359,6 +362,7 @@ export class ActionsUi {
   _summaryBase(f) {
     const names = f.targets.map((id) => this.host._name(id)).join(", ") || this._t("stepNoTargets");
     if (f.kind === "notify") return f.ntTitle || f.ntMessage ? [f.ntTitle, f.ntMessage].filter(Boolean).join(" – ") : this._t("stepNotifyHint");
+    if (f.kind === "acknowledge") return this._t("stepAckHint");
     if (f.kind === "wait") return this._t("stepWaitSummary", { seconds: f.seconds });
     if (f.kind === "sound") return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${Math.round(f.volume * 100)} %` : ""} · ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`;
     if (f.kind === "scene") return names;
@@ -382,7 +386,7 @@ export class ActionsUi {
   _card(step, i, running) {
     const f = fromStep(step);
     const k = KINDS.find((x) => x.kind === f.kind);
-    const restore = (f.kind === "sound" || f.restore) && f.kind !== "notify" && f.kind !== "wait" ? `<span class="ag-tag none" title="${esc(this._t("wfRestoreMark"))}">${ic("restore", 12)}</span>` : "";
+    const restore = (f.kind === "sound" || f.restore) && f.kind !== "notify" && f.kind !== "wait" && f.kind !== "acknowledge" ? `<span class="ag-tag none" title="${esc(this._t("wfRestoreMark"))}">${ic("restore", 12)}</span>` : "";
     const title = f.kind === "custom" ? this._serviceName(f.domain, f.service) : this._t(k.label);
     return `<div class="ag-card ag-wf-step" data-index="${i}">
       <button class="ag-handle" data-wf="grab" data-index="${i}" aria-label="${esc(this._t("stepGrab"))}" title="${esc(this._t("stepGrab"))}">${ic("grip", 20)}</button>
@@ -668,7 +672,7 @@ export class ActionsUi {
   // Wirksame Werte der Alarmmeldung: aus dem Schritt, sonst der frühere globale Wert (so ändert sich bei bestehenden Schritten nichts)
   _ntGlobal() {
     const g = this.host._data?.notify || {};
-    return { critical: g.types?.triggered?.critical ?? true, volume: g.types?.triggered?.volume ?? 0.8, open: g.open_action ?? true, silence: g.silence_action ?? false, disarm: g.disarm_action ?? false };
+    return { critical: g.types?.triggered?.critical ?? true, volume: g.types?.triggered?.volume ?? 0.8, open: g.open_action ?? true, silence: g.silence_action ?? false, acknowledge: g.acknowledge_action ?? false, disarm: g.disarm_action ?? false };
   }
 
   // Empfänger der Meldung: Standard sind die Alarm-Empfänger der Konfiguration; hier lassen sie sich für diese Meldung ersetzen
@@ -707,7 +711,7 @@ export class ActionsUi {
         ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}`)
       + this._sec("fldNtClick", `<select class="ag-input" data-wf="nt-click" aria-label="${esc(this._t("fldNtClick"))}">${["log", "overview", "custom"].map((k) => `<option value="${k}" ${(f.ntClick || "log") === k ? "selected" : ""}>${esc(this._t(`ntClick_${k}`))}</option>`).join("")}</select>
         ${f.ntClick === "custom" ? `<input class="ag-input ag-mono" data-wf="f" data-key="ntClickPath" value="${esc(f.ntClickPath || "")}" placeholder="/lovelace/alarm" aria-label="${esc(this._t("ntClick_custom"))}" autocapitalize="off" autocomplete="off" spellcheck="false">` : ""}`, "fldNtClickHint")
-      + (end ? "" : this._sec("fldNtButtons", `${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}`));
+      + (end ? "" : this._sec("fldNtButtons", `${btn("open", "ntOpenAction", "ntOpenActionHint", false)}${btn("silence", "ntSilenceAction", "ntSilenceActionHint", true)}${btn("acknowledge", "ntAckAction", "ntAckActionHint", true)}${btn("disarm", "ntDisarmAction", "ntDisarmActionHint", true)}`));
   }
 
   // Vorschau mit echten Namen der Anlage und eines Sensors, so wie die Meldung aussähe
@@ -825,6 +829,7 @@ export class ActionsUi {
     else if (f.kind === "device") fields = this._deviceFields(f);
     else if (f.kind === "sound") fields = this._soundFields(f);
     else if (f.kind === "wait") fields = this._waitFields(f);
+    else if (f.kind === "acknowledge") fields = `<div class="ag-t2">${esc(this._t("fldAckHint"))}</div>`;
     else if (f.kind === "scene") fields = this._sceneFields(f);
     else fields = this._customFields(f);
     this.host._setHtml(this._dlg(), `<div class="ag-dlg-body ag-step-ed"><div class="ag-sys-top"><span class="ag-wf-icon k-${f.kind}">${ic(k.icon, 22)}</span><h3>${esc(this._t(k.label))}</h3></div>

@@ -324,6 +324,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; z-index: 1; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }
+.ag-wf-icon.k-acknowledge { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-wf-icon.k-wait { background: var(--ag-subtle); color: var(--ag-text2); }
 .ag-wf-icon.k-open, .ag-wf-icon.k-close, .ag-wf-icon.k-end { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-wf-text { flex: 1; min-width: 0; }

@@ -52,6 +52,7 @@ Was bei einem Alarm passiert, ist ein Ablauf aus Schritten, auf Wunsch je Modus.
 | Gerät schalten | Lichter, Steckdosen, Sirenen, Storen, Schlösser und mehr: ein, aus, öffnen, schliessen, mit Helligkeit oder Position |
 | Alarmton abspielen | Einer von fünf Tönen auf Medienplayern (Sonos und andere), mit Lautstärke, für eine Dauer oder bis zum Deaktivieren |
 | Warten | Hält die folgenden Schritte an, zum Beispiel zwischen "Sirene ein" und "Sirene aus" |
+| Alarm beenden (quittieren) | Beendet den Alarm nach den Schritten davor (zum Beispiel nach 3 Minuten), stellt die Geräte zurück und lässt die Anlage scharf; die Schritte danach laufen nicht mehr |
 | Szene, Skript oder eigene Aktion | Alles andere, was Home Assistant kann |
 
 ### Benachrichtigungen
@@ -85,7 +86,7 @@ Eine Alarmanlage muss funktionieren, wenn etwas anderes es nicht tut. Diese Mech
 | Sicher beim Neustart | Zustand, Verzögerungen und ein laufender Alarm gehen nach einem Neustart weiter; die Alarmaktionen setzen beim erreichten Schritt fort |
 | Codes | 4 bis 8 Ziffern, nur als Hash mit Salz gespeichert, nie angezeigt, nie in einer Sicherung oder im Log. Fünf falsche Codes sperren die Anlage für eine Minute, auch für den richtigen Code |
 | Nur Administratoren | Das Seitenpanel und jeder seiner Befehle verlangen Administratorrechte |
-| Knöpfe in der Alarmmeldung | "Deaktivieren" und "Sirene stumm" sind standardmässig aus. Sie wirken nur, solange der Alarm läuft, und nur vom Handy eines konfigurierten Alarm-Empfängers |
+| Knöpfe in der Alarmmeldung | "Deaktivieren", "Sirene stumm" und "Quittieren" sind standardmässig aus. Sie wirken nur, solange der Alarm läuft, und nur vom Handy eines konfigurierten Alarm-Empfängers |
 | Nichts hält die Sirene auf | Ein Gerät, das nicht antwortet, wird nach 10 Sekunden übergangen, auf eine Push-Meldung wird nie gewartet, und ein scheiternder Schritt, ein scheiterndes Protokoll, eine scheiternde Aufzeichnung oder Meldung stoppt den Rest nie |
 | Wächter | Die Alarmaktionen stehen als Ganzes unter Aufsicht: der erste Schritt beginnt innert 8 Sekunden, kein Schritt verzögert den nächsten über seine Grenze hinaus, und ein abgebrochener Ablauf macht mit dem nächsten Schritt weiter. Eingriffe stehen in der Zeitachse des Alarms |
 | Du bestimmst, wie lange die Sirene läuft | Im Code steht keine feste Dauer. Du stellst sie im Ablauf ein ("Warten" zwischen Ein und Aus oder eine Dauer beim Ton, bis zu einer Stunde je Schritt). Sie gilt genau und zählt ab dem ersten Start, auch über einen Neustart hinweg |
@@ -172,7 +173,7 @@ Details für alle, die es genau wissen wollen. Zum Öffnen anklicken.
 - **Zurück in den vorherigen Zustand:** ein oder aus, Helligkeit, Position, Lautstärke und Quelle; Sonos mit eigenem Schnappschuss samt Gruppen.
 - **Test:** führt den gespeicherten Ablauf ohne Alarm aus und endet spätestens nach 60 Sekunden. Ein echter Alarm während eines Tests startet den echten Ablauf sofort.
 - **Medienplayer** holen die Töne bei Home Assistant und müssen darum dessen lokale Adresse erreichen (Einstellungen → System → Netzwerk).
-- **Knöpfe der Alarmmeldung:** "Öffnen" (standardmässig an), "Sirene stumm" (stoppt die Schritte, der Alarm bleibt) und "Deaktivieren" (iOS fragt nach Face ID oder dem Gerätecode, Android nicht).
+- **Knöpfe der Alarmmeldung:** "Öffnen" (standardmässig an), "Sirene stumm" (stoppt die Schritte, der Alarm bleibt), "Quittieren" (beendet den Alarm, die Anlage bleibt scharf und alarmiert beim nächsten Auslöser wieder) und "Deaktivieren" (iOS fragt nach Face ID oder dem Gerätecode, Android nicht).
 - **Kritische Meldungen:** die Lautstärke gilt für iOS; Android spielt sie auf dem Alarmkanal, dessen Lautstärke stellst du am Handy ein.
 - **Wartungsmeldungen:** jedes Problem einmal, mehrere in einer Meldung, erneut nach dem Batteriewechsel oder wenn der Sensor wieder antwortet.
 - **Batterieprognose:** aus dem Verlauf des Recorders der letzten 90 Tage; leer ohne genug Verlauf.

@@ -165,6 +165,7 @@ export class LogUi {
       const targets = (e.targets || []).map((id) => this.host._name(id)).join(", ");
       const test = e.test ? ` (${this._t("logTest")})` : "";
       if (e.step === "notify") return this._t("logStepNotify") + test;
+      if (e.step === "acknowledge") return this._t("logStepAck") + test;
       if (e.step === "wait") return this._t("logStepWait", { seconds: e.seconds }) + test;
       if (e.step === "sound") return this._t("logStepSound", { targets }) + test;
       return this._t("logStepAction", { action: e.action || "?", targets: targets || "–" }) + test;

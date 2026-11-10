@@ -44,6 +44,7 @@ class AlarmRecorder:
         # Zähler der Änderungen (wie im Ereignisprotokoll): spart dem Panel die ganze Antwort, solange nichts dazukam
         self.rev = 0
         self._last_state: str | None = None
+        self._ack_by: str | None = None  # von wem der laufende Alarm quittiert wurde (None: nicht quittiert)
         self._unsubs: list[CALLBACK_TYPE] = []
         self._unsub_sensors: CALLBACK_TYPE | None = None
 
@@ -95,7 +96,8 @@ class AlarmRecorder:
         if state not in _ACTIVE:
             # Alarm endet ohne Deaktivieren (zum Beispiel eine alte Alarmdauer aus der Wiederherstellung): abschliessen,
             # sonst bliebe der Alarm für immer "laufend" und der nächste würde nie aufgezeichnet
-            self._finish(None, reason="ended")
+            ack, self._ack_by = self._ack_by, None
+            self._finish(ack or None, reason="acknowledged" if ack is not None else "ended")
 
     @callback
     def _begin(self) -> None:
@@ -137,7 +139,9 @@ class AlarmRecorder:
     @callback
     def _on_event(self, kind: str, data: dict[str, Any]) -> None:
         """Ereignisse ohne Zustandswechsel (Sensor ausgefallen, nicht bestätigt) gehören in einen laufenden Alarm."""
-        if self.current is not None and kind in ("sensor_offline", "sensor_report", "unconfirmed", "silenced"):
+        if self.current is not None and kind in ("sensor_offline", "sensor_report", "unconfirmed", "silenced", "acknowledged"):
+            if kind == "acknowledged":
+                self._ack_by = data.get("by") or ""
             self._add({"kind": kind, **data})
 
     @callback
