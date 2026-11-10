@@ -308,7 +308,7 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-numlabel { display: flex; flex-direction: column; gap: 4px; }
 .ag-cfg { margin-top: 0; }
 :host([narrow]) .ag-sen-layout.open { grid-template-columns: 1fr; }
-:host([narrow]) dialog.ag-sheetdlg { max-height: 88vh; overflow: auto; }
+:host([narrow]) dialog.ag-sheetdlg { max-height: 88vh; overflow: auto; padding-bottom: 0; } /* die Leiste unten bringt den Abstand zur Home-Anzeige selbst mit: sonst scheint der Inhalt darunter durch */
 :host([narrow]) .ag-list-head { margin-top: 2px; }
 
 /* 0.4.0: Aktionen als Ablauf, Benachrichtigungen */

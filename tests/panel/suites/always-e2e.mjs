@@ -15,6 +15,7 @@ for (const lang of ["de", "en"]) {
     await s.tap(`[data-sen="detail"][data-ent="${smoke}"]`);
     await s.waitFor(`return !!r.querySelector('${sheet} .ag-zline')`);
     check(`${tag}: Blatt: Modi und "Immer aktiv" als Pillen in einer Zeile, "Immer aktiv" an`, await s.ev(`const c=[...r.querySelectorAll('${sheet} .ag-zline .ag-chip')]; return c.length >= 3 && c.at(-1).dataset.key === 'always' && c.at(-1).getAttribute('aria-pressed') === 'true'`));
+    if (mobile) check(`${tag}: Handy: unter der Leiste "Fertig" liegt kein Abstand, in dem der Inhalt durchscheint`, await s.ev("const d=r.getElementById('ag-sheet'); const b=d.querySelector(':scope > .ag-dlg-btns'); return getComputedStyle(d).paddingBottom === '0px' && !!b && Math.abs(b.getBoundingClientRect().bottom - d.getBoundingClientRect().bottom) < 2"));
     check(`${tag}: ohne Zone kein Schalter "Immer aktiv ignorieren"`, await s.ev(`return !r.querySelector('${sheet} [data-key="always_off"]')`));
     await s.tap(`${sheet} .ag-zline .ag-chip[data-mode="away"]`);
     check(`${tag}: mit Zone steht der Schalter direkt unter den Modi (vor "Verhalten"), standardmässig aus`, await s.waitFor(`const off=r.querySelector('${sheet} [data-key="always_off"]'); const lab=[...r.querySelectorAll('${sheet} .ag-label')].find((x) => x.textContent.trim().toLowerCase().startsWith(${JSON.stringify(lang === "de" ? "verhalten" : "behaviour")})); return !!off && !!lab && off.getAttribute('aria-checked') === 'false' && (off.compareDocumentPosition(lab) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0`));
