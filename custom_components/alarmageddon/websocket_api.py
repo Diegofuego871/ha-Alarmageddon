@@ -73,7 +73,7 @@ from .const import (
 )
 from .devices import battery_of, device_sensors
 from .forecast import async_forecasts
-from .schemas import END_NOTIFY_SCHEMA, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_end, valid_step
+from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_end, valid_step
 from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
@@ -516,6 +516,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
                 vol.Optional("critical"): bool,
                 vol.Optional("persistent"): bool,
                 vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+                vol.Optional("targets"): NOTIFY_TARGETS,
             }},
             # Eigene Werte je Modus für Arten, die nur im scharfen Zustand vorkommen; ersetzt alle bisherigen eigenen Werte
             vol.Optional("per_mode"): bool,
@@ -524,6 +525,7 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
                 vol.Optional("critical"): bool,
                 vol.Optional("persistent"): bool,
                 vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+                vol.Optional("targets"): NOTIFY_TARGETS,
             }}},
             vol.Optional("disarm_action"): bool,
             vol.Optional("open_action"): bool,

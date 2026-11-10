@@ -285,7 +285,7 @@ for (const lang of ["de", "en"]) {
 
     // ----- Benachrichtigungen -----
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
-    check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-nt .ag-rpill').length === 1 && r.querySelector('.ag-nt .ag-rpill').innerText.includes('diego')"));
+    check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-nt .ag-recip .ag-rpill').length === 1 && r.querySelector('.ag-nt .ag-recip .ag-rpill').innerText.includes('diego')"));
     check(`${tag}: Kapitel mit Titel (Empfänger, Alarm-Arten, Wartung)`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 3"));
     check(`${tag}: Alarmmeldung hier nicht einstellbar und kein Hinweiskapitel: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !r.querySelector('[data-nt=\"to-actions\"]')"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
@@ -312,7 +312,7 @@ for (const lang of ["de", "en"]) {
       && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false, JSON.stringify(nt));
     // Pille entfernen mit x
     await s.tap('[data-nt="target-del"][data-key="alarm_targets"][data-target="notify.mobile_app_diego"]');
-    check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-nt .ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));
+    check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-nt .ag-recip .ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));
     await s.tap('[data-nt="cancel"]');
     // Testmeldung einer Art
     await s.tap('[data-nt="test"][data-kind="battery_low"]');

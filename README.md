@@ -57,7 +57,7 @@ What happens on an alarm is a flow you build from steps, per mode if you like. D
 
 ### Notifications
 
-Recipients are chosen separately for alarms and for maintenance messages. Every kind of message (entry delay, armed, disarmed, arming not possible, silent alarm, sensor unreachable, low battery) can be switched on or off, be critical (sounds in silent mode) and have its own volume, per mode if you like.
+Recipients are chosen separately for alarms and for maintenance messages, and every message can override them with its own recipients (per mode too). Every kind of message (entry delay, armed, disarmed, arming not possible, silent alarm, sensor unreachable, low battery) can be switched on or off, be critical (sounds in silent mode) and have its own volume, per mode if you like.
 
 ### Log and alarm timeline
 

@@ -58,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 77  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 78  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -177,7 +177,8 @@ DEFAULT_NOTIFY: Final = {
     "modes": {},
     "alarm_targets": [],
     "maintenance_targets": [],
-    "types": {key: {"enabled": on, "critical": critical, "volume": 0.8, "persistent": False} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
+    # "targets" je Art (1.5.0): eigene Empfänger statt der Gruppe oben (Alarm oder Wartung); leer = die Gruppe gilt
+    "types": {key: {"enabled": on, "critical": critical, "volume": 0.8, "persistent": False, "targets": []} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
     # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
     "disarm_action": False,
     # Weitere Knöpfe der Alarmmeldung (0.16.0): "Öffnen" (Panel) standardmässig an, "Sirene stumm" aus

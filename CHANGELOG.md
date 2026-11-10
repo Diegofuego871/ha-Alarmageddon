@@ -7,7 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-11-10
+
+### Added
+
+- **Recipients per message:** every message in Configuration › Notifications has a dropdown "Add recipient" with the recipients as pills. The recipients chosen at the top (alarms or maintenance) are preselected as the default; adding or removing one overrides them for that message, "Back to the default" undoes it. With "Settings per mode" on, the recipients can differ per mode as well (mode value, then message, then the group at the top). The last recipient cannot be removed, so nothing is left without a recipient. Test messages and the combined maintenance message follow the own recipients; battery and unreachable messages with different recipients go out separately. The values are part of the backup.
+
 ## [1.4.0] - 2026-11-10
+
+Not released; included in 1.5.0.
 
 ### Added
 
@@ -745,7 +753,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.4.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.4.0
+[1.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.5.0
 [1.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.3.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0

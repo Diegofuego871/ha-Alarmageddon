@@ -42,7 +42,7 @@ def test_old_format_is_migrated() -> None:
     cfg = valid_notify({"alarm_targets": ["notify.a", "notify.a", "light.x"], "critical": False, "volume": 0.3,
                         "events": {"triggered": False, "armed": True, "bogus": True}})
     assert cfg["alarm_targets"] == ["notify.a"]
-    assert cfg["types"]["triggered"] == {"enabled": False, "critical": False, "volume": 0.3, "persistent": False}
+    assert cfg["types"]["triggered"] == {"enabled": False, "critical": False, "volume": 0.3, "persistent": False, "targets": []}
     assert cfg["types"]["armed"]["enabled"] is True and cfg["types"]["sensor_offline"]["critical"] is False
     assert "events" not in cfg and "critical" not in cfg and "volume" not in cfg
 

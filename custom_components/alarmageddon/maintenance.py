@@ -124,12 +124,16 @@ class Maintenance:
 
         if found:
             # Nur als gemeldet merken, was wirklich hinausging: ohne Empfänger kommt es später noch
-            if self._send(found, cfg["maintenance_targets"]):
-                for kind, sensor, _value in found:
-                    self.reported["battery" if kind == "battery" else "offline"][sensor] = now.isoformat()
-                changed = True
-            else:
-                found = []
+            # Je Art eigene Empfänger (1.5.0): Arten mit denselben Empfängern gehen weiter in einer Meldung hinaus
+            groups: dict[tuple[str, ...], list[tuple[str, str, Any]]] = {}
+            for item in found:
+                art = "battery_low" if item[0] == "battery" else "sensor_unavailable"
+                groups.setdefault(tuple(cfg["types"][art].get("targets") or cfg["maintenance_targets"]), []).append(item)
+            delivered = [item for targets, items in groups.items() if self._send(items, list(targets)) for item in items]
+            for kind, sensor, _value in delivered:
+                self.reported["battery" if kind == "battery" else "offline"][sensor] = now.isoformat()
+            changed = changed or bool(delivered)
+            found = delivered
         if changed:
             self._store.async_delay_save(lambda: self.reported, 1)
         return found

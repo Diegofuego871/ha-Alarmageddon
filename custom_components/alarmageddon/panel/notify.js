@@ -17,6 +17,7 @@ const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" 
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
 // Arten mit einem Zahlenfeld: Schlüssel, Beschriftung, Einheit
 const NUMBERS = { battery_low: ["battery_threshold", "ntThreshold", "%"], sensor_unavailable: ["offline_minutes", "ntOfflineAfter", "minutes"] };
+const GROUP_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, list]) => list.map(([k]) => [k, g])));
 const KINDS = [...GROUPS.alarm, ...GROUPS.maintenance].map(([k]) => k);
 
 const short = (s) => s.replace(/^notify\.(mobile_app_)?/, "");
@@ -60,7 +61,7 @@ export class NotifyUi {
     for (const kind of KINDS) {
       const x = a.types?.[kind] || {};
       const y = d.types[kind];
-      if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || !!x.persistent !== !!y.persistent || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100)) n += 1;
+      if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || !!x.persistent !== !!y.persistent || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100) || JSON.stringify(x.targets || []) !== JSON.stringify(y.targets || [])) n += 1;
     }
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
     if (Boolean(a.per_mode) !== Boolean(d.per_mode)) n += 1; // der Schalter zählt als eigene Änderung
@@ -101,6 +102,47 @@ export class NotifyUi {
   _eff(kind, mode) {
     const base = this.draft.types[kind];
     return mode ? { ...base, ...(this.draft.modes?.[mode]?.[kind] || {}) } : base;
+  }
+
+  // Empfänger einer Art (Entwurf): eigene Liste des Modus (Reiter), sonst eigene Liste der Art, sonst die Gruppe oben (Alarm oder Wartung)
+  _recipientsOf(kind, mode) {
+    const group = this.draft[TARGET_KEY[GROUP_OF[kind]]] || [];
+    const own = this._eff(kind, mode).targets;
+    return { list: own?.length ? own : group, own: Boolean(own?.length), ownHere: mode ? Boolean(this.draft.modes?.[mode]?.[kind]?.targets?.length) : Boolean(this.draft.types[kind].targets?.length), group };
+  }
+
+  // Liste der Empfänger einer Art setzen (null: eigene Liste entfällt, die Gruppe oder der Wert für alle Modi gilt wieder)
+  _setTargets(kind, mode, list) {
+    const d = this.draft;
+    if (!mode) {
+      d.types[kind].targets = list || [];
+      return;
+    }
+    const own = { ...(d.modes[mode]?.[kind] || {}) };
+    if (list?.length) own.targets = list;
+    else delete own.targets;
+    const kinds = { ...(d.modes[mode] || {}) };
+    if (Object.keys(own).length) kinds[kind] = own;
+    else delete kinds[kind];
+    if (Object.keys(kinds).length) d.modes[mode] = kinds;
+    else delete d.modes[mode];
+  }
+
+  // Dropdown und Pillen der Empfänger einer Meldungsart. Vorgewählt sind die Empfänger der Gruppe oben; wer hier etwas ändert, überschreibt sie
+  _typeRecipients(kind, mode, name) {
+    const md = mode ? ` data-mode="${mode}"` : "";
+    const services = this.host._data?.notify_services || [];
+    const r = this._recipientsOf(kind, mode);
+    const free = services.filter((s) => !r.list.includes(s));
+    const groupName = this._t(GROUP_OF[kind] === "alarm" ? "ntAlarmTargets" : "ntMaintTargets");
+    const origin = r.own
+      ? `<small class="ag-origin own">${esc(this._t(mode && !r.ownHere ? "ntSameAsAll" : "ntOwnTargets"))} ${r.ownHere ? `<button type="button" class="ag-link" data-nt="kt-reset" data-kind="${kind}"${md}>${esc(this._t("ntTargetsReset"))}</button>` : ""}</small>`
+      : `<small class="ag-origin">${esc(this._t("ntTargetsDefault", { group: groupName }))}</small>`;
+    const pills = r.list.map((s) => `<span class="ag-rpill ${services.includes(s) ? "" : "gone"}">${ic("bell", 14)}<span>${esc(short(s))}</span><button type="button" class="ag-rx" data-nt="kt-del" data-kind="${kind}"${md} data-target="${esc(s)}" aria-label="${esc(this._t("ntRemove", { name: short(s) }))}">${ic("close", 14)}</button></span>`).join("");
+    const select = services.length
+      ? `<select class="ag-input ag-rsel" data-nt="kt-add" data-kind="${kind}"${md} aria-label="${esc(`${name}: ${this._t("ntAdd")}`)}" ${free.length ? "" : "disabled"}><option value="">${esc(this._t(free.length ? "ntAdd" : "ntAllChosen"))}</option>${free.map((s) => `<option value="${esc(s)}">${esc(short(s))}</option>`).join("")}</select>`
+      : "";
+    return `<div class="ag-mt-opt ag-mt-recip"><span>${esc(this._t("ntRecipientsShort"))}<small class="ag-t2 ag-block">${origin}</small></span>${select}</div>${pills ? `<div class="ag-rpills ag-mt-pills">${pills}</div>` : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("ntNoneChosen"))}</small>`}`;
   }
 
   // Eigenen Wert eines Modus setzen; entspricht er dem gemeinsamen Wert, entfällt er (so folgt er späteren Änderungen mit)
@@ -144,6 +186,7 @@ export class NotifyUi {
       const num = NUMBERS[kind];
       const bad = new Set(this.invalid());
       body = `<div class="ag-mt-body">
+        ${this._typeRecipients(kind, mode, name)}
         <div class="ag-mt-opt"><span>${esc(this._t("ntCriticalShort"))}</span>${toggle(`data-nt="critical" data-kind="${kind}"${md}`, s.critical, `${name}: ${this._t("ntCriticalShort")}`)}</div>
         ${s.critical ? `<div class="ag-mt-opt vol"><span>${esc(this._t("ntVolumeShort"))}: <b class="ag-vol" data-kind="${kind}"${md}>${pct} %</b></span>
           <input type="range" min="0" max="100" step="5" data-nt="volume" data-kind="${kind}"${md} value="${pct}" class="ag-range" aria-label="${esc(`${name}: ${this._t("ntVolumeShort")}`)}"></div>` : ""}
@@ -252,6 +295,13 @@ export class NotifyUi {
       const key = act;
       if (mode) this._setOwn(kind, mode, key, !this._eff(kind, mode)[key]);
       else d.types[kind][key] = !d.types[kind][key];
+    } else if (act === "kt-del") {
+      const { kind, mode } = el.dataset;
+      const next = this._recipientsOf(kind, mode || null).list.filter((x) => x !== el.dataset.target);
+      if (!next.length) return true; // ohne Empfänger ginge nichts hinaus: die Liste bleibt, bis ein anderer gewählt ist
+      this._setTargets(kind, mode || null, next);
+    } else if (act === "kt-reset") {
+      this._setTargets(el.dataset.kind, el.dataset.mode || null, null);
     } else if (act === "mode-reset") {
       const { kind, mode } = el.dataset;
       const kinds = { ...(d.modes[mode] || {}) };
@@ -273,6 +323,16 @@ export class NotifyUi {
       if (!el.value) return true;
       const d = this.ensureDraft();
       d[el.dataset.key] = [...d[el.dataset.key], el.value];
+      this.saveState = null;
+      this.render();
+      return true;
+    }
+    if (act === "kt-add") {
+      if (!el.value || !/^notify\.[a-z0-9_]+$/.test(el.value)) return true;
+      this.ensureDraft();
+      const { kind, mode } = el.dataset;
+      const cur = this._recipientsOf(kind, mode || null).list;
+      if (!cur.includes(el.value)) this._setTargets(kind, mode || null, [...cur, el.value]);
       this.saveState = null;
       this.render();
       return true;

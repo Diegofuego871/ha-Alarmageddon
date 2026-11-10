@@ -249,7 +249,7 @@ for (const lang of ["de", "en"]) {
       await s.tap('.ag-nt [data-nt="permode"]');
       check(`${tag}: Schalter ein: Reiter der Modi (ohne "Alle Modi"), der erste ist gewählt, Entwurf`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"nt-mode\"] > button')]; return t.length >= 2 && t.every((b) => b.dataset.nt !== 'tab:all') && t[0].classList.contains('on') && r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit')"));
       await s.tap('[data-nt="tab:away"]');
-      check(`${tag}: Reiter Abwesend zeigt die vier Arten im scharfen Zustand (auch den Ausfall) mit Herkunft`, await s.waitFor("return r.querySelectorAll('.ag-nt [data-nt=\"enabled\"][data-mode=\"away\"]').length === 4 && !!r.querySelector('.ag-nt [data-nt=\"enabled\"][data-kind=\"sensor_offline\"][data-mode=\"away\"]') && r.querySelectorAll('.ag-nt .ag-origin').length === 4"));
+      check(`${tag}: Reiter Abwesend zeigt die vier Arten im scharfen Zustand (auch den Ausfall) mit Herkunft`, await s.waitFor("return r.querySelectorAll('.ag-nt [data-nt=\"enabled\"][data-mode=\"away\"]').length === 4 && !!r.querySelector('.ag-nt [data-nt=\"enabled\"][data-kind=\"sensor_offline\"][data-mode=\"away\"]') && r.querySelectorAll('.ag-nt .ag-origin:not(.ag-mt-recip .ag-origin)').length === 4"));
       await s.tap('.ag-nt [data-nt="critical"][data-kind="sensor_offline"][data-mode="away"]');
       check(`${tag}: eigener Wert mit Zurücksetzen`, await s.waitFor("return !!r.querySelector('[data-nt=\"mode-reset\"][data-kind=\"sensor_offline\"]')"));
       await s.tap('[data-nt="save"]');

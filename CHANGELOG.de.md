@@ -7,7 +7,15 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.5.0] - 2026-11-10
+
+### Hinzugefügt
+
+- **Empfänger je Meldung:** Jede Meldung in Konfiguration › Benachrichtigungen hat ein Dropdown "Empfänger hinzufügen" mit den Empfängern als Pillen. Die oben gewählten Empfänger (Alarme oder Wartung) sind als Standard vorgewählt; wer einen hinzufügt oder entfernt, überschreibt sie für diese Meldung, "Zurück zum Standard" macht das rückgängig. Mit "Einstellungen pro Modus" können die Empfänger auch je Modus abweichen (Wert des Modus, dann der Meldung, dann die Gruppe oben). Der letzte Empfänger lässt sich nicht entfernen, damit keine Meldung ohne Empfänger bleibt. Testmeldungen und die gesammelte Wartungsmeldung folgen den eigenen Empfängern; Batterie- und Nicht-erreichbar-Meldungen mit verschiedenen Empfängern gehen getrennt hinaus. Die Werte gehören zur Sicherung.
+
 ## [1.4.0] - 2026-11-10
+
+Nicht veröffentlicht; enthalten in 1.5.0.
 
 ### Hinzugefügt
 
@@ -745,7 +753,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.4.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.4.0
+[1.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.5.0
 [1.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.3.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0

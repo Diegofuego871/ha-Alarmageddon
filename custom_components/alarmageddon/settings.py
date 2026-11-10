@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 import copy
+import re
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -51,6 +52,13 @@ def valid_presets(value: Any) -> dict[str, list[str]]:
     return out
 
 
+def _valid_targets(value: Any) -> list[str]:
+    """Eigene Empfänger einer Meldungsart: nur notify-Dienste, ohne Doppelte, höchstens 20; sonst leer (die Gruppe gilt)."""
+    if not isinstance(value, list):
+        return []
+    return [t for t in dict.fromkeys(value) if isinstance(t, str) and re.fullmatch(r"notify\.[a-z0-9_]+", t)][:20]
+
+
 def valid_notify(value: Any) -> dict[str, Any]:
     """
     Nur bekannte Schlüssel mit gültigen Werten; fehlende mit der Grundeinstellung. Alte Form (bis 0.8.0: "events", dazu ein
@@ -92,6 +100,7 @@ def valid_notify(value: Any) -> dict[str, Any]:
                     out["types"][kind][key] = item[key]
             if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
                 out["types"][kind]["volume"] = max(0.0, min(1.0, float(item["volume"])))
+            out["types"][kind]["targets"] = _valid_targets(item.get("targets"))
     if isinstance(value.get("per_mode"), bool):
         out["per_mode"] = value["per_mode"]
     # Eigene Werte je Modus (0.29.0): nur bekannte Modi und Arten, nur gültige Werte; leere Einträge fallen weg
@@ -111,6 +120,8 @@ def valid_notify(value: Any) -> dict[str, Any]:
                         own[key] = item[key]
                 if isinstance(item.get("volume"), (int, float)) and not isinstance(item.get("volume"), bool):
                     own["volume"] = max(0.0, min(1.0, float(item["volume"])))
+                if targets := _valid_targets(item.get("targets")):
+                    own["targets"] = targets
                 if own:
                     out["modes"].setdefault(mode, {})[kind] = own
     return out

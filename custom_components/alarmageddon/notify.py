@@ -504,9 +504,13 @@ class Notifier:
         """Testmeldung einer Art an ihre Empfänger, mit ihrem Kritisch und ihrer Lautstärke (so hört man, wie sie klingt)."""
         title = self._t("test_title", name=self._t(f"type_{kind}"))
         self._send(kind, title, self._t("test"), mode=mode)
-        return self._targets(kind)
+        return self._targets(kind, mode)
 
-    def _targets(self, kind: str) -> list[str]:
+    def _targets(self, kind: str, mode: str | None = None) -> list[str]:
+        """Empfänger einer Meldung: eigene Empfänger des Modus, dann der Art (1.5.0), sonst die Gruppe oben (Alarm oder Wartung)."""
+        own = effective_type(self.cfg, kind, mode).get("targets")
+        if own:
+            return list(own)
         return self.cfg["alarm_targets" if NOTIFY_TYPES[kind] == "alarm" else "maintenance_targets"]
 
     @callback
@@ -520,4 +524,4 @@ class Notifier:
             async_persist(self.hass, self.cfg, kind, title, message, tag or f"alarmageddon_{self.entry.entry_id}_{kind}", mode)
         except Exception:  # noqa: BLE001 - die Benachrichtigung in Home Assistant ist Zusatz: die Meldung aufs Handy geht trotzdem hinaus
             _LOGGER.exception("%s: persistent notification failed", self.entry.title)
-        async_send(self.hass, targets or self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))
+        async_send(self.hass, targets or self._targets(kind, mode), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))
