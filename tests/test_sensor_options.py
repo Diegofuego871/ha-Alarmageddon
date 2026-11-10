@@ -194,6 +194,21 @@ async def test_presets_can_reset_own_sensor_values(hass: HomeAssistant, hass_ws_
     assert not (await client.receive_json())["success"]
 
 
+async def test_resetting_presets_keeps_the_own_entry_delay(hass: HomeAssistant, hass_ws_client) -> None:
+    """Die eigene Eingangsverzögerung ist keine Voreinstellung: "auf alle Sensoren anwenden" lässt sie stehen."""
+    _classes(hass)
+    entry = await setup_alarm(
+        hass, exit_delay_away=0, per_mode_sensors=True, sensor_options={MOTION: {"open_ok": False, "entry_delay": 9}},
+        sensor_modes={"home": {MOTION: {"entry_delay": 3, "confirm": True}}},
+    )
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_presets", "presets": {"motion": []}, "reset_sensors": ["motion"]})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["sensor_options"] == {MOTION: {"entry_delay": 9}}
+    assert entry.options["sensor_modes"] == {"home": {MOTION: {"entry_delay": 3}}}
+
+
 async def test_save_sensor_options_and_system(hass: HomeAssistant, hass_ws_client) -> None:
     _classes(hass)
     entry = await setup_alarm(hass)

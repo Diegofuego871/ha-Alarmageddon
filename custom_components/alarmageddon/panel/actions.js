@@ -46,13 +46,13 @@ const OPTION_KEYS = { light: ["brightness_pct", "color_temp_kelvin"], cover: ["p
 export function normEnd(value) {
   const v = value && typeof value === "object" ? value : {};
   const out = {};
-  if (v.notify?.enabled) out.notify = { enabled: true, title: v.notify.title || "", message: v.notify.message || "", critical: v.notify.critical ?? null, volume: v.notify.volume ?? null, click: v.notify.click || "log", click_path: v.notify.click_path || "" };
+  if (v.notify?.enabled) out.notify = { enabled: true, title: v.notify.title || "", message: v.notify.message || "", critical: v.notify.critical ?? null, volume: v.notify.volume ?? null, click: v.notify.click || "log", click_path: v.notify.click_path || "", ...(v.notify.targets?.length ? { targets: [...v.notify.targets] } : {}) };
   return out;
 }
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ kind: "custom", targets: [], ntTargets: null, restore: false, seconds: 30, detach: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
   return { ...fromStepBase(step), detach: !!step.detach || endless(step) };
@@ -60,7 +60,7 @@ export function fromStep(step) {
 
 function fromStepBase(step) {
   const f = blank();
-  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) }, ntClick: step.click ?? null, ntClickPath: step.click_path || "" };
+  if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) }, ntClick: step.click ?? null, ntClickPath: step.click_path || "", ntTargets: step.targets?.length ? [...step.targets] : null };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
@@ -105,6 +105,8 @@ function toStepBase(f) {
     if (f.ntCritical !== null && f.ntCritical !== undefined) out.critical = !!f.ntCritical;
     if (f.ntVolume !== null && f.ntVolume !== undefined) out.volume = Math.min(1, Math.max(0, Number(f.ntVolume)));
     if (Object.keys(f.ntButtons || {}).length) out.buttons = { ...f.ntButtons };
+    // Eigene Empfänger nur mit mindestens einem Eintrag; ohne gelten die Alarm-Empfänger der Konfiguration
+    if (f.ntTargets?.length) out.targets = [...f.ntTargets];
     if (f.ntClick) {
       out.click = f.ntClick;
       if (f.ntClick === "custom") out.click_path = String(f.ntClickPath || "").trim();
@@ -308,7 +310,7 @@ export class ActionsUi {
     const e = normEnd(this.ensureDraft().end?.[this.trigger]);
     const n = e.notify || {};
     const form = { ...blank(), kind: "end", endNotify: !!e.notify, ntTitle: n.title || "", ntMessage: n.message || "", ntCritical: n.critical ?? null, ntVolume: n.volume ?? null,
-      ntClick: n.click && n.click !== "log" ? n.click : null, ntClickPath: n.click_path || "" };
+      ntClick: n.click && n.click !== "log" ? n.click : null, ntClickPath: n.click_path || "", ntTargets: n.targets?.length ? [...n.targets] : null };
     this.edit = { index: null, insert: null, end: true, form, q: "", error: "", open: false };
     this.renderEditor();
     this._dlg().showModal();
@@ -323,7 +325,7 @@ export class ActionsUi {
     const f = this.edit.form;
     if (f.endNotify && f.ntClick === "custom" && !/^\/[^\s]*$/.test(String(f.ntClickPath || "").trim())) return this._editError("fldNtPathBad");
     const d = this.ensureDraft();
-    d.end = { ...(d.end || {}), [this.trigger]: normEnd({ notify: f.endNotify ? { enabled: true, title: String(f.ntTitle || "").trim(), message: String(f.ntMessage || "").trim(), critical: f.ntCritical, volume: f.ntVolume, click: f.ntClick || "log", click_path: f.ntClick === "custom" ? String(f.ntClickPath || "").trim() : "" } : null }) };
+    d.end = { ...(d.end || {}), [this.trigger]: normEnd({ notify: f.endNotify ? { enabled: true, title: String(f.ntTitle || "").trim(), message: String(f.ntMessage || "").trim(), critical: f.ntCritical, volume: f.ntVolume, click: f.ntClick || "log", click_path: f.ntClick === "custom" ? String(f.ntClickPath || "").trim() : "", targets: f.ntTargets?.length ? f.ntTargets : undefined } : null }) };
     this.saveState = null;
     this.edit = null;
     this._dlg().close();
@@ -338,6 +340,7 @@ export class ActionsUi {
     if (f.ntCritical !== null) n.critical = !!f.ntCritical;
     if (f.ntVolume !== null) n.volume = Math.min(1, Math.max(0, Number(f.ntVolume)));
     n.click = f.ntClick || "log";
+    if (f.ntTargets?.length) n.targets = [...f.ntTargets];
     if (n.click === "custom") n.click_path = String(f.ntClickPath || "").trim();
     try {
       await this.host._hass.callWS({ type: "alarmageddon/test_end_notify", entry_id: this.system.entry_id, notify: n });
@@ -668,6 +671,28 @@ export class ActionsUi {
     return { critical: g.types?.triggered?.critical ?? true, volume: g.types?.triggered?.volume ?? 0.8, open: g.open_action ?? true, silence: g.silence_action ?? false, disarm: g.disarm_action ?? false };
   }
 
+  // Empfänger der Meldung: Standard sind die Alarm-Empfänger der Konfiguration; hier lassen sie sich für diese Meldung ersetzen
+  _ntRecipients(f) {
+    const short = (x) => x.replace(/^notify\.(mobile_app_)?/, "");
+    const data = this.host._data || {};
+    const services = data.notify_services || [];
+    const globalTargets = data.notify?.alarm_targets || [];
+    const own = Array.isArray(f.ntTargets);
+    const pill = (x, removable) => `<span class="ag-rpill ${services.includes(x) ? "" : "gone"}">${ic("bell", 14)}<span>${esc(short(x))}</span>${removable ? `<button type="button" class="ag-rx" data-wf="nt-tgt-del" data-target="${esc(x)}" aria-label="${esc(this._t("ntRemove", { name: short(x) }))}">${ic("close", 14)}</button>` : ""}</span>`;
+    let body;
+    if (!own) {
+      body = globalTargets.length
+        ? `<small>${esc(this._t("fldNtTargetsDefault"))}</small><div class="ag-rpills">${globalTargets.map((x) => pill(x, false)).join("")}</div>`
+        : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("ntNoneChosen"))}</small>`;
+    } else {
+      const free = services.filter((x) => !f.ntTargets.includes(x));
+      body = `<div class="ag-rline"><select class="ag-input ag-rsel" data-wf="nt-tgt-add" aria-label="${esc(this._t("ntAdd"))}" ${free.length ? "" : "disabled"}>
+          <option value="">${esc(this._t(free.length ? "ntAdd" : "ntAllChosen"))}</option>${free.map((x) => `<option value="${esc(x)}">${esc(short(x))}</option>`).join("")}</select></div>
+        ${f.ntTargets.length ? `<div class="ag-rpills">${f.ntTargets.map((x) => pill(x, true)).join("")}</div>` : `<small>${esc(this._t("fldNtTargetsEmpty"))}</small>`}`;
+    }
+    return this._sec("fldNtTargets", `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldNtTargetsOwn"))}</b><small>${esc(this._t("fldNtTargetsOwnHint"))}</small></div>${this._toggle('data-wf="nt-tgt-own"', own, "fldNtTargetsOwn")}</div>${body}`);
+  }
+
   _ntDelivery(f) {
     const g = this._ntGlobal();
     const end = f.kind === "end";
@@ -677,7 +702,8 @@ export class ActionsUi {
       const on = f.ntButtons?.[key] ?? g[key];
       return `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t(label))}</b><small class="${warn ? "ag-warntext" : ""}">${warn ? `${ic("alert", 14)} ` : ""}${esc(this._t(hint))}</small></div>${this._toggle(`data-wf="nt-btn" data-key="${key}"`, on, label)}</div>`;
     };
-    return this._sec("fldNtDelivery", `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("ntCriticalShort"))}</b><small>${esc(this._t("fldNtCriticalHint"))}</small></div>${this._toggle('data-wf="nt-crit"', critical, "ntCriticalShort")}</div>
+    return this._ntRecipients(f)
+      + this._sec("fldNtDelivery", `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("ntCriticalShort"))}</b><small>${esc(this._t("fldNtCriticalHint"))}</small></div>${this._toggle('data-wf="nt-crit"', critical, "ntCriticalShort")}</div>
         ${critical ? this._rangeRow('data-wf="nt-vol"', this._t("ntVolumeShort"), volume, 0, 100, 5, `${volume} %`) : ""}`)
       + this._sec("fldNtClick", `<select class="ag-input" data-wf="nt-click" aria-label="${esc(this._t("fldNtClick"))}">${["log", "overview", "custom"].map((k) => `<option value="${k}" ${(f.ntClick || "log") === k ? "selected" : ""}>${esc(this._t(`ntClick_${k}`))}</option>`).join("")}</select>
         ${f.ntClick === "custom" ? `<input class="ag-input ag-mono" data-wf="f" data-key="ntClickPath" value="${esc(f.ntClickPath || "")}" placeholder="/lovelace/alarm" aria-label="${esc(this._t("ntClick_custom"))}" autocapitalize="off" autocomplete="off" spellcheck="false">` : ""}`, "fldNtClickHint")
@@ -1127,6 +1153,13 @@ export class ActionsUi {
       }
       this.edit.cb = null;
       this.renderEditor();
+    } else if (act === "nt-tgt-own") {
+      // Einschalten beginnt mit den bisherigen Alarm-Empfängern; ausschalten verwirft die eigene Liste
+      form.ntTargets = Array.isArray(form.ntTargets) ? null : [...(this.host._data?.notify?.alarm_targets || [])];
+      this.renderEditor();
+    } else if (act === "nt-tgt-del") {
+      form.ntTargets = (form.ntTargets || []).filter((x) => x !== el.dataset.target);
+      this.renderEditor();
     } else if (act === "nt-crit") {
       form.ntCritical = !(form.ntCritical ?? (form.kind === "end" ? false : this._ntGlobal().critical));
       this.renderEditor();
@@ -1247,6 +1280,11 @@ export class ActionsUi {
     }
     if (act === "scene") {
       f.targets = el.value ? [el.value] : [];
+      return true;
+    }
+    if (act === "nt-tgt-add") {
+      if (el.value && /^notify\.[a-z0-9_]+$/.test(el.value) && !(f.ntTargets || []).includes(el.value)) f.ntTargets = [...(f.ntTargets || []), el.value];
+      this.renderEditor();
       return true;
     }
     if (act === "nt-click") {

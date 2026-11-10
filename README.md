@@ -48,7 +48,7 @@ What happens on an alarm is a flow you build from steps, per mode if you like. D
 
 | Step | Does |
 | --- | --- |
-| Push notification | Critical alarm notification to the alarm recipients, with your own title and text and optional buttons |
+| Push notification | Critical alarm notification to the alarm recipients, with your own title and text, optional buttons and, if you like, its own recipients (every title starts with an emoji) |
 | Switch device | Lights, sockets, sirens, covers, locks and more: on, off, open, close, with brightness or position |
 | Play alarm sound | One of five sounds on media players (Sonos and others), with volume, for a duration or until disarmed |
 | Wait | Pauses the following steps, for example between "siren on" and "siren off" |
@@ -126,7 +126,7 @@ Details for those who want to know exactly. Click to open.
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/flow-en.svg" alt="States of an alarm system" width="100%"></p>
 
 - Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not.
-- A sensor with entry delay (for example the front door) starts the entry delay; every other sensor triggers at once. A second entry sensor does not extend the delay.
+- A sensor with entry delay (for example the front door) starts the entry delay; every other sensor triggers at once. An entry sensor can have its own delay (sensor options), otherwise the delay of the system applies. A second entry sensor does not extend the delay.
 - Sensors set to "always active" (smoke, water, gas) trigger in every state, also when disarmed.
 - The alarm lasts until someone disarms. How long siren, light and sound run is set in the alarm actions.
 - Open sensors block arming, unless they may be open or are bypassed until the next disarming.

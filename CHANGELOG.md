@@ -7,7 +7,26 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-11-10
+
+### Added
+
+- **Entry delay per sensor:** every entry sensor can have its own entry delay in the sensor options sheet (0 to 3600 s). Without an own value the entry delay of the system for the current mode applies; the sheet shows where the value comes from and resets it. With "Settings per mode" on, the value can differ per mode. 0 triggers at once. The value is part of the backup. "Apply to all sensors" in the presets keeps it.
+- **Own recipients per message:** the push message step and the push message of "Alarm ends" can have their own recipients instead of the alarm recipients from the configuration. The dialog shows the default recipients; a switch replaces them with a list of your own. An empty list means the default again. Push buttons are accepted from every recipient of the alarm, including those chosen in the steps.
+- **Emoji in every default title:** 🚨 alarm, ⏳ entry delay, 🔒 armed, 🔓 disarmed, ✅ alarm ended, ⛔ arming not possible, 📡 sensor unreachable, 🔕 silent alarm, ⚠️ maintenance, 🧪 test. A test makes sure every default title starts with an emoji. Own titles stay as you write them.
+
+### Changed
+
+- **Sensor list:** cards and rows of sensors that are open or have detected motion get a faint colour gradient from the bottom, so they stand out at a glance.
+- Version 1.0.1 was not released; its changes are included here.
+
+### Fixed
+
+- **Dialog "View":** a click on a switch, a column or the order no longer scrolls the dialog back to the top; it stays where it was.
+
 ## [1.0.1] - 2026-11-10
+
+Not released; included in 1.1.0.
 
 Small design corrections for the computer view.
 
@@ -689,7 +708,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.0.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.1
+[1.1.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0

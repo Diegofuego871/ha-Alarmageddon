@@ -10,6 +10,7 @@ for (const lang of ["de", "en"]) {
     const rowSel = ".ag-lrow"; // Standard ist die Liste, auch auf dem Handy
     const count = () => s.ev(`return r.querySelectorAll('${rowSel}').length`);
     check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 9, String(await count()));
+    check(`${tag}: offene Sensoren mit schwachem Farbverlauf von unten, ruhige ohne`, await s.ev(`const rows=[...r.querySelectorAll('${rowSel}')]; const act=rows.filter((x) => x.classList.contains('act')); const bg=(x) => getComputedStyle(x.querySelector('td')).backgroundImage.includes('gradient'); return act.length > 0 && act.length < rows.length && act.every((x) => bg(x) && x.querySelector('.ag-av.open')) && rows.filter((x) => !x.classList.contains('act')).every((x) => !bg(x))`));
     if (mobile) {
       await s.ev("const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop += th.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 20;");
     await s.page.waitForTimeout(900);
@@ -50,7 +51,12 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Hinweis, für welches Gerät die Ansicht gilt`, await s.ev(`return r.querySelector('#ag-view').innerText.includes('${mobile ? (lang === "de" ? "Handy" : "phone") : (lang === "de" ? "Desktop" : "desktop")}')`));
     const hide = mobile ? "signal" : "firmware";
     const hideRe = mobile ? /empfang|signal/i : /firmware/i;
+    // Scrollposition des Fensters "Ansicht": ein Klick auf einen Schalter darf sie nicht ändern
+    await s.ev("const b=r.querySelector('#ag-view .ag-dlg-body'); b.scrollTop = 90;");
+    const before = await s.ev("return Math.round(r.querySelector('#ag-view .ag-dlg-body').scrollTop)");
     await s.tap(`[data-list="col"][data-set="cols"][data-key="${hide}"]`);
+    const after = await s.ev("return Math.round(r.querySelector('#ag-view .ag-dlg-body').scrollTop)");
+    check(`${tag}: Fenster "Ansicht" bleibt beim Klick an derselben Stelle`, before > 0 && after === before, `${before} -> ${after}`);
     // Reihenfolge ändern: Batterie eine Stelle nach oben (vor den Zustand), Spalten der Liste folgen
     await s.tap('[data-list="mv"][data-set="cols"][data-key="battery"][data-dir="-1"]');
     check(`${tag}: Spalte nach oben verschoben`, await s.waitFor("const cols=[...r.querySelectorAll('.ag-ltable th')].map((x) => x.textContent.trim()); const keys=[...r.querySelectorAll('#ag-view [data-list=\"col\"][data-set=\"cols\"]')].map((b) => b.dataset.key); return keys.indexOf('battery') < keys.indexOf('state') || keys.indexOf('battery') < keys.length"));

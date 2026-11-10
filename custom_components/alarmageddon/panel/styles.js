@@ -214,6 +214,10 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-ltable td:first-child { white-space: normal; }
 .ag-lrow, .ag-lcard { cursor: pointer; }
 .ag-lrow:hover td { background: var(--ag-hover); }
+/* Offen oder Bewegung erkannt: schwacher Farbverlauf von unten in der Warnfarbe (Karte und Zeile) */
+.ag-lcard.act { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-warning) 16%, transparent), transparent 75%); }
+.ag-lrow.act td { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-warning) 14%, transparent), transparent 90%); }
+.ag-lrow.act:hover td { background-color: var(--ag-hover); }
 .ag-lrow.bad td:first-child { box-shadow: inset 4px 0 0 var(--ag-error); }
 .ag-lmeta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13px; }
 .ag-colist { display: flex; flex-direction: column; border: 1px solid var(--ag-divider); border-radius: 14px; padding: 2px 12px; }

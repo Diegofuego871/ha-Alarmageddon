@@ -65,7 +65,7 @@ async def test_each_type_has_own_critical_and_volume(hass: HomeAssistant, hass_w
     await hass.async_block_till_done()
     alarm = pushes[1].data
     # Alarm ausdrücklich nicht kritisch: normale Meldung, weiter mit Aktionen
-    assert alarm["title"] == "Alarm: Haus" and "push" not in alarm["data"] and alarm["data"]["actions"]
+    assert alarm["title"] == "🚨 Alarm: Haus" and "push" not in alarm["data"] and alarm["data"]["actions"]
 
 
 async def test_type_switched_off_sends_nothing(hass: HomeAssistant, hass_ws_client) -> None:
@@ -269,12 +269,12 @@ async def test_persistent_notification_per_kind(hass: HomeAssistant, hass_ws_cli
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     notes = persistent_notification._async_get_or_create_notifications(hass)
-    assert len(notes) == 1 and next(iter(notes.values()))["title"] == "Alarm: Haus"
+    assert len(notes) == 1 and next(iter(notes.values()))["title"] == "🚨 Alarm: Haus"
     await call(hass, "alarm_disarm")
     await hass.async_block_till_done()
     # Gleiche Kennung: der Inhalt wird durch "Alarm beendet" ersetzt, er bleibt stehen
     notes = persistent_notification._async_get_or_create_notifications(hass)
-    assert len(notes) == 1 and next(iter(notes.values()))["title"].startswith("Alarm ended")
+    assert len(notes) == 1 and next(iter(notes.values()))["title"].startswith("✅ Alarm ended")
     await open_sensor(hass, WINDOW, "off")
     await call(hass, "alarm_arm_away")  # Abwesend: gemeinsamer Wert, also eigene Meldung "Scharf geschaltet"
     await hass.async_block_till_done()
@@ -306,3 +306,15 @@ async def test_mode_values_are_ignored_while_the_switch_is_off(hass: HomeAssista
     await call(hass, "alarm_arm_away")
     await hass.async_block_till_done()
     assert len(pushes) == 1  # Der eigene Wert (aus) gilt nicht
+
+
+def test_every_default_title_starts_with_an_emoji() -> None:
+    """Jede Standardmeldung beginnt mit einem Emoji (Vorgabe des Nutzers): Alarm 🚨, Wartung ⚠️, sonst passend zur Art."""
+    from custom_components.alarmageddon.notify import TEXTS
+
+    for lang, texts in TEXTS.items():
+        titles = {k: v for k, v in texts.items() if k.endswith("_title") or k.endswith("_title_one")}
+        assert len(titles) >= 11, lang
+        for key, value in titles.items():
+            assert ord(value[0]) > 0x2000 and " " in value, f"{lang}.{key}: {value!r}"
+        assert titles["triggered_title"].startswith("🚨") and titles["maint_title"].startswith("⚠️") and titles["maint_title_one"].startswith("⚠️")

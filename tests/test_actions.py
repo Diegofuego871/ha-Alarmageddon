@@ -46,7 +46,7 @@ async def test_critical_push_on_alarm(hass: HomeAssistant, hass_ws_client) -> No
     await hass.async_block_till_done()
     assert len(pushes) == 1
     data = pushes[0].data
-    assert data["title"] == "Alarm: Haus"
+    assert data["title"] == "🚨 Alarm: Haus"
     assert data["data"]["push"]["sound"] == {"name": "default", "critical": 1, "volume": 0.6}
     assert data["data"]["channel"] == "alarm_stream" and data["data"]["priority"] == "high"
     # Deaktivieren per Push ist standardmässig aus (Sicherheitsregel)
@@ -55,7 +55,7 @@ async def test_critical_push_on_alarm(hass: HomeAssistant, hass_ws_client) -> No
     # Deaktivieren ersetzt die Meldung (gleicher tag), nicht mehr kritisch
     await call(hass, "alarm_disarm")
     await hass.async_block_till_done()
-    assert pushes[1].data["title"] == "Alarm ended: Haus"
+    assert pushes[1].data["title"] == "✅ Alarm ended: Haus"
     assert pushes[1].data["data"]["tag"] == tag and "push" not in pushes[1].data["data"]
 
 
@@ -119,12 +119,12 @@ async def test_arm_failed_and_offline_pushes(hass: HomeAssistant, hass_ws_client
     except Exception:  # noqa: BLE001
         pass
     await hass.async_block_till_done()
-    assert pushes[-1].data["title"] == "Haus: cannot arm Home"
+    assert pushes[-1].data["title"] == "⛔ Haus: cannot arm Home"
     hass.states.async_set(WINDOW, "off")
     await call(hass, "alarm_arm_home")
     hass.states.async_set(WINDOW, "unavailable")
     await hass.async_block_till_done()
-    assert pushes[-1].data["title"].startswith("Sensor unreachable")
+    assert pushes[-1].data["title"].startswith("📡 Sensor unreachable")
     assert pushes[-1].data["data"]["push"]["sound"]["critical"] == 1
 
 
@@ -136,7 +136,7 @@ async def test_test_notification(hass: HomeAssistant, hass_ws_client) -> None:
     await client.send_json({"id": 5, "type": "alarmageddon/test_notify", "kind": "battery_low"})
     assert (await client.receive_json())["result"]["targets"] == ["notify.tablet"]
     await hass.async_block_till_done()
-    assert tablet[0].data["title"] == "Test: Low battery"
+    assert tablet[0].data["title"] == "🧪 Test: Low battery"
     # Wartung ist standardmässig nicht kritisch
     assert "push" not in tablet[0].data["data"]
 
@@ -225,7 +225,7 @@ async def test_alarm_end_default_push_is_not_critical(hass: HomeAssistant, hass_
     await hass.async_block_till_done()
     await call(hass, "alarm_disarm")
     await hass.async_block_till_done()
-    assert pushes[1].data["title"] == "Alarm ended: Haus"
+    assert pushes[1].data["title"] == "✅ Alarm ended: Haus"
     assert "push" not in pushes[1].data["data"]
 
 
@@ -246,7 +246,7 @@ async def test_alarm_end_notify_validation_and_test(hass: HomeAssistant, hass_ws
     await client.send_json({"id": 3, "type": "alarmageddon/test_end_notify", "entry_id": entry.entry_id, "notify": END_NOTIFY})
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
-    assert pushes and pushes[-1].data["title"].startswith("Test:") and "Ruhe in Haus" in pushes[-1].data["title"]
+    assert pushes and pushes[-1].data["title"].startswith("🧪 Test:") and "Ruhe in Haus" in pushes[-1].data["title"]
 
 
 async def test_alarm_end_via_websocket_and_backup(hass: HomeAssistant, hass_ws_client) -> None:

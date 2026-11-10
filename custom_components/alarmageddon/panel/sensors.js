@@ -174,6 +174,31 @@ export class SensorsUi {
     this.saveState = null;
   }
 
+  // Eigene Eingangsverzögerung (Zahl, kein Schalter): wirksam ist der Wert des Modus (Reiter), dann der des Sensors, sonst der Wert der Anlage
+  delayValue(id, mode = null) {
+    const own = (mode ? this.draft?.modeOpts[mode]?.[id]?.entry_delay : undefined) ?? this.draft?.opts[id]?.entry_delay;
+    if (own !== undefined) return own;
+    const ms = this.system?.mode_settings || {};
+    const m = mode || this.modes().find((x) => ms[x]) || "home";
+    return ms[m]?.entry_delay ?? 30;
+  }
+
+  // value null: eigener Wert entfällt; mit Modus gilt er nur für diesen Modus (Reiter)
+  setDelay(id, mode, value) {
+    const d = this.ensureDraft();
+    const per = mode ? { ...(d.modeOpts[mode] || {}) } : d.opts;
+    const opts = { ...(per[id] || {}) };
+    if (value === null) delete opts.entry_delay;
+    else opts.entry_delay = value;
+    if (Object.keys(opts).length) per[id] = opts;
+    else delete per[id];
+    if (mode) {
+      if (Object.keys(per).length) d.modeOpts[mode] = per;
+      else delete d.modeOpts[mode];
+    }
+    this.saveState = null;
+  }
+
   setOption(id, key, value) {
     const d = this.ensureDraft();
     const opts = { ...(d.opts[id] || {}) };
@@ -339,6 +364,7 @@ export class SensorsUi {
     const zones = this.modes().map((m) => `<button class="ag-chip ${d.zones[m].has(id) ? "on" : ""}" data-sen="zone" data-mode="${m}" data-ent="${esc(id)}" aria-pressed="${d.zones[m].has(id)}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("");
     const entryRow = `<div class="ag-orow"><span class="ag-oav ${d.entrySensors.has(id) ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("colEntry"))}</b><small>${esc(this._t("optEntryHint"))}</small></div>${this._entryToggle(r)}</div>`;
     const mode = this.activeMode();
+    const delayRow = d.entrySensors.has(id) && mode !== "always" ? this._delayRow(id, mode) : "";
     const modeName = mode === "always" ? this._t("wfAlways") : mode ? this._t(MODE_KEY[mode]) : "";
     // In den Reitern der Modi gibt es "Immer aktiv" nicht (es gilt unabhängig vom Modus und steht im Reiter "Immer aktiv")
     const opts = OPTIONS.filter((o) => !(mode && mode !== "always" && o.key === "always")).map((o) => {
@@ -359,9 +385,25 @@ export class SensorsUi {
         <div style="flex:1;min-width:0"><h3>${esc(r.name)}</h3><div class="ag-t2 ag-small">${esc(meta)}</div></div>
         <button class="ag-iconbtn" data-sen="close-detail" aria-label="${esc(this._t("cancel"))}">${ic("close", 22)}</button></div>
       <div class="ag-side-body"><div class="ag-label">${esc(this._t("zones"))}</div><div class="ag-zline">${zones}</div>
-        <div class="ag-label">${esc(this._t("behaviour"))}</div>${mode ? `<div class="ag-pmbanner">${ic(mode === "always" ? "flash" : MODE_ICON[mode], 24)}<div><small>${esc(this._t(mode === "always" ? "pmBannerAlways" : "pmBannerLabel"))}</small><b>${esc(mode === "always" ? this._t("pmBannerAlwaysB") : modeName)}</b></div></div>` : ""}${entryRow}${opts}
+        <div class="ag-label">${esc(this._t("behaviour"))}</div>${mode ? `<div class="ag-pmbanner">${ic(mode === "always" ? "flash" : MODE_ICON[mode], 24)}<div><small>${esc(this._t(mode === "always" ? "pmBannerAlways" : "pmBannerLabel"))}</small><b>${esc(mode === "always" ? this._t("pmBannerAlwaysB") : modeName)}</b></div></div>` : ""}${entryRow}${delayRow}${opts}
         <button class="ag-btn" data-sen="remove" data-ent="${esc(id)}" style="margin-top:16px">${ic("trash", 18)}${esc(this._t("removeSensor"))}</button>
         <div class="ag-t2 ag-small" style="margin-top:6px">${esc(this._t("removeSensorHint"))}</div></div>`;
+  }
+
+  // Eigene Eingangsverzögerung dieses Sensors; ohne eigenen Wert gilt die der Anlage (für den Modus)
+  _delayRow(id, mode) {
+    const d = this.draft;
+    const ownMode = mode ? d.modeOpts[mode]?.[id]?.entry_delay !== undefined : false;
+    const ownSensor = d.opts[id]?.entry_delay !== undefined;
+    const val = this.delayValue(id, mode);
+    const modeName = mode ? this._t(MODE_KEY[mode]) : "";
+    let origin;
+    if (mode && ownMode) origin = `<button class="ag-origin own" data-sen="delay-reset" data-mode="${mode}" data-ent="${esc(id)}">${ic("undo", 14)} ${esc(this._t("originModeOwn", { mode: modeName }))} · ${esc(this._t("resetToAll"))}</button>`;
+    else if (ownSensor) origin = `<button class="ag-origin own" data-sen="delay-reset" data-ent="${esc(id)}">${ic("undo", 14)} ${esc(this._t("originOwn"))} · ${esc(this._t("resetToSystem"))}</button>`;
+    else origin = `<span class="ag-origin">${esc(this._t("originSystem", { n: val }))}</span>`;
+    const own = ownMode || ownSensor;
+    return `<div class="ag-orow"><span class="ag-oav ${own ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("senDelay"))}</b><small>${esc(this._t("senDelayHint"))}</small>${origin}</div>
+      <span class="ag-num"><input type="number" min="0" max="3600" step="1" inputmode="numeric" data-sen="delay" ${mode ? `data-mode="${mode}"` : ""} data-ent="${esc(id)}" value="${esc(val)}" aria-label="${esc(`${this.host._name(id)}: ${this._t("senDelay")}`)}"><span class="ag-t2">${esc(this._t("seconds"))}</span></span></div>`;
   }
 
   renderSide() {
@@ -646,6 +688,9 @@ export class SensorsUi {
     } else if (act === "opt") {
       this.setOption(id, el.dataset.key, !this.eff(id, el.dataset.key));
       this.render();
+    } else if (act === "delay-reset") {
+      this.setDelay(id, el.dataset.mode || null, null);
+      this.render();
     } else if (act === "reset-opt") {
       this.resetOption(id, el.dataset.key);
       this.render();
@@ -712,10 +757,29 @@ export class SensorsUi {
       this.renderPickList(); // nur die Liste, das Suchfeld behält den Fokus
       return true;
     }
+    if (el.dataset.sen === "delay") {
+      // Während der Eingabe nur den Entwurf und den Fuss nachführen: ein Neuaufbau des Blatts nähme den Fokus
+      const n = el.value.trim() === "" ? null : Number(el.value);
+      const ok = n === null || (Number.isInteger(n) && n >= 0 && n <= 3600);
+      el.closest(".ag-num").classList.toggle("bad", !ok);
+      if (ok) this.setDelay(el.dataset.ent, el.dataset.mode || null, n);
+      this.renderFoot();
+      return true;
+    }
     if (el.dataset.sen !== "search") return false;
     this.q = el.value;
     this.host._view.querySelector('[data-sen="clear"]').hidden = !this.q;
     // Nur die Liste neu, Suchfeld behält Fokus und Cursor (LEARNINGS)
+    this.render();
+    return true;
+  }
+
+  // Eingabe beendet: Blatt neu aufbauen (ungültiger Text springt auf den letzten gültigen Wert, die Herkunft wird nachgeführt)
+  onChange(el) {
+    if (el.dataset.sen !== "delay") return false;
+    // Das Blatt wird nur neu gezeichnet, wenn sich sein HTML ändert: den Text im Feld darum von Hand auf den Entwurf setzen
+    el.value = this.delayValue(el.dataset.ent, el.dataset.mode || null);
+    el.closest(".ag-num")?.classList.remove("bad");
     this.render();
     return true;
   }

@@ -73,7 +73,7 @@ async def test_real_alarm_interrupts_a_running_test(hass: HomeAssistant, hass_ws
     assert running and not running["test"] and running["trigger"] == "home"
     assert not s["switch.turn_off"]  # kein Zurückstellen zwischendurch: die Sirene bleibt nicht kurz aus
     assert len(s["switch.turn_on"]) == 2  # der echte Ablauf hat die Sirene eingeschaltet
-    assert pushes and pushes[0].data["title"].startswith("Alarm")
+    assert pushes and pushes[0].data["title"].startswith("🚨 Alarm")
     await call(hass, "alarm_disarm")
     await settle(hass)
     assert len(s["switch.turn_off"]) == 1  # zurück in den Zustand von vor dem Test (Sirene aus)

@@ -370,7 +370,7 @@ export class ListUi {
     const head = `<tr>${th("name", this._t("colName"))}${cols.map((c) => th(c, this._t(COL_LABEL[c]))).join("")}<th></th></tr>`;
     const body = groups.map(([g, rows]) => `${g !== null ? `<tr class="grp"><td colspan="${cols.length + 2}">${esc(g)} · ${rows.length}</td></tr>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
-      return `<tr class="ag-lrow ${r.gone ? "bad" : ""}" data-act="more" data-entity="${esc(r.id)}"><td><div class="ag-nm"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span><div>${esc(r.name)}<small>${esc(this._typeLabel(r))}</small></div></div></td>
+      return `<tr class="ag-lrow ${r.gone ? "bad" : ""} ${!r.gone && (r.open || r.occupied) ? "act" : ""}" data-act="more" data-entity="${esc(r.id)}"><td><div class="ag-nm"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span><div>${esc(r.name)}<small>${esc(this._typeLabel(r))}</small></div></div></td>
         ${cols.map((c) => `<td>${this._cell(c, r)}</td>`).join("")}<td style="width:40px"><span class="ag-cbtn">${ic("chevRight", 16)}</span></td></tr>`;
     }).join("")}`).join("");
     return `<div class="ag-card ag-table-wrap ag-stickwrap"><table class="ag-table ag-ltable">${head}${body}</table></div>`;
@@ -389,7 +389,7 @@ export class ListUi {
         on("integration") && r.info.integration ? [this._t("colIntegration"), r.info.integration] : null,
         on("changed") && r.changed ? [this._t("colChanged"), this.host._fmtAgo(r.changed)] : null,
       ].filter(Boolean).map(([k, v]) => `<div><span class="ag-t2">${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
-      return `<div class="ag-card ag-mcard ag-lcard" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
+      return `<div class="ag-card ag-mcard ag-lcard ${!r.gone && (r.open || r.occupied) ? "act" : ""}" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
         <div style="flex:1;min-width:0">${esc(r.name)}<div class="ag-t2 ag-small">${esc(this._typeLabel(r))} · ${esc(r.area)}</div></div>${this._stateHtml(r)}</div>
         ${on("systems") ? `<div class="ag-lz">${this._cell("systems", r)}</div>` : ""}<div class="ag-lmeta">${meta}</div>${facts ? `<div class="ag-lfacts">${facts}</div>` : ""}</div>`;
     }).join("")}`).join("")}</div>`;
@@ -441,7 +441,7 @@ export class ListUi {
       input.focus();
     } else if (act === "view") {
       const dlg = this.host._root.getElementById("ag-view");
-      dlg.innerHTML = this.viewDialogHtml();
+      this.host._setHtml(dlg, this.viewDialogHtml());
       dlg.showModal();
       this.host._placePills();
     } else if (act === "sort") {
@@ -479,7 +479,8 @@ export class ListUi {
   _applyView() {
     this._saveView();
     const dlg = this.host._root.getElementById("ag-view");
-    dlg.innerHTML = this.viewDialogHtml();
+    // Über _setHtml: das Fenster behält seine Scrollposition (sonst springt es bei jedem Klick nach oben)
+    this.host._setHtml(dlg, this.viewDialogHtml());
     this.host._placePills();
     this.host._renderList();
   }

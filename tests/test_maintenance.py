@@ -104,7 +104,7 @@ async def test_several_problems_in_one_message(hass: HomeAssistant) -> None:
     maint.async_check()
     await hass.async_block_till_done()
     assert len(pushes) == 1
-    assert pushes[0].data["title"] == "Maintenance: 2 sensors"
+    assert pushes[0].data["title"] == "⚠️ Maintenance: 2 sensors"
     assert pushes[0].data["message"].count("\n") == 1
 
 
@@ -159,5 +159,5 @@ async def test_german_texts(hass: HomeAssistant) -> None:
     hass.states.async_set(BAT_WINDOW, "12")
     maint.async_check()
     await hass.async_block_till_done()
-    assert pushes[0].data["title"].startswith("Wartung: ")
+    assert pushes[0].data["title"].startswith("⚠️ Wartung: ")
     assert pushes[0].data["message"].endswith(": Batterie 12 %")

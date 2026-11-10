@@ -7,7 +7,26 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.1.0] - 2026-11-10
+
+### Hinzugefügt
+
+- **Eingangsverzögerung pro Sensor:** Jeder Eingangssensor kann im Blatt mit den Sensor-Optionen eine eigene Eingangsverzögerung haben (0 bis 3600 s). Ohne eigenen Wert gilt die Eingangsverzögerung der Anlage für den aktuellen Modus; das Blatt zeigt die Herkunft des Werts und setzt ihn zurück. Mit "Einstellungen pro Modus" kann der Wert je Modus abweichen. 0 löst sofort aus. Der Wert gehört zur Sicherung. "Auf alle Sensoren anwenden" bei den Voreinstellungen lässt ihn stehen.
+- **Eigene Empfänger je Meldung:** Der Schritt "Push-Meldung" und die Push-Meldung von "Alarm endet" können eigene Empfänger haben statt der Alarm-Empfänger aus der Konfiguration. Der Dialog zeigt die Standard-Empfänger; ein Schalter ersetzt sie durch eine eigene Liste. Eine leere Liste bedeutet wieder Standard. Push-Knöpfe werden von jedem Empfänger des Alarms akzeptiert, auch von denen aus den Schritten.
+- **Emoji in jedem Standardtitel:** 🚨 Alarm, ⏳ Eingangsverzögerung, 🔒 scharf, 🔓 deaktiviert, ✅ Alarm beendet, ⛔ Scharfschalten nicht möglich, 📡 Sensor nicht erreichbar, 🔕 Stiller Alarm, ⚠️ Wartung, 🧪 Test. Ein Test stellt sicher, dass jeder Standardtitel mit einem Emoji beginnt. Eigene Titel bleiben, wie du sie schreibst.
+
+### Geändert
+
+- **Sensorliste:** Karten und Zeilen von Sensoren, die offen sind oder eine Bewegung erkannt haben, bekommen einen schwachen Farbverlauf von unten und fallen so auf einen Blick auf.
+- Version 1.0.1 wurde nicht veröffentlicht; ihre Änderungen sind hier enthalten.
+
+### Behoben
+
+- **Fenster "Ansicht":** Ein Klick auf einen Schalter, eine Spalte oder die Reihenfolge scrollt das Fenster nicht mehr nach oben; es bleibt an derselben Stelle.
+
 ## [1.0.1] - 2026-11-10
+
+Nicht veröffentlicht; enthalten in 1.1.0.
 
 Kleine Design-Korrekturen für die Ansicht am Computer.
 
@@ -689,7 +708,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.0.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.1
+[1.1.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0

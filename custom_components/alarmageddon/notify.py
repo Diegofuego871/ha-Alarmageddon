@@ -26,25 +26,25 @@ _LOGGER = logging.getLogger(__name__)
 
 TEXTS: dict[str, dict[str, str]] = {
     "en": {
-        "triggered_title": "Alarm: {name}",
+        "triggered_title": "🚨 Alarm: {name}",
         "triggered": "{sensor} at {time}.",
         "triggered_manual": "Alarm triggered manually at {time}.",
-        "pending_title": "Entry delay: {name}",
+        "pending_title": "⏳ Entry delay: {name}",
         "pending": "{sensor} opened. Alarm in {seconds} s unless disarmed.",
-        "armed_title": "{name}: {mode} armed",
+        "armed_title": "🔒 {name}: {mode} armed",
         "armed": "Armed by {by}.",
         "armed_noby": "The alarm system is armed.",
-        "disarmed_title": "{name} disarmed",
+        "disarmed_title": "🔓 {name} disarmed",
         "disarmed": "Disarmed by {by}.",
         "disarmed_noby": "The alarm system is disarmed.",
-        "ended_title": "Alarm ended: {name}",
+        "ended_title": "✅ Alarm ended: {name}",
         "ended": "Disarmed by {by}.",
         "ended_noby": "The alarm is over.",
-        "arm_failed_title": "{name}: cannot arm {mode}",
+        "arm_failed_title": "⛔ {name}: cannot arm {mode}",
         "arm_failed": "Open: {sensors}.",
-        "offline_title": "Sensor unreachable: {name}",
+        "offline_title": "📡 Sensor unreachable: {name}",
         "offline": "{sensor} no longer responds while the alarm system is armed.",
-        "test_title": "Test: {name}",
+        "test_title": "🧪 Test: {name}",
         "test": "This is a test notification from Alarmageddon.",
         "action_disarm": "Disarm",
         "action_silence": "Silence siren",
@@ -54,39 +54,39 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Away",
         "mode_night": "Night",
         "by_push": "push notification",
-        "report_title": "Silent alarm: {name}",
+        "report_title": "🔕 Silent alarm: {name}",
         "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Silent alarm\".",
         "type_triggered": "Alarm", "type_pending": "Entry delay", "type_armed": "Armed", "type_disarmed": "Disarmed",
         "type_arm_failed": "Arming not possible", "type_sensor_offline": "Sensor unreachable while armed",
         "type_sensor_report": "Silent alarm", "type_battery_low": "Low battery",
         "type_sensor_unavailable": "Sensor unreachable",
         "by_schedule": "Schedule",
-        "maint_title_one": "Maintenance: {name}",
-        "maint_title": "Maintenance: {count} sensors",
+        "maint_title_one": "⚠️ Maintenance: {name}",
+        "maint_title": "⚠️ Maintenance: {count} sensors",
         "maint_battery": "{sensor}: battery {value} %",
         "maint_offline": "{sensor}: unreachable since {time}",
         "time_format": "%m/%d %H:%M",
     },
     "de": {
-        "triggered_title": "Alarm: {name}",
+        "triggered_title": "🚨 Alarm: {name}",
         "triggered": "{sensor} um {time}.",
         "triggered_manual": "Alarm von Hand ausgelöst um {time}.",
-        "pending_title": "Eingangsverzögerung: {name}",
+        "pending_title": "⏳ Eingangsverzögerung: {name}",
         "pending": "{sensor} geöffnet. Alarm in {seconds} s, wenn niemand deaktiviert.",
-        "armed_title": "{name}: {mode} scharf",
+        "armed_title": "🔒 {name}: {mode} scharf",
         "armed": "Scharf geschaltet von {by}.",
         "armed_noby": "Die Anlage ist scharf.",
-        "disarmed_title": "{name} deaktiviert",
+        "disarmed_title": "🔓 {name} deaktiviert",
         "disarmed": "Deaktiviert von {by}.",
         "disarmed_noby": "Die Anlage ist deaktiviert.",
-        "ended_title": "Alarm beendet: {name}",
+        "ended_title": "✅ Alarm beendet: {name}",
         "ended": "Deaktiviert von {by}.",
         "ended_noby": "Der Alarm ist vorbei.",
-        "arm_failed_title": "{name}: {mode} nicht möglich",
+        "arm_failed_title": "⛔ {name}: {mode} nicht möglich",
         "arm_failed": "Offen: {sensors}.",
-        "offline_title": "Sensor nicht erreichbar: {name}",
+        "offline_title": "📡 Sensor nicht erreichbar: {name}",
         "offline": "{sensor} antwortet nicht mehr, während die Anlage scharf ist.",
-        "test_title": "Test: {name}",
+        "test_title": "🧪 Test: {name}",
         "test": "Das ist eine Testmeldung von Alarmageddon.",
         "action_disarm": "Deaktivieren",
         "action_silence": "Sirene stumm",
@@ -96,15 +96,15 @@ TEXTS: dict[str, dict[str, str]] = {
         "mode_away": "Abwesend",
         "mode_night": "Nacht",
         "by_push": "Push-Meldung",
-        "report_title": "Stiller Alarm: {name}",
+        "report_title": "🔕 Stiller Alarm: {name}",
         "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Stiller Alarm\" steht.",
         "type_triggered": "Alarm", "type_pending": "Eingangsverzögerung", "type_armed": "Scharf geschaltet", "type_disarmed": "Deaktiviert",
         "type_arm_failed": "Scharfschalten nicht möglich", "type_sensor_offline": "Sensor im scharfen Zustand nicht erreichbar",
         "type_sensor_report": "Stiller Alarm", "type_battery_low": "Batterie schwach",
         "type_sensor_unavailable": "Sensor nicht erreichbar",
         "by_schedule": "Zeitplan",
-        "maint_title_one": "Wartung: {name}",
-        "maint_title": "Wartung: {count} Sensoren",
+        "maint_title_one": "⚠️ Wartung: {name}",
+        "maint_title": "⚠️ Wartung: {count} Sensoren",
         "maint_battery": "{sensor}: Batterie {value} %",
         "maint_offline": "{sensor}: nicht erreichbar seit {time}",
         "time_format": "%d.%m. %H:%M",
@@ -330,6 +330,19 @@ class Notifier:
             self._send("sensor_report", self._t("report_title", name=self._name(sensor)),
                        self._t("report", sensor=self._name(sensor)), tag=f"{self._tag()}_report_{sensor}")
 
+    def _alarm_recipients(self) -> list[str]:
+        """Alarm-Empfänger der Konfiguration und die eigenen Empfänger der Meldungen dieser Anlage (Schritt "Push-Meldung", "Alarm endet")."""
+        out = list(self.cfg["alarm_targets"])
+        options = self.entry.options
+        flows = (options.get("workflows") or {}).values()
+        ends = (options.get("workflow_end") or {}).values()
+        for step in (s for flow in flows if isinstance(flow, list) for s in flow if isinstance(s, dict) and s.get("type") == "notify"):
+            out += [t for t in step.get("targets") or [] if isinstance(t, str)]
+        for end in ends:
+            own = end.get("notify") if isinstance(end, dict) else None
+            out += [t for t in (own or {}).get("targets") or [] if isinstance(t, str)]
+        return list(dict.fromkeys(out))
+
     @callback
     def _on_action(self, event: Event) -> None:
         """
@@ -346,7 +359,7 @@ class Notifier:
         # Nur ein konfigurierter Alarm-Empfänger darf antworten: das Ereignis kann jedes registrierte Companion-Gerät feuern
         # (siehe recipient_users). Ohne beglaubigten Absender (Automation, Entwicklerwerkzeuge ohne Benutzer) passiert nichts.
         user_id = event.context.user_id
-        if not user_id or user_id not in recipient_users(self.hass, self.cfg["alarm_targets"]):
+        if not user_id or user_id not in recipient_users(self.hass, self._alarm_recipients()):
             _LOGGER.warning("%s: push action '%s' ignored, the sender is not a configured alarm recipient", self.entry.title, key)
             return
         if key == "disarm":
@@ -430,7 +443,7 @@ class Notifier:
             # iOS verlangt dafür Face ID/Code (authenticationRequired); Android kennt das nicht
             actions.insert(0, {"action": f"{PUSH_ACTION_DISARM}{self.entry.entry_id}", "title": self._t("action_disarm"),
                                "authenticationRequired": True, "destructive": True})
-        self._send("triggered", title, message, tag=self._tag(), actions=actions, critical=step.get("critical"), volume=step.get("volume"), url=target)
+        self._send("triggered", title, message, tag=self._tag(), actions=actions, critical=step.get("critical"), volume=step.get("volume"), url=target, targets=step.get("targets"))
 
     def _end_notify(self) -> dict[str, Any] | None:
         """Eigene Meldung aus dem Element "Alarm endet" (Konfiguration › Aktionen), wenn eingeschaltet."""
@@ -460,7 +473,7 @@ class Notifier:
             target = self._click_target(own)
         if test:
             title = self._t("test_title", name=title)
-        self._send("triggered", title, message, tag=self._tag(), critical=critical, volume=volume, url=target)
+        self._send("triggered", title, message, tag=self._tag(), critical=critical, volume=volume, url=target, targets=(own or {}).get("targets"))
 
     @callback
     def send_test(self, kind: str, mode: str | None = None) -> list[str]:
@@ -474,7 +487,8 @@ class Notifier:
 
     @callback
     def _send(self, kind: str, title: str, message: str, *, tag: str | None = None, actions: list | None = None,
-              critical: bool | None = None, volume: float | None = None, url: str | None = None, mode: str | None = None) -> None:
+              critical: bool | None = None, volume: float | None = None, url: str | None = None, mode: str | None = None,
+              targets: list[str] | None = None) -> None:
         self._ctl.record("notified", type=kind)
         # Eigene Werte je Modus gelten nur für Arten im scharfen Zustand; ohne Angabe der Modus der Anlage
         mode = mode or (self._ctl.mode if kind in NOTIFY_MODE_KINDS else None)
@@ -482,4 +496,4 @@ class Notifier:
             async_persist(self.hass, self.cfg, kind, title, message, tag or f"alarmageddon_{self.entry.entry_id}_{kind}", mode)
         except Exception:  # noqa: BLE001 - die Benachrichtigung in Home Assistant ist Zusatz: die Meldung aufs Handy geht trotzdem hinaus
             _LOGGER.exception("%s: persistent notification failed", self.entry.title)
-        async_send(self.hass, self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))
+        async_send(self.hass, targets or self._targets(kind), build_payload(self.cfg, kind, title, message, tag=tag, actions=actions, critical=critical, volume=volume, url=url, mode=mode))

@@ -720,7 +720,7 @@ async def test_alarm_end_test_message_is_marked_as_test(hass: HomeAssistant, has
     client = await hass_ws_client(hass)
     assert (await ws(client, type=f"{DOMAIN}/test_end_notify", entry_id=entry.entry_id, notify={"title": "Ruhe in {name}", "message": "vorbei"}))["success"]
     await hass.async_block_till_done()
-    assert len(pushes) == 1 and pushes[0].data["title"].startswith("Test") and "Ruhe in Haus" in pushes[0].data["title"]
+    assert len(pushes) == 1 and pushes[0].data["title"].startswith("🧪 Test") and "Ruhe in Haus" in pushes[0].data["title"]
     assert state(hass) == AlarmControlPanelState.ARMED_HOME
 
 

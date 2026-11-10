@@ -40,7 +40,9 @@ from .const import (
     CONF_SENSOR_MODES,
     CONF_SENSOR_OPTIONS,
     DEFAULT_PRESETS,
+    MAX_DELAY,
     OPT_ALWAYS,
+    OPT_ENTRY_DELAY,
     OPT_ARM_ON_CLOSE,
     OPT_BYPASS,
     OPT_OFFLINE_ALARM,
@@ -169,6 +171,22 @@ class AlarmController:
     def entry_delay(self) -> int:
         """Eingangsverzögerung des Modus, in dem die Anlage gerade scharf ist (oder wird)."""
         return self.entry_delay_for(self.mode)
+
+    def sensor_entry_delay(self, entity_id: str, mode: str | None) -> int:
+        """
+        Eingangsverzögerung eines Sensors in Sekunden: bei Einstellungen je Modus der eigene Wert für diesen Modus, dann der eigene
+        Wert des Sensors, sonst der Wert der Anlage für den Modus. Ungültige Werte (beschädigte Ablage) gelten als nicht gesetzt.
+        """
+        candidates = []
+        if self.options.get(CONF_PER_MODE_SENSORS) and mode is not None:
+            per_scope = (self.options.get(CONF_SENSOR_MODES) or {}).get(mode)
+            own = per_scope.get(entity_id) if isinstance(per_scope, dict) else None
+            candidates.append(own.get(OPT_ENTRY_DELAY) if isinstance(own, dict) else None)
+        candidates.append(self.sensor_overrides.get(entity_id, {}).get(OPT_ENTRY_DELAY))
+        for value in candidates:
+            if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= MAX_DELAY:
+                return value
+        return self.entry_delay_for(mode)
 
     @property
     def entry_sensors(self) -> set[str]:
@@ -427,7 +445,8 @@ class AlarmController:
         if self.state != AlarmControlPanelState.PENDING and not self._confirmed(entity):
             return
 
-        delayed = entity in self.entry_sensors and self.entry_delay > 0
+        delay = self.sensor_entry_delay(entity, self.mode) if entity in self.entry_sensors else 0
+        delayed = delay > 0
         if self.state == AlarmControlPanelState.PENDING:
             if delayed:
                 return  # Verzögerung läuft schon, ein weiterer Eingangssensor verlängert sie nicht
@@ -436,7 +455,7 @@ class AlarmController:
             return
         self.triggered_by = entity
         if delayed:
-            self._go_pending(self.entry_delay)
+            self._go_pending(delay)
         else:
             self._go_triggered()
 

@@ -150,13 +150,15 @@ for (const lang of ["de", "en"]) {
       await s.tap('[data-wf="nt-crit"]');
       check(`${tag}: Lautstärkeregler höchstens halb so breit wie das Fenster`, await s.waitFor("const d=r.getElementById('ag-step'); const rg=d.querySelector('.ag-ef-range'); return !!rg && rg.getBoundingClientRect().width <= d.getBoundingClientRect().width * (r.host.hasAttribute('narrow') ? 1.01 : 0.55)"));
       await (await s.el('#ag-step [data-key="ntTitle"]')).fill("Ruhe in {name}");
+      await s.tap('#ag-step [data-wf="nt-tgt-own"]');
+      await (await s.el('#ag-step [data-wf="nt-tgt-add"]')).selectOption("notify.mobile_app_partnerin");
       await s.tap('#ag-step [data-wf="apply"]');
       check(`${tag}: Wahl ist ein Entwurf (Punkt am Reiter, Karte zeigt eigene Meldung)`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit') && r.querySelector('.ag-wf-endcard').textContent.includes('Eigene') || r.querySelector('.ag-wf-endcard').textContent.includes('Own')"));
       await s.tap('[data-wf="save"]');
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const wfSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_workflows').at(-1)");
       const away = wfSent?.workflow_end?.away;
-      check(`${tag}: workflow_end gesendet (nur die eigene Meldung)`, away?.notify?.enabled === true && away.notify.title === "Ruhe in {name}" && away.notify.critical === true && !("undo" in away) && !wfSent.workflow_end.home.notify, JSON.stringify(wfSent?.workflow_end));
+      check(`${tag}: workflow_end gesendet (nur die eigene Meldung)`, away?.notify?.enabled === true && away.notify.title === "Ruhe in {name}" && away.notify.critical === true && JSON.stringify(away.notify.targets) === JSON.stringify(["notify.mobile_app_diego", "notify.mobile_app_partnerin"]) && !("undo" in away) && !wfSent.workflow_end.home.notify, JSON.stringify(wfSent?.workflow_end));
       await s.tap('[data-sub="sensors"]');
 
       // Einstellungen pro Modus in der Sensorübersicht: Schalter aus = wie vor 0.32.0 (keine Reiter); ein = Reiter der Modi, erster gewählt,

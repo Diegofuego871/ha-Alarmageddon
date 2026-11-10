@@ -66,12 +66,13 @@ from .const import (
     MODES,
     OPEN_SENSOR_MODES,
     SENSOR_CLASSES,
+    OPT_ENTRY_DELAY,
     SENSOR_OPTIONS,
     SENSOR_TYPES,
 )
 from .devices import battery_of, device_sensors
 from .forecast import async_forecasts
-from .schemas import END_NOTIFY_SCHEMA, SCHEDULES, SECONDS as _SECONDS, valid_end, valid_step
+from .schemas import END_NOTIFY_SCHEMA, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_end, valid_step
 from .settings import async_get_settings, sensor_type
 
 ALARM_SERVICES = {
@@ -253,10 +254,10 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         # Sensoren, die in der Liste der Konfiguration stehen sollen (Auswahl über "+")
         vol.Optional("sensors"): [str],
         # Eigene Werte der Optionen pro Sensor; fehlt ein Sensor, gilt die Voreinstellung seiner Art
-        vol.Optional("sensor_options"): {str: {vol.In(SENSOR_OPTIONS): bool}},
+        vol.Optional("sensor_options"): {str: SENSOR_VALUES},
         # Einstellungen je Modus: Schalter und eigene Werte je Modus (nur Abweichungen von den Werten für alle Modi)
         vol.Optional("per_mode_sensors"): bool,
-        vol.Optional("sensor_modes"): {vol.In([*MODES, "always"]): {str: {vol.In(SENSOR_OPTIONS): bool}}},
+        vol.Optional("sensor_modes"): {vol.In([*MODES, "always"]): {str: SENSOR_VALUES}},
     }
 )
 @websocket_api.require_admin
@@ -413,11 +414,16 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             if drop:
                 reset += len(drop)
                 # Auch die eigenen Werte je Modus fallen weg: der Sensor folgt danach wieder der Voreinstellung
-                new_modes = {m: {e: o for e, o in v.items() if e not in drop} for m, v in per_mode.items()}
+                # Die eigene Eingangsverzögerung gehört nicht zu den Voreinstellungen und bleibt stehen
+                def keep(o: dict[str, Any]) -> dict[str, Any]:
+                    return {k: v for k, v in o.items() if k == OPT_ENTRY_DELAY} if isinstance(o, dict) else {}
+
+                new_modes = {m: {e: (keep(o) if e in drop else o) for e, o in v.items() if e not in drop or keep(o)} for m, v in per_mode.items()}
+                kept_own = {e: (keep(o) if e in drop else o) for e, o in own.items() if e not in drop or keep(o)}
                 # Die Optionsänderung lädt die Anlage neu (Update-Listener); nur dann gilt sie als "lädt schon"
                 if hass.config_entries.async_update_entry(entry, options={
                     **entry.options,
-                    CONF_SENSOR_OPTIONS: {e: o for e, o in own.items() if e not in drop},
+                    CONF_SENSOR_OPTIONS: kept_own,
                     CONF_SENSOR_MODES: {m: v for m, v in new_modes.items() if v},
                 }):
                     reloading.add(entry.entry_id)

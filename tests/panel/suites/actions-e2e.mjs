@@ -140,8 +140,8 @@ for (const lang of ["de", "en"]) {
 
     // Push-Meldung: Standardtext steht im Feld und lässt sich ändern, Platzhalter und Vorschau
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
-    check(`${tag}: Push-Meldung mit Standardtext in den Feldern`, await s.waitFor(`const d=r.getElementById('ag-step'); return d.open && d.querySelector('[data-key="ntTitle"]').value === 'Alarm: {name}' && d.querySelector('[data-key="ntMessage"]').value.startsWith('{sensor}') && d.querySelectorAll('[data-wf="ins"]').length === 4`));
-    check(`${tag}: Vorschau mit echten Namen`, await s.ev("const p=r.querySelector('#ag-ntprev').innerText; return p.includes('Alarm: Haus') && !p.includes('{')"));
+    check(`${tag}: Push-Meldung mit Standardtext in den Feldern`, await s.waitFor(`const d=r.getElementById('ag-step'); return d.open && d.querySelector('[data-key="ntTitle"]').value === '🚨 Alarm: {name}' && d.querySelector('[data-key="ntMessage"]').value.startsWith('{sensor}') && d.querySelectorAll('[data-wf="ins"]').length === 4`));
+    check(`${tag}: Vorschau mit echten Namen`, await s.ev("const p=r.querySelector('#ag-ntprev').innerText; return p.includes('🚨 Alarm: Haus') && !p.includes('{')"));
     const ntField = await s.el('#ag-step [data-key="ntTitle"]');
     await ntField.fill("ALARM im {name}");
     await s.tap('#ag-step [data-wf="ins"][data-token="{mode}"]');
@@ -162,6 +162,27 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="nt-crit"]');
     check(`${tag}: nicht kritisch blendet die Lautstärke aus`, await s.waitFor("return !r.querySelector('#ag-step [data-wf=\"nt-vol\"]')"));
     await s.tap('#ag-step [data-wf="nt-crit"]');
+
+    // Empfänger: Standard sind die Alarm-Empfänger der Konfiguration, hier lassen sie sich ersetzen
+    check(`${tag}: Empfänger: Standard zeigt die Alarm-Empfänger, kein eigener Wert`, await s.ev("const d=r.getElementById('ag-step'); const sw=d.querySelector('[data-wf=\"nt-tgt-own\"]'); const sec=sw.closest('.ag-sec, section, div[class*=\"sec\"]') || d; return sw.getAttribute('aria-checked') === 'false' && d.innerText.includes('mobile_app_diego'.replace('mobile_app_','')) && !d.querySelector('[data-wf=\"nt-tgt-add\"]') && !d.querySelector('[data-wf=\"nt-tgt-del\"]')"));
+    await s.tap('#ag-step [data-wf="nt-tgt-own"]');
+    check(`${tag}: Empfänger: eigene Liste startet mit den Alarm-Empfängern, Auswahl ohne diese`, await s.waitFor("const d=r.getElementById('ag-step'); const o=[...d.querySelectorAll('[data-wf=\"nt-tgt-add\"] option')].map((x) => x.value).filter(Boolean); return d.querySelectorAll('[data-wf=\"nt-tgt-del\"]').length === 1 && o.length === 2 && !o.includes('notify.mobile_app_diego')"));
+    await (await s.el('#ag-step [data-wf="nt-tgt-add"]')).selectOption("notify.mobile_app_tablet");
+    await s.tap('#ag-step [data-wf="nt-tgt-del"][data-target="notify.mobile_app_diego"]');
+    check(`${tag}: Empfänger: Tablet hinzugefügt, Diego entfernt`, await s.waitFor("const d=r.getElementById('ag-step'); return [...d.querySelectorAll('[data-wf=\"nt-tgt-del\"]')].map((b) => b.dataset.target).join() === 'notify.mobile_app_tablet'"));
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Empfänger im Schritt gespeichert`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && JSON.stringify(st.targets) === JSON.stringify(['notify.mobile_app_tablet'])"));
+    await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
+    check(`${tag}: Empfänger: beim erneuten Öffnen eigene Liste an`, await s.waitFor("const d=r.getElementById('ag-step'); return d.open && d.querySelector('[data-wf=\"nt-tgt-own\"]').getAttribute('aria-checked') === 'true' && d.querySelectorAll('[data-wf=\"nt-tgt-del\"]').length === 1"));
+    await s.tap('#ag-step [data-wf="nt-tgt-own"]');
+    check(`${tag}: Empfänger: Ausschalten verwirft die eigene Liste`, await s.waitFor("const d=r.getElementById('ag-step'); return d.querySelector('[data-wf=\"nt-tgt-own\"]').getAttribute('aria-checked') === 'false' && !d.querySelector('[data-wf=\"nt-tgt-del\"]')"));
+    await s.tap('#ag-step [data-wf="nt-tgt-own"]');
+    await s.tap('#ag-step [data-wf="nt-tgt-del"]');
+    check(`${tag}: Empfänger: leere eigene Liste weist auf den Standard hin`, await s.waitFor("const d=r.getElementById('ag-step'); return !d.querySelector('[data-wf=\"nt-tgt-del\"]') && d.innerText.length > 0 && d.querySelector('[data-wf=\"nt-tgt-own\"]').getAttribute('aria-checked') === 'true'"));
+    await s.tap('#ag-step [data-wf="apply"]');
+    check(`${tag}: Empfänger: leere Liste wird nicht gespeichert (Standard gilt)`, await s.waitFor("const st=r.host.actions.draft.wf.away[0]; return !r.getElementById('ag-step').open && !('targets' in st)"));
+    await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
+    await s.waitFor("return r.getElementById('ag-step').open");
     await s.tap('#ag-step [data-wf="apply"]');
     check(`${tag}: Karte zeigt den eigenen Text`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-step')[0].innerText.includes('ALARM im {name}{mode}')"));
     check(`${tag}: Titel, Text und Zustellung im Schritt`, await s.ev("const st=r.host.actions.draft.wf.away[0]; return st.type === 'notify' && st.title === 'ALARM im {name}{mode}' && st.message === 'Achtung: {sensor} um {time}' && st.critical === true && st.volume === 0.4 && st.buttons.silence === true && st.buttons.open === undefined && st.click === 'custom' && st.click_path === '/lovelace/alarm'"));
@@ -264,7 +285,7 @@ for (const lang of ["de", "en"]) {
 
     // ----- Benachrichtigungen -----
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
-    check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-rpill').length === 1 && r.querySelector('.ag-rpill').innerText.includes('diego')"));
+    check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-nt .ag-rpill').length === 1 && r.querySelector('.ag-nt .ag-rpill').innerText.includes('diego')"));
     check(`${tag}: Kapitel mit Titel (Empfänger, Alarm-Arten, Wartung)`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 3"));
     check(`${tag}: Alarmmeldung hier nicht einstellbar und kein Hinweiskapitel: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !r.querySelector('[data-nt=\"to-actions\"]')"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
@@ -291,7 +312,7 @@ for (const lang of ["de", "en"]) {
       && nt.types.pending.enabled === true && nt.types.pending.critical === true && nt.types.battery_low.critical === true && nt.types.armed.enabled === false, JSON.stringify(nt));
     // Pille entfernen mit x
     await s.tap('[data-nt="target-del"][data-key="alarm_targets"][data-target="notify.mobile_app_diego"]');
-    check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));
+    check(`${tag}: Pille mit x entfernt`, await s.waitFor("return r.querySelectorAll('.ag-nt .ag-rpill').length === 1 && !!r.querySelector('.ag-recip .ag-warntext')"));
     await s.tap('[data-nt="cancel"]');
     // Testmeldung einer Art
     await s.tap('[data-nt="test"][data-kind="battery_low"]');

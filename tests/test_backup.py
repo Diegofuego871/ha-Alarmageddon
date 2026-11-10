@@ -150,3 +150,21 @@ async def test_stored_backups_create_list_get_delete_and_limit(hass: HomeAssista
     after = await _ws(client, type="alarmageddon/backup_delete", backup_id=victim)
     assert after["success"] and victim not in [b["id"] for b in after["result"]["backups"]] and len(after["result"]["backups"]) == 9
     assert (await _ws(client, type="alarmageddon/backup_delete", backup_id=victim))["error"]["code"] == "not_found"
+
+
+async def test_sensor_entry_delay_survives_backup_and_import(hass: HomeAssistant, hass_ws_client) -> None:
+    """Eigene Eingangsverzögerung (Zahl, auch je Modus) gehört in die Sicherung und kommt unverändert zurück."""
+    own = {MOTION: {"entry_delay": 7, "confirm": True}}
+    per_mode = {"home": {MOTION: {"entry_delay": 0}}}
+    entry = await setup_alarm(hass, sensor_options=own, per_mode_sensors=True, sensor_modes=per_mode)
+    client = await hass_ws_client(hass)
+    exported = (await _ws(client, type="alarmageddon/export"))["result"]
+    options = exported["systems"][0]["options"]
+    assert options["sensor_options"] == own and options["sensor_modes"] == per_mode
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "sensor_options": {}, "sensor_modes": {}})
+    await hass.async_block_till_done()
+    assert (await _ws(client, type="alarmageddon/import", data=exported))["success"]
+    await hass.async_block_till_done()
+    assert entry.options["sensor_options"] == own and entry.options["sensor_modes"] == per_mode
+    exported["systems"][0]["options"]["sensor_options"] = {MOTION: {"entry_delay": 99999}}
+    assert not (await _ws(client, type="alarmageddon/import", data=exported))["success"]

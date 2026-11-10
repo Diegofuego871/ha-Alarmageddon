@@ -33,6 +33,7 @@ from .const import (
     MAX_DELAY,
     MAX_STEPS,
     MODES,
+    OPT_ENTRY_DELAY,
     OPEN_SENSOR_MODES,
     SCOPE_ALWAYS,
     SENSOR_OPTIONS,
@@ -42,6 +43,10 @@ from .const import (
 
 SECONDS = vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))
 ENTITY_LIST = [cv.entity_id]
+# Werte eines Sensors: die Schalter (SENSOR_OPTIONS) und die eigene Eingangsverzögerung in Sekunden
+SENSOR_VALUES = vol.Schema({vol.Optional(vol.In(SENSOR_OPTIONS)): bool, vol.Optional(OPT_ENTRY_DELAY): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))})
+# Eigene Empfänger einer Meldung (statt der Alarm-Empfänger aus der Konfiguration): nur notify-Dienste, höchstens 20
+NOTIFY_TARGETS = vol.All([vol.All(str, vol.Match(r"^notify\.[a-z0-9_]+$"))], vol.Length(max=20))
 STEP_SCHEMAS = {
     # Eigener Titel und Text der Alarmmeldung (0.19.0); fehlt eine Angabe, gilt der Standardtext. Platzhalter: {name} {sensor} {time} {mode}
     "notify": vol.Schema({
@@ -55,6 +60,8 @@ STEP_SCHEMAS = {
         # Klickziel der Meldung (0.23.0): "log" (Standard, Protokoll mit dem laufenden Alarm), "overview" oder "custom" mit eigenem Pfad
         vol.Optional("click"): vol.In(("log", "overview", "custom")),
         vol.Optional("click_path"): vol.All(str, vol.Length(max=200), vol.Match(r"^/[^\s]*$")),
+        # Eigene Empfänger nur für diesen Schritt (1.1.0); fehlt die Angabe oder ist sie leer, gelten die Alarm-Empfänger der Konfiguration
+        vol.Optional("targets"): NOTIFY_TARGETS,
     }),
     "wait": vol.Schema({vol.Required("type"): "wait", vol.Required("seconds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))}),
     "action": vol.Schema({
@@ -89,6 +96,7 @@ END_NOTIFY_SCHEMA = vol.Schema({
     vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
     vol.Optional("click"): vol.In(("log", "overview", "custom")),
     vol.Optional("click_path"): vol.Any("", vol.All(str, vol.Length(max=200), vol.Match(r"^/[^\s]*$"))),
+    vol.Optional("targets"): NOTIFY_TARGETS,
 })
 END_SCHEMA = vol.Schema({vol.Optional("notify"): END_NOTIFY_SCHEMA}, extra=vol.REMOVE_EXTRA)
 
@@ -153,10 +161,10 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_OPEN_SENSORS): vol.In(OPEN_SENSOR_MODES),
         vol.Optional("code_arm_required"): bool,
         vol.Optional(CONF_CONFIRM_WINDOW): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
-        vol.Optional(CONF_SENSOR_OPTIONS): {cv.entity_id: {vol.In(SENSOR_OPTIONS): bool}},
+        vol.Optional(CONF_SENSOR_OPTIONS): {cv.entity_id: SENSOR_VALUES},
         vol.Optional(CONF_PER_MODE_SENSORS): bool,
         vol.Optional(CONF_PER_MODE_SETTINGS): bool,
-        vol.Optional(CONF_SENSOR_MODES): {vol.In([*MODES, SCOPE_ALWAYS]): {cv.entity_id: {vol.In(SENSOR_OPTIONS): bool}}},
+        vol.Optional(CONF_SENSOR_MODES): {vol.In([*MODES, SCOPE_ALWAYS]): {cv.entity_id: SENSOR_VALUES}},
         vol.Optional(CONF_WORKFLOWS): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): valid_end},
     },
