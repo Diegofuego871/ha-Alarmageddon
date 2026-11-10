@@ -38,6 +38,10 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Suche`, await s.waitFor(`return r.querySelectorAll('${rowSel}').length === 2`));
     await s.tap('[data-list="clear"]');
     check(`${tag}: X leert, Fokus bleibt`, await s.waitFor(`const i=r.querySelector('[data-list="search"]'); return i.value === "" && r.activeElement === i && r.querySelectorAll('${rowSel}').length === 9`));
+    // Sortieren nach Zustand: gleiche Zustände stehen beieinander ("ruhig" und "zu" nicht gemischt)
+    await s.tap('[data-list="sort"][data-key="state"]');
+    check(`${tag}: nach Zustand sortiert: gleiche Zustände zusammen (je Gruppe)`, await s.waitFor("const rows=[...r.querySelectorAll('.ag-ov-list tr')]; let seen=new Set(), prev=null, ok=true, kinds=new Set(); for (const tr of rows) { if (tr.classList.contains('grp')) { seen=new Set(); prev=null; continue; } const l=(tr.querySelector('.ag-tag.ok, .ag-tag.warn, .ag-tag.err')?.textContent || '').trim(); kinds.add(l); if (l !== prev && seen.has(l)) ok=false; seen.add(l); prev=l; } return ok && kinds.size >= 2"));
+    await s.tap('[data-list="sort"][data-key="name"]');
     // Filter ohne Treffer gedämpft
     check(`${tag}: leerer Filter gedämpft`, await s.ev(`return r.querySelector('.ag-lchips [data-filter="offline"]').classList.contains('zero')`));
     // Ansicht: Gruppierung aus, Firmware ausblenden, nach Neuladen gemerkt

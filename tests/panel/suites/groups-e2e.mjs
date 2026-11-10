@@ -128,6 +128,20 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Umbenennen schliesst, Titel folgt`, await s.waitFor(`return !r.getElementById("ag-rename").open && [...r.querySelectorAll('select[data-act="system"] option')].some((o) => o.textContent === "Carport")`));
     const ren = await s.sim("return (window.__renames || []).at(-1)");
     check(`${tag}: sendet Anlage, Name und neue IDs`, ren?.entry_id === "e_garage" && ren.name === "Carport" && ren.regenerate_ids === true);
+    // Kopfzeile in jedem Reiter gleich (Name, Stift, HA-Knopf), auch in Übersicht und Protokoll
+    for (const tab of ["overview", "log", "config"]) {
+      await s.tap(`[data-tab="${tab}"]`);
+      check(`${tag}: Kopfzeile mit Anlagenname, Stift und HA-Knopf im Reiter ${tab}`, await s.waitFor(`const h=r.querySelector('.ag-head .ag-headsys'); return !!h && !!h.querySelector('[data-act="system"]') && !!h.querySelector('[data-act="rename"]') && !!h.querySelector('[data-act="open-ha"]')`));
+    }
+    // Breites Fenster: Blatt der Sensor-Optionen und Knöpfe oben rechts enden auf derselben Linie
+    await s.page.setViewportSize({ width: 2200, height: 950 });
+    await s.tap('[data-sub="sensors"]');
+    await s.tap('.ag-table tr[data-row] .ag-nm');
+    await s.waitFor("return r.querySelector('.ag-sen-layout').classList.contains('open')");
+    await s.page.waitForTimeout(300);
+    check(`${tag}: Blatt und Knöpfe oben rechts auf einer Flucht (breites Fenster)`, await s.ev("const right=(e) => Math.round(e.getBoundingClientRect().right); const sheet=right(r.querySelector('.ag-sheet')); return Math.abs(sheet - right(r.querySelector('[data-act=\"open-ha\"]'))) <= 1 && Math.abs(sheet - right(r.querySelector('[data-sen=\"presets\"]'))) <= 1"));
+    await s.tap('[data-sen="close-detail"]').catch(() => {});
+    await s.page.setViewportSize({ width: 1400, height: 950 });
     await s.page.screenshot({ path: `${outDir}groups-${lang}-desktop.png` });
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();

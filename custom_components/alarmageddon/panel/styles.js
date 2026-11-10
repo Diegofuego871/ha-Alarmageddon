@@ -234,7 +234,8 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 /* Die Tabelle ist höchstens 1180 px breit: bietet der Bildschirm genug Platz, bleibt sie beim Öffnen der Optionen unverändert (die Kästchen
    rutschen nicht nach links), das Blatt steht daneben; erst auf schmaleren Fenstern wird die Tabelle schmaler */
 .ag-sen-layout { display: grid; grid-template-columns: minmax(0, 1180px); gap: 16px; align-items: start; }
-.ag-sen-layout.open { grid-template-columns: minmax(0, 1180px) 420px; }
+.ag-sen-layout.open { grid-template-columns: minmax(0, 1180px) minmax(420px, 1fr); }
+.ag-sen-layout.open > .ag-side { justify-self: end; width: 420px; max-width: 100%; }
 .ag-side:empty { display: none; }
 .ag-sheet { position: sticky; top: var(--ag-th-top, 0px); overflow: hidden; }
 .ag-side-head { display: flex; gap: 12px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--ag-divider); }
@@ -254,7 +255,8 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-pmsw { display: flex; align-items: center; gap: 12px; }
 .ag-pmsw .ag-toggle { margin: 0; flex: none; }
 /* Schalter, Reiter und alles, was zu den Reitern gehört, stehen in einem umrandeten Bereich: so ist klar, bis wohin die Einstellung greift */
-.ag-pmstick { margin: var(--ag-gap, 18px) 0; }
+/* Der Abstand unter der Leiste gehört zur festen Leiste (Innenabstand): er bleibt beim Scrollen gleich */
+.ag-pmstick { margin: var(--ag-gap, 18px) 0 0; padding-bottom: var(--ag-gap, 18px); }
 .ag-pmstick > .ag-pmbar { margin: 0; }
 .ag-pmgroup { margin-top: 6px; padding: 16px 18px 18px; border: 1.5px solid var(--ag-divider); border-radius: 20px; background: color-mix(in srgb, var(--ag-text) 2%, var(--ag-card)); }
 .ag-pmgroup.on { border: 2px solid color-mix(in srgb, var(--ag-primary) 45%, transparent); background: color-mix(in srgb, var(--ag-primary) 4%, var(--ag-card)); }
@@ -268,6 +270,8 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-box.own::after { content: ""; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--ag-warning); border: 2px solid var(--ag-card); }
 th.cur, td.cur { background: color-mix(in srgb, var(--ag-primary) 9%, transparent); }
 th.cur { box-shadow: inset 0 3px 0 var(--ag-primary); }
+/* Die Spalte des gewählten Modus: Titel zusätzlich fett */
+.ag-table th.cur { font-weight: 700; color: var(--ag-text); }
 .ag-zbtn.cur { box-shadow: 0 0 0 2px var(--ag-primary); }
 .ag-block { display: block; margin-top: 2px; font-size: 12px; }
 .ag-origin { display: inline-flex; gap: 4px; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--ag-text2); border: 0; background: transparent; padding: 0; font-family: inherit; }
@@ -585,8 +589,9 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 /* Alle Auswahlfelder (Dropdowns) einheitlich: eigener kleiner Pfeil mit Abstand zum Rand, Platz rechts dafür */
 select.ag-select, select.ag-input, .ag-dlg select, .ag-view select {
   appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 40px;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
+  /* Pfeil als Vektorbild (der frühere Pfeil aus zwei Verläufen zeigte bei manchen Zoomstufen eine Kerbe); mittleres Grau passt zu hell und dunkel */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5z' fill='%238a8f98' stroke='%238a8f98' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 16px center; background-size: 12px 8px; background-repeat: no-repeat; }
 select.ag-select:focus-visible, select.ag-input:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 1px; }
 /* Auswahl der Alarmanlage in der Konfiguration: auffällig, damit klar ist, dass sie für alle Reiter gilt */
 select.ag-select[data-act="system"] { height: 52px; padding-left: 22px; font-size: 24px; letter-spacing: -.2px; border: 2px solid var(--ag-primary); background-color: var(--ag-primary-soft); color: var(--ag-primary); font-weight: 600; }

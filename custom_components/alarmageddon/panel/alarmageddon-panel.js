@@ -402,7 +402,7 @@ class AlarmageddonPanel extends HTMLElement {
     let right = "";
     if (this._tab === "overview" && !narrow) right = `<span class="ag-grow"></span><button class="ag-btn" data-act="add">${ic("plus")}${esc(this._t("addSystem"))}</button>`;
     this._lastHtml.delete(this._content);
-    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head ${this._tab === "config" ? "ag-head-cfg" : ""}"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()">${this._tab === "config" ? '<div class="ag-headsys"></div>' : ""}${tabs}${right}</div><div class="ag-view"></div>`));
+    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head ag-head-cfg"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()"><div class="ag-headsys"></div>${tabs}${right}</div><div class="ag-view"></div>`));
     this._view = this._content.querySelector(".ag-view");
     this._content.querySelector(".ag-logo")?.addEventListener("load", () => this._stickySync());
     this._view.style.display = "contents";
@@ -428,6 +428,7 @@ class AlarmageddonPanel extends HTMLElement {
 
   _renderView(full) {
     if (!this._view || !this._data) return this._placePills();
+    this._fillHeadSys();
     if (!this._systems().length && this._tab !== "config") {
       this._setHtml(this._view, this._emptyHtml());
       return;
@@ -835,11 +836,6 @@ class AlarmageddonPanel extends HTMLElement {
       const label = (key) => this._t(narrow ? `${key}Short` : key);
       const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")]], this._sub, "data-sub", "small ag-subs");
       const systems = this._systems();
-      const cur = this._system();
-      const bar = systems.length && cur ? this._sysBar(systems, cur) : "";
-      // Name der Anlage ganz oben neben dem Logo (die Kopfzeile bleibt beim Scrollen stehen)
-      const slot = this._content.querySelector(".ag-headsys");
-      if (slot) slot.innerHTML = bar;
       const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
       this._lastHtml.delete(this._view);
       // Die Seite gleitet von der Seite herein, wenn der Reiter wechselt (nicht bei jedem Neuaufbau)
@@ -854,6 +850,15 @@ class AlarmageddonPanel extends HTMLElement {
   }
 
   // Name der Anlage gross und fett (bei mehreren Anlagen als gleich grosses Dropdown), Stift zum Umbenennen, Sprung nach HA
+  // Kopfzeile in jedem Reiter gleich: Name der Anlage (bei mehreren ein Dropdown), Stift, Sprung nach HA
+  _fillHeadSys() {
+    const slot = this._content?.querySelector(".ag-headsys");
+    if (!slot) return;
+    const systems = this._systems();
+    const cur = this._system();
+    slot.innerHTML = systems.length && cur ? this._sysBar(systems, cur) : "";
+  }
+
   _sysBar(systems, cur) {
     const title = systems.length > 1
       ? `<select class="ag-select" data-act="system" aria-label="${esc(this._t("groupsSystem"))}">${systems.map((x) => `<option value="${esc(x.entry_id)}" ${x.entry_id === this._sel ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>`

@@ -224,7 +224,8 @@ export class ListUi {
     switch (col) {
       case "area": return r.area;
       case "systems": return r.systems.map((s) => s.title).join(" ");
-      case "state": return r.gone ? 0 : r.open || r.occupied ? 1 : 2;
+      // Erst nach Rang (nicht erreichbar, offen, in Ordnung), dann nach dem angezeigten Text: "ruhig" und "zu" stehen je beieinander
+      case "state": return `${r.gone ? 0 : r.open || r.occupied ? 1 : 2}|${this._stateLabel(r)}`;
       case "battery": return r.battery;
       case "forecast": {
         const d = r.info.battery ? this.host._forecast?.[r.info.battery] : null;
@@ -320,11 +321,15 @@ export class ListUi {
     return "";
   }
 
-  _stateHtml(r) {
-    if (r.gone) return `<span class="ag-tag err">${esc(this._t("stUnavailable"))}</span>`;
+  _stateLabel(r) {
+    if (r.gone) return this._t("stUnavailable");
     const motion = MOTION_CLASSES.has(r.info.device_class);
-    if (r.open || r.occupied) return `<span class="ag-tag warn">${esc(this._t(motion ? "stDetected" : "stOpen"))}</span>`;
-    return `<span class="ag-tag ok">${esc(this._t(motion ? "stClear" : "stClosed"))}</span>`;
+    if (r.open || r.occupied) return this._t(motion ? "stDetected" : "stOpen");
+    return this._t(motion ? "stClear" : "stClosed");
+  }
+
+  _stateHtml(r) {
+    return `<span class="ag-tag ${r.gone ? "err" : r.open || r.occupied ? "warn" : "ok"}">${esc(this._stateLabel(r))}</span>`;
   }
 
   // Prognose aus alarmageddon/battery_forecast (kommt nach der Liste); ohne genug Verlauf nichts

@@ -167,6 +167,18 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: Schalter ein: Reiter der Modi (ohne "Alle Modi"), der erste ist gewählt, Entwurf`, await s.waitFor("const t=[...r.querySelectorAll('[data-seg=\"sen-mode\"] > button')]; return t.length >= 3 && t.every((b) => b.dataset.sen !== 'mt:all') && t.at(-1).dataset.sen === 'mt:always' && t[0].classList.contains('on') && r.querySelector('[data-sub=\"sensors\"]').classList.contains('has-edit')"));
       check(`${tag}: Sensoren: Erklärung zum Schalter steht da (ein und aus), sichtbar`, await s.ev("const sm=r.querySelector('.ag-pmstick .ag-pmbar small'); return !!sm && sm.getBoundingClientRect().height > 8 && sm.textContent.length > 20"));
       check(`${tag}: Reiter der Modi links bündig unter dem Schalter, Leiste bleibt beim Scrollen fest`, await s.ev("const sw=r.querySelector('.ag-pmbar .ag-toggle').getBoundingClientRect(); const seg=r.querySelector('.ag-pmbar [data-seg=\"sen-mode\"]').getBoundingClientRect(); return Math.abs(seg.left - sw.left) < 4 && seg.top > sw.bottom && (r.host.hasAttribute('narrow') || r.querySelector('.ag-pmstick').classList.contains('ag-stk'))"));
+      check(`${tag}: Titel der gewählten Modus-Spalte ist fett, die anderen nicht`, await s.ev("const cur=r.querySelector('.ag-gbody th.cur'); const other=r.querySelector('.ag-gbody th.z:not(.cur)'); return !!cur && Number(getComputedStyle(cur).fontWeight) >= 700 && Number(getComputedStyle(other).fontWeight) < 700"));
+      if (!mobile) {
+        const gap = () => s.ev("const bar=r.querySelector('.ag-pmstick .ag-pmbar').getBoundingClientRect(); const th=r.querySelector('.ag-gbody th').getBoundingClientRect(); return Math.round(th.top - bar.bottom)");
+        const rest = await gap();
+        await s.page.setViewportSize({ width: 1400, height: 520 });
+        await s.ev("const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-gbody th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop += th.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 40;");
+        await s.page.waitForTimeout(900);
+        const stuck = await gap();
+        check(`${tag}: Abstand zwischen Leiste "Einstellungen pro Modus" und Tabelle bleibt beim Scrollen gleich`, rest >= 12 && Math.abs(rest - stuck) <= 1, `${rest} / ${stuck}`);
+        await s.ev("r.querySelector('.ag-content').scrollTop = 0");
+        await s.page.setViewportSize({ width: 1400, height: 950 });
+      }
       if (!mobile) check(`${tag}: dieselben Spalten wie vorher, Spalten des gewählten Modus hervorgehoben`, await s.ev(`return r.querySelectorAll('.ag-gbody th').length === ${thCount} && r.querySelectorAll('.ag-gbody th.cur').length === 1`));
       await s.tap('[data-sen="mt:away"]');
       const alwaysSel = '.ag-gbody [data-sen="mopt"][data-key="always"][data-mode="always"]';

@@ -7,6 +7,22 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-11-10
+
+Small design corrections for the computer view.
+
+### Changed
+
+- **Header the same in every tab:** the name of the alarm system (a dropdown with several), the pencil and the button "Open integration in HA" are now at the top in the overview and in the log too, not only in the configuration.
+- **Sensor options sheet and top right:** with a wide window the sheet of the sensor options ends on the same line as the buttons at the top right (before, it stopped short of the edge).
+- **Sensors, mode tab:** the title of the column of the chosen mode (for example "Away") is bold as well.
+
+### Fixed
+
+- **Gap above the sensor table:** the gap between the tile "Settings per mode" and the table is now fixed and no longer disappears while scrolling.
+- **Sorting by state** in the sensor list put "calm" and "closed" in no order; equal states now stand together.
+- **Arrow of the selection fields** (dropdowns): drawn as an image, so it no longer shows a notch at some zoom levels.
+
 ## [1.0.0] - 2026-11-10
 
 First stable release. No new function compared with 0.40.0: the version number and the status in the README change, because the whole integration was reviewed by an external code review (see 0.40.0) and is no longer a pre-release.
@@ -673,6 +689,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.0.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0

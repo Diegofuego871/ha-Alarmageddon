@@ -7,6 +7,22 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.0.1] - 2026-11-10
+
+Kleine Design-Korrekturen für die Ansicht am Computer.
+
+### Geändert
+
+- **Kopfzeile in jedem Reiter gleich:** Der Name der Alarmanlage (bei mehreren ein Dropdown), der Stift und der Knopf "Integration in HA öffnen" stehen jetzt auch in der Übersicht und im Protokoll oben, nicht nur in der Konfiguration.
+- **Blatt der Sensor-Optionen und oben rechts:** Bei einem breiten Fenster endet das Blatt der Sensor-Optionen auf derselben Linie wie die Knöpfe oben rechts (vorher hörte es vor dem Rand auf).
+- **Sensoren, Reiter eines Modus:** Der Titel der Spalte des gewählten Modus (zum Beispiel "Abwesend") ist zusätzlich fett.
+
+### Behoben
+
+- **Abstand über der Sensortabelle:** Der Abstand zwischen der Kachel "Einstellungen pro Modus" und der Tabelle ist fest und verschwindet beim Scrollen nicht mehr.
+- **Sortieren nach Zustand** in der Sensorliste brachte "ruhig" und "zu" in keine Ordnung; gleiche Zustände stehen jetzt beieinander.
+- **Pfeil der Auswahlfelder** (Dropdowns): als Bild gezeichnet, damit er bei manchen Zoomstufen keine Kerbe zeigt.
+
 ## [1.0.0] - 2026-11-10
 
 Erste stabile Version. Keine neue Funktion gegenüber 0.40.0: Versionsnummer und Status im README ändern sich, weil die ganze Integration durch einen externen Code-Review geprüft wurde (siehe 0.40.0) und keine Vorabversion mehr ist.
@@ -673,6 +689,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.0.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0
 [0.39.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.39.0
 [0.38.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v0.38.0
