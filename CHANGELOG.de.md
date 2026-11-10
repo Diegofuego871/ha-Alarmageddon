@@ -7,6 +7,25 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.7.0] - 2026-11-10
+
+Eine klare Regel für Sensoren, die "Immer aktiv" sind und zugleich in der Zone eines Modus stehen, beide Abläufe der Alarmaktionen nebeneinander, einheitliche Punkte für Ungespeichertes eine Zeichnung des Ablaufs, die nicht mehr danebengehen kann, und die Sensorkarten der Übersicht so gruppiert, wie du es wählst.
+
+### Hinzugefügt
+
+- **Übersicht, Sensoren gruppiert nach Wahl:** nach Bereich, nach Sensorart (Türen, Fenster, Bewegung, Rauch und Wasser, …), nach Anlage oder gar nicht. Auf dem Computer steht die Auswahl in der Werkzeugleiste neben "Liste / Karten", auf dem Handy in "Ansicht"; sie wird je Gerät gemerkt und gilt für die Liste und für die Karten. In der Kartenansicht hat jede Gruppe einen Titel mit der Anzahl ihrer Sensoren über die ganze Breite, die Karten laufen nicht mehr ineinander.
+
+### Geändert
+
+- **"Immer aktiv" und zugleich ein Modus: ein Schalter, im Standard eindeutig.** Für einen Sensor, der "Immer aktiv" ist und zugleich in der Zone eines Modus steht, hat das Blatt des Sensors den Schalter "Scharf in <Modus>: nur <Modus> zählt" (vorher: "Immer aktiv ignorieren"). **An (neuer Standard):** Solange die Anlage in diesem Modus scharf ist, gelten für den Sensor nur die Einstellungen und die Aktionen dieses Modus. **Aus:** "Immer aktiv" gilt zusätzlich: der Sensor löst sofort aus, und beide Abläufe der Alarmaktionen laufen nebeneinander, der des Modus und der von "Immer aktiv". Bei deaktivierter Anlage und in Modi, deren Zone den Sensor nicht enthält, gilt "Immer aktiv" wie bisher. Vor dieser Version war der Standard für die Regel umgekehrt (der Sensor löste auch in seinem Modus sofort aus), und bei scharfer Anlage liefen immer nur die Aktionen des Modus.
+- **Welche Alarmaktionen laufen,** richtet sich jetzt nach dem Sensor: deaktiviert oder scharf in einem Modus, der den Sensor nicht enthält, laufen die Aktionen von "Immer aktiv" (vorher liefen bei scharfer Anlage immer die Aktionen des Modus, auch für einen Rauchmelder ausserhalb der Zone). Hat "Immer aktiv" keine eigenen Aktionen, laufen die des scharfen Modus, damit kein Alarm ohne Aktionen bleibt. Ohne "Einstellungen pro Modus" bei den Aktionen (ein Ablauf für alles) läuft der Ablauf nie doppelt.
+- **Blatt des Sensors:** Der Rahmen "Diese Einstellungen gelten …" steht immer da und sagt genau, wann die Einstellungen greifen, zum Beispiel "deaktiviert und scharf in Anwesend" mit dem Hinweis "Scharf in Abwesend gelten stattdessen die Einstellungen und Aktionen des Modus". Die Pillen "Alarmmodi" sind aus dem Blatt entfernt: zu welchen Modi ein Sensor gehört, steht in der Tabelle (die Kästchen und die Spalte "Immer aktiv").
+- **Oranger Punkt = ungespeichert, überall gleich:** am Reiter "Konfiguration", am Unterreiter und neu auch am Reiter des Modus, der ungespeicherte Änderungen hat (Sensoren, Aktionen, Benachrichtigungen, Anlage). Die Punkte und die markierten Zeilen verschwinden sofort beim Speichern, nicht erst, wenn die Anlage neu geladen hat. Eigene Werte (Overrides) sind blau markiert, nie orange; der Balken an einer geänderten Sensorzeile ist orange.
+
+### Behoben
+
+- **Zeichnung des Ablaufs der Aktionen:** Die Verbindungslinie war teils blau, teils grau und konnte über einem Symbol liegen. Jede Verbindung zeichnet ihre Linie jetzt selbst im Fluss der Seite (ein Stück über und eines unter dem Plus) statt einer Linie hinter allem: sie endet immer am Plus und an den Karten, hat eine Farbe je Verbindung (gestrichelt blau nach einem Schritt, der nebenher läuft, auch auf dem Stück zu "Alarm endet") und liegt in jeder Breite und in beiden Designs auf einer Achse mit den Symbolen.
+- **Zwei Abläufe unter derselben Aufsicht:** Der zweite Ablauf hat seinen eigenen Wächter, seine eigenen eingestellten Zeiten und seine eigene Stelle für einen Neustart oder ein Neuladen; eine Sirene schaltet also in beiden Abläufen nach der eingestellten Zeit aus.
 ## [1.6.5] - 2026-11-10
 
 ### Geändert
@@ -793,6 +812,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.7.0
 [1.6.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.5
 [1.6.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.4
 [1.6.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.3

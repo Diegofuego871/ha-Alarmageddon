@@ -9,32 +9,52 @@ for (const lang of ["de", "en"]) {
     const saved = lang === "de" ? "Gespeichert" : "Saved";
     const pill = '[data-sys="always"]';
 
-    // Sensor-Blatt: "Immer aktiv" als Pille bei den Modi, "Immer aktiv ignorieren" direkt darunter, sobald der Sensor in einer Zone steht
+    // Sensor-Blatt (1.7.0): keine Pillen der Alarmmodi mehr (die Zuordnung steht in der Tabelle). Der Rahmen sagt immer genau, wann die
+    // Einstellungen gelten; für einen Sensor, der "Immer aktiv" ist und in einer Zone steht, gibt es den Schalter "Scharf: nur der Modus zählt"
     const smoke = "binary_sensor.rauchmelder_flur";
     const sheet = mobile ? "#ag-sheet" : ".ag-side";
-    await s.tap(`[data-sen="detail"][data-ent="${smoke}"]`);
-    await s.waitFor(`return !!r.querySelector('${sheet} .ag-zline')`);
-    check(`${tag}: Blatt: Modi und "Immer aktiv" als Pillen in einer Zeile, "Immer aktiv" an`, await s.ev(`const c=[...r.querySelectorAll('${sheet} .ag-zline .ag-chip')]; return c.length >= 3 && c.at(-1).dataset.key === 'always' && c.at(-1).getAttribute('aria-pressed') === 'true'`));
+    const T = lang === "de"
+      ? { every: "in jedem Zustand der Anlage", dis: "deaktiviert und scharf in", only: "nur der Modus zählt", both: "beide Abläufe", armed: "scharf in", home: "Anwesend", away: "Abwesend" }
+      : { every: "in every state of the alarm system", dis: "disarmed and armed in", only: "only the mode counts", both: "both flows run", armed: "armed in", home: "Home", away: "Away" };
+    const openSheet = async () => {
+      await s.tap(`[data-sen="detail"][data-ent="${smoke}"]`);
+      await s.waitFor(`return !!r.querySelector('${sheet} .ag-pmbanner')`);
+    };
+    const closeSheet = async () => {
+      if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
+    };
+    const shown = async () => {
+      if (mobile || !(await s.ev(`return !!r.querySelector('${sheet} .ag-pmbanner')`))) await openSheet();
+    };
+    const banner = () => s.ev(`return r.querySelector('${sheet} .ag-pmbanner').innerText`);
+    const sw = `${sheet} [data-key="always_off"][role="switch"]`; // der Schalter selbst (daneben steht bei eigenem Wert der Knopf "zurück")
+    await openSheet();
+    check(`${tag}: Blatt ohne Pillen der Alarmmodi`, await s.ev(`return !r.querySelector('${sheet} .ag-zline') && !r.querySelector('${sheet} .ag-chip')`));
+    check(`${tag}: nur "Immer aktiv": der Rahmen nennt "in jedem Zustand der Anlage", kein Schalter`, (await banner()).includes(T.every) && (await s.ev(`return !r.querySelector('${sw}')`)), await banner());
     if (mobile) check(`${tag}: Handy: unter der Leiste "Fertig" liegt kein Abstand, in dem der Inhalt durchscheint`, await s.ev("const d=r.getElementById('ag-sheet'); const b=d.querySelector(':scope > .ag-dlg-btns'); return getComputedStyle(d).paddingBottom === '0px' && !!b && Math.abs(b.getBoundingClientRect().bottom - d.getBoundingClientRect().bottom) < 2"));
-    check(`${tag}: ohne Zone kein Schalter "Immer aktiv ignorieren"`, await s.ev(`return !r.querySelector('${sheet} [data-key="always_off"]')`));
-    await s.tap(`${sheet} .ag-zline .ag-chip[data-mode="away"]`);
-    check(`${tag}: mit Zone steht der Schalter direkt unter den Modi (vor "Verhalten"), standardmässig aus`, await s.waitFor(`const off=r.querySelector('${sheet} [data-key="always_off"]'); const lab=[...r.querySelectorAll('${sheet} .ag-label')].find((x) => x.textContent.trim().toLowerCase().startsWith(${JSON.stringify(lang === "de" ? "verhalten" : "behaviour")})); return !!off && !!lab && off.getAttribute('aria-checked') === 'false' && (off.compareDocumentPosition(lab) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0`));
-    await s.tap(`${sheet} [data-key="always_off"]`);
-    check(`${tag}: Schalter setzt "Immer aktiv ignorieren" für den Sensor`, await s.waitFor(`return r.host.sensors.draft.opts["${smoke}"]?.always_off === true`));
-    await s.tap(`${sheet} .ag-zline .ag-chip[data-key="always"]`);
-    check(`${tag}: Pille "Immer aktiv" ausgeschaltet: der Schalter dazu verschwindet`, await s.waitFor(`return !r.querySelector('${sheet} [data-key="always_off"]') && r.querySelector('${sheet} .ag-zline .ag-chip[data-key="always"]').getAttribute('aria-pressed') === 'false'`));
-    if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
+    await closeSheet();
+    // Der Sensor kommt zusätzlich in die Zone "Abwesend" (Kästchen der Tabelle)
+    await s.tap(`.ag-gbody [data-box][data-mode="away"][data-ent="${smoke}"]`);
+    await shown();
+    check(`${tag}: in einer Zone: Schalter "nur der Modus zählt", standardmässig an`, await s.waitFor(`const b=r.querySelector('${sw}'); return !!b && b.getAttribute('aria-checked') === 'true' && b.closest('.ag-orow').innerText.includes(${JSON.stringify(T.only)})`));
+    check(`${tag}: der Rahmen nimmt den Modus aus: "deaktiviert und scharf in …", mit Hinweis auf Abwesend`, (await banner()).includes(T.dis) && (await banner()).includes(T.away) && !(await banner()).includes(T.every), await banner());
+    await s.tap(sw);
+    check(`${tag}: Schalter aus: eigener Wert im Entwurf, Erklärung nennt beide Abläufe`, await s.waitFor(`const b=r.querySelector('${sw}'); return r.host.sensors.draft.opts["${smoke}"]?.always_off === false && b.getAttribute('aria-checked') === 'false' && b.closest('.ag-orow').innerText.includes(${JSON.stringify(T.both)})`));
+    check(`${tag}: Schalter aus: der Rahmen nennt wieder "in jedem Zustand der Anlage"`, (await banner()).includes(T.every), await banner());
+    await closeSheet();
     await s.tap('.ag-foot [data-sen="cancel"]');
 
     // Mit "Einstellungen pro Modus": ein Sensor, der nur "Immer aktiv" ist und im gewählten Reiter (Anwesend) in keiner Zone steht,
-    // zeigt im Blatt den Bereich "Immer aktiv" (Werte des Modus hätten für ihn keine Wirkung)
+    // zeigt im Blatt den Bereich "Immer aktiv"; steht er in der Zone, zeigt es den Modus und den Schalter mit dem Namen des Modus
     await s.tap('[data-sen="permode"]');
     await s.waitFor("return !!r.querySelector('[data-seg=\"sen-mode\"]')");
-    if (mobile || !(await s.ev("return !!r.querySelector('.ag-side .ag-zline')"))) await s.tap(`[data-sen="detail"][data-ent="${smoke}"]`); // auf dem Desktop bleibt das Blatt offen
-    check(`${tag}: Blatt eines nur "Immer aktiv"-Sensors im Reiter "Anwesend" zeigt den Bereich "Immer aktiv"`, await s.waitFor(`const b=r.querySelector('${sheet} .ag-pmbanner'); return !!b && b.innerText.includes(${JSON.stringify(lang === "de" ? "in jedem Zustand" : "every state")}) && !!r.querySelector('${sheet} [data-sen="mopt"][data-mode="always"][data-key="report_only"]') && !r.querySelector('${sheet} [data-sen="mopt"][data-mode="home"]')`));
-    await s.tap(`${sheet} .ag-zline .ag-chip[data-mode="home"]`);
-    check(`${tag}: steht er dort in der Zone, zeigt das Blatt den Modus "Anwesend"`, await s.waitFor(`const b=r.querySelector('${sheet} .ag-pmbanner'); return !!b && !b.innerText.includes(${JSON.stringify(lang === "de" ? "in jedem Zustand" : "every state")}) && !!r.querySelector('${sheet} [data-sen="mopt"][data-mode="home"]')`));
-    if (mobile) await s.tap('#ag-sheet .ag-dlg-btns [data-sen="close-detail"]');
+    await shown();
+    check(`${tag}: pro Modus, nicht in der Zone des Reiters: Bereich "Immer aktiv" ("in jedem Zustand der Anlage")`, (await banner()).includes(T.every), await banner());
+    await closeSheet();
+    await s.tap(`.ag-gbody [data-box][data-mode="home"][data-ent="${smoke}"]`);
+    await shown();
+    check(`${tag}: pro Modus, in der Zone: der Rahmen nennt "scharf in Anwesend", der Schalter trägt den Namen des Modus`, await s.waitFor(`const b=r.querySelector('${sheet} .ag-pmbanner'); const o=r.querySelector('${sw}'); return !!b && b.innerText.includes(${JSON.stringify(`${T.armed} ${T.home}`)}) && !!o && o.getAttribute('aria-checked') === 'true' && o.closest('.ag-orow').innerText.includes(${JSON.stringify(T.home)})`));
+    await closeSheet();
     await s.tap('.ag-foot [data-sen="cancel"]');
 
     // Anlage › Modi: Pille neben den Modi, Standard an

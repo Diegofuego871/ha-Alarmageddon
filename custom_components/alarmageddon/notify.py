@@ -273,7 +273,7 @@ class Notifier:
         self._last_state = str(self._ctl.state)
         # Neustart mitten im Alarm: der Auslöser für "Alarm endet" ist der Modus, in dem die Anlage noch steht
         if self._ctl.state == AlarmControlPanelState.TRIGGERED:
-            self._alarm_trigger = self._ctl.mode or "always"
+            self._alarm_trigger = self._ctl.alarm_plan()[0]
         self._unsubs.append(self._ctl.add_listener(self._on_change))
         self._unsubs.append(self._ctl.add_event_listener(self._on_event))
         self._unsubs.append(self.hass.bus.async_listen("mobile_app_notification_action", self._on_action))
@@ -301,9 +301,11 @@ class Notifier:
         self._last_state = state
         name = self.entry.title
         if state == AlarmControlPanelState.TRIGGERED:
-            trigger = self._ctl.mode or "always"
-            self._alarm_trigger = trigger
-            if self._on("triggered") and not self.workflow_has_notify(trigger):
+            # Der Hauptablauf des Alarms bestimmt Alarmmeldung und "Alarm endet"; laufen zwei Abläufe (Modus und "Immer aktiv"),
+            # entfällt die Standardmeldung, sobald einer von ihnen einen Push-Schritt hat
+            plan = self._ctl.alarm_plan()
+            self._alarm_trigger = plan[0]
+            if self._on("triggered") and not any(self.workflow_has_notify(flow) for flow in plan):
                 self.send_alarm()
         elif state == AlarmControlPanelState.PENDING and self._on("pending", self._ctl.mode):
             self._send("pending", self._t("pending_title", name=name),
@@ -384,8 +386,8 @@ class Notifier:
 
     def _alarm_steps(self) -> list[dict[str, Any]]:
         """Push-Schritte des Ablaufs für den laufenden Alarm (leer: es geht die Standardmeldung raus)."""
-        steps = (self.entry.options.get("workflows") or {}).get(self._ctl.mode or "always", [])
-        return [s for s in steps if s.get("type") == "notify"]
+        flows = self.entry.options.get("workflows") or {}
+        return [s for flow in self._ctl.alarm_plan() for s in flows.get(flow, []) if s.get("type") == "notify"]
 
     def _buttons(self, step: dict[str, Any] | None) -> dict[str, bool]:
         """Welche Knöpfe eine Alarmmeldung hat: Wert aus dem Push-Schritt, sonst der frühere globale Wert."""

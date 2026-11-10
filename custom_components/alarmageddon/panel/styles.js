@@ -132,7 +132,7 @@ button { font: inherit; color: inherit; }
 .ag-table td { padding: 8px 14px; border-bottom: 1px solid var(--ag-divider); vertical-align: middle; }
 .ag-table tr:last-child td { border-bottom: 0; }
 .ag-table tr.grp td { background: var(--ag-subtle); font-weight: 500; font-size: 13px; padding: 8px 14px; }
-.ag-table tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--ag-primary); }
+.ag-table tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--ag-warning); }
 .ag-nm { display: flex; align-items: center; gap: 10px; min-width: 200px; }
 .ag-nm small { display: block; color: var(--ag-text2); font-size: 12px; }
 .ag-av { width: 32px; height: 32px; border-radius: 10px; background: var(--ag-subtle); color: var(--ag-text2); display: grid; place-items: center; flex: none; }
@@ -169,6 +169,13 @@ button { font: inherit; color: inherit; }
 .ag-mentry { display: flex; align-items: center; gap: 10px; font-size: 13px; min-height: 44px; }
 .ag-mentry .ag-toggle { margin: 0; }
 .ag-group-label { font-size: 12px; color: var(--ag-text2); margin: 6px 2px 0; font-weight: 500; }
+/* Karten der Übersicht: Titel einer Gruppe (Bereich, Sensorart, Anlage) mit Anzahl, über die ganze Breite, mit Linie darunter */
+.ag-group-head { display: flex; align-items: center; gap: 8px; margin: 14px 2px 0; padding-bottom: 8px; border-bottom: 1px solid var(--ag-divider); font-size: 15px; color: var(--ag-text); }
+.ag-group-head b { font-weight: 600; }
+.ag-group-head .ag-ic { color: var(--ag-text2); }
+.ag-mcards > .ag-group-head:first-child { margin-top: 2px; }
+.ag-mcards.grid > .ag-group-head { margin-top: 14px; }
+.ag-mcards.grid > .ag-group-head:first-child { margin-top: 2px; }
 
 /* Dialoge (Code, Rückfrage): auf dem Handy als Blatt von unten */
 dialog.ag-dlg { border: 0; padding: 0; border-radius: 22px; background: var(--ag-card); color: var(--ag-text); box-shadow: var(--ag-shadow); width: min(420px, calc(100vw - 32px)); }
@@ -274,6 +281,7 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-pmbanner { display: flex; align-items: center; gap: 12px; margin: 4px 0 12px; padding: 12px 14px; border: 2px solid var(--ag-primary); border-radius: 14px; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-pmbanner small { display: block; font-size: 12px; font-weight: 500; opacity: .85; }
 .ag-pmbanner b { display: block; font-size: 18px; font-weight: 600; line-height: 1.25; }
+.ag-pmnote { display: block; margin-top: 4px; font-size: 13px; line-height: 1.4; color: var(--ag-text); opacity: .9; }
 .ag-pmscope { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--ag-primary); font-weight: 500; font-size: 13.5px; }
 .ag-pmgroup .ag-subh:first-of-type { margin-top: 4px; }
 .ag-box.own { position: relative; }
@@ -314,14 +322,19 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 
 /* 0.4.0: Aktionen als Ablauf, Benachrichtigungen */
 
+/* Ablauf: eine gedachte senkrechte Achse bei --wf-x. Markenzeile, Plus und Linienstücke sitzen im Fluss mittig auf ihr, nichts ist
+   absolut gelegt: die Linie kann darum nie über einem Symbol liegen und ist in jeder Breite und jedem Design gleich. */
+.ag-wf-line, .ag-wf-end { --wf-x: 34px; }
 .ag-wf-line { position: relative; display: flex; flex-direction: column; align-items: stretch; max-width: 820px; }
-.ag-wf-line::before { content: ""; position: absolute; left: 33px; top: 20px; bottom: 20px; width: 2px; background: var(--ag-divider); z-index: 0; }
 .ag-wf-start .ag-mini { background-color: var(--ag-bg); }
 .ag-wf-start .ag-mini.err { background-image: linear-gradient(var(--ag-error-soft), var(--ag-error-soft)); }
 .ag-wf-start .ag-mini.ok { background-image: linear-gradient(var(--ag-success-soft), var(--ag-success-soft)); }
-.ag-wf-start { display: flex; align-items: center; gap: 10px; padding: 6px 20px; font-weight: 500; position: relative; z-index: 1; }
-.ag-wf-plus { display: flex; padding: 18px 0 18px 20px; position: relative; z-index: 1; }
-.ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; position: relative; z-index: 2; }
+.ag-wf-start { display: flex; align-items: center; gap: 10px; padding: 6px 20px 0 calc(var(--wf-x) - 14px); font-weight: 500; }
+.ag-wf-plus { display: flex; flex-direction: column; align-items: center; width: 28px; margin-left: calc(var(--wf-x) - 14px); }
+.ag-wf-seg { flex: none; width: 2px; height: 16px; background: var(--ag-divider); }
+/* Nach einem Schritt, der nebenher läuft: die ganze Verbindung gestrichelt blau (der nächste Schritt startet sofort) */
+.ag-wf-plus.par .ag-wf-seg { background: repeating-linear-gradient(to bottom, var(--ag-primary) 0 4px, transparent 4px 8px); }
+.ag-wf-add { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--ag-primary); background: var(--ag-card); color: var(--ag-primary); display: grid; place-items: center; cursor: pointer; padding: 0; flex: none; }
 .ag-wf-add:hover { background: var(--ag-primary-soft); }
 .ag-flow { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ag-divider); background: transparent; color: var(--ag-text2); font: inherit; font-size: 12px; cursor: pointer; }
 .ag-flow:disabled { cursor: default; opacity: .75; }
@@ -329,7 +342,6 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-flow:hover { border-color: var(--ag-primary); }
 /* Läuft nebenher: gestrichelte Linie genau zwischen Karte und Plus (nie in die Karte hinein). Die Lücken sind deckend in der Seitenfarbe,
    so scheint die durchgehende Hauptlinie dahinter nicht durch und es entsteht keine doppelte Linie */
-.ag-wf-plus.par::before { content: ""; position: absolute; left: 33px; top: 0; height: 18px; width: 2px; background: repeating-linear-gradient(to bottom, var(--ag-primary) 0 4px, var(--ag-bg) 4px 7px); z-index: 0; }
 .ag-wf-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; z-index: 1; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }
@@ -344,11 +356,10 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-btns .ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-wf-empty { margin-left: 20px; }
 /* Ende des Ablaufs: die Linie des Ablaufs endet an der Marke "Alarm endet" und läuft nie durch die Karten */
-.ag-wf-main::before { bottom: 0; }
 .ag-wf-end { position: relative; max-width: 820px; }
-.ag-wf-end::before { content: ""; position: absolute; left: 33px; top: 0; height: 20px; width: 2px; background: var(--ag-divider); }
-.ag-wf-end { margin-top: 8px; }
-.ag-wf-end .ag-wf-start { padding-top: 6px; }
+.ag-wf-end::before { content: ""; display: block; width: 2px; height: 12px; margin-left: calc(var(--wf-x) - 1px); background: var(--ag-divider); }
+.ag-wf-end.par::before { background: repeating-linear-gradient(to bottom, var(--ag-primary) 0 4px, transparent 4px 8px); }
+.ag-wf-end .ag-wf-start { padding-top: 0; }
 .ag-wf-endcard { margin: 8px 0 0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
 .ag-wf-endcard .ag-wf-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ag-wf-line > .ag-card { position: relative; z-index: 1; }
@@ -493,9 +504,7 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 :host([narrow]) .ag-wf-step { flex-wrap: wrap; }
 :host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; }
 :host([narrow]) .ag-wf-endcard .ag-wf-btns { width: auto; }
-:host([narrow]) .ag-wf-line::before, :host([narrow]) .ag-wf-end::before { left: 29px; }
-:host([narrow]) .ag-wf-plus.par::before { left: 29px; }
-:host([narrow]) .ag-wf-start, :host([narrow]) .ag-wf-plus { padding-left: 16px; }
+:host([narrow]) .ag-wf-line, :host([narrow]) .ag-wf-end { --wf-x: 30px; }
 
 /* 0.5.0: Codes pro Person, Sicherung, Prognose */
 .ag-fc { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }

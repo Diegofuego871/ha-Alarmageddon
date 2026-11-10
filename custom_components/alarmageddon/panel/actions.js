@@ -256,6 +256,17 @@ export class ActionsUi {
     return this.ensureDraft()?.wf[this.trigger] || [];
   }
 
+  // Reiter (Auslöser) mit ungespeicherten Änderungen (für den Punkt am Reiter)
+  dirtyTabs() {
+    const s = this.system;
+    const d = this.draft;
+    if (!s || !d || d.entry !== s.entry_id) return [];
+    const eff = this._effective(d, s);
+    const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(eff.wf)]);
+    return [...all].filter((k) => JSON.stringify((s.workflows || {})[k] || []) !== JSON.stringify(eff.wf[k] || []) || JSON.stringify(normEnd((s.workflow_end || {})[k])) !== JSON.stringify(normEnd((eff.end || {})[k])))
+      .map((k) => ["data-trigger", k]);
+  }
+
   dirtyCount() {
     const s = this.system;
     const d = this.draft;
@@ -291,7 +302,9 @@ export class ActionsUi {
       ${this.trigger === "always" && d.perMode ? `<div class="ag-t2 ag-small" style="margin:-6px 4px 0">${esc(this._t("wfAlwaysHint"))}</div>` : ""}`);
     const steps = this.steps();
     // Nach einem Schritt, der nebenher läuft, ist die Verbindung gestrichelt: der nächste Schritt startet sofort
-    const plus = (i) => `<div class="ag-wf-plus ${alongside(steps[i - 1]) ? "par" : ""}"><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button></div>`;
+    // Jede Verbindung zeichnet ihre Linie selbst (zwei Stücke über und unter dem Plus): so liegt sie nie über einem Symbol und hat
+    // immer genau eine Farbe. Gestrichelt blau nach einem Schritt, der nebenher läuft (was folgt, startet sofort).
+    const plus = (i) => `<div class="ag-wf-plus ${alongside(steps[i - 1]) ? "par" : ""}"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span></div>`;
     const cards = steps.map((step, i) => this._card(step, i, running)).map((c, i) => c + plus(i + 1)).join("");
     h._setHtml(body, `<div class="ag-wf-line ag-wf-main">
         <div class="ag-wf-start"><span class="ag-mini err">${ic("alert", 16)}</span>${esc(this._t("wfStart"))}</div>${plus(0)}
@@ -304,7 +317,9 @@ export class ActionsUi {
   // Festes Ende des Ablaufs: "Alarm endet" (Deaktivieren/Quittieren); alle Einstellungen im Fenster wie bei den Schritten
   _endHtml() {
     const e = normEnd(this.draft?.end?.[this.trigger]);
-    return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok ag-end-ic">${ic("check", 16)}</span>${esc(this._t("wfEnd"))}</div>
+    // Das Linienstück zu "Alarm endet" hat dieselbe Art wie die Verbindung davor (gestrichelt nach einem Schritt, der nebenher läuft)
+    const last = this.steps().at(-1);
+    return `<div class="ag-wf-end ${alongside(last) ? "par" : ""}"><div class="ag-wf-start"><span class="ag-mini ok ag-end-ic">${ic("check", 16)}</span>${esc(this._t("wfEnd"))}</div>
       <div class="ag-card ag-wf-endcard"><span class="ag-wf-icon k-end">${ic("bell", 20)}</span><div class="ag-wf-text"><b>${esc(this._t(e.notify ? "wfEndOwn" : "wfEndDefault"))}</b><small class="ag-t2 ag-small">${esc(this._t(e.notify ? "wfEndOwnHint" : "wfEndDefaultHint"))}</small></div>
         <div class="ag-wf-btns"><button class="ag-iconbtn" data-wf="end-edit" aria-label="${esc(this._t("wfEndEdit"))}" title="${esc(this._t("wfEndEdit"))}">${ic("pencil", 18)}</button></div></div></div>`;
   }
@@ -930,6 +945,7 @@ export class ActionsUi {
       s.workflows = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(wf).filter(([, v]) => v.length))));
       this.draft = null;
       this.saveState = "saved";
+      this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
       h._reloadWait(s.entry_id);
     } catch (err) {
       this.saveState = this._t("saveFailed", { message: errText(err) });

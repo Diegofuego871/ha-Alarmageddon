@@ -17,6 +17,9 @@ const FIELD_ON = {
   desktop: ["systems", "battery", "forecast", "signal", "firmware", "changed"],
   mobile: ["systems", "battery", "signal", "firmware", "changed"],
 };
+// Gruppierung der Sensorliste (Liste und Karten): nach Bereich, nach Sensorart, nach Anlage oder gar nicht
+const GROUPS = ["area", "type", "system", "none"];
+const GROUP_LABEL = { area: "groupedArea", type: "groupedType", system: "groupedSystem", none: "groupedNone" };
 const defaultView = (kind) => ({
   layout: "list", group: "area", sort: "name", dir: "asc",
   cols: COLUMNS.map((k) => [k, COL_ON[kind].includes(k)]),
@@ -37,7 +40,7 @@ function sanitizeView(raw, kind) {
   };
   return {
     layout: raw.layout === "cards" ? "cards" : "list",
-    group: ["area", "system", "none"].includes(raw.group) ? raw.group : d.group,
+    group: GROUPS.includes(raw.group) ? raw.group : d.group,
     sort: ["name", ...COLUMNS].includes(raw.sort) ? raw.sort : d.sort,
     dir: raw.dir === "desc" ? "desc" : "asc",
     cols: order(raw.cols, d.cols),
@@ -278,6 +281,7 @@ export class ListUi {
         <label class="list-search">${ic("search", 18)}<input type="search" data-list="search" placeholder="${esc(this._t("search"))}" value="${esc(this.q)}" aria-label="${esc(this._t("search"))}">
           <button class="ag-clear" data-list="clear" aria-label="${esc(this._t("clearSearch"))}" ${this.q ? "" : "hidden"}>${ic("close", 16)}</button></label>
         <span class="ag-lchips"></span>${sysSel}${areaSel}${typeSel}<span class="ag-grow"></span>
+        ${this.host.hasAttribute("narrow") ? "" : `<select class="ag-select" data-list="group" aria-label="${esc(this._t("viewGroup"))}">${GROUPS.map((g) => `<option value="${g}" ${this.view.group === g ? "selected" : ""}>${esc(this._t(GROUP_LABEL[g]))}</option>`).join("")}</select>`}
         ${this.host.hasAttribute("narrow") ? "" : this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
         <button class="ag-btn" data-list="view">${ic("columns", 18)}${esc(this._t("view"))}</button></div>`;
   }
@@ -299,16 +303,21 @@ export class ListUi {
     return this.view.layout === "cards" ? this._cards(groups, narrow) : this._table(groups);
   }
 
+  // Gruppen der Ansicht als [Titel, Zeilen, Symbol]: nach Bereich und Anlage alphabetisch, nach Sensorart in der Reihenfolge des
+  // Filters "Alle Arten" (Türen, Fenster, Bewegung, …). Ein Sensor mehrerer Anlagen steht bei "Anlage" in jeder seiner Gruppen.
   _groups(rows) {
-    if (this.view.group === "none") return [[null, rows]];
+    const by = this.view.group;
+    if (by === "none") return [[null, rows]];
+    const known = new Set(TYPES.map(([k]) => k));
     const map = new Map();
     for (const r of rows) {
-      const keys = this.view.group === "system" ? r.systems.map((s) => s.title) : [r.area];
+      const keys = by === "system" ? r.systems.map((s) => s.title) : by === "type" ? [known.has(r.info.type) ? r.info.type : "other"] : [r.area];
       for (const k of keys) {
         if (!map.has(k)) map.set(k, []);
         map.get(k).push(r);
       }
     }
+    if (by === "type") return TYPES.filter(([k]) => map.has(k)).map(([k, icon, label]) => [this._t(label), map.get(k), icon]);
     return [...map].sort((a, b) => a[0].localeCompare(b[0]));
   }
 
@@ -388,7 +397,7 @@ export class ListUi {
   _cards(groups, narrow = false) {
     const fields = this.fieldsOn();
     const on = (c) => fields.includes(c);
-    return `<div class="ag-mcards ${narrow ? "" : "grid"}">${groups.map(([g, rows]) => `${g !== null ? `<div class="ag-group-label">${esc(g)}</div>` : ""}${rows.map((r) => {
+    return `<div class="ag-mcards ${narrow ? "" : "grid"}">${groups.map(([g, rows, gi]) => `${g !== null ? `<div class="ag-group-label ag-group-head">${gi ? ic(gi, 18) : ""}<b>${esc(g)}</b><span class="ag-t2">${rows.length}</span></div>` : ""}${rows.map((r) => {
       const [icon] = DC[r.info.device_class] || ["sensor"];
       const meta = [this._batteryHtml(r), on("forecast") ? this._forecastHtml(r) : "", on("signal") ? this._signalHtml(r) : "",
         r.info.sw_version && on("firmware") ? `<span class="ag-t2">${ic("chip", 14)} ${esc(r.info.sw_version)}</span>` : ""].filter(Boolean).join("");
@@ -418,7 +427,7 @@ export class ListUi {
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
       <div class="ag-t2 ag-small">${esc(this._t(this.kind === "mobile" ? "viewForMobile" : "viewForDesktop"))}</div>
       <div class="ag-label">${esc(this._t("viewLayout"))}</div>${seg("layout", [["list", "layoutList"], ["cards", "layoutCards"]])}
-      <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["system", "groupSystem"], ["none", "groupNone"]])}
+      <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["type", "groupType"], ["system", "groupSystem"], ["none", "groupNone"]])}
       <div class="ag-label">${esc(this._t("viewSort"))}</div><select class="ag-input" data-list="vsort" aria-label="${esc(this._t("viewSort"))}">${["name", ...COLUMNS].map((k) => `<option value="${k}" ${this.view.sort === k ? "selected" : ""}>${esc(this._t(k === "name" ? "colName" : COL_LABEL[k]))}</option>`).join("")}</select>
       <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc"], ["desc", "dirDesc"]])}</div>
       <div class="ag-label">${esc(this._t("viewColumns"))}</div><div class="ag-colist">${rows("cols")}</div>
@@ -505,7 +514,12 @@ export class ListUi {
     if (el.dataset.list === "sys") this.sys = el.value;
     else if (el.dataset.list === "area") this.area = el.value;
     else if (el.dataset.list === "type") this.type = el.value;
-    else if (el.dataset.list === "vsort") {
+    else if (el.dataset.list === "group") {
+      // Gruppierung direkt aus der Werkzeugleiste (dieselbe Einstellung wie in "Ansicht", je Gerät gemerkt)
+      this.view.group = GROUPS.includes(el.value) ? el.value : "area";
+      this._applyView();
+      return true;
+    } else if (el.dataset.list === "vsort") {
       this.view.sort = el.value;
       this._applyView();
       return true;

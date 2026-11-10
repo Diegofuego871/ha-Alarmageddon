@@ -30,7 +30,7 @@ An alarm system for Home Assistant that you set up in one place, and that keeps 
 
 ### Overview
 
-All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and the list of all sensors with search, filters, sorting and a choice of columns. The same on the phone:
+All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and all sensors as a list or as cards, with search, filters, sorting, a choice of columns and grouping by area, sensor type or alarm system. The same on the phone:
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-en.png" alt="Overview on the phone" width="270"></p>
 
@@ -156,7 +156,7 @@ Details for those who want to know exactly. Click to open.
 <details>
 <summary><b>Options per sensor</b></summary>
 
-- **Always active:** can be switched off as a whole (Configuration › System). Triggers in every state, armed or disarmed, at once (smoke, water, gas), with the options of the tab "Always active". If the sensor is also in the zone of a mode, both rules run; a switch "Ignore Always active" leaves only the rule of that mode.
+- **Always active:** can be switched off as a whole (Configuration › System). Triggers in every state, armed or disarmed, at once (smoke, water, gas), with the options of the tab "Always active". If the sensor is also in the zone of a mode, only that mode counts while the alarm system is armed in it (its settings and its actions); with the switch "Armed in <mode>: only <mode> counts" off, "Always active" applies as well: the sensor triggers at once and both flows of alarm actions run. When disarmed, and in modes that do not contain the sensor, the actions of "Always active" run.
 - **May be open when arming:** an open sensor does not block arming and triggers after it was closed and opened again.
 - **Bypass when arming:** an open sensor is ignored until the next disarming.
 - **Arm as soon as closed:** closing this sensor during the exit delay (the front door behind you) arms at once instead of waiting for the delay to end.

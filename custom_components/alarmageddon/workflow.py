@@ -14,6 +14,7 @@ Sicherheitsregeln (CLAUDE.md):
 from __future__ import annotations
 
 import asyncio
+from contextvars import ContextVar
 from datetime import timedelta
 from functools import partial
 import logging
@@ -72,6 +73,11 @@ def start_budget() -> float:
     return 2 * SNAPSHOT_TIMEOUT + WATCHDOG_GRACE
 
 
+# Der Ablauf, in dem der laufende Code steht ("home", "away", "night" oder "always"). Zwei Abläufe können nebeneinander laufen
+# (Modus und "Immer aktiv"); jeder läuft in seiner eigenen Aufgabe, darum trägt die Aufgabe ihren Ablauf mit.
+_LANE: ContextVar[str | None] = ContextVar("alarmageddon_lane", default=None)
+
+
 def _retrieve(task: asyncio.Task) -> None:
     """Ausnahme einer nicht mehr abgewarteten Aufgabe als abgeholt markieren (sonst meldet asyncio sie beim Aufräumen)."""
     if not task.cancelled():
@@ -112,7 +118,9 @@ class WorkflowRunner:
         # Wächter: der Lauf, dessen Schritte schon gestartet sind (nie zweimal starten), der Schritt, an dem der Ablauf steht
         # (für das Weitermachen nach einem Abbruch), und die Aufsicht über den Start
         self._begun: dict[str, Any] | None = None
-        self._position = 0
+        # Stand je Ablauf (Schlüssel: Auslöser). Neben dem Hauptablauf kann ein zweiter laufen ("Immer aktiv" zusätzlich zum Modus)
+        self._positions: dict[str, int] = {}
+        self._also_task: asyncio.Task | None = None
         self._guard: asyncio.Task | None = None
 
     # ----- Konfiguration -----
@@ -144,6 +152,9 @@ class WorkflowRunner:
             if self._ctl.state == AlarmControlPanelState.TRIGGERED and not saved.get("test"):
                 self._begun = saved
                 self._spawn(saved, int(saved.get("index", 0) or 0))
+                also = saved.get("also")
+                if isinstance(also, dict) and also.get("trigger"):
+                    self._spawn(saved, int(also.get("index", 0) or 0), str(also["trigger"]))
             else:
                 await self.async_stop()
 
@@ -179,7 +190,8 @@ class WorkflowRunner:
         if state == previous:
             return
         if state == AlarmControlPanelState.TRIGGERED:
-            trigger = self._ctl.mode or "always"
+            # Hauptablauf des Alarms (Modus oder "Immer aktiv"); ein zweiter Ablauf kommt in async_run aus demselben Plan dazu
+            trigger = self._ctl.alarm_plan()[0]
             # Zuerst die Aufsicht, dann der Start: scheitert oder hängt der Start, beginnt der Wächter die Schritte selbst
             self._watch_start(trigger)
             self.hass.async_create_task(self._start(trigger))
@@ -226,6 +238,11 @@ class WorkflowRunner:
         if not steps:
             return False
         run: dict[str, Any] = {"trigger": trigger, "index": 0, "test": test, "snapshot": {}, "sonos": [], "steps": override}
+        also = None if test else self._also(trigger)
+        if also:
+            # Zweiter Ablauf neben dem Hauptablauf, mit eigenem Stand (Schritt, Ende einer Wartezeit) für den Neustart
+            run["also"] = {"trigger": also, "index": 0}
+            steps = [*steps, *self.steps(also)]  # der Schnappschuss der Geräte umfasst beide Abläufe
         self._run = run
         try:
             await self._watched(self._prepare(run, steps, inherited), start_budget() - WATCHDOG_GRACE, "prepare")
@@ -323,6 +340,28 @@ class WorkflowRunner:
         except Exception:  # noqa: BLE001 - der Wächter selbst darf nie scheitern
             _LOGGER.exception("%s: the watchdog could not record its intervention", self.entry.title)
 
+    def _also(self, trigger: str) -> str | None:
+        """Zweiter Ablauf des laufenden Alarms neben `trigger` (aus dem Plan des Automaten), wenn es einen gibt."""
+        try:
+            plan = self._ctl.alarm_plan()
+        except Exception:  # noqa: BLE001 - der Hauptablauf läuft in jedem Fall
+            _LOGGER.exception("%s: the second flow of the alarm actions cannot be determined", self.entry.title)
+            return None
+        return next((flow for flow in plan if flow != trigger and self.steps(flow)), None)
+
+    @property
+    def _position(self) -> int:
+        """Schritt, an dem der Hauptablauf steht."""
+        return self._positions.get((self._run or {}).get("trigger", ""), 0)
+
+    @staticmethod
+    def _state(run: dict[str, Any], lane: str | None) -> dict[str, Any]:
+        """Gespeicherter Stand eines Ablaufs: der Lauf selbst für den Hauptablauf, `run["also"]` für den zweiten."""
+        also = run.get("also")
+        if lane is not None and isinstance(also, dict) and also.get("trigger") == lane and lane != run.get("trigger"):
+            return also
+        return run
+
     @callback
     def _begin(self, run: dict[str, Any]) -> bool:
         """Die Schritte eines Laufs starten, genau einmal: nach der Vorbereitung oder, wenn die ausbleibt, durch den Wächter."""
@@ -330,36 +369,47 @@ class WorkflowRunner:
             return False
         self._begun = run
         self._spawn(run, 0)
+        also = run.get("also")
+        if isinstance(also, dict) and also.get("trigger"):
+            self._spawn(run, 0, str(also["trigger"]))
         return True
 
     @callback
-    def _spawn(self, run: dict[str, Any], start: int) -> None:
-        self._position = start
-        task = self._background(self._execute(run["trigger"], start))
-        self._task = task
-        task.add_done_callback(partial(self._on_flow_done, run))
+    def _spawn(self, run: dict[str, Any], start: int, lane: str | None = None) -> None:
+        """Einen Ablauf ab `start` starten: den Hauptablauf oder (mit `lane`) den zweiten. Beide stehen unter derselben Aufsicht."""
+        main = lane is None or lane == run["trigger"]
+        trigger = run["trigger"] if main else lane
+        self._positions[trigger] = start
+        task = self._background(self._execute(trigger, start))
+        if main:
+            self._task = task
+        else:
+            self._also_task = task
+        task.add_done_callback(partial(self._on_flow_done, run, trigger))
 
     @callback
-    def _on_flow_done(self, run: dict[str, Any], task: asyncio.Task) -> None:
+    def _on_flow_done(self, run: dict[str, Any], trigger: str, task: asyncio.Task) -> None:
         """
         Aufsicht über den Ablauf als Ganzes: Endet er mit einem Fehler (ein Fehler ausserhalb eines Schritts, den die Schleife
         nicht abfängt), geht es mit dem nächsten Schritt weiter. Jeder Abbruch rückt um mindestens einen Schritt vor: nach dem
-        letzten Schritt ist Schluss, eine Endlosschleife ist ausgeschlossen.
+        letzten Schritt ist Schluss, eine Endlosschleife ist ausgeschlossen. Gilt für jeden der beiden Abläufe für sich.
         """
-        if task.cancelled() or self._run is not run or self._task is not task:
+        main = trigger == run["trigger"]
+        if task.cancelled() or self._run is not run or (self._task if main else self._also_task) is not task:
             return
         error = task.exception()
         if error is None:
             return
-        _LOGGER.error("%s: watchdog: the alarm actions stopped unexpectedly at step %s; continuing with the next step",
-                      self.entry.title, self._position + 1, exc_info=error)
+        position = self._positions.get(trigger, 0)
+        _LOGGER.error("%s: watchdog: the alarm actions (%s) stopped unexpectedly at step %s; continuing with the next step",
+                      self.entry.title, trigger, position + 1, exc_info=error)
         self._note("flow")
         try:
-            count = len(run.get("steps") or self.steps(run["trigger"]))
+            count = len((run.get("steps") if main else None) or self.steps(trigger))
         except Exception:  # noqa: BLE001 - ohne lesbare Schritte gibt es nichts fortzusetzen
             return
-        if self._position + 1 < count:
-            self._spawn(run, self._position + 1)
+        if position + 1 < count:
+            self._spawn(run, position + 1, trigger)
 
     @callback
     def _watch_start(self, trigger: str) -> None:
@@ -401,6 +451,9 @@ class WorkflowRunner:
             inherited = run or {}
             run = {"trigger": trigger, "index": 0, "test": False, "snapshot": dict(inherited.get("snapshot") or {}),
                    "sonos": list(inherited.get("sonos") or []), "steps": None}
+            also = self._also(trigger)
+            if also:
+                run["also"] = {"trigger": also, "index": 0}
             self._run = run
         self._note("start")
         self._begin(run)
@@ -437,16 +490,18 @@ class WorkflowRunner:
         Die Schritte der Reihe nach. Jeder abgewartete Schritt läuft unter Aufsicht des Wächters (`_watched` mit der Grenze aus
         step_budget): keiner hält den nächsten länger auf als seine eigene Grenze, gleich aus welchem Grund.
         """
-        steps = (self._run or {}).get("steps") or self.steps(trigger)
+        _LANE.set(trigger)  # gilt für diese Aufgabe und alle, die sie startet (Schritte unter Aufsicht)
+        main = trigger == (self._run or {}).get("trigger")
+        steps = ((self._run or {}).get("steps") if main else None) or self.steps(trigger)
         test = bool(self._run and self._run.get("test"))
         for index in range(start, len(steps)):
             if self._run is None:
                 return
-            self._position = index  # zuerst und ohne Fehlerquelle: hier macht der Wächter nach einem Abbruch weiter
+            self._positions[trigger] = index  # zuerst und ohne Fehlerquelle: hier macht der Wächter nach einem Abbruch weiter
             step = steps[index]
             try:
                 # Mitschreiben (gespeicherter Stand für den Neustart, Zeitachse) ist Zusatz: ein Fehler darin hält keinen Schritt auf
-                self._run["index"] = index
+                self._state(self._run, trigger)["index"] = index
                 self._store.async_delay_save(lambda: self._run or {}, 0)
                 self._record(step, test)
             except Exception:  # noqa: BLE001 - Sicherheitsregel: die Schritte laufen in jedem Fall
@@ -507,13 +562,16 @@ class WorkflowRunner:
         if run is None:
             return float(seconds)
         now = dt_util.utcnow()
-        saved = run.get("until")
-        if isinstance(saved, dict) and saved.get("index") == self._position:
+        lane = _LANE.get() or run.get("trigger")
+        state = self._state(run, lane)  # jeder Ablauf merkt das Ende seines eigenen Schritts
+        position = self._positions.get(lane, 0)
+        saved = state.get("until")
+        if isinstance(saved, dict) and saved.get("index") == position:
             end = dt_util.parse_datetime(str(saved.get("at") or ""))
             if end is not None:
                 # Nie länger als eingestellt (auch nicht nach einem Sprung der Uhr), nie negativ
                 return min(float(seconds), max(0.0, (end - now).total_seconds()))
-        run["until"] = {"index": self._position, "at": (now + timedelta(seconds=seconds)).isoformat()}
+        state["until"] = {"index": position, "at": (now + timedelta(seconds=seconds)).isoformat()}
         try:
             self._store.async_delay_save(lambda: self._run or {}, 0)
         except Exception:  # noqa: BLE001 - Mitschreiben hält den Schritt nie auf
@@ -628,9 +686,10 @@ class WorkflowRunner:
         late, self._late = list(self._late), set()
         side, self._side_tasks = list(self._side_tasks), set()
         task, self._task = self._task, None
+        also, self._also_task = self._also_task, None
         for item in late:
             item.cancel()  # hängende Aufrufe enden mit dem Alarm; nicht abwarten
-        waiting = [item for item in (*side, task) if item is not None and not item.done()]
+        waiting = [item for item in (*side, task, also) if item is not None and not item.done()]
         for item in waiting:
             item.cancel()
         return waiting
@@ -654,7 +713,7 @@ class WorkflowRunner:
             return True
         # Ablauf schon zu Ende (alle Schritte durch), der Ton klingt aber vielleicht noch: auf jeden Fall stoppen
         if self._run is None and self._ctl.state == AlarmControlPanelState.TRIGGERED:
-            players = sorted({p for st in self.steps(self._ctl.mode or "always") if st.get("type") == "sound" for p in st.get("players", [])})
+            players = sorted({p for flow in self._ctl.alarm_plan() for st in self.steps(flow) if st.get("type") == "sound" for p in st.get("players", [])})
             if players:
                 await self._call("media_player", "media_stop", {"entity_id": players})
                 return True

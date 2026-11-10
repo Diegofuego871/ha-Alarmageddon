@@ -7,6 +7,25 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] - 2026-11-10
+
+One clear rule for sensors that are "Always active" and also in the zone of a mode, both flows of alarm actions side by side, consistent dots for unsaved changes, a flow drawing that can no longer go wrong, and the sensor cards on the overview grouped the way you choose.
+
+### Added
+
+- **Overview, sensors grouped the way you choose:** by area, by sensor type (doors, windows, motion, smoke and water, …), by alarm system or not at all. On the computer the choice sits in the toolbar next to "List / Cards", on the phone in "View"; it is remembered per device and applies to the list and to the cards. In the card view every group has a title with its number of sensors across the full width, so the cards no longer run together.
+
+### Changed
+
+- **"Always active" and a mode at the same time: one switch, clear by default.** For a sensor that is "Always active" and also in the zone of a mode, the sheet of the sensor has the switch "Armed in <mode>: only <mode> counts" (before: "Ignore Always active"). **On (new default):** while the alarm system is armed in that mode, only the settings and the actions of that mode apply to the sensor. **Off:** "Always active" applies as well: the sensor triggers at once and both flows of alarm actions run side by side, the one of the mode and the one of "Always active". When disarmed and in modes whose zone does not contain the sensor, "Always active" applies as before. Before this version the default was the other way round for the rule (the sensor triggered at once also in its mode), and only the actions of the mode ever ran while armed.
+- **Which alarm actions run** now follows the sensor: disarmed, or armed in a mode that does not contain the sensor, the actions of "Always active" run (before, an armed alarm system always ran the actions of the mode, also for a smoke detector outside the zone). If "Always active" has no actions of its own, the actions of the armed mode run, so no alarm stays without actions. Without "Settings per mode" in the actions (one flow for everything) the flow never runs twice.
+- **Sheet of the sensor:** the frame "These settings apply …" is always shown and says exactly when the settings take effect, for example "disarmed and armed in Home" with the note "Armed in Away, the settings and actions of that mode apply instead". The pills "Alarm modes" are gone from the sheet: which modes a sensor belongs to is set in the table (the boxes and the column "Always active").
+- **Orange dot = unsaved, everywhere the same:** on the tab "Configuration", on the sub-tab and now also on the tab of the mode that has unsaved changes (sensors, actions, notifications, alarm system). The dots and the marked rows disappear at once when saving, not only after the alarm system has reloaded. Own values (overrides) are marked blue, never orange; the bar on a changed sensor row is orange.
+
+### Fixed
+
+- **Drawing of the action flow:** the connecting line was partly blue and partly grey, and could lie over a symbol. Every connection now draws its own line in the flow of the page (one piece above and one below the plus) instead of one line behind everything: it always ends at the plus and at the cards, has one colour per connection (dashed blue after a step that runs alongside, also on the piece to "Alarm ends"), and sits on one axis with the symbols at every width and in both designs.
+- **Two flows under the same supervision:** the second flow has its own watchdog, its own set durations and its own place for a restart or reload, so a siren in either flow switches off after the time you set.
 ## [1.6.5] - 2026-11-10
 
 ### Changed
@@ -793,6 +812,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.7.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.7.0
 [1.6.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.5
 [1.6.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.4
 [1.6.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.3

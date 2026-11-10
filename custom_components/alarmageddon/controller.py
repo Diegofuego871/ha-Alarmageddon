@@ -32,6 +32,8 @@ from .code import match_code
 from .last_change import is_real_change
 from .const import (
     ARM_ON_CLOSE_SETTLE,
+    CONF_WORKFLOWS,
+    WORKFLOW_ALWAYS,
     CONF_CONFIRM_WINDOW,
     DEFAULT_CONFIRM_WINDOW,
     OPT_CONFIRM,
@@ -111,6 +113,9 @@ class AlarmController:
         self.deadline: datetime | None = None
         self.bypassed: set[str] = set()
         self.triggered_by: str | None = None
+        # Welche Abläufe der Alarmaktionen der laufende Alarm startet (siehe _flows_for und alarm_plan): der Modus, "always"
+        # ("Immer aktiv") oder beide. Leer ohne Alarm.
+        self.alarm_flows: list[str] = []
         self.changed_by: str | None = None
         self._listeners: list[Callable[[], None]] = []
         # Ereignisse ohne Zustandswechsel (Sensor ausgefallen) für Protokoll und später Meldungen
@@ -247,10 +252,10 @@ class AlarmController:
         presets = self.settings.presets if self.settings else DEFAULT_PRESETS
         return presets.get(sensor_type(self.hass, entity_id), [])
 
-    def option(self, entity_id: str, key: str, mode: str | None = None) -> bool:
+    def own_option(self, entity_id: str, key: str, mode: str | None = None) -> bool | None:
         """
-        Wirksamer Wert einer Sensor-Option: bei eingeschalteten Einstellungen je Modus der eigene Wert für diesen Modus, dann der eigene
-        Wert des Sensors (für alle Modi), sonst die Voreinstellung seiner Sensorart. Ohne Modus (deaktiviert) gelten die Werte für alle Modi.
+        Eigener Wert einer Sensor-Option oder None: bei eingeschalteten Einstellungen je Modus der eigene Wert für diesen Modus,
+        dann der eigene Wert des Sensors (für alle Modi). Ohne Modus (deaktiviert) gelten die Werte für alle Modi.
         """
         if self.options.get(CONF_PER_MODE_SENSORS):
             # Der Reiter "Immer aktiv" (Bereich SCOPE_ALWAYS) gilt, wenn die Anlage deaktiviert ist, und immer für die Option "Immer aktiv"
@@ -262,13 +267,60 @@ class AlarmController:
             if own_mode is not None:
                 return bool(own_mode)
         own = self.sensor_overrides.get(entity_id, {}).get(key)
-        if own is not None:
-            return bool(own)
-        return key in self.preset(entity_id)
+        return None if own is None else bool(own)
+
+    def option(self, entity_id: str, key: str, mode: str | None = None) -> bool:
+        """Wirksamer Wert einer Sensor-Option: der eigene Wert (siehe own_option), sonst die Voreinstellung der Sensorart."""
+        own = self.own_option(entity_id, key, mode)
+        return own if own is not None else key in self.preset(entity_id)
+
+    def only_mode(self, entity_id: str, mode: str | None) -> bool:
+        """
+        Schalter "Scharf: nur der Modus zählt" (OPT_ALWAYS_OFF) für einen Sensor, der "Immer aktiv" ist und zugleich in der Zone
+        des Modus steht. An (Standard seit 1.7.0): ist die Anlage in diesem Modus scharf, gelten für den Sensor nur die
+        Einstellungen und Aktionen des Modus. Aus: "Immer aktiv" gilt zusätzlich (löst sofort aus, beide Abläufe laufen).
+        In Modi, deren Zone den Sensor nicht enthält, hat der Schalter keine Wirkung: dort gilt "Immer aktiv".
+        """
+        if mode is None or entity_id not in self.zone(mode):
+            return False
+        own = self.own_option(entity_id, OPT_ALWAYS_OFF, mode)
+        return True if own is None else own
 
     def always_ignored(self, entity_id: str) -> bool:
-        """"Immer aktiv" ignorieren: nur im scharfen Modus, in dessen Zone der Sensor steht, und nur wenn der Nutzer es eingeschaltet hat."""
-        return self.mode is not None and entity_id in self.zone(self.mode) and self.option(entity_id, OPT_ALWAYS_OFF, self.mode)
+        """"Immer aktiv" gilt für diesen Sensor gerade nicht: die Anlage ist in einem Modus scharf, der ihn enthält, und nur der Modus zählt."""
+        return self.only_mode(entity_id, self.mode)
+
+    def _flows_for(self, entity_id: str | None, by_always: bool) -> list[str]:
+        """
+        Abläufe der Alarmaktionen für einen Alarm durch diesen Sensor (für jeden Nutzer nachvollziehbar, so steht es im Blatt):
+        - Anlage deaktiviert: "Immer aktiv".
+        - Scharf, ausgelöst über die Regel des Modus: der Modus.
+        - Scharf, ausgelöst über "Immer aktiv": steht der Sensor nicht in der Zone des Modus, "Immer aktiv"; steht er darin
+          (dann ist "nur der Modus zählt" ausgeschaltet), beide: der Modus und "Immer aktiv".
+        """
+        mode = self.mode
+        if mode is None:
+            return [WORKFLOW_ALWAYS]
+        if not by_always:
+            return [mode]
+        return [mode, WORKFLOW_ALWAYS] if entity_id is not None and entity_id in self.zone(mode) else [WORKFLOW_ALWAYS]
+
+    def alarm_plan(self) -> list[str]:
+        """
+        Die Abläufe, die für den laufenden Alarm wirklich laufen (erster = Hauptablauf, er bestimmt auch die Alarmmeldung):
+        die gewünschten aus alarm_flows, ohne leere und ohne doppelte (ohne "Einstellungen pro Modus" ist es derselbe Ablauf).
+        Hat "Immer aktiv" keinen eigenen Ablauf, läuft bei scharfer Anlage der Ablauf des Modus (im Zweifel alarmieren).
+        """
+        flows = self.options.get(CONF_WORKFLOWS) or {}
+        wanted = [f for f in self.alarm_flows if isinstance(f, str)] or [self.mode or WORKFLOW_ALWAYS]
+        plan: list[str] = []
+        for flow in wanted:
+            steps = flows.get(flow) or []
+            if steps and all(steps != (flows.get(other) or []) for other in plan):
+                plan.append(flow)
+        if not plan and self.mode and flows.get(self.mode):
+            plan = [self.mode]
+        return plan or wanted[:1]
 
     def always_sensors(self, mode: str | None = None) -> set[str]:  # noqa: ARG002 - "Immer aktiv" hängt an keinem Modus
         """
@@ -426,13 +478,14 @@ class AlarmController:
         went_off = old.state == STATE_ON and new.state == STATE_OFF
         went_away = old.state in (STATE_ON, STATE_OFF) and new.state in GONE
 
-        # Immer aktiv (Rauch, Wasser): gilt in jedem Zustand der Anlage und löst sofort aus. Seine Optionen stehen im Reiter "Immer aktiv"
-        # (Modus None), auch wenn die Anlage scharf ist. Mit "Stiller Alarm" nur eine Meldung: steht der Sensor zugleich in der Zone
-        # des scharfen Modus, gilt danach zusätzlich dessen Regel (beide Regeln laufen, die stärkere Wirkung zählt). Ein Schalter am
-        # Sensor ("Immer aktiv ignorieren", Standard aus) lässt in einem Modus nur die Regel dieses Modus gelten.
+        # Immer aktiv (Rauch, Wasser): löst sofort aus, bei deaktivierter Anlage und in jedem Modus, dessen Zone den Sensor nicht
+        # enthält. Seine Optionen stehen im Bereich "Immer aktiv" (Modus None). Steht er in der Zone des scharfen Modus, zählt
+        # standardmässig nur der Modus (only_mode): Regel und Aktionen des Modus. Ist das ausgeschaltet, gilt "Immer aktiv"
+        # zusätzlich: sofort Alarm, beide Abläufe (_flows_for). Mit "Stiller Alarm" nur eine Meldung, danach die Regel des Modus.
         if went_on and entity in self.always_sensors(self.mode) and self.state != AlarmControlPanelState.TRIGGERED and not self.always_ignored(entity):
             if not self.option(entity, OPT_REPORT_ONLY, None):
                 self.triggered_by = entity
+                self.alarm_flows = self._flows_for(entity, by_always=True)
                 self._go_triggered()
                 return
             self._report(entity)
@@ -450,6 +503,7 @@ class AlarmController:
             self._emit("sensor_offline", sensor=entity)
             if self.option(entity, OPT_OFFLINE_ALARM, self.mode):
                 self.triggered_by = entity
+                self.alarm_flows = self._flows_for(entity, by_always=False)
                 self._go_triggered()
             return
         if not went_on:
@@ -467,9 +521,11 @@ class AlarmController:
             if delayed:
                 return  # Verzögerung läuft schon, ein weiterer Eingangssensor verlängert sie nicht
             self.triggered_by = entity
+            self.alarm_flows = self._flows_for(entity, by_always=False)
             self._go_triggered()
             return
         self.triggered_by = entity
+        self.alarm_flows = self._flows_for(entity, by_always=False)
         if delayed:
             self._go_pending(delay)
         else:
@@ -570,6 +626,7 @@ class AlarmController:
         self._unconfirmed.clear()
         self.bypassed = bypassed
         self.triggered_by = None
+        self.alarm_flows = []
         self.changed_by = changed_by
         delay = self.exit_delay(mode)
         if delay > 0:
@@ -589,6 +646,7 @@ class AlarmController:
         self._unconfirmed.clear()
         self.bypassed = set()
         self.triggered_by = None
+        self.alarm_flows = []
         self.changed_by = changed_by
         self._set(AlarmControlPanelState.DISARMED)
 
@@ -612,6 +670,7 @@ class AlarmController:
     def async_trigger(self, changed_by: str | None = None) -> None:
         """Alarm von Hand (Dienst alarm_trigger, Panik). Geht auch aus "deaktiviert"."""
         self.triggered_by = None
+        self.alarm_flows = self._flows_for(None, by_always=False)
         self.changed_by = changed_by
         self._go_triggered()
 
@@ -628,6 +687,7 @@ class AlarmController:
             "bypassed": sorted(self.bypassed),
             "triggered_by": self.triggered_by,
             "changed_by": self.changed_by,
+            "alarm_flows": list(self.alarm_flows),
         }
 
     @callback
@@ -650,6 +710,10 @@ class AlarmController:
         self.triggered_by = data.get("triggered_by")
         self.changed_by = data.get("changed_by")
         self.mode = mode
+        # Abläufe des laufenden Alarms; ältere Stände kennen sie nicht (dann gilt der Modus bzw. "Immer aktiv", siehe alarm_plan)
+        flows = data.get("alarm_flows")
+        valid = {*self.modes, WORKFLOW_ALWAYS}
+        self.alarm_flows = [f for f in flows if f in valid] if isinstance(flows, list) else []
 
         if last_state in STATE_MODE and mode:
             self._go_armed()

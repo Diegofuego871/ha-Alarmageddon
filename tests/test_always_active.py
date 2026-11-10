@@ -1,4 +1,4 @@
-"""Immer aktiv (1.4.0): gilt in jedem Zustand der Anlage, mit den Optionen aus dem Reiter "Immer aktiv"; Schalter "Immer aktiv ignorieren"."""
+"""Immer aktiv (1.4.0): gilt in jedem Zustand der Anlage, mit den Optionen aus dem Reiter "Immer aktiv"; Schalter "Scharf: nur der Modus zählt" (1.7.0, Standard an)."""
 
 from __future__ import annotations
 
@@ -44,23 +44,48 @@ async def test_silent_alarm_of_the_always_tab_applies_in_every_state(hass: HomeA
 
 
 async def test_both_rules_run_the_stronger_effect_wins(hass: HomeAssistant, freezer) -> None:
-    """Immer aktiv meldet nur, die Zone alarmiert (mit Eingangsverzögerung): beide Regeln laufen, der Alarm kommt über die Zone."""
-    entry = await _setup(hass, per_mode_sensors=True, sensor_options=ALWAYS, sensor_modes={"always": {SMOKE: {"report_only": True}}}, **IN_AWAY)
+    """
+    Schalter aus ("Immer aktiv" gilt zusätzlich): Immer aktiv meldet nur, die Zone alarmiert (mit Eingangsverzögerung): beide
+    Regeln laufen, der Alarm kommt über die Zone.
+    """
+    entry = await _setup(hass, per_mode_sensors=True, sensor_options=ALWAYS,
+                         sensor_modes={"always": {SMOKE: {"report_only": True}}, "away": {SMOKE: {"always_off": False}}}, **IN_AWAY)
     await call(hass, "alarm_arm_away")
     await open_sensor(hass, SMOKE)
     assert state(hass) == AlarmControlPanelState.PENDING  # Regel der Zone mit Eingangsverzögerung
     assert any(e.get("kind") == "sensor_report" for e in entry.runtime_data.events.events)  # und die Meldung von "Immer aktiv"
 
 
-async def test_always_active_beats_the_entry_delay_of_the_zone(hass: HomeAssistant) -> None:
+async def test_always_active_beats_the_entry_delay_of_the_zone_when_the_switch_is_off(hass: HomeAssistant) -> None:
+    """Schalter aus: "Immer aktiv" gilt auch im Modus, der Sensor löst sofort aus (ohne die Eingangsverzögerung der Zone)."""
+    await _setup(hass, sensor_options={SMOKE: {"always": True, "always_off": False}}, **IN_AWAY)
+    await call(hass, "alarm_arm_away")
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+
+
+async def test_by_default_only_the_mode_counts_where_the_sensor_is_in_the_zone(hass: HomeAssistant) -> None:
+    """
+    Standard seit 1.7.0: Ist die Anlage in einem Modus scharf, dessen Zone den Sensor enthält, gilt für ihn nur die Regel des
+    Modus (hier die Eingangsverzögerung). Deaktiviert und in Modi ohne den Sensor gilt weiter "Immer aktiv".
+    """
     await _setup(hass, sensor_options=ALWAYS, **IN_AWAY)
     await call(hass, "alarm_arm_away")
     await open_sensor(hass, SMOKE)
-    assert state(hass) == AlarmControlPanelState.TRIGGERED  # sofort, ohne Eingangsverzögerung
+    assert state(hass) == AlarmControlPanelState.PENDING
+    await call(hass, "alarm_disarm")
+    await open_sensor(hass, SMOKE, "off")
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # deaktiviert: immer aktiv
+    await call(hass, "alarm_disarm")
+    await open_sensor(hass, SMOKE, "off")
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # Anwesend enthält ihn nicht: immer aktiv
 
 
 async def test_ignore_switch_leaves_only_the_rule_of_the_mode(hass: HomeAssistant) -> None:
-    """Schalter "Immer aktiv ignorieren" (Standard aus): im Modus, in dessen Zone der Sensor steht, gilt nur dessen Regel."""
+    """Schalter "nur der Modus zählt" ausdrücklich an: im Modus, in dessen Zone der Sensor steht, gilt nur dessen Regel."""
     await _setup(hass, sensor_options={SMOKE: {"always": True, "always_off": True}}, **IN_AWAY)
     await call(hass, "alarm_arm_away")
     await open_sensor(hass, SMOKE)
@@ -81,12 +106,12 @@ async def test_ignore_switch_does_not_apply_where_the_sensor_is_not_in_the_zone(
 
 
 async def test_ignore_switch_per_mode(hass: HomeAssistant) -> None:
-    """Mit "Einstellungen pro Modus": der Schalter kann je Modus gesetzt werden (hier nur in Abwesend)."""
-    await _setup(hass, per_mode_sensors=True, sensor_options=ALWAYS, sensor_modes={"away": {SMOKE: {"always_off": True}}},
+    """Mit "Einstellungen pro Modus": der Schalter gilt je Modus (in Anwesend aus: "Immer aktiv" gilt zusätzlich; in Abwesend Standard an)."""
+    await _setup(hass, per_mode_sensors=True, sensor_options=ALWAYS, sensor_modes={"home": {SMOKE: {"always_off": False}}},
                  zone_home=[FRONT_DOOR, "binary_sensor.fenster_kueche", SMOKE], **{k: v for k, v in IN_AWAY.items()})
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, SMOKE)
-    assert state(hass) == AlarmControlPanelState.TRIGGERED  # Anwesend: Schalter dort aus
+    assert state(hass) == AlarmControlPanelState.TRIGGERED  # Anwesend: Schalter aus, "Immer aktiv" löst sofort aus
     await call(hass, "alarm_disarm")
     await open_sensor(hass, SMOKE, "off")
     await call(hass, "alarm_arm_away")

@@ -52,6 +52,12 @@ export class NotifyUi {
     this.saveState = null;
   }
 
+  // Reiter der Modi mit ungespeicherten Änderungen (für den Punkt am Reiter)
+  dirtyTabs() {
+    if (!this.draft) return [];
+    return ALL_MODES.filter((m) => JSON.stringify(this.base.modes?.[m] || {}) !== JSON.stringify(this.draft.modes?.[m] || {})).map((m) => ["data-nt", `tab:${m}`]);
+  }
+
   dirtyCount() {
     if (!this.draft) return 0;
     const a = this.base;
@@ -258,6 +264,7 @@ export class NotifyUi {
       if (h._data) h._data.notify = result?.notify || JSON.parse(JSON.stringify(this.draft));
       this.draft = null;
       this.saveState = "saved";
+      this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
     } catch (err) {
       this.saveState = this._t("saveFailed", { message: errText(err) });
     } finally {

@@ -154,6 +154,45 @@ for (const lang of ["de", "en"]) {
       await s.ctx.close();
     }
 
+    // ----- Punkte (1.7.0): orange = ungespeichert (Unterreiter, Reiter des Modus, Zeile), blau = eigener Wert; beim Speichern sofort weg -----
+    {
+      const s = await open(browser, { mobile, lang, tab: "config" });
+      await s.waitFor("return !!r.querySelector('.ag-gbody table')");
+      const has = (sel) => s.ev(`const e=r.querySelector(${JSON.stringify(sel)}); return !!e && e.classList.contains("has-edit")`);
+      const color = (v) => s.ev(`const e=document.createElement("span"); e.style.color="var(${v})"; r.appendChild(e); const c=getComputedStyle(e).color; e.remove(); return c`);
+      check(`${tag}: ohne Änderung kein Punkt`, !(await has('[data-sub="sensors"]')) && !(await has('[data-tab="config"]')));
+      await s.tap('[data-sen="permode"]');
+      await s.waitFor("return !!r.querySelector('[data-seg=\"sen-mode\"]')");
+      const ent = "binary_sensor.fenster_bad";
+      await s.tap(`.ag-gbody [data-box][data-mode="home"][data-ent="${ent}"]`);
+      await s.page.waitForTimeout(200);
+      check(`${tag}: Änderung in "Anwesend": Punkt am Unterreiter, an "Konfiguration" und am Reiter "Anwesend", nicht an den anderen Modi`,
+        (await has('[data-sub="sensors"]')) && (await has('[data-tab="config"]')) && (await has('[data-seg="sen-mode"] [data-sen="mt:home"]')) && !(await has('[data-seg="sen-mode"] [data-sen="mt:away"]')));
+      const bar = await s.ev(`const td=r.querySelector('tr.changed[data-row="${ent}"] td'); return td ? getComputedStyle(td).boxShadow : ""`);
+      check(`${tag}: geänderte Zeile mit orangem Balken (Farbe für "ungespeichert")`, bar.includes(await color("--ag-warning")), bar);
+      // Eigener Wert (Kästchen "Immer aktiv" im Reiter "Immer aktiv"): blau, nie orange
+      await s.tap('[data-seg="sen-mode"] [data-sen="mt:always"]');
+      await s.tap(`.ag-gbody [data-key="always"][data-ent="${ent}"]`);
+      await s.page.waitForTimeout(200);
+      const dot = await s.ev(`const b=r.querySelector('.ag-gbody .ag-box.own[data-key="always"][data-ent="${ent}"]'); return b ? getComputedStyle(b, "::after").backgroundColor : ""`);
+      check(`${tag}: eigener Wert ist blau markiert, nicht orange`, dot === (await color("--ag-primary")) && dot !== (await color("--ag-warning")), dot);
+      check(`${tag}: auch der Reiter "Immer aktiv" hat jetzt einen Punkt`, await has('[data-seg="sen-mode"] [data-sen="mt:always"]'));
+      // Speichern: die Daten kommen im Nachbau erst nach 4 s neu; die Punkte und die Markierung der Zeilen sind sofort weg
+      await s.sim("window.__reloadMs = 4000");
+      await s.tap('.ag-foot [data-sen="save"]');
+      await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes(${JSON.stringify(lang === "de" ? "Gespeichert" : "Saved")})`, 3000);
+      check(`${tag}: nach dem Speichern sofort ohne Punkte und ohne markierte Zeile`,
+        !(await has('[data-sub="sensors"]')) && !(await has('[data-tab="config"]')) && !(await has('[data-seg="sen-mode"] [data-sen="mt:always"]')) && !(await has('[data-seg="sen-mode"] [data-sen="mt:home"]'))
+        && (await s.ev("return r.querySelectorAll('tr.changed').length")) === 0);
+      // Eine weitere Änderung bringt den Punkt zurück
+      await s.tap('[data-seg="sen-mode"] [data-sen="mt:away"]');
+      await s.tap(`.ag-gbody [data-box][data-mode="away"][data-ent="binary_sensor.rauchmelder_flur"]`);
+      await s.page.waitForTimeout(200);
+      check(`${tag}: die nächste Änderung bringt die Punkte zurück (Unterreiter und Reiter "Abwesend")`, (await has('[data-sub="sensors"]')) && (await has('[data-seg="sen-mode"] [data-sen="mt:away"]')));
+      check(`${tag}: Punkte ohne Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
+      await s.ctx.close();
+    }
+
     // ----- Protokoll: Stand der letzten Antwort, CSV ohne Formelzellen -----
     {
       const s = await open(browser, { mobile, lang, tab: "log" });

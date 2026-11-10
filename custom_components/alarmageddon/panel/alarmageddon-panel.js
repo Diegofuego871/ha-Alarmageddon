@@ -409,12 +409,32 @@ class AlarmageddonPanel extends HTMLElement {
     this._renderView(true);
   }
 
-  // Gelber Punkt an den Reitern mit ungespeicherten Änderungen: nichts geht beim Wechseln verloren, der Punkt zeigt es
+  // Stand eines Entwurfs als Text (Mengen sortiert): damit lässt sich "seit dem Speichern unverändert" erkennen
+  _draftSig(ui) {
+    return JSON.stringify(ui.draft ?? null, (_k, v) => (v instanceof Set ? [...v].sort() : v));
+  }
+
+  // Nach einem erfolgreichen Speichern rufen die Seiten das auf: der gespeicherte Stand gilt sofort als sauber, auch wenn die
+  // neuen Daten erst nach dem Neuladen der Anlage ankommen. Jede weitere Änderung am Entwurf macht ihn wieder "ungespeichert".
+  _markSaved(ui) {
+    ui._savedSig = this._draftSig(ui);
+    this._renderDots();
+  }
+
+  _isSaved(ui) {
+    return ui._savedSig !== undefined && ui._savedSig === this._draftSig(ui);
+  }
+
+  // Oranger Punkt = ungespeicherte Änderung, überall gleich: am Reiter "Konfiguration", am Unterreiter und am Reiter des Modus.
+  // Er verschwindet sofort mit dem Speichern (_markSaved) und kommt mit der nächsten Änderung zurück. Eigene Werte sind blau
+  // markiert, nie orange.
   _renderDots() {
     const uis = { sensors: this.sensors, actions: this.actions, notify: this.notify, system: this.systemUi };
     let anyEdit = false;
+    const marks = [];
     for (const [sub, ui] of Object.entries(uis)) {
-      const edit = ui.dirtyCount() > 0;
+      const edit = ui.dirtyCount() > 0 && !this._isSaved(ui);
+      if (edit && sub === this._sub) for (const [attr, key] of ui.dirtyTabs?.() || []) marks.push(`[${attr}="${key}"]`);
       anyEdit ||= edit;
       const el = this._root.querySelector(`[data-sub="${sub}"]`);
       el?.classList.toggle("has-edit", edit);
@@ -424,6 +444,10 @@ class AlarmageddonPanel extends HTMLElement {
     const cfg = this._root.querySelector('[data-tab="config"]');
     cfg?.classList.toggle("has-dot", anyEdit);
     cfg?.classList.toggle("has-edit", anyEdit);
+    // Reiter der Modi auf der offenen Seite: Punkt genau dort, wo etwas ungespeichert ist
+    // Nur die Reiterleisten der Modi (die Unterreiter sind oben schon gesetzt und dürfen hier nicht wieder gelöscht werden)
+    const modeTabs = '[data-seg="sen-mode"] > button, [data-seg="wf-trigger"] > button, [data-seg="nt-mode"] > button, [data-seg="sys-scope"] > button';
+    for (const el of this._view?.querySelectorAll(modeTabs) || []) el.classList.toggle("has-edit", marks.some((sel) => el.matches(sel)));
   }
 
   _renderView(full) {

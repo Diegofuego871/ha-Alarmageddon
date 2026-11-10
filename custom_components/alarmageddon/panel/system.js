@@ -60,6 +60,14 @@ export class SystemUi {
     this.saveState = null;
   }
 
+  // Reiter der Modi mit ungespeicherten Änderungen (für den Punkt am Reiter)
+  dirtyTabs() {
+    const s = this.system;
+    if (!s || !this.draft || this.draft.entry !== s.entry_id) return [];
+    const a = this.base(s);
+    return ALL_MODES.filter((m) => Object.keys(a.per[m]).some((k) => a.per[m][k] !== this.draft.per[m][k])).map((m) => ["data-scope", m]);
+  }
+
   dirtyCount() {
     const s = this.system;
     if (!s || !this.draft || this.draft.entry !== s.entry_id) return 0;
@@ -456,6 +464,7 @@ export class SystemUi {
       Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, always_enabled: d.always, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
+      this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
       h._reloadWait();
     } catch (err) {
       const known = { no_mode: "errNoMode", mode_active: "errModeActive" }[err?.code];

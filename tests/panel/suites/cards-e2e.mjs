@@ -40,6 +40,53 @@ for (const lang of ["de", "en"]) {
       await setLayout("list");
       check(`${tag}: zurück zur Liste`, await s.waitFor("return !!r.querySelector('.ag-ltable') && !r.querySelector('.ag-mcards')"));
     }
+    {
+      // 1.7.0: Gruppierung wählbar (Bereich, Sensorart, Anlage, keine): auf dem Desktop direkt in der Werkzeugleiste, auf dem Handy in
+      // "Ansicht". Sie gilt für Liste und Karten; die Karten haben je Gruppe einen Titel mit Anzahl über die ganze Breite.
+      const kind = mobile ? "mobile" : "desktop";
+      const viewSet = async (key, value) => {
+        await s.tap('[data-list="view"]');
+        await s.tap(`#ag-view [data-list="vset"][data-key="${key}"][data-value="${value}"]`);
+        await s.tap('[data-list="vdone"]');
+      };
+      const setGroup = async (v) => {
+        if (mobile) await viewSet("group", v);
+        else await (await s.el('select[data-list="group"]')).selectOption(v);
+        await s.page.waitForTimeout(200);
+      };
+      const setLayout = async (v) => {
+        if (mobile) await viewSet("layout", v);
+        else await s.tap(`[data-list-layout="${v}"]`);
+        await s.page.waitForTimeout(200);
+      };
+      const heads = () => s.ev("return [...r.querySelectorAll('.ag-mcards .ag-group-head')].map((h) => { let n = 0; for (let e = h.nextElementSibling; e && !e.classList.contains('ag-group-head'); e = e.nextElementSibling) n += e.classList.contains('ag-lcard') ? 1 : 0; return { title: h.querySelector('b').textContent, shown: Number(h.querySelector('.ag-t2').textContent), cards: n, wide: h.getBoundingClientRect().width / h.parentElement.getBoundingClientRect().width }; })");
+      if (mobile) {
+        check(`${tag}: Handy: Gruppierung nicht in der Werkzeugleiste, aber in "Ansicht" mit vier Möglichkeiten`, (await s.ev("return !r.querySelector('.ag-tools select[data-list=\"group\"]')")) && (await s.tap('[data-list="view"]'), await s.ev("return [...r.querySelectorAll('#ag-view [data-list=\"vset\"][data-key=\"group\"]')].map((b) => b.dataset.value).join()")) === "area,type,system,none" && (await s.tap('[data-list="vdone"]'), true));
+      } else {
+        check(`${tag}: Desktop: Auswahl der Gruppierung in der Werkzeugleiste (Bereich, Sensorart, Anlage, keine), Bereich gewählt`, await s.ev("const g=r.querySelector('.ag-tools select[data-list=\"group\"]'); return !!g && [...g.options].map((o) => o.value).join() === 'area,type,system,none' && g.value === 'area'"));
+      }
+      await setLayout("cards");
+      await setGroup("type");
+      const types = await s.ev("return [...r.querySelector('select[data-list=\"type\"]').options].slice(1).map((o) => o.textContent)");
+      const byType = await heads();
+      const titles = byType.map((h) => h.title);
+      const total = await s.ev("return r.querySelectorAll('.ag-mcards .ag-lcard').length");
+      check(`${tag}: Karten nach Sensorart: Titel in der Reihenfolge des Filters "Alle Arten"`, titles.length >= 2 && JSON.stringify(titles) === JSON.stringify(types.filter((t) => titles.includes(t))), JSON.stringify(titles));
+      check(`${tag}: jeder Titel nennt die Anzahl seiner Karten, jeder Sensor steht in genau einer Gruppe`, byType.every((h) => h.shown === h.cards && h.cards > 0) && byType.reduce((n, h) => n + h.cards, 0) === total, JSON.stringify(byType));
+      if (!mobile) check(`${tag}: Titel der Gruppe läuft über die ganze Breite des Rasters`, byType.every((h) => h.wide > 0.95), JSON.stringify(byType.map((h) => h.wide)));
+      check(`${tag}: Gruppierung wird gemerkt (je Gerät)`, await s.ev(`return JSON.parse(localStorage.getItem('alarmageddon_view')).${kind}.group === 'type'`));
+      await s.page.screenshot({ path: `${outDir}cards-grouped-${lang}-${kind}.png`, fullPage: true });
+      await setLayout("list");
+      const rows = await s.ev("return [...r.querySelectorAll('.ag-ov-list tr.grp')].map((t) => t.textContent.trim())");
+      check(`${tag}: dieselbe Gruppierung in der Liste`, rows.length === titles.length && rows.every((t, i) => t.startsWith(titles[i])), JSON.stringify(rows));
+      await setLayout("cards");
+      await setGroup("none");
+      check(`${tag}: "Nicht gruppiert": Karten ohne Titel`, (await heads()).length === 0 && (await s.ev("return r.querySelectorAll('.ag-mcards .ag-lcard').length")) === total);
+      await setGroup("area");
+      const byArea = (await heads()).map((h) => h.title);
+      check(`${tag}: nach Bereich: Titel alphabetisch`, byArea.length >= 3 && JSON.stringify(byArea) === JSON.stringify([...byArea].sort((a, b) => a.localeCompare(b))), JSON.stringify(byArea));
+      await setLayout("list");
+    }
     check(`${tag}: kein Überlauf`, await s.ev("return document.documentElement.scrollWidth <= window.innerWidth"));
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();
