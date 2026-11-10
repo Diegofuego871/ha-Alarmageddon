@@ -7,6 +7,16 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.6.0] - 2026-11-10
+
+### Hinzugefügt
+
+- **"Immer aktiv" abschalten:** In Konfiguration › Anlage steht neben den Modi die Pille "Immer aktiv", die sich abschalten lässt (Standard an). Aus heisst: Kein Sensor ist immer aktiv, Rauch- und Wassermelder alarmieren dann nur noch, wenn sie in der Zone eines scharfen Modus stehen, und eine gelbe Warnung weist darauf hin. Reiter, Spalte und Option "Immer aktiv" verschwinden bei den Sensoren und der Reiter bei den Aktionen; alle Werte und Aktionen bleiben erhalten und kommen beim Einschalten zurück. Sensoren, die nur "Immer aktiv" sind, stehen in der Übersicht nicht in der Liste, solange es aus ist. Die Einstellung gehört zur Sicherung.
+
+### Behoben
+
+- **Beim Speichern der Aktionen geht der Ablauf eines abgeschalteten Modus oder von "Immer aktiv" nicht mehr verloren:** Auslöser, die nicht in der gespeicherten Meldung stehen, behalten ihren Ablauf und ihre Einstellungen für "Alarm endet"; ein leerer Ablauf in der Meldung löscht ihn weiterhin.
+
 ## [1.5.0] - 2026-11-10
 
 ### Hinzugefügt
@@ -753,6 +763,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.0
 [1.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.5.0
 [1.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.3.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0

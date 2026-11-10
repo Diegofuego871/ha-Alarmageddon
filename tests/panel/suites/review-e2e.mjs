@@ -55,6 +55,15 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: ohne Schalter zählt der Bereich nicht (der eigene Wert "aus" gilt wieder)`, !(await row()));
       await s.sim(`for (const sys of window.__systems) sys.sensor_options = {}`);
       await refetch();
+      check(`${tag}: "Immer aktiv" ausgeschaltet: der Wassermelder steht nicht mehr in der Liste`, await (async () => {
+        await s.sim(`for (const sys of window.__systems) sys.always_enabled = false`);
+        await refetch();
+        const off = !(await row());
+        await s.sim(`for (const sys of window.__systems) sys.always_enabled = true`);
+        await refetch();
+        return off && (await row());
+      })());
+      await refetch();
 
       // ----- Verbindungsfehler: Daten bleiben, Hinweis statt "[object Object]" -----
       const cards = () => s.ev("return r.querySelectorAll('.ag-sys[data-system]').length");

@@ -11,6 +11,7 @@ from homeassistant.helpers import config_validation as cv
 from .const import (
     CONF_AWAY_ENABLED,
     CONF_CONFIRM_WINDOW,
+    CONF_ALWAYS_ENABLED,
     CONF_HOME_ENABLED,
     CONF_SCHEDULES,
     MAX_SCHEDULES,
@@ -158,6 +159,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         **{vol.Optional(f"{CONF_OPEN_SENSORS}_{m}"): vol.In(OPEN_SENSOR_MODES) for m in MODES},
         **{vol.Optional(f"{CONF_CONFIRM_WINDOW}_{m}"): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)) for m in MODES},
         vol.Optional(CONF_NIGHT_ENABLED): bool,
+        vol.Optional(CONF_ALWAYS_ENABLED): bool,
         vol.Optional(CONF_HOME_ENABLED): bool,
         vol.Optional(CONF_AWAY_ENABLED): bool,
         vol.Optional(CONF_SCHEDULES): SCHEDULES,

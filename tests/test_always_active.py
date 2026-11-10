@@ -146,3 +146,80 @@ async def test_sensor_outside_the_list_and_zones_is_not_listened_to(hass: HomeAs
     await call(hass, "alarm_arm_away")
     await open_sensor(hass, SMOKE)
     assert state(hass) == AlarmControlPanelState.ARMED_AWAY
+
+
+# ----- "Immer aktiv" insgesamt abschalten (1.6.0) -----
+
+
+@pytest.mark.parametrize("arm", [None, "alarm_arm_home", "alarm_arm_away"], ids=["deaktiviert", "scharf Anwesend", "scharf Abwesend"])
+async def test_switched_off_always_active_triggers_nothing(hass: HomeAssistant, arm) -> None:
+    """Aus: ein Sensor, der nur "Immer aktiv" ist (in keiner Zone), löst in keinem Zustand aus."""
+    entry = await _setup(hass, always_enabled=False, sensors=[SMOKE])
+    ctl = entry.runtime_data.controller
+    assert ctl.always_enabled is False and ctl.always_sensors() == set() and SMOKE not in ctl.all_sensors()
+    if arm:
+        await call(hass, arm)
+    before = state(hass)
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == before
+
+
+async def test_switched_off_always_active_keeps_values_and_zone_rules(hass: HomeAssistant) -> None:
+    """Die Werte bleiben gespeichert; ein Sensor in der Zone des scharfen Modus alarmiert weiter mit der Regel des Modus."""
+    entry = await _setup(hass, always_enabled=False, sensor_options=ALWAYS, **IN_AWAY)
+    assert entry.options["sensor_options"] == ALWAYS
+    await call(hass, "alarm_arm_away")
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.PENDING  # Zone mit Eingangsverzögerung, nicht sofort
+
+
+async def test_always_active_is_on_by_default(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, sensors=[SMOKE])
+    assert entry.runtime_data.controller.always_enabled is True
+
+
+async def test_save_system_switches_always_active_and_reports_it(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await _setup(hass, sensors=[SMOKE])
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_system", "entry_id": entry.entry_id, "always_enabled": False})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["always_enabled"] is False
+    await client.send_json({"id": 2, "type": "alarmageddon/data"})
+    data = (await client.receive_json())["result"]
+    assert [s["always_enabled"] for s in data["systems"]] == [False]
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.DISARMED
+    await client.send_json({"id": 3, "type": "alarmageddon/save_system", "entry_id": entry.entry_id, "always_enabled": True})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    await open_sensor(hass, SMOKE, "off")
+    await open_sensor(hass, SMOKE)
+    assert state(hass) == AlarmControlPanelState.TRIGGERED
+
+
+async def test_always_enabled_in_backup(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await _setup(hass, always_enabled=False)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/export"})
+    exported = (await client.receive_json())["result"]
+    assert exported["systems"][0]["options"]["always_enabled"] is False
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "always_enabled": True})
+    await hass.async_block_till_done()
+    await client.send_json({"id": 2, "type": "alarmageddon/import", "data": exported})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["always_enabled"] is False
+
+
+async def test_save_workflows_keeps_flows_of_triggers_not_in_the_message(hass: HomeAssistant, hass_ws_client) -> None:
+    """Abgeschaltetes "Immer aktiv" oder ein abgeschalteter Modus: ihr Ablauf bleibt beim Speichern der übrigen erhalten."""
+    step = {"type": "wait", "seconds": 5}
+    entry = await _setup(hass, always_enabled=False, workflows={"always": [step], "night": [step], "home": [step]},
+                         workflow_end={"always": {"notify": {"enabled": True, "title": "x"}}})
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "alarmageddon/save_workflows", "entry_id": entry.entry_id, "workflows": {"home": [], "away": [step]}, "workflow_end": {"home": {}}})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["workflows"] == {"always": [step], "night": [step], "away": [step]}  # "home" bewusst geleert
+    assert entry.options["workflow_end"]["always"]["notify"]["title"] == "x"

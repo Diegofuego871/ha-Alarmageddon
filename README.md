@@ -156,7 +156,7 @@ Details for those who want to know exactly. Click to open.
 <details>
 <summary><b>Options per sensor</b></summary>
 
-- **Always active:** triggers in every state, armed or disarmed, at once (smoke, water, gas), with the options of the tab "Always active". If the sensor is also in the zone of a mode, both rules run; a switch "Ignore Always active" leaves only the rule of that mode.
+- **Always active:** can be switched off as a whole (Configuration › System). Triggers in every state, armed or disarmed, at once (smoke, water, gas), with the options of the tab "Always active". If the sensor is also in the zone of a mode, both rules run; a switch "Ignore Always active" leaves only the rule of that mode.
 - **May be open when arming:** an open sensor does not block arming and triggers after it was closed and opened again.
 - **Bypass when arming:** an open sensor is ignored until the next disarming.
 - **Arm as soon as closed:** closing this sensor during the exit delay (the front door behind you) arms at once instead of waiting for the delay to end.

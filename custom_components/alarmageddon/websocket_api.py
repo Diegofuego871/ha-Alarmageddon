@@ -45,6 +45,7 @@ from .const import (
     CONF_ENTRY_SENSORS,
     CONF_SENSORS,
     CONF_EXIT_DELAY_PREFIX,
+    CONF_ALWAYS_ENABLED,
     CONF_NIGHT_ENABLED,
     CONF_SCHEDULES,
     MODE_ENABLED_DEFAULT,
@@ -205,6 +206,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                               "confirm_window": ctl.confirm_window_for(mode)} for mode in ctl.modes},
                 },
                 "night_enabled": ctl.night_enabled,
+                "always_enabled": ctl.always_enabled,
                 "schedules": entry.options.get(CONF_SCHEDULES) or [],
                 "sensor_options": ctl.sensor_overrides,
                 "per_mode_sensors": bool(entry.options.get(CONF_PER_MODE_SENSORS)),
@@ -452,6 +454,7 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         vol.Optional("trigger_time"): _SECONDS,
         vol.Optional("per_mode_settings"): bool,
         vol.Optional("night_enabled"): bool,
+        vol.Optional("always_enabled"): bool,
         vol.Optional("home_enabled"): bool,
         vol.Optional("away_enabled"): bool,
         vol.Optional("schedules"): SCHEDULES,
@@ -478,6 +481,8 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
                 options[f"{conf}_{scope}"] = msg[key]
     if "per_mode_settings" in msg:
         options[CONF_PER_MODE_SETTINGS] = msg["per_mode_settings"]
+    if "always_enabled" in msg:
+        options[CONF_ALWAYS_ENABLED] = msg["always_enabled"]
     if "night_enabled" in msg:
         options[CONF_NIGHT_ENABLED] = msg["night_enabled"]
     for scope, values in msg.get("mode_settings", {}).items():
@@ -606,9 +611,13 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
     if (entry := _entry(hass, connection, msg)) is None:
         return
     options = dict(entry.options)
-    options[CONF_WORKFLOWS] = {k: v for k, v in msg["workflows"].items() if v}
+    # Auslöser, die in der Meldung fehlen (abgeschalteter Modus, abgeschaltetes "Immer aktiv"), behalten ihren gespeicherten Ablauf;
+    # ein leerer Ablauf in der Meldung löscht ihn
+    kept = {k: v for k, v in (options.get(CONF_WORKFLOWS) or {}).items() if k not in msg["workflows"]}
+    options[CONF_WORKFLOWS] = {**kept, **{k: v for k, v in msg["workflows"].items() if v}}
     if "workflow_end" in msg:
-        options[CONF_WORKFLOW_END] = {k: end for k, v in msg["workflow_end"].items() if (end := _clean_end(v))}
+        kept_end = {k: v for k, v in (options.get(CONF_WORKFLOW_END) or {}).items() if k not in msg["workflow_end"]}
+        options[CONF_WORKFLOW_END] = {**kept_end, **{k: end for k, v in msg["workflow_end"].items() if (end := _clean_end(v))}}
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"ok": True})
 

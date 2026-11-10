@@ -7,6 +7,16 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-11-10
+
+### Added
+
+- **Switch "Always active" off:** in Configuration › System, next to the modes, "Always active" is a pill that can be switched off (default on). Off means no sensor is always active: smoke and water detectors then do not raise an alarm unless they are in the zone of an armed mode, and a yellow warning says so. The tab, the column and the option "Always active" disappear from the sensors and the tab from the actions; all values and actions are kept and come back when it is switched on again. Sensors that are only "Always active" are not listed in the overview while it is off. The setting is part of the backup.
+
+### Fixed
+
+- **Saving actions no longer drops the flow of a switched-off mode or of "Always active":** triggers that are not part of the saved message keep their stored flow and their "Alarm ends" settings; an empty flow in the message still deletes it.
+
 ## [1.5.0] - 2026-11-10
 
 ### Added
@@ -753,6 +763,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.6.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.6.0
 [1.5.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.5.0
 [1.3.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.3.0
 [1.0.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.0.0

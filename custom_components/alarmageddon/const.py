@@ -18,6 +18,8 @@ CONF_NAME: Final = "name"
 # Optionen (im Optionsdialog änderbar, später auch im Panel)
 CONF_NIGHT_ENABLED: Final = "night_enabled"
 CONF_HOME_ENABLED: Final = "home_enabled"
+# "Immer aktiv" als Ganzes ein- oder ausschalten (1.6.0); Standard an. Aus: kein Sensor ist immer aktiv, Werte und Aktionen bleiben erhalten
+CONF_ALWAYS_ENABLED: Final = "always_enabled"
 CONF_AWAY_ENABLED: Final = "away_enabled"
 CONF_ZONE_PREFIX: Final = "zone_"  # zone_home, zone_away, zone_night: Liste von Entitäten
 CONF_SENSORS: Final = "sensors"  # vom Nutzer für diese Anlage ausgewählte Sensoren (Liste im Panel); Zonen und eigene Werte zählen immer dazu
@@ -58,7 +60,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 78  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 79  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"

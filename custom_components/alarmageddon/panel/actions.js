@@ -212,7 +212,8 @@ export class ActionsUi {
   }
 
   triggers(s = this.system) {
-    return [...(s?.modes || ["home", "away"]), "always"];
+    // "Immer aktiv" nur, solange es an ist (Anlage › Modi); der gespeicherte Ablauf bleibt erhalten (der Server behält fehlende Auslöser)
+    return [...(s?.modes || ["home", "away"]), ...(s?.always_enabled === false ? [] : ["always"])];
   }
 
   ensureDraft() {

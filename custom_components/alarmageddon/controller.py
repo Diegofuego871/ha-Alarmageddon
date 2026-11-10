@@ -62,6 +62,7 @@ from .const import (
     CONF_EXIT_DELAY_PREFIX,
     MODE_ENABLED_DEFAULT,
     MODE_ENABLED_KEY,
+    CONF_ALWAYS_ENABLED,
     CONF_NIGHT_ENABLED,
     CONF_ZONE_PREFIX,
     DEFAULT_ENTRY_DELAY,
@@ -135,6 +136,11 @@ class AlarmController:
     @property
     def options(self) -> dict[str, Any]:
         return self.entry.options
+
+    @property
+    def always_enabled(self) -> bool:
+        """"Immer aktiv" insgesamt an (Standard). Aus: kein Sensor ist immer aktiv, die Werte und Aktionen dazu bleiben gespeichert."""
+        return bool(self.options.get(CONF_ALWAYS_ENABLED, True))
 
     @property
     def night_enabled(self) -> bool:
@@ -272,6 +278,8 @@ class AlarmController:
         an keinem Modus: mit Einstellungen je Modus steht ihr Wert immer im Bereich "Immer aktiv" (SCOPE_ALWAYS), darum ist `mode`
         hier ohne Wirkung.
         """
+        if not self.always_enabled:
+            return set()
         known = {e for m in self.modes for e in self.zone(m)} | set(self.options.get(CONF_SENSORS) or []) | set(self.sensor_overrides)
         if self.options.get(CONF_PER_MODE_SENSORS):
             known |= {e for per in (self.options.get(CONF_SENSOR_MODES) or {}).values() if isinstance(per, dict) for e in per}

@@ -169,8 +169,9 @@ export class ListUi {
       const ids = new Set(s.modes.flatMap((m) => s.zones?.[m] || []));
       // "Immer aktiv" wie controller.always_sensors: alle Sensoren der Anlage (Liste der Konfiguration, Zonen, eigene Werte), bei denen
       // die Option wirkt, also mit eigenem Wert (je Modus: Reiter "Immer aktiv") oder sonst der Voreinstellung der Sensorart
-      const known = new Set([...ids, ...(s.sensors || []), ...Object.keys(s.sensor_options || {})]);
-      if (s.per_mode_sensors) for (const per of Object.values(s.sensor_modes || {})) for (const id of Object.keys(per || {})) known.add(id);
+      const alwaysOn = s.always_enabled !== false; // "Immer aktiv" insgesamt aus: kein Sensor ist immer aktiv
+      const known = new Set(alwaysOn ? [...ids, ...(s.sensors || []), ...Object.keys(s.sensor_options || {})] : []);
+      if (alwaysOn && s.per_mode_sensors) for (const per of Object.values(s.sensor_modes || {})) for (const id of Object.keys(per || {})) known.add(id);
       const presets = this.host._data?.presets || {};
       for (const id of known) {
         const own = (s.per_mode_sensors ? s.sensor_modes?.always?.[id]?.always : undefined) ?? s.sensor_options?.[id]?.always;

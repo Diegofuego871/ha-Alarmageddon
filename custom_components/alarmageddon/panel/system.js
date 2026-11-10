@@ -44,6 +44,7 @@ export class SystemUi {
       per,
       modes: Object.fromEntries(ALL_MODES.map((m) => [m, (s.modes || ["home", "away"]).includes(m)])),
       schedules: JSON.parse(JSON.stringify(s.schedules || [])),
+      always: s.always_enabled !== false, // "Immer aktiv" als Ganzes (Standard an)
     };
   }
 
@@ -69,6 +70,7 @@ export class SystemUi {
     // Je Modus mit Änderungen zählt einmal ("Abwesend: 2 Werte" ist eine Änderung am Modus)
     for (const scope of ALL_MODES) if (Object.keys(a.per[scope]).some((k) => a.per[scope][k] !== d.per[scope][k])) n += 1;
     for (const m of ALL_MODES) if (a.modes[m] !== d.modes[m]) n += 1;
+    if (a.always !== d.always) n += 1;
     if (JSON.stringify(a.schedules) !== JSON.stringify(d.schedules)) n += 1;
     return n;
   }
@@ -112,6 +114,8 @@ export class SystemUi {
       <div class="ag-settx"><b>${esc(this._t("sysPerMode"))}</b><small>${esc(this._t(d.perMode ? "sysPerModeOn" : "sysPerModeHint"))}</small></div></div>${scopeSeg}</div>`;
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
     const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
+          <div class="ag-zline" style="margin-top:10px"><button class="ag-chip ${d.always ? "on" : ""}" data-sys="always" aria-pressed="${d.always}">${ic("flash", 16)}${esc(this._t("wfAlways"))}</button></div>
+          ${d.always ? "" : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("sysAlwaysOff"))}</small>`}
           ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
     const row = (title, hint, control) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(title))}</b>${hint ? `<small>${esc(this._t(hint))}</small>` : ""}</div>${control}</div>`;
     const timesRows = row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay));
@@ -448,8 +452,8 @@ export class SystemUi {
       // Alle Modi (auch abgeschaltete behalten ihre Werte)
       const mode_settings = Object.fromEntries(ALL_MODES.map((m) => [m, { ...d.per[m] }]));
       await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings, per_mode_settings: d.perMode,
-        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, schedules: d.schedules });
-      Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
+        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, always_enabled: d.always, schedules: d.schedules });
+      Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, always_enabled: d.always, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
       h._reloadWait();
@@ -480,6 +484,10 @@ export class SystemUi {
         const first = ALL_MODES.find((m) => d.modes[m]) || "away";
         for (const m of ALL_MODES) d.per[m] = { ...d.per[first] };
       }
+      this.saveState = null;
+      this.render();
+    } else if (act === "always") {
+      d.always = !d.always;
       this.saveState = null;
       this.render();
     } else if (act === "mode") {

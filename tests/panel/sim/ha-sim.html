@@ -316,6 +316,7 @@
         if (sys.mode_settings[scope]) Object.assign(sys.mode_settings[scope], vals);
       }
       if (typeof msg.per_mode_settings === "boolean") sys.per_mode_settings = msg.per_mode_settings;
+      if (typeof msg.always_enabled === "boolean") sys.always_enabled = msg.always_enabled;
       if (msg.schedules) sys.schedules = JSON.parse(JSON.stringify(msg.schedules));
       const enabled = { home: sys.modes.includes("home"), away: sys.modes.includes("away"), night: sys.modes.includes("night") };
       for (const m of ["home", "away", "night"]) if (`${m}_enabled` in msg) enabled[m] = msg[`${m}_enabled`];
