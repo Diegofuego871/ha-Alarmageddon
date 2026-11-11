@@ -28,7 +28,7 @@ for (const lang of ["de", "en"]) {
     // ----- Schritt hinzufügen: nur was danach Sinn hat -----
     await s.tap('.ag-wf-after [data-wf="add"]');
     await s.waitFor("return r.getElementById('ag-step').open");
-    check(`${tag}: Auswahl ohne Alarmmeldung und Quittieren`, JSON.stringify(await dlg("return [...d.querySelectorAll('[data-wf=\"kind\"]')].map((b) => b.dataset.kind)")) === JSON.stringify(["device", "sound", "wait", "scene", "custom"]));
+    check(`${tag}: Auswahl ohne Alarmmeldung und Quittieren`, JSON.stringify(await dlg("return [...d.querySelectorAll('[data-wf=\"kind\"]')].map((b) => b.dataset.kind)")) === JSON.stringify(["device", "sound", "chime", "wait", "scene", "custom"]));
     await s.tap('#ag-step [data-wf="kind"][data-kind="device"]');
     await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"waitend\"]')");
     const ed = await dlg(`return { restore: !!d.querySelector('[data-wf="restore"]'), wait: d.querySelector('[data-wf="waitend"]').getAttribute('aria-checked'), label: d.querySelector('[data-wf="waitend"]').closest('.ag-ef-row').innerText.includes(${JSON.stringify(t.waitOpt)}), text: d.innerText.includes(${JSON.stringify(t.restore)}) }`);
@@ -85,7 +85,7 @@ for (const lang of ["de", "en"]) {
     // ----- Neuer Schritt im Ablauf beim Alarm: läuft standardmässig weiter -----
     await s.ev("r.querySelector('.ag-wf-main [data-wf=\"add\"]').click(); return 1");
     await s.waitFor("return r.getElementById('ag-step').open");
-    check(`${tag}: Auswahl beim Alarm mit allen sieben Schritten`, (await dlg("return d.querySelectorAll('[data-wf=\"kind\"]').length")) === 7);
+    check(`${tag}: Auswahl beim Alarm mit allen acht Schritten (mit Voralarm, ohne Aktivierungston)`, (await dlg("return d.querySelectorAll('[data-wf=\"kind\"]').length")) === 8);
     await s.tap('#ag-step [data-wf="kind"][data-kind="sound"]');
     await s.waitFor("return !!r.querySelector('#ag-step .ag-tone')");
     const snd = await dlg("return { wait: d.querySelector('[data-wf=\"waitend\"]').getAttribute('aria-checked'), restore: d.querySelector('[data-wf=\"restore\"]').getAttribute('aria-checked'), until: !!d.querySelector('[data-wf=\"until\"]') }");

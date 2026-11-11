@@ -9,6 +9,7 @@ from homeassistant.components import frontend
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
+from . import sound_loop
 from .const import (
     DATA_PANEL,
     DATA_PANEL_LOCK,
@@ -56,6 +57,7 @@ async def _register(hass: HomeAssistant) -> None:
         sounds_dir = Path(__file__).parent / "sounds"
         await hass.http.async_register_static_paths([StaticPathConfig(SOUNDS_URL_PATH, str(sounds_dir), True)])
         hass.data[DATA_SOUNDS] = True
+    sound_loop.async_register(hass)
     if not hass.data.get(DATA_ICON):
         # Das Symbol der Meldungen: Das Handy holt es ohne Token vom Pfad der Integration
         icon = Path(__file__).parent / "brand" / "icon.png"

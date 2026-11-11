@@ -28,10 +28,13 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_WORKFLOWS, CONF_WORKFLOWS_AFTER, RESTORABLE_DOMAINS, SOUNDS, SOUNDS_URL_PATH, TEST_SECONDS, WORKFLOW_STORE_KEY
-from .controller import AlarmController
+from .const import ALL_SOUNDS, CONF_WORKFLOWS, CONF_WORKFLOWS_AFTER, CONF_WORKFLOWS_ARMED, RESTORABLE_DOMAINS, TEST_SECONDS, WORKFLOW_STORE_KEY
+from .controller import ARMED_STATE, AlarmController
+from .sound_loop import LOOP_MAX_SECONDS, loop_url
 
 _LOGGER = logging.getLogger(__name__)
+
+ARMED_STATES = frozenset(str(state) for state in ARMED_STATE.values())
 # Ein Gerät, das länger nicht antwortet, hält den Ablauf nie auf: nach dieser Zeit (Sekunden) läuft er mit dem nächsten Schritt weiter.
 # Der hängende Aufruf wird nicht abgebrochen (ein Skript soll weiterlaufen dürfen), nur nicht mehr abgewartet; Deaktivieren beendet ihn.
 SERVICE_TIMEOUT = 10
@@ -57,8 +60,8 @@ def step_budget(step: dict[str, Any]) -> float:
         return WATCHDOG_GRACE  # sofort, ohne Gerätezugriff
     if kind == "wait":
         return max(0, int(step.get("seconds", 0) or 0)) + WATCHDOG_GRACE
-    if kind == "sound":
-        length = SOUNDS.get(step.get("sound"), max(SOUNDS.values()))
+    if kind in ("sound", "chime", "prealarm"):
+        length = ALL_SOUNDS.get(step.get("sound"), max(ALL_SOUNDS.values()))
         duration = step.get("duration")
         if duration is None:  # ältere Form: so oft wiederholen, jeder Aufruf höchstens SERVICE_TIMEOUT
             repeat = max(1, int(step.get("repeat", 1) or 1))
@@ -78,12 +81,16 @@ def step_waits(step: dict[str, Any]) -> bool:
     selbst, auf ihn lässt sich nicht warten. Warten, Meldung und Quittieren gehören zum Ablauf selbst (kein Nebenher).
     """
     kind = step.get("type")
-    if kind not in ("action", "sound"):
+    if kind not in ("action", "sound", "chime", "prealarm"):
         return True
     if kind == "sound" and step.get("duration") == 0:
         return False
     if "wait" in step:
         return bool(step["wait"])
+    if kind == "chime":
+        return False  # neue Schrittart (1.14.0): kennt die ältere Regel nicht, läuft ohne Angabe weiter
+    if kind == "prealarm":
+        return True  # Voralarm (1.15.0): er steht vor der Sirene, ohne Angabe wartet der Ablauf auf sein Ende
     return not step.get("detach")
 
 
@@ -222,6 +229,13 @@ class WorkflowRunner:
             plan = self._plan or ([run["trigger"], *([run["also"]["trigger"]] if isinstance(run.get("also"), dict) else [])] if run else [])
             self._plan = None
             self.hass.async_create_task(self._end(plan))
+        elif state in ARMED_STATES and previous not in (None, AlarmControlPanelState.PENDING):
+            # Scharf geschaltet (auch Wechsel des Modus): die Aktionen beim Scharfschalten dieses Modus. Nicht beim Start von Home
+            # Assistant (da war die Anlage schon scharf) und nicht nach einem quittierten Alarm (der Zweig darüber).
+            self.hass.async_create_task(self.async_run_armed(self._ctl.mode))
+        elif state == AlarmControlPanelState.DISARMED and self._run is not None and self._run.get("phase") == "armed":
+            # Deaktiviert, während der Aktivierungston noch läuft: sofort still
+            self.hass.async_create_task(self._stop_side_run())
 
     async def _end(self, plan: list[str]) -> None:
         """Der Alarm ist zu Ende: Ablauf stoppen und Geräte zurückstellen; erst dann laufen die Aktionen nach dem Quittieren."""
@@ -230,6 +244,39 @@ class WorkflowRunner:
             await self.async_run_after(plan)
         except Exception:  # noqa: BLE001 - das Ende des Alarms selbst ist schon erledigt
             _LOGGER.exception("%s: the actions after the alarm could not be started", self.entry.title)
+
+    async def _stop_side_run(self) -> None:
+        """Einen Lauf beim Scharfschalten oder nach dem Quittieren vorzeitig beenden: Schritte abbrechen, laufende Töne stoppen."""
+        run = self._run
+        if run is None or not run.get("after"):
+            return
+        await self._end_test()
+        players = sorted({p for step in run.get("steps") or [] if step.get("type") in ("sound", "chime") for p in step.get("players", [])})
+        if players:
+            await self._call("media_player", "media_stop", {"entity_id": players})
+        self.hass.async_create_task(self._store.async_remove())
+
+    def steps_armed(self, mode: str | None) -> list[dict[str, Any]]:
+        return list((self.entry.options.get(CONF_WORKFLOWS_ARMED) or {}).get(mode or "") or [])
+
+    async def async_run_armed(self, mode: str | None) -> bool:
+        """
+        Aktionen beim Scharfschalten starten (1.14.0): die Schritte, die der Nutzer unter "Anlage scharf geschaltet" gelegt hat,
+        für den Modus, der gerade scharf wurde (zum Beispiel ein Aktivierungston). Der Lauf verhält sich wie die Aktionen nach dem
+        Quittieren: unter Aufsicht, endet von selbst, stellt nichts zurück. Ein Alarm hat Vorrang und bricht ihn ab, Deaktivieren
+        ebenso; läuft noch ein solcher Lauf (rasch hintereinander scharf geschaltet), ersetzt ihn der neue.
+        """
+        steps = self.steps_armed(mode)
+        if not steps or self._ctl.state not in ARMED_STATES:
+            return False
+        if self._run is not None:
+            if not self._run.get("after"):
+                return False  # ein Alarm oder ein Test läuft
+            await self._stop_side_run()
+        run: dict[str, Any] = {"trigger": mode, "index": 0, "test": False, "after": True, "phase": "armed", "snapshot": {}, "sonos": [], "steps": steps}
+        self._run = run
+        self._begin(run)
+        return True
 
     def steps_after(self, trigger: str) -> list[dict[str, Any]]:
         return list((self.entry.options.get(CONF_WORKFLOWS_AFTER) or {}).get(trigger) or [])
@@ -608,7 +655,7 @@ class WorkflowRunner:
         if step.get("type") == "action":
             entry["action"] = step.get("action")
             entry["targets"] = list(step.get("target") or [])
-        elif step.get("type") == "sound":
+        elif step.get("type") in ("sound", "chime", "prealarm"):
             entry["targets"] = list(step.get("players") or [])
             entry["sound"] = step.get("sound")
         elif step.get("type") == "wait":
@@ -661,6 +708,11 @@ class WorkflowRunner:
             await self._bounded(self.hass.services.async_call(domain, service, data, blocking=True), f"{domain}.{service}")
         elif kind == "sound":
             await self._play(step, resumable)
+        elif kind == "chime":
+            await self._play_whole(step)
+        elif kind == "prealarm":
+            # Voralarm: derselbe Weg wie der Alarmton, als Schleife über seine Dauer (nie endlos)
+            await self._play({**step, "sound": step.get("sound", "pre_beep"), "duration": int(step.get("duration") or 20)})
         elif kind == "acknowledge":
             # Alarm quittieren: im Test nie (ein Test darf den echten Zustand nicht ändern). Der Stopp des Ablaufs läuft als eigene
             # Aufgabe (_on_change), dieser Schritt kehrt vorher zurück und wird nicht selbst abgebrochen
@@ -670,7 +722,7 @@ class WorkflowRunner:
     async def _play(self, step: dict[str, Any], resumable: bool = False) -> None:
         players = list(step.get("players", []))
         sound = step.get("sound", "siren")
-        if not players or sound not in SOUNDS:
+        if not players or sound not in ALL_SOUNDS:
             return
         try:
             base = get_url(self.hass, allow_external=False, prefer_external=False)
@@ -680,34 +732,70 @@ class WorkflowRunner:
             except NoURLAvailableError:
                 _LOGGER.error("%s: no Home Assistant URL for the alarm sound; set it under Settings › System › Network", self.entry.title)
                 return
-        url = f"{base}{SOUNDS_URL_PATH}/{sound}.wav"
-        if step.get("volume") is not None:
-            await self._call("media_player", "volume_set", {"entity_id": players, "volume_level": float(step["volume"])})
-        play = {"entity_id": players, "media_content_id": url, "media_content_type": "music"}
+        await self._set_volumes(step, players)
         duration = step.get("duration")
-        if duration is None:  # ältere Form: so oft wiederholen
-            for _ in range(max(1, int(step.get("repeat", 1)))):
-                await self._call("media_player", "play_media", play)
-                await self._sleep(SOUNDS[sound])
-            return
+        if duration is None:  # ältere Form (Wiederholungen): so lang wie die Wiederholungen zusammen
+            duration = max(1, int(step.get("repeat", 1))) * ALL_SOUNDS[sound]
+            resumable = False
         # Dauer in Sekunden, vom Nutzer eingestellt; 0 = so lange, bis deaktiviert wird: der Ablauf bricht den Schritt dann ab.
         # Ein abgewarteter Ton zählt seine Dauer ab dem ersten Start (nach Neuladen oder Neustart nur der Rest, siehe _remaining)
         left = self._remaining(duration) if resumable and duration else duration
         end = dt_util.utcnow() + timedelta(seconds=left)
         try:
             while True:
-                if duration and dt_util.utcnow() >= end:
+                # Eine Datei für die ganze Dauer (1.17.0, sound_loop.py): der Lautsprecher wird nur einmal gestartet, statt alle paar
+                # Sekunden neu. Nur sehr lange Töne (und "bis zum Deaktivieren") bestehen aus mehreren Stücken von LOOP_MAX_SECONDS.
+                rest = LOOP_MAX_SECONDS if duration == 0 else (end - dt_util.utcnow()).total_seconds()
+                if rest <= 0:
                     break  # Zeit schon um (Wiederanlauf nach dem Ende): nichts mehr spielen, nur stoppen
-                await self._call("media_player", "play_media", play)
-                if duration == 0:
-                    await self._sleep(SOUNDS[sound])
-                    continue
-                left = (end - dt_util.utcnow()).total_seconds()
-                await self._sleep(min(SOUNDS[sound], max(left, 0)))
-                if dt_util.utcnow() >= end:
+                piece = min(LOOP_MAX_SECONDS, rest)
+                await self._call("media_player", "play_media", {"entity_id": players, "media_content_id": loop_url(base, sound, piece), "media_content_type": "music"})
+                await self._sleep(piece)
+                if duration and dt_util.utcnow() >= end:
                     break
         finally:
-            # Zeit um, deaktiviert oder "Sirene stumm": der Ton darf nicht ausklingen oder weiterlaufen
+            # Zeit um, deaktiviert oder "Alarmton stumm": der Ton darf nicht ausklingen oder weiterlaufen
+            await self._call("media_player", "media_stop", {"entity_id": players})
+
+    async def _set_volumes(self, step: dict[str, Any], players: list[str]) -> None:
+        """
+        Lautstärke vor dem Ton setzen: je Medienplayer sein eigener Wert ("volumes", 1.16.0), sonst der gemeinsame ("volume").
+        Lautsprecher mit demselben Wert gehen in einen Aufruf; ohne Angabe bleibt die Lautstärke, wie sie ist.
+        """
+        own = step.get("volumes") or {}
+        groups: dict[float, list[str]] = {}
+        for player in players:
+            level = own.get(player, step.get("volume"))
+            if level is not None:
+                groups.setdefault(float(level), []).append(player)
+        for level, group in groups.items():
+            await self._call("media_player", "volume_set", {"entity_id": group, "volume_level": level})
+
+    async def _play_whole(self, step: dict[str, Any]) -> None:
+        """
+        Aktivierungston: nur ganze Wiederholungen, mindestens eine. Ein melodischer Ton (Dreiklang, Glocke) wird so nie mitten in
+        der Melodie abgeschnitten: bei 3 Sekunden spielt ein Ton von 1 Sekunde dreimal, einer von 2 Sekunden einmal.
+        """
+        players = list(step.get("players", []))
+        sound = step.get("sound", "tone_pip")
+        if not players or sound not in ALL_SOUNDS:
+            return
+        try:
+            base = get_url(self.hass, allow_external=False, prefer_external=False)
+        except NoURLAvailableError:
+            try:
+                base = get_url(self.hass)
+            except NoURLAvailableError:
+                _LOGGER.error("%s: no Home Assistant URL for the arming tone; set it under Settings › System › Network", self.entry.title)
+                return
+        await self._set_volumes(step, players)
+        # Ganze Wiederholungen in einer einzigen Datei (1.17.0): der Lautsprecher wird einmal gestartet
+        length = ALL_SOUNDS[sound]
+        total = max(1, int(int(step.get("duration") or 3) // length)) * length
+        try:
+            await self._call("media_player", "play_media", {"entity_id": players, "media_content_id": loop_url(base, sound, total), "media_content_type": "music"})
+            await self._sleep(total)
+        finally:
             await self._call("media_player", "media_stop", {"entity_id": players})
 
     async def _bounded(self, coro: Any, label: str, timeout: float | None = None) -> None:
@@ -772,7 +860,7 @@ class WorkflowRunner:
 
     async def async_silence(self) -> bool:
         """
-        Sirene stumm (Knopf in der Meldung): alle Schritte stoppen und die Geräte zurückstellen, die Anlage bleibt im Alarm
+        Alarmton stumm (Knopf in der Meldung): alle Schritte stoppen und die Geräte zurückstellen, die Anlage bleibt im Alarm
         (Deaktivieren bleibt Sache des Nutzers). Nur bei einem echten, laufenden Ablauf; ein Test endet mit "Test stoppen".
         """
         if self._run and not self._run.get("test"):
@@ -780,7 +868,7 @@ class WorkflowRunner:
             return True
         # Ablauf schon zu Ende (alle Schritte durch), der Ton klingt aber vielleicht noch: auf jeden Fall stoppen
         if self._run is None and self._ctl.state == AlarmControlPanelState.TRIGGERED:
-            players = sorted({p for flow in self._ctl.alarm_plan() for st in self.steps(flow) if st.get("type") == "sound" for p in st.get("players", [])})
+            players = sorted({p for flow in self._ctl.alarm_plan() for st in self.steps(flow) if st.get("type") in ("sound", "prealarm", "chime") for p in st.get("players", [])})
             if players:
                 await self._call("media_player", "media_stop", {"entity_id": players})
                 return True

@@ -50,7 +50,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "test_title": "🧪 Test: {name}",
         "test": "This is a test notification from Alarmageddon.",
         "action_disarm": "Disarm",
-        "action_silence": "Silence siren",
+        "action_silence": "Silence alarm sound",
         "by_silence": "push notification",
         "action_open": "Open",
         "mode_home": "Home",
@@ -96,7 +96,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "test_title": "🧪 Test: {name}",
         "test": "Das ist eine Testmeldung von Alarmageddon.",
         "action_disarm": "Deaktivieren",
-        "action_silence": "Sirene stumm",
+        "action_silence": "Alarmton stumm",
         "by_silence": "Push-Meldung",
         "action_open": "Öffnen",
         "mode_home": "Anwesend",
@@ -141,7 +141,7 @@ def recipient_users(hass: HomeAssistant, targets: list[str]) -> set[str]:
     HA-Benutzer der Companion-Geräte hinter den Empfängern: `notify.mobile_app_<gerät>` direkt oder als Mitglied einer
     notify-Gruppe (Plattform "group", auch verschachtelt).
 
-    Wozu: Ein Knopf der Alarmmeldung ("Deaktivieren", "Sirene stumm") kommt als Ereignis `mobile_app_notification_action`
+    Wozu: Ein Knopf der Alarmmeldung ("Deaktivieren", "Alarmton stumm") kommt als Ereignis `mobile_app_notification_action`
     zurück. Home Assistant (geprüft: 2026.2, mobile_app/webhook.py `webhook_fire_event`) übernimmt die Daten des Ereignisses
     ungeprüft von der App und beglaubigt nur den Absender: den Benutzer, der das Gerät registriert hat (Kontext des
     Ereignisses). Jedes registrierte Companion-Gerät kann das Ereignis also feuern; darum zählt nur, ob sein Benutzer zu
@@ -252,7 +252,7 @@ class Notifier:
         self._unsubs: list[Any] = []
         # Ablauf der Anlage: hat er für diesen Auslöser einen eigenen Push-Schritt, meldet der Alarm nicht doppelt
         self.workflow_has_notify = lambda _trigger: False
-        # Knopf "Sirene stumm": Ablauf stoppen (vom Ablauf der Anlage gesetzt)
+        # Knopf "Alarmton stumm": Ablauf stoppen (vom Ablauf der Anlage gesetzt)
         self.silence = None
 
     @property
@@ -360,8 +360,8 @@ class Notifier:
     @callback
     def _on_action(self, event: Event) -> None:
         """
-        Knöpfe der Meldung. "Deaktivieren" und "Sirene stumm" nur, wenn ausdrücklich eingeschaltet (Sicherheitsregel).
-        "Sirene stumm" lässt die Anlage im Alarm und stoppt nur die Schritte (Geräte kehren zurück).
+        Knöpfe der Meldung. "Deaktivieren" und "Alarmton stumm" nur, wenn ausdrücklich eingeschaltet (Sicherheitsregel).
+        "Alarmton stumm" lässt die Anlage im Alarm und stoppt nur die Schritte (Geräte kehren zurück).
         Beide wirken nur, solange der Alarm läuft: eine alte Alarmmeldung, die auf dem Handy liegen blieb (das "Alarm beendet"
         kam nie an), darf eine inzwischen wieder scharfe Anlage nicht deaktivieren. Und nur von einem Gerät, dessen Benutzer
         zu den konfigurierten Alarm-Empfängern gehört.

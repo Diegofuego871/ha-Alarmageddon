@@ -459,13 +459,15 @@ export class SystemUi {
       const modes = ALL_MODES.filter((m) => d.modes[m]);
       // Alle Modi (auch abgeschaltete behalten ihre Werte)
       const mode_settings = Object.fromEntries(ALL_MODES.map((m) => [m, { ...d.per[m] }]));
-      await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings, per_mode_settings: d.perMode,
+      const saved = await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings, per_mode_settings: d.perMode,
         home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, always_enabled: d.always, schedules: d.schedules });
       Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, always_enabled: d.always, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
       this.draft = null;
       this.saveState = "saved";
       this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
-      h._reloadWait();
+// Nur warten, wenn die Anlage wirklich neu lädt (sonst drehte die Ladeanzeige 25 Sekunden)
+      if (saved?.reload !== false) h._reloadWait();
+      else h._fetch();
     } catch (err) {
       const known = { no_mode: "errNoMode", mode_active: "errModeActive" }[err?.code];
       this.saveState = known ? this._t(known) : this._t("saveFailed", { message: errText(err) });

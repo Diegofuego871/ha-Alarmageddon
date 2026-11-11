@@ -7,6 +7,66 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.0] - 2026-11-11
+
+Tones play in one piece instead of choppy.
+
+### Changed
+
+- **A tone plays in one piece for its whole duration.** Until now the alarm system restarted the short sound file (1 to 4 seconds) on the speakers again and again. Every restart takes a moment on a media player and cuts off the running tone: it sounded choppy, as if the file were too short. Now the speaker gets one single file of the configured length and is started only once. This applies to all tones: alarm sound, pre-alarm and arming tone.
+- **Soft start, soft end.** Every tone is briefly faded in at the start and faded out at the end instead of setting in hard and breaking off.
+- **Continuous tones without a seam.** Siren, two-tone and yelp are now calculated so that one repetition joins the next without a jump and without a dip.
+- **Very long tones** (more than 3 minutes and "until disarmed") consist of pieces of 3 minutes; the restart in between falls into the faded-out spot.
+
+## [1.16.0] - 2026-11-11
+
+Volume for each media player, and two bugs when saving the actions.
+
+### Added
+
+- **Volume for each media player.** For alarm sound, pre-alarm and arming tone there is, with more than one media player, the switch "Separately for each media player": then each speaker has its own slider, for example quieter in the bedroom. Without the switch one value applies to all as before. The card of the step then shows the range ("30–70 %").
+
+### Fixed
+
+- **Actions: "changes" after saving or testing although nothing was open.** Home Assistant stores a saved flow slightly differently from how the panel sends it (defaults added, fields in a different order). As soon as the panel loaded the data again, for example after saving or after a test, it took the flow for changed: the footer said "3 changes", and "Save" was active again. The panel now compares the content instead of the spelling.
+- **The loading indicator kept spinning for up to 25 seconds after saving.** Whoever saved again in that state saved the same thing. Home Assistant then does not reload the alarm system, but the panel waited for that reload. The server now tells the panel whether the alarm system reloads; without a reload there is no loading indicator. This also applies to sensors and system.
+
+## [1.15.0] - 2026-11-11
+
+Three kinds of tones with their own sounds: alarm sound, pre-alarm and arming tone.
+
+### Added
+
+- **Pre-alarm.** A new step type in the flow of the alarm: a quiet warning tone on speakers before the alarm sound sets in. The default is 20 seconds at 30 % volume; the flow waits for it to end, then the next step follows (for example the alarm sound). Disarming stops it at once, and the alarm sound does not set in any more.
+- **Own sounds for each kind.** Each kind offers its own tones, all with a preview:
+  - **Alarm sound:** siren, alarm beep, klaxon and new two-tone high-low and yelp.
+  - **Pre-alarm:** chime, warning (alarm sounds until now) and new slow beep, pulsing tone, rising tone.
+  - **Arming tone:** beep, double beep, soft tone (subtle), bell, rising triad (friendly), confirmation (two notes), tick (very subtle).
+
+### Changed
+
+- **Consistent terms: alarm sound, pre-alarm, arming tone.** The step is called "Alarm sound" (until now "Play alarm sound"), and the button of the push notification is called "Silence alarm sound" (until now "Silence siren"): not everybody has a siren, and the button means the sound of the alarm. The setting for it and the entry in the log are named the same.
+- **The arming tone plays whole repetitions only.** A tone of 1 second sounds three times in 3 seconds, a melody of 2 seconds once: it is never cut off halfway. Its selection shows only its own tones now.
+- **Sounds chosen earlier stay valid.** An alarm sound with chime or warning keeps playing as before and stays selectable in the step as long as it is set.
+
+## [1.14.0] - 2026-11-11
+
+Actions when arming with an arming tone, and more readable texts on the phone.
+
+### Added
+
+- **Actions when arming.** At the very top of the alarm actions there is the new fixed point "Alarm system armed" with a plus. What you put there runs as soon as the system is armed (after the exit delay), per mode like the alarm actions; the tab "Always active" does not have this point. The steps do not run after an acknowledged alarm (the system was armed all along) and not when Home Assistant starts. Disarming stops them at once, an alarm has priority.
+- **Arming tone.** A step type of its own next to the alarm sound: a short tone on speakers, by default a beep of 3 seconds; you set tone, volume and duration (up to 5 minutes), with a preview. It never runs "until disarmed" and restores nothing, so that it can be told apart from the siren. Available when arming and after acknowledging; the alarm keeps the alarm sound.
+
+### Changed
+
+- **The fixed points of the flow are larger.** "Alarm system armed", "Alarm starts" and "Alarm ends (acknowledged)" carry a larger symbol and bolder type: armed with a red shield, the alarm in full red, the end in green.
+- **Phone: descriptions in a readable size.** Hints and descriptions are consistently larger on the phone (14.5 instead of about 12 pixels).
+
+### Fixed
+
+- **The type got larger when an alarm was opened.** On the iPhone the browser's automatic sizing enlarged single blocks of text as soon as the page got longer: the same hint in the log was small at one time and large at another. The automatic sizing is switched off, the size is always the same now.
+
 ## [1.13.3] - 2026-11-11
 
 ### Changed
@@ -932,6 +992,10 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.0
+[1.16.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.16.0
+[1.15.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.15.0
+[1.14.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.14.0
 [1.13.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.3
 [1.13.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.2
 [1.13.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.1

@@ -161,7 +161,7 @@ async def test_systems_are_isolated(hass: HomeAssistant, hass_ws_client) -> None
 
 
 async def test_silence_button_only_from_a_configured_recipient(hass: HomeAssistant, hass_ws_client) -> None:
-    """Auch "Sirene stumm" nimmt die Anlage nur von einem konfigurierten Empfänger an (wie "Deaktivieren")."""
+    """Auch "Alarmton stumm" nimmt die Anlage nur von einem konfigurierten Empfänger an (wie "Deaktivieren")."""
     recipient = await _phone(hass)
     stranger = await _phone(hass, device="Tablet", user="Gast")
     entry, services = await _setup_workflow(hass, [{"type": "action", "action": "switch.turn_on", "target": [SIREN], "restore": True}, {"type": "wait", "seconds": 300}])

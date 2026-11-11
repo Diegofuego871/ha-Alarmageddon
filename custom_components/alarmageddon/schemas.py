@@ -28,6 +28,10 @@ from .const import (
     CONF_SENSOR_OPTIONS,
     CONF_TRIGGER_TIME,
     AFTER_STEP_TYPES,
+    ALL_SOUNDS,
+    ARMED_STEP_TYPES,
+    CHIME_MAX_SECONDS,
+    CONF_WORKFLOWS_ARMED,
     CONF_WORKFLOW_END,
     CONF_WORKFLOWS_AFTER,
     CONF_WORKFLOWS,
@@ -41,7 +45,7 @@ from .const import (
     OPEN_SENSOR_MODES,
     SCOPE_ALWAYS,
     SENSOR_OPTIONS,
-    SOUNDS,
+    PREALARM_MAX_SECONDS,
     WORKFLOW_TRIGGERS,
 )
 
@@ -51,6 +55,9 @@ ENTITY_LIST = [cv.entity_id]
 SENSOR_VALUES = vol.Schema({vol.Optional(vol.In(SENSOR_OPTIONS)): bool, vol.Optional(OPT_ALWAYS_OFF): bool, vol.Optional(OPT_ENTRY_DELAY): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY))})
 # Eigene Empfänger einer Meldung (statt der Alarm-Empfänger aus der Konfiguration): nur notify-Dienste, höchstens 20
 NOTIFY_TARGETS = vol.All([vol.All(str, vol.Match(r"^notify\.[a-z0-9_]+$"))], vol.Length(max=20))
+# Lautstärke je Medienplayer (1.16.0): eigene Werte für einzelne Lautsprecher; wer hier fehlt, bekommt "volume" des Schritts
+PLAYER_VOLUMES = {vol.All(str, vol.Match(r"^media_player\.[a-z0-9_]+$")): vol.All(vol.Coerce(float), vol.Range(min=0, max=1))}
+
 STEP_SCHEMAS = {
     # Eigener Titel und Text der Alarmmeldung (0.19.0); fehlt eine Angabe, gilt der Standardtext. Platzhalter: {name} {sensor} {time} {mode}
     "notify": vol.Schema({
@@ -85,14 +92,38 @@ STEP_SCHEMAS = {
     "sound": vol.Schema({
         vol.Required("type"): "sound",
         vol.Required("players"): vol.All(ENTITY_LIST, vol.Length(min=1)),
-        vol.Required("sound"): vol.In(list(SOUNDS)),
+        # Alarmtöne; Gong und Warnung (bis 1.14.0 hier wählbar, jetzt Töne des Voralarms) bleiben in gespeicherten Abläufen gültig
+        vol.Required("sound"): vol.In(list(ALL_SOUNDS)),
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
+        vol.Optional("volumes"): PLAYER_VOLUMES,
         vol.Optional("repeat", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=50)),
         # Dauer in Sekunden (0 = bis zum Deaktivieren); ohne Angabe gilt die ältere Form mit Wiederholungen (0.18.0)
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DELAY)),
         vol.Optional("restore", default=True): bool,
         vol.Optional("wait"): bool,
         vol.Optional("detach"): bool,
+    }),
+    # Aktivierungston (1.14.0): kurzer Ton auf Lautsprechern, mit Dauer in Sekunden (nie endlos), ohne Zurückstellen
+    "chime": vol.Schema({
+        vol.Required("type"): "chime",
+        vol.Required("players"): vol.All(ENTITY_LIST, vol.Length(min=1)),
+        # Eigene Töne (CHIMES, 1.15.0); ältere Wahl bleibt gültig (1.14.0 bot hier die Alarmtöne an). Das Panel bietet je Schritt nur
+        # die eigenen Töne an; der Server prüft, dass es den Ton gibt.
+        vol.Optional("sound", default="tone_pip"): vol.In(list(ALL_SOUNDS)),
+        vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
+        vol.Optional("volumes"): PLAYER_VOLUMES,
+        vol.Optional("duration", default=3): vol.All(vol.Coerce(int), vol.Range(min=1, max=CHIME_MAX_SECONDS)),
+        vol.Optional("wait"): bool,
+    }),
+    # Voralarm (1.15.0): leiser Warnton vor der Sirene, mit Dauer; der Ablauf wartet standardmässig auf sein Ende
+    "prealarm": vol.Schema({
+        vol.Required("type"): "prealarm",
+        vol.Required("players"): vol.All(ENTITY_LIST, vol.Length(min=1)),
+        vol.Optional("sound", default="pre_beep"): vol.In(list(ALL_SOUNDS)),
+        vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
+        vol.Optional("volumes"): PLAYER_VOLUMES,
+        vol.Optional("duration", default=20): vol.All(vol.Coerce(int), vol.Range(min=1, max=PREALARM_MAX_SECONDS)),
+        vol.Optional("wait"): bool,
     }),
 }
 
@@ -121,7 +152,13 @@ def valid_end(value: Any) -> dict[str, Any]:
 def valid_step(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("type") not in STEP_SCHEMAS:
         raise vol.Invalid("unknown step type")
-    return STEP_SCHEMAS[value["type"]](value)
+    step = STEP_SCHEMAS[value["type"]](value)
+    if "volumes" in step:
+        # Nur für Lautsprecher dieses Schritts; ein leerer Eintrag entfällt
+        step["volumes"] = {player: level for player, level in step["volumes"].items() if player in step.get("players", [])}
+        if not step["volumes"]:
+            del step["volumes"]
+    return step
 
 
 def valid_after_step(value: Any) -> dict[str, Any]:
@@ -134,6 +171,16 @@ def valid_after_step(value: Any) -> dict[str, Any]:
         raise vol.Invalid("this step is not possible after the alarm")
     if step["type"] == "sound" and step.get("duration") in (0, None):
         raise vol.Invalid("a sound after the alarm needs a duration")
+    if "restore" in step:
+        step["restore"] = False
+    return step
+
+
+def valid_armed_step(value: Any) -> dict[str, Any]:
+    """Schritt der Aktionen beim Scharfschalten: Gerät, Aktivierungston und Warten; "Rückgängig" gibt es dort nicht."""
+    step = valid_step(value)
+    if step["type"] not in ARMED_STEP_TYPES:
+        raise vol.Invalid("this step is not possible when arming")
     if "restore" in step:
         step["restore"] = False
     return step
@@ -194,6 +241,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_WORKFLOWS): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): valid_end},
         vol.Optional(CONF_WORKFLOWS_AFTER): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional(CONF_WORKFLOWS_ARMED): {vol.In(MODES): vol.All([valid_armed_step], vol.Length(max=MAX_STEPS))},
     },
     extra=vol.REMOVE_EXTRA,
 )

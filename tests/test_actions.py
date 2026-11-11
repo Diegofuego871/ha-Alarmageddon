@@ -173,9 +173,10 @@ async def test_workflow_runs_in_order(hass: HomeAssistant, freezer) -> None:
     await advance(hass, freezer, 31)
     assert s["media_player.volume_set"][0].data["volume_level"] == 0.7
     play = s["media_player.play_media"][0].data
-    assert play["media_content_id"] == "http://192.168.1.2:8123/alarmageddon_sounds/siren.wav"
+    # Eine Datei für die ganze Dauer (1.17.0): zwei Wiederholungen von 4 s sind 8 s am Stück, der Lautsprecher startet nur einmal
+    assert play["media_content_id"] == "http://192.168.1.2:8123/alarmageddon_loop/8000/siren.wav"
     await advance(hass, freezer, 4.5)
-    assert len(s["media_player.play_media"]) == 2  # Wiederholen
+    assert len(s["media_player.play_media"]) == 1  # kein Neustart mitten im Ton
 
 
 async def test_disarm_stops_and_restores(hass: HomeAssistant, freezer) -> None:
@@ -398,7 +399,7 @@ async def test_save_workflows_validation(hass: HomeAssistant, hass_ws_client) ->
     await client.send_json({"id": 3, "type": "alarmageddon/data"})
     result = (await client.receive_json())["result"]
     assert result["systems"][0]["workflows"]["away"][0]["action"] == "switch.turn_on"
-    assert {s["id"] for s in result["sounds"]} == {"siren", "beep", "klaxon", "warning", "chime"}
+    assert {s["id"] for s in result["sounds"]} == {"siren", "beep", "klaxon", "hilo", "yelp"}  # die Alarmtöne (Gong und Warnung gehören seit 1.15.0 zum Voralarm)
 
 
 async def test_sounds_served_without_login(hass: HomeAssistant, hass_client_no_auth) -> None:
@@ -435,7 +436,7 @@ async def test_single_step_test_runs_only_that_step(hass: HomeAssistant, hass_ws
 
 
 async def test_alarm_buttons_follow_settings(hass: HomeAssistant, hass_ws_client) -> None:
-    """Knöpfe der Alarmmeldung (0.16.0): Öffnen an, Sirene stumm und Deaktivieren aus, einzeln schaltbar."""
+    """Knöpfe der Alarmmeldung (0.16.0): Öffnen an, Alarmton stumm und Deaktivieren aus, einzeln schaltbar."""
     pushes = async_mock_service(hass, "notify", "handy")
     entry = await setup_alarm(hass)
     await _notify_settings(hass, hass_ws_client)
@@ -456,7 +457,7 @@ async def test_alarm_buttons_follow_settings(hass: HomeAssistant, hass_ws_client
 
 
 async def test_silence_from_push_stops_steps_keeps_alarm(hass: HomeAssistant, hass_ws_client, freezer) -> None:
-    """Sirene stumm: nur wenn eingeschaltet; stoppt die Schritte und stellt Geräte zurück, die Anlage bleibt im Alarm."""
+    """Alarmton stumm: nur wenn eingeschaltet; stoppt die Schritte und stellt Geräte zurück, die Anlage bleibt im Alarm."""
     async_mock_service(hass, "notify", "handy")
     ctx = await _phone(hass)
     entry, services = await _setup_workflow(hass, [{"type": "action", "action": "switch.turn_on", "target": [SIREN], "restore": True}, {"type": "wait", "seconds": 300}])
@@ -491,7 +492,7 @@ async def test_detached_step_does_not_block_next_step(hass: HomeAssistant, freez
     assert len(s["switch.turn_on"]) == 1  # ohne "nicht abwarten" käme der Schalter erst nach dem Ton
     assert len(s["media_player.play_media"]) == 1
     await advance(hass, freezer, 5)
-    assert len(s["media_player.play_media"]) == 2  # der Ton läuft nebenher weiter
+    assert len(s["media_player.play_media"]) == 1 and not s["media_player.media_stop"]  # der Ton läuft nebenher weiter, ohne Neustart
     await call(hass, "alarm_disarm")
     await hass.async_block_till_done()
     count = len(s["media_player.play_media"])
@@ -520,16 +521,17 @@ async def test_sound_for_seconds_then_stops(hass: HomeAssistant, freezer) -> Non
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
     assert len(s["media_player.play_media"]) == 1 and not s["switch.turn_on"]
+    assert s["media_player.play_media"][0].data["media_content_id"].endswith("/alarmageddon_loop/10000/siren.wav")  # 10 s am Stück
     await advance(hass, freezer, 4)
-    assert len(s["media_player.play_media"]) == 2  # Ton dauert 4 s: nochmals
+    assert len(s["media_player.play_media"]) == 1  # kein Neustart, obwohl eine Wiederholung nur 4 s dauert
     await advance(hass, freezer, 4)
-    assert len(s["media_player.play_media"]) == 3 and not s["switch.turn_on"]
+    assert len(s["media_player.play_media"]) == 1 and not s["switch.turn_on"]
     await advance(hass, freezer, 2)  # 10 s um
     assert s["media_player.media_stop"] and len(s["switch.turn_on"]) == 1  # nach 10 s gestoppt, der nächste Schritt läuft
 
 
 async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_client, freezer) -> None:
-    """Dauer 0: der Ton läuft, bis deaktiviert wird; "Sirene stumm" stoppt ihn jederzeit, auch ohne laufenden Ablauf."""
+    """Dauer 0: der Ton läuft, bis deaktiviert wird; "Alarmton stumm" stoppt ihn jederzeit, auch ohne laufenden Ablauf."""
     async_mock_service(hass, "notify", "handy")
     ctx = await _phone(hass)
     entry, s = await _setup_workflow(hass, [{"type": "sound", "players": [PLAYER], "sound": "siren", "duration": 0}])
@@ -537,9 +539,11 @@ async def test_sound_until_disarmed_and_silence(hass: HomeAssistant, hass_ws_cli
     await call(hass, "alarm_arm_home")
     await open_sensor(hass, WINDOW)
     await hass.async_block_till_done()
-    for _ in range(15):  # der Ton dauert 4 s: schrittweise, wie die Zeit wirklich vergeht
-        await advance(hass, freezer, 4)
-    assert len(s["media_player.play_media"]) > 10  # läuft weiter, ohne Ende
+    # Ohne Ende: ein Stück von 3 Minuten nach dem anderen (jedes endet ausgeblendet), nicht mehr alle 4 s ein Neustart
+    assert s["media_player.play_media"][0].data["media_content_id"].endswith("/alarmageddon_loop/180000/siren.wav")
+    for _ in range(40):  # schrittweise, wie die Zeit wirklich vergeht: 400 s
+        await advance(hass, freezer, 10)
+    assert len(s["media_player.play_media"]) == 3  # läuft weiter, ohne Ende
     stops = len(s["media_player.media_stop"])
     hass.bus.async_fire("mobile_app_notification_action", {"action": f"ALARMAGEDDON_SILENCE_{entry.entry_id}"}, context=ctx)
     await hass.async_block_till_done()

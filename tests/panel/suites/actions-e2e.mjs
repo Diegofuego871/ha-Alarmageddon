@@ -75,7 +75,7 @@ for (const lang of ["de", "en"]) {
 
     // Gerät schalten: ohne Gerät Fehler, Suche, Aktionen aus dem Gerät
     await s.tap('[data-wf="add"][data-at="5"]');
-    check(`${tag}: Auswahl der Bausteine`, await s.waitFor("return r.querySelectorAll('#ag-step [data-wf=\"kind\"]').length === 7"));
+    check(`${tag}: Auswahl der Bausteine`, await s.waitFor("return r.querySelectorAll('#ag-step [data-wf=\"kind\"]').length === 8")); // seit 1.15.0 mit "Voralarm"
     await s.tap('#ag-step [data-wf="kind"][data-kind="device"]');
     check(`${tag}: Editor Gerät schalten`, await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"eq\"]')"));
     await s.tap('#ag-step [data-wf="apply"]');

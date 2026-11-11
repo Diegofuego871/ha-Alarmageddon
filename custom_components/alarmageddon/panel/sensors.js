@@ -539,7 +539,7 @@ export class SensorsUi {
     this.saving = true;
     this.renderFoot();
     try {
-      await h._hass.callWS({ type: "alarmageddon/save_zones", entry_id: s.entry_id, zones, entry_sensors: [...d.entrySensors].sort(), sensor_options: d.opts, sensors: [...d.sensors].sort(), per_mode_sensors: d.perMode, sensor_modes: d.modeOpts });
+      const saved = await h._hass.callWS({ type: "alarmageddon/save_zones", entry_id: s.entry_id, zones, entry_sensors: [...d.entrySensors].sort(), sensor_options: d.opts, sensors: [...d.sensors].sort(), per_mode_sensors: d.perMode, sensor_modes: d.modeOpts });
       // Sofort als gespeichert zeigen; die Anlage lädt neu, die Daten kommen gleich nach
       s.zones = zones;
       s.entry_sensors = [...d.entrySensors].sort();
@@ -550,7 +550,9 @@ export class SensorsUi {
       this.draft = null;
       this.saveState = "saved";
       this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
-      h._reloadWait(s.entry_id);
+// Nur warten, wenn die Anlage wirklich neu lädt (sonst drehte die Ladeanzeige 25 Sekunden)
+      if (saved?.reload !== false) h._reloadWait(s.entry_id);
+      else h._fetch();
     } catch (err) {
       this.saveState = this._t("saveFailed", { message: errText(err) });
     } finally {

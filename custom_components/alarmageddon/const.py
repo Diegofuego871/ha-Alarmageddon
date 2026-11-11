@@ -60,7 +60,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 95  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 98  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -187,7 +187,7 @@ DEFAULT_NOTIFY: Final = {
     "types": {key: {"enabled": on, "critical": critical, "volume": 0.8, "persistent": False, "targets": []} for key, (on, critical) in NOTIFY_TYPE_DEFAULTS.items()},
     # Aktion "Deaktivieren" in der Push-Meldung: standardmässig aus (Sicherheitsregel, wer das Handy hat, kann entschärfen)
     "disarm_action": False,
-    # Weitere Knöpfe der Alarmmeldung (0.16.0): "Öffnen" (Panel) standardmässig an, "Sirene stumm" aus
+    # Weitere Knöpfe der Alarmmeldung (0.16.0): "Öffnen" (Panel) standardmässig an, "Alarmton stumm" aus
     "open_action": True,
     "silence_action": False,
     # "Alarm quittieren" (1.2.0): beendet den Alarm, die Anlage bleibt scharf. Standardmässig an: es schaltet nichts ab
@@ -220,7 +220,13 @@ CONF_WORKFLOW_END: Final = "workflow_end"
 # Aktionen nach dem Quittieren (1.10.0): Schritte, die laufen, sobald der Alarm endet (quittiert oder deaktiviert), je Auslöser wie
 # CONF_WORKFLOWS. Nur Schritte, die danach noch Sinn haben: Gerät, Ton, Warten (keine Alarmmeldung, kein Quittieren).
 CONF_WORKFLOWS_AFTER: Final = "workflows_after"
-AFTER_STEP_TYPES: Final = ("action", "sound", "wait")
+AFTER_STEP_TYPES: Final = ("action", "sound", "chime", "wait")
+# Aktionen beim Scharfschalten (1.14.0): Schritte, die laufen, sobald die Anlage scharf ist, je Modus. Der Aktivierungston ("chime")
+# ist eine eigene Schrittart neben dem Alarmton ("sound"): ein kurzer Ton mit Dauer, der nie "bis zum Deaktivieren" läuft und nichts
+# zurückstellt. So ist er von der Sirene zu unterscheiden (im Ablauf, im Protokoll und beim Stoppen).
+CONF_WORKFLOWS_ARMED: Final = "workflows_armed"
+ARMED_STEP_TYPES: Final = ("action", "chime", "wait")
+CHIME_MAX_SECONDS: Final = 300
 WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor bei deaktivierter Anlage
 WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
 STEP_TYPES: Final = ("notify", "action", "wait", "sound")
@@ -230,7 +236,15 @@ MAX_BACKUPS: Final = 10  # Sicherungen in der Integration; die älteste fällt w
 TEST_SECONDS: Final = 60  # ein Test endet spätestens nach so vielen Sekunden von selbst
 MAX_STEPS: Final = 40
 # Mitgelieferte Töne: Name und Länge in Sekunden (scripts/make_sounds.py)
-SOUNDS: Final = {"siren": 4.0, "beep": 3.0, "klaxon": 3.0, "warning": 2.0, "chime": 2.0}
+# Drei Arten von Tönen, jede mit eigenen Klängen (1.15.0, Begriffe des Nutzers): Alarmton, Voralarm, Aktivierungston.
+# Nur der Alarmton ist der Ton des Alarms, den der Knopf "Alarmton stumm" der Push-Meldung meint. Wert = Länge einer Wiederholung.
+SOUNDS: Final = {"siren": 4.0, "beep": 3.0, "klaxon": 3.0, "hilo": 3.0, "yelp": 3.0}
+# Voralarm: leise Warntöne für den Schritt "Voralarm", der vor dem Alarmton läuft. Gong und Warnung waren bis 1.14.0 Alarmtöne.
+PREALARMS: Final = {"chime": 2.0, "warning": 2.0, "pre_beep": 1.0, "pre_pulse": 1.0, "pre_rising": 1.0}
+# Aktivierungston: kurz, dezent oder freundlich
+CHIMES: Final = {"tone_pip": 1.0, "tone_double": 1.0, "tone_soft": 1.5, "tone_bell": 2.0, "tone_rise": 2.0, "tone_confirm": 1.5, "tone_tick": 1.0}
+ALL_SOUNDS: Final = {**SOUNDS, **PREALARMS, **CHIMES}
+PREALARM_MAX_SECONDS: Final = 600
 SOUNDS_URL_PATH: Final = "/alarmageddon_sounds"
 DATA_SOUNDS: Final = f"{DOMAIN}_sounds_registered"
 # Symbol der Integration für Meldungen (Android zeigt es als Symbol der Meldung, iOS kennt das nicht); ohne Anmeldung abrufbar

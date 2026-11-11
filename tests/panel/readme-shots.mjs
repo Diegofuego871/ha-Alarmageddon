@@ -16,10 +16,13 @@ const browser = await launch();
 // (Schritte laufen seit 1.10.0 standardmässig weiter: "wait": false; ohne die Angabe zeigte die Karte die Pille "Wartet …")
 const FLOW = [
   { type: "notify" },
+  { type: "prealarm", players: ["media_player.sonos_kueche"], sound: "pre_beep", volume: 0.3, duration: 20, wait: true },
   { type: "action", action: "siren.turn_on", target: ["siren.flur"], data: {}, restore: true, wait: false },
   { type: "wait", seconds: 180 },
   { type: "action", action: "siren.turn_off", target: ["siren.flur"], data: {}, wait: false },
 ];
+// Aktionen beim Scharfschalten (1.14.0): ein kurzer Aktivierungston
+const ARMED = [{ type: "chime", players: ["media_player.sonos_kueche"], sound: "tone_rise", duration: 3, volume: null, wait: false }];
 // Aktionen nach dem Quittieren: das Licht im Flur wieder aus
 const AFTER = [{ type: "action", action: "light.turn_off", target: ["light.flur"], data: {}, restore: false, wait: false }];
 
@@ -34,14 +37,15 @@ async function shot(lang, name, { mobile = false, tab = "overview", prepare, hei
   const frame = await frameEl.contentFrame();
   await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view")`), null, { timeout: 10000 });
   // Erfundene Namen und der Ablauf der README
-  await page.evaluate(([flow, after]) => {
+  await page.evaluate(([flow, after, armed]) => {
     const swap = (v) => (typeof v === "string" ? v.replaceAll("Diego", "Marco") : v);
     for (const s of window.__systems) {
       for (const e of s.events) e.by = swap(e.by);
       s.workflows = { home: flow, away: flow };
       s.workflows_after = { home: after, away: after };
+      s.workflows_armed = { home: armed, away: armed };
     }
-  }, [FLOW, AFTER]);
+  }, [FLOW, AFTER, ARMED]);
   await frame.evaluate(() => document.querySelector("alarmageddon-panel")._fetch());
   await page.waitForTimeout(400);
   if (prepare) await prepare({ page, frame });
@@ -66,7 +70,7 @@ const click = (sel) => ({ frame }) => frame.evaluate((s) => document.querySelect
 for (const lang of ["en", "de"]) {
   await shot(lang, "overview");
   await shot(lang, "sensors", { tab: "config" });
-  await shot(lang, "actions", { tab: "config", prepare: click('[data-sub="actions"]'), height: 1400 });
+  await shot(lang, "actions", { tab: "config", prepare: click('[data-sub="actions"]'), height: 1800 });
   await shot(lang, "log", { tab: "log" });
   await shot(lang, "mobile", { mobile: true });
   // Sensoransicht einer Tür über 7 Tage (1.9.0)

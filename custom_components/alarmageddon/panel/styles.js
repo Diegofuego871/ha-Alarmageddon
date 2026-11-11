@@ -388,6 +388,8 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }
 .ag-wf-icon.k-acknowledge { background: var(--ag-success-soft); color: var(--ag-success); }
+/* Voralarm: Warnfarbe (leiser Vorbote), Aktivierungston: die Farbe des Panels (freundlich); der Alarmton bleibt rot */
+.ag-wf-icon.k-prealarm { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
 .ag-wf-icon.k-wait { background: var(--ag-subtle); color: var(--ag-text2); }
 .ag-wf-icon.k-open, .ag-wf-icon.k-close, .ag-wf-icon.k-end { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-wf-text { flex: 1; min-width: 0; }
@@ -888,5 +890,21 @@ button.ag-sv-tag.alarm { background: var(--ag-error-soft); color: var(--ag-error
 :host([narrow]) .ag-subs { grid-auto-columns: auto; }
 :host([narrow]) .ag-subs > button { gap: 3px; padding: 0 4px; font-size: 13px; }
 :host([narrow]) .ag-subs > button > svg { width: 15px; height: 15px; }
+/* Feste Punkte des Ablaufs (1.14.0): "Anlage scharf geschaltet", "Alarm beginnt", "Alarm endet (quittiert)". Grösser und kräftiger als
+   bisher, damit die drei Abschnitte auf einen Blick zu erkennen sind. Scharf ist rot (weich), der Alarm rot (voll), das Ende grün. */
+.ag-wf-start { gap: 12px; padding: 6px 20px 0 calc(var(--wf-x) - 18px); font-size: 16px; font-weight: 600; }
+.ag-wf-start .ag-mini { width: 36px; height: 36px; border-radius: 11px; }
+.ag-wf-start .ag-mini.alarm { background: var(--ag-error); color: #fff; }
+.ag-wf-start .ag-mini.arm { background-image: linear-gradient(var(--ag-error-soft), var(--ag-error-soft)); color: var(--ag-error); }
+.ag-wf-armed { max-width: 820px; margin-bottom: 10px; }
+/* Schrift (1.14.0): Die Grösse folgt nie mehr der Automatik des Browsers. Auf dem iPhone vergrösserte sie einzelne Textblöcke, sobald
+   die Seite länger wurde (aufgeklappter Alarm): derselbe Hinweis war einmal klein, einmal gross. */
+:host { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Handy: Beschreibungen und Hinweise durchgängig in einer gut lesbaren Grösse (Vorgabe des Nutzers: die kleine war zu klein) */
+:host([narrow]) .ag-small, :host([narrow]) .ag-hint, :host([narrow]) .ag-settx small, :host([narrow]) .ag-otx small, :host([narrow]) .ag-pmbanner small,
+:host([narrow]) .ag-pmnote, :host([narrow]) .ag-kind small, :host([narrow]) .ag-sys-sub, :host([narrow]) .ag-nm small, :host([narrow]) .ag-coderow small,
+:host([narrow]) #ag-codes .ag-fld small, :host([narrow]) .ag-mt-opt small, :host([narrow]) .ag-pv-note, :host([narrow]) .ag-wf-text small,
+:host([narrow]) .ag-inc-text small, :host([narrow]) .ag-sv-ttl small, :host([narrow]) .ag-erow small, :host([narrow]) .ag-combo-item small,
+:host([narrow]) .ag-dlg-body > p, :host([narrow]) .ag-lfacts { font-size: 14.5px; line-height: 1.35; }
 `;
 

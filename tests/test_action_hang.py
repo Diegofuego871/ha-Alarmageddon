@@ -339,6 +339,8 @@ HANGING_STEPS = {
     "Meldung": {"type": "notify"},
     "Quittieren": {"type": "acknowledge"},
     "Ton mit fester Dauer": {"type": "sound", "players": ["media_player.wohnzimmer"], "sound": "siren", "duration": 1},
+    "Aktivierungston": {"type": "chime", "players": ["media_player.wohnzimmer"], "sound": "tone_pip", "duration": 1, "wait": True},  # abgewartet wie die anderen Fälle
+    "Voralarm": {"type": "prealarm", "players": ["media_player.wohnzimmer"], "sound": "pre_beep", "duration": 1},
 }
 
 
@@ -392,6 +394,8 @@ def test_every_step_type_has_a_budget() -> None:
         "wait": {"type": "wait", "seconds": 30},
         "action": {"type": "action", "action": "switch.turn_on"},
         "sound": {"type": "sound", "players": ["media_player.wohnzimmer"], "sound": "siren", "duration": 60},
+        "chime": {"type": "chime", "players": ["media_player.wohnzimmer"], "sound": "tone_pip", "duration": 5},
+        "prealarm": {"type": "prealarm", "players": ["media_player.wohnzimmer"], "sound": "pre_beep", "duration": 20},
     }
     assert set(examples) == set(STEP_SCHEMAS)
     assert {HANGING_STEPS[name]["type"] for name in HANGING_STEPS} == set(STEP_SCHEMAS)

@@ -56,11 +56,14 @@ from .const import (
     CONF_SENSOR_OPTIONS,
     CONF_WORKFLOW_END,
     CONF_WORKFLOWS_AFTER,
+    CHIMES,
+    CONF_WORKFLOWS_ARMED,
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
     NOTIFY_MODE_KINDS,
     NOTIFY_TYPES,
+    PREALARMS,
     SOUNDS,
     SOUNDS_URL_PATH,
     WORKFLOW_TRIGGERS,
@@ -75,7 +78,7 @@ from .const import (
 )
 from .devices import battery_of, device_sensors, display_name
 from .forecast import async_forecasts
-from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_end, valid_step
+from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_armed_step, valid_end, valid_step
 from .sensor_history import BATTERY_HOURS, STATE_HOURS, async_get_stats, async_numeric_history, async_state_history
 from .settings import async_get_settings, sensor_type
 
@@ -228,6 +231,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "workflows": entry.options.get(CONF_WORKFLOWS) or {},
                 "workflow_end": entry.options.get(CONF_WORKFLOW_END) or {},
                 "workflows_after": entry.options.get(CONF_WORKFLOWS_AFTER) or {},
+                "workflows_armed": entry.options.get(CONF_WORKFLOWS_ARMED) or {},
                 # Läuft gerade ein Alarm oder ein Test (die Aktionen nach dem Quittieren zählen nicht dazu)
                 "workflow_running": _alarm_run(entry).get("trigger"),
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
@@ -262,6 +266,9 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             key=lambda u: u["name"].lower(),
         ),
         "sounds": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in SOUNDS.items()],
+        # Eigene Töne für "Aktivierungston" und "Voralarm" (1.15.0)
+        "chimes": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in CHIMES.items()],
+        "prealarms": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in PREALARMS.items()],
     })
 
 
@@ -318,8 +325,10 @@ async def ws_save_zones(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
             return
         options[CONF_SENSOR_MODES] = {m: {e: dict(o) for e, o in per.items() if o} for m, per in msg["sensor_modes"].items() if any(per.values())}
     # Neuladen übernimmt der Update-Listener; der Zustand der Anlage übersteht es (RestoreEntity)
-    hass.config_entries.async_update_entry(entry, options=options)
-    connection.send_result(msg["id"], {"ok": True})
+    changed = hass.config_entries.async_update_entry(entry, options=options)
+    # "reload": lädt die Anlage neu? Home Assistant lädt nur neu, wenn sich die Optionen wirklich geändert haben. Ohne diese Angabe
+    # wartete das Panel mit der Ladeanzeige 25 Sekunden auf eine neue Kennung, die nie kam.
+    connection.send_result(msg["id"], {"ok": True, "reload": bool(changed)})
 
 
 @websocket_api.websocket_command(
@@ -521,8 +530,10 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if ctl.mode and ctl.mode not in enabled and ctl.state != AlarmControlPanelState.DISARMED:
         connection.send_error(msg["id"], "mode_active", "Disarm before switching off the active mode")
         return
-    hass.config_entries.async_update_entry(entry, options=options)
-    connection.send_result(msg["id"], {"ok": True})
+    changed = hass.config_entries.async_update_entry(entry, options=options)
+    # "reload": lädt die Anlage neu? Home Assistant lädt nur neu, wenn sich die Optionen wirklich geändert haben. Ohne diese Angabe
+    # wartete das Panel mit der Ladeanzeige 25 Sekunden auf eine neue Kennung, die nie kam.
+    connection.send_result(msg["id"], {"ok": True, "reload": bool(changed)})
 
 
 @websocket_api.websocket_command(
@@ -629,6 +640,7 @@ async def ws_save_display(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         # Element "Alarm endet": was Deaktivieren mit den Geräten macht, je Auslöser (fehlt: Standard)
         vol.Optional("workflow_end"): {vol.In(WORKFLOW_TRIGGERS): valid_end},
         vol.Optional("workflows_after"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional("workflows_armed"): {vol.In(MODES): vol.All([valid_armed_step], vol.Length(max=MAX_STEPS))},
     }
 )
 @websocket_api.require_admin
@@ -645,11 +657,16 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
     if "workflow_end" in msg:
         kept_end = {k: v for k, v in (options.get(CONF_WORKFLOW_END) or {}).items() if k not in msg["workflow_end"]}
         options[CONF_WORKFLOW_END] = {**kept_end, **{k: end for k, v in msg["workflow_end"].items() if (end := _clean_end(v))}}
+    if "workflows_armed" in msg:
+        kept_armed = {k: v for k, v in (options.get(CONF_WORKFLOWS_ARMED) or {}).items() if k not in msg["workflows_armed"]}
+        options[CONF_WORKFLOWS_ARMED] = {**kept_armed, **{k: v for k, v in msg["workflows_armed"].items() if v}}
     if "workflows_after" in msg:
         kept_after = {k: v for k, v in (options.get(CONF_WORKFLOWS_AFTER) or {}).items() if k not in msg["workflows_after"]}
         options[CONF_WORKFLOWS_AFTER] = {**kept_after, **{k: v for k, v in msg["workflows_after"].items() if v}}
-    hass.config_entries.async_update_entry(entry, options=options)
-    connection.send_result(msg["id"], {"ok": True})
+    changed = hass.config_entries.async_update_entry(entry, options=options)
+    # "reload": lädt die Anlage neu? Home Assistant lädt nur neu, wenn sich die Optionen wirklich geändert haben. Ohne diese Angabe
+    # wartete das Panel mit der Ladeanzeige 25 Sekunden auf eine neue Kennung, die nie kam.
+    connection.send_result(msg["id"], {"ok": True, "reload": bool(changed)})
 
 
 @websocket_api.websocket_command(
@@ -791,8 +808,10 @@ async def ws_remove_code(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if not rest and not options.get(CONF_CODE_HASH):
         # Ohne Code kann "Code zum Scharfschalten" nicht gelten
         options[CONF_CODE_ARM_REQUIRED] = False
-    hass.config_entries.async_update_entry(entry, options=options)
-    connection.send_result(msg["id"], {"ok": True})
+    changed = hass.config_entries.async_update_entry(entry, options=options)
+    # "reload": lädt die Anlage neu? Home Assistant lädt nur neu, wenn sich die Optionen wirklich geändert haben. Ohne diese Angabe
+    # wartete das Panel mit der Ladeanzeige 25 Sekunden auf eine neue Kennung, die nie kam.
+    connection.send_result(msg["id"], {"ok": True, "reload": bool(changed)})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/battery_forecast"})

@@ -18,6 +18,48 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - 1.1.0 (1.0.1 übersprungen, nie getaggt): Eingangsverzögerung pro Sensor (`controller.sensor_entry_delay`, `schemas.SENSOR_VALUES`, Option `entry_delay` in `sensor_options`/`sensor_modes`, Blatt `sensors.js _delayRow`, bleibt bei "Auf alle Sensoren anwenden"); eigene Empfänger je Push-Schritt und bei "Alarm endet" (`targets`, `notify._alarm_recipients`, `actions.js _ntRecipients`); Emoji in allen Standardtiteln (Test `test_every_default_title_starts_with_an_emoji`). In 1.2.0 umgesetzt.
 - 1.0.1: Kopfzeile (`.ag-headsys`, `_fillHeadSys`) in jedem Reiter; `.ag-sen-layout.open` mit `minmax(420px, 1fr)` und rechtsbündigem Blatt; Sortierschlüssel `state` mit Rang und Text (`_stateLabel`); Pfeil der Auswahlfelder als SVG; Abstand der Leiste `.ag-pmstick` als Innenabstand.
 
+## Stand (1.17.0, Töne am Stück statt abgehackt)
+
+Ausführlich: `docs/UEBERGABE-1.17.0.md`.
+
+- **Ursache des abgehackten Klangs:** `_play` startete die kurze Datei alle 1 bis 4 Sekunden neu (`play_media` je Wiederholung). Jeder Neustart hat auf dem Lautsprecher eine Verzögerung und schneidet den laufenden Ton ab.
+- **Jetzt:** `sound_loop.py` liefert unter `/alarmageddon_loop/<Millisekunden>/<Ton>.wav` eine WAV in der verlangten Länge: die mitgelieferte Wiederholung nahtlos vervielfacht, 30 ms ein- und 60 ms ausgeblendet. Ohne Anmeldung (wie die Tondateien und die Sprachausgabe von Home Assistant), nur bekannte Töne, höchstens `LOOP_MAX_SECONDS` (180 s, rund 8 MB), kleiner Zwischenspeicher für mehrere Lautsprecher. `_play` und `_play_whole` starten den Lautsprecher einmal je Stück (`loop_url`).
+- **Tondateien:** jede Datei unter `sounds/` ist eine Wiederholung, die nahtlos an sich selbst anschliesst (Töne mit Pause enden in Stille; Sirene, Zweiton, Jaulton ohne Rampen und mit ganzer Zahl Schwingungen). **Regel für neue Töne:** so erzeugen, `tests/test_sound_loop.py` prüft Nahtstellen und Blenden. Bei durchgehenden Tönen die Phase ausrechnen, nicht aufsummieren (der Jaulton knackte sonst an der Naht).
+- **Vorschau im Panel** spielt weiterhin die einzelne Wiederholung.
+- Tests: `tests/test_sound_loop.py` (28); `test_actions.py`, `test_tones.py` angepasst (ein Start statt vieler); Mutationsprobe 3 neue Massnahmen.
+
+## Stand (1.16.0, Lautstärke je Medienplayer; Scheinänderungen und langes Drehen beim Speichern behoben)
+
+Ausführlich: `docs/UEBERGABE-1.16.0.md`.
+
+- **Scheinänderungen (Fehler bis 1.15.0):** Der Server legt Schritte mit ergänzten Vorgaben und in anderer Feldfolge ab. Das Panel verglich Entwurf und Serverstand als Text; nach dem nächsten `_fetch` (nach Speichern, Test, Zeitgeber) galt der Ablauf als geändert. Jetzt: `actions.js` `canon()` vergleicht, was das Panel aus beiden Seiten selbst schreiben würde (`toStep(fromStep(step))`, Felder sortiert), `canonEnd()` für die Meldung am Ende. **Regel:** Entwurf und Serverstand nie als rohen Text vergleichen.
+- **Warten auf das Neuladen:** `save_zones`, `save_system`, `save_workflows` antworten mit `"reload": bool` (Rückgabe von `async_update_entry`). Das Panel ruft `_reloadWait` nur bei `reload !== false`, sonst `_fetch()`.
+- **Nachbau:** `save_workflows` normiert wie der Server (Vorgaben, Feldfolge) und lädt nur bei einer Änderung neu; damit fällt diese Fehlerklasse im Test auf (`savewait-e2e.mjs`; mit dem alten Vergleich scheitern 16 Prüfungen).
+- **Lautstärke je Medienplayer:** Schritte `sound`, `prealarm`, `chime` kennen `volumes: {media_player: 0..1}` (nur für Lautsprecher des Schritts, `schemas.valid_step`); `workflow._set_volumes` setzt je Wert einen Aufruf, sonst gilt `volume`. Panel: Schalter `data-wf="pervol"`, Regler `data-wf="pvol"`; `ownVolumes(f)` schreibt `volumes` nur, wenn sich die Werte unterscheiden.
+- Tests: `tests/test_save_reload.py` (9), Panel `savewait-e2e.mjs` (48); Mutationsprobe 2 neue Massnahmen.
+
+## Stand (1.15.0, drei Arten von Tönen: Alarmton, Voralarm, Aktivierungston)
+
+Ausführlich: `docs/UEBERGABE-1.15.0.md`.
+
+- **Begriffe (Vorgabe des Nutzers, stringent halten):** "Alarmton" (Schritt `sound`), "Voralarm" (Schritt `prealarm`), "Aktivierungston" (Schritt `chime`). Der Knopf der Push-Meldung heisst "Alarmton stumm" (`notify.TEXTS["action_silence"]`), nie "Sirene": nur der Alarmton ist der Ton des Alarms. "Sirene" bleibt der Name eines Klangs und eines Geräts.
+- **Klänge:** `const.SOUNDS` (Alarmton), `PREALARMS`, `CHIMES`, zusammen `ALL_SOUNDS`; Dateien unter `sounds/`, erzeugt von `scripts/make_sounds.py` (neuer Klang: dort ergänzen, in die passende Liste eintragen, Text `snd…` in `strings.js` und `SOUND_KEY` in `actions.js`). Der Server nimmt je Tonschritt jeden bekannten Klang an (ältere Wahl bleibt gültig); das Panel bietet je Art nur die eigenen an (`TONE_LIST`).
+- **Voralarm:** läuft über `_play` als Schleife mit Dauer; ohne `wait` wartet der Ablauf auf ihn (`step_waits`). Nur im Ablauf des Alarms (nicht beim Scharfschalten, nicht nach dem Quittieren). `async_stop` stoppt auch seine Lautsprecher.
+- **Aktivierungston:** `_play_whole` spielt nur ganze Wiederholungen (mindestens eine), nach der Uhr.
+- Tests: `tests/test_tones.py` (30), Panel `armed-e2e.mjs` erweitert (84); jede neue Schrittart braucht ein Beispiel in `test_action_hang.py`.
+
+## Stand (1.14.0, Aktionen beim Scharfschalten, Aktivierungston; Schrift auf dem Handy)
+
+Ausführlich: `docs/UEBERGABE-1.14.0.md`.
+
+- **Drei Abschnitte im Ablauf:** "Anlage scharf geschaltet" (`workflows_armed`, je Modus, nie für "Immer aktiv"), "Alarm beginnt" (`workflows`), "Alarm endet (quittiert)" (`workflow_end` für die Meldung, `workflows_after` für die Aktionen danach).
+- **Server:** `CONF_WORKFLOWS_ARMED`, `ARMED_STEP_TYPES`, `schemas.valid_armed_step`. `WorkflowRunner._on_change` startet `async_run_armed(mode)`, wenn der Zustand scharf wird und der vorige weder leer (Start von HA), noch Eingangsverzögerung, noch Alarm war (quittierter Alarm: Zweig davor). Der Lauf trägt `"after": True` und `"phase": "armed"` (gleiche Mechanik wie nach dem Quittieren: Aufsicht, endet von selbst, stellt nichts zurück, ein Alarm übernimmt). Deaktivieren beendet ihn über `_stop_side_run` (bricht ab und stoppt die Lautsprecher).
+- **Aktivierungston:** Schrittart `"chime"` (`players`, `sound` Standard "beep", `volume`, `duration` 1 bis `CHIME_MAX_SECONDS`, `wait`). Spielt über `_play` wie der Alarmton, immer mit Dauer. Ohne `wait` läuft er weiter (keine ältere Regel für diese Art). Hat ein Beispiel in `test_action_hang.py` (Pflicht für jede neue Schrittart).
+- **Panel `actions.js`:** dritte Liste `.ag-wf-armed` (`data-zone="armed"`, `_armedHtml`, `ZONE_KEY`/`ZONE_CLASS`); Schrittart `chime` (Symbol `tone`) teilt die Felder des Alarmtons (`isTone`), ohne "bis zum Deaktivieren" und ohne "Rückgängig". Auswahl je Liste: `ARMED_KINDS`, `AFTER_KINDS`, beim Alarm alles ausser `chime`.
+- **Feste Punkte:** `.ag-wf-start` mit 36 px Symbol und 16 px fetter Schrift (`.ag-mini.arm`, `.alarm`, `.ok`).
+- **Schrift:** `:host { text-size-adjust: 100% }` (die Automatik von iOS vergrösserte Textblöcke uneinheitlich). Handy: Beschreibungen 14.5 px über eine Liste von Klassen am Ende von `styles.js`; eine neue Beschreibungsklasse dort eintragen.
+- Tests: `tests/test_armed_actions.py` (11), Panel `armed-e2e.mjs` (64), `after-e2e.mjs` angepasst; Mutationsprobe 4 neue Massnahmen.
+
 ## Stand (1.13.0, Protokoll mit zwei Reitern; ein Jahr Aufbewahrung; Alarm löschen)
 
 Ausführlich: `docs/UEBERGABE-1.13.0.md`.

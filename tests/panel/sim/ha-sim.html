@@ -163,7 +163,9 @@
         // Letzte echte Änderung (offen <-> zu) vom Server; die meisten Sensoren haben (noch) keine
         last_changes: { "binary_sensor.haustuer": iso(5 * 86400e3), "binary_sensor.fenster_kueche": iso(2 * 3600e3) },
         notify_services: ["notify.mobile_app_diego", "notify.mobile_app_partnerin", "notify.mobile_app_tablet"],
-        sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["warning", 2], ["chime", 2]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
+        sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["hilo", 3], ["yelp", 3]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
+        prealarms: [["chime", 2], ["warning", 2], ["pre_beep", 1], ["pre_pulse", 1], ["pre_rising", 1]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
+        chimes: [["tone_pip", 1], ["tone_double", 1], ["tone_soft", 1.5], ["tone_bell", 2], ["tone_rise", 2], ["tone_confirm", 1.5], ["tone_tick", 1]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
       }));
     }
     if (msg.type === "alarmageddon/log") {
@@ -311,10 +313,11 @@
     }
     const sys = window.__systems.find((s) => s.entry_id === msg.entry_id);
     if (!sys) throw err("not_found");
-    if (["alarmageddon/save_zones", "alarmageddon/save_workflows", "alarmageddon/save_system"].includes(msg.type)) {
+    const reloadNow = () => {
       window.__reload = { id: sys.entry_id, until: Date.now() + (window.__reloadMs ?? 900) };
       sys.instance = `i${Date.now()}`;
-    }
+    };
+    if (["alarmageddon/save_zones", "alarmageddon/save_system"].includes(msg.type)) reloadNow();
     if (msg.type === "alarmageddon/save_zones") {
       const active = new Set(sys.modes.flatMap((m) => msg.zones[m] || []));
       if (msg.entry_sensors.some((e) => !active.has(e))) throw err("entry_not_in_zone");
@@ -327,10 +330,25 @@
       return { ok: true };
     }
     if (msg.type === "alarmageddon/save_workflows") {
-      sys.workflows = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(msg.workflows))).filter(([, v]) => v.length));
-      if (msg.workflows_after) sys.workflows_after = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(msg.workflows_after))).filter(([, v]) => v.length));
-      if (msg.workflow_end) sys.workflow_end = Object.fromEntries(Object.entries(msg.workflow_end).filter(([, v]) => v !== "restore_marked"));
-      return { ok: true };
+      // Wie der Server: Vorgaben ergänzen und die Felder in anderer Reihenfolge ablegen als das Panel sie schickt. So fällt auf, wenn
+      // das Panel einen eben gespeicherten Ablauf nach dem nächsten Laden für geändert hält (Fehler bis 1.15.0).
+      const norm = (step) => {
+        const out = {};
+        for (const k of Object.keys(step).sort().reverse()) out[k] = step[k];
+        if (step.type === "sound" && !("repeat" in out)) out.repeat = 1;
+        if (step.type === "action" && !("data" in out)) out.data = {};
+        return out;
+      };
+      const keep = (flows) => Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(flows))).filter(([, v]) => v.length).map(([k, v]) => [k, v.map(norm)]));
+      const before = JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}]);
+      sys.workflows = keep(msg.workflows);
+      if (msg.workflows_armed) sys.workflows_armed = keep(msg.workflows_armed);
+      if (msg.workflows_after) sys.workflows_after = keep(msg.workflows_after);
+      if (msg.workflow_end) sys.workflow_end = Object.fromEntries(Object.entries(msg.workflow_end).filter(([, v]) => v !== "restore_marked" && Object.keys(v || {}).length));
+      // Home Assistant lädt die Anlage nur neu, wenn sich etwas geändert hat
+      const reload = before !== JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}]);
+      if (reload) reloadNow();
+      return { ok: true, reload };
     }
     if (msg.type === "alarmageddon/test_workflow") {
       if (!msg.step && !(sys.workflows[msg.trigger] || []).length) throw err("empty");

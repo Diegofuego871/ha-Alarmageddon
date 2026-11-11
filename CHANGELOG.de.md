@@ -7,6 +7,66 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.17.0] - 2026-11-11
+
+Töne spielen am Stück statt abgehackt.
+
+### Geändert
+
+- **Ein Ton spielt für seine ganze Dauer am Stück.** Bisher startete die Anlage die kurze Tondatei (1 bis 4 Sekunden) auf den Lautsprechern immer wieder neu. Jeder Neustart braucht auf einem Medienplayer einen Moment und schneidet den laufenden Ton ab: es klang abgehackt, als wäre die Datei zu kurz. Jetzt bekommt der Lautsprecher eine einzige Datei in der eingestellten Länge und wird nur einmal gestartet. Das gilt für alle Töne: Alarmton, Voralarm und Aktivierungston.
+- **Weicher Anfang, weiches Ende.** Jeder Ton wird am Anfang kurz ein- und am Ende ausgeblendet, statt hart einzusetzen und abzubrechen.
+- **Durchgehende Töne ohne Naht.** Sirene, Zweiton und Jaulton sind neu so berechnet, dass eine Wiederholung ohne Sprung und ohne Einbruch an die nächste anschliesst.
+- **Sehr lange Töne** (über 3 Minuten und "bis zum Deaktivieren") bestehen aus Stücken von 3 Minuten; der Neustart dazwischen fällt in die ausgeblendete Stelle.
+
+## [1.16.0] - 2026-11-11
+
+Lautstärke je Medienplayer, und zwei Fehler beim Speichern der Aktionen.
+
+### Hinzugefügt
+
+- **Lautstärke je Medienplayer.** Bei Alarmton, Voralarm und Aktivierungston gibt es mit mehr als einem Medienplayer den Schalter "Je Medienplayer einzeln": dann hat jeder Lautsprecher seinen eigenen Regler, zum Beispiel leiser im Schlafzimmer. Ohne den Schalter gilt wie bisher ein Wert für alle. Die Karte des Schritts zeigt dann die Spanne ("30–70 %").
+
+### Behoben
+
+- **Aktionen: "Änderungen" nach dem Speichern oder Testen, obwohl nichts offen war.** Home Assistant legt einen gespeicherten Ablauf etwas anders ab, als das Panel ihn schickt (Vorgaben ergänzt, Felder in anderer Reihenfolge). Sobald das Panel die Daten neu lud, etwa nach dem Speichern oder nach einem Test, hielt es den Ablauf für geändert: unten stand "3 Änderungen", und "Speichern" war wieder aktiv. Das Panel vergleicht jetzt den Inhalt statt der Schreibweise.
+- **Die Ladeanzeige drehte nach dem Speichern bis zu 25 Sekunden.** Wer in diesem Zustand noch einmal speicherte, speicherte denselben Stand. Home Assistant lädt die Anlage dann nicht neu, das Panel wartete aber auf diesen Neustart. Der Server sagt dem Panel jetzt, ob die Anlage neu lädt; ohne Neustart gibt es keine Ladeanzeige. Das gilt auch für Sensoren und Anlage.
+
+## [1.15.0] - 2026-11-11
+
+Drei Arten von Tönen mit eigenen Klängen: Alarmton, Voralarm und Aktivierungston.
+
+### Hinzugefügt
+
+- **Voralarm.** Eine neue Schrittart im Ablauf des Alarms: ein leiser Warnton auf Lautsprechern, bevor der Alarmton einsetzt. Standard sind 20 Sekunden bei 30 % Lautstärke; der Ablauf wartet auf sein Ende, danach folgt der nächste Schritt (zum Beispiel der Alarmton). Deaktivieren stoppt ihn sofort, der Alarmton setzt dann nicht mehr ein.
+- **Eigene Klänge je Art.** Jede Art bietet ihre eigenen Töne an, alle zum Probehören:
+  - **Alarmton:** Sirene, Alarm-Piepen, Hupe und neu Zweiton hoch-tief und Jaulton.
+  - **Voralarm:** Gong, Warnung (bisher Alarmtöne) und neu langsames Piepsen, pulsierender Ton, ansteigender Ton.
+  - **Aktivierungston:** Piepsen, Doppelpiep, sanfter Ton (dezent), Glocke, Dreiklang aufsteigend (freundlich), Bestätigung (zwei Töne), Ticken (sehr dezent).
+
+### Geändert
+
+- **Einheitliche Begriffe: Alarmton, Voralarm, Aktivierungston.** Der Schritt heisst "Alarmton" (bisher "Alarmton abspielen"), und der Knopf der Push-Meldung heisst "Alarmton stumm" (bisher "Sirene stumm"): nicht jeder hat eine Sirene, und der Knopf meint den Ton des Alarms. Auch die Einstellung dazu und der Eintrag im Protokoll heissen so.
+- **Der Aktivierungston spielt nur ganze Wiederholungen.** Ein Ton von 1 Sekunde erklingt in 3 Sekunden dreimal, eine Melodie von 2 Sekunden einmal: sie wird nie mittendrin abgeschnitten. Seine Auswahl zeigt nur noch die eigenen Töne.
+- **Früher gewählte Klänge bleiben gültig.** Ein Alarmton mit Gong oder Warnung spielt weiter wie bisher und bleibt im Schritt wählbar, solange er eingestellt ist.
+
+## [1.14.0] - 2026-11-11
+
+Aktionen beim Scharfschalten mit einem Aktivierungston, und besser lesbare Texte auf dem Handy.
+
+### Hinzugefügt
+
+- **Aktionen beim Scharfschalten.** Bei den Alarmaktionen steht ganz oben der neue feste Punkt "Anlage scharf geschaltet" mit einem Plus. Was du dort ablegst, läuft, sobald die Anlage scharf ist (nach der Ausgangsverzögerung), je Modus wie die Alarmaktionen; im Reiter "Immer aktiv" gibt es den Punkt nicht. Die Schritte laufen nicht nach einem quittierten Alarm (die Anlage war durchgehend scharf) und nicht beim Start von Home Assistant. Deaktivieren stoppt sie sofort, ein Alarm hat Vorrang.
+- **Aktivierungston.** Eine eigene Schrittart neben dem Alarmton: ein kurzer Ton auf Lautsprechern, standardmässig ein Piepsen von 3 Sekunden; Ton, Lautstärke und Dauer (bis 5 Minuten) stellst du ein, mit Probehören. Er läuft nie "bis zum Deaktivieren" und stellt nichts zurück, damit er von der Sirene zu unterscheiden ist. Verfügbar beim Scharfschalten und nach dem Quittieren; beim Alarm bleibt es beim Alarmton.
+
+### Geändert
+
+- **Die festen Punkte des Ablaufs sind grösser.** "Anlage scharf geschaltet", "Alarm beginnt" und "Alarm endet (quittiert)" tragen ein grösseres Symbol und kräftigere Schrift: scharf mit rotem Schild, der Alarm in vollem Rot, das Ende grün.
+- **Handy: Beschreibungen in lesbarer Grösse.** Hinweise und Beschreibungen sind auf dem Handy durchgängig grösser (14.5 statt rund 12 Pixel).
+
+### Behoben
+
+- **Die Schrift wurde beim Aufklappen eines Alarms grösser.** Auf dem iPhone vergrösserte die Automatik des Browsers einzelne Textblöcke, sobald die Seite länger wurde: derselbe Hinweis im Protokoll war einmal klein und einmal gross. Die Automatik ist abgeschaltet, die Grösse ist jetzt immer dieselbe.
+
 ## [1.13.3] - 2026-11-11
 
 ### Geändert
@@ -932,6 +992,10 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.0
+[1.16.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.16.0
+[1.15.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.15.0
+[1.14.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.14.0
 [1.13.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.3
 [1.13.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.2
 [1.13.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.1
