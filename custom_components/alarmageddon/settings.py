@@ -134,6 +134,9 @@ class Settings:
         self.data: dict[str, Any] = {
             "presets": copy.deepcopy(DEFAULT_PRESETS),
             "notify": copy.deepcopy(DEFAULT_NOTIFY),
+            # Namen der Sensoren (1.12.0): an (Standard) = "Gerät - Sensor", aus = nur der Name des Sensors. Gilt überall, wo ein
+            # Sensor genannt wird (Panel, Protokoll, Meldungen), siehe devices.display_name
+            "names_with_device": True,
             # Letzte echte Änderung (offen <-> zu) je Sensor, ISO-Zeit; intern, nicht in der Sicherung (Laufzeitdaten)
             "last_changes": {},
         }
@@ -168,6 +171,7 @@ class Settings:
             self.data.update(stored)
         self.data["presets"] = valid_presets(self.data.get("presets"))
         self.data["notify"] = valid_notify(self.data.get("notify"))
+        self.data["names_with_device"] = self.data.get("names_with_device") is not False
         # Reste der früheren Update-Funktion (bis 0.27.0) beim Laden verwerfen
         self.data.pop("update", None)
         self.data.pop("update_notified", None)
@@ -197,6 +201,15 @@ class Settings:
     @property
     def notify(self) -> dict[str, Any]:
         return self.data["notify"]
+
+    @property
+    def names_with_device(self) -> bool:
+        return self.data.get("names_with_device") is not False
+
+    async def async_set_names_with_device(self, value: bool) -> None:
+        # Nur Anzeige: speichern ohne die Anlagen neu zu laden
+        self.data["names_with_device"] = bool(value)
+        await self._async_write()
 
     async def async_set_notify(self, notify: dict[str, Any]) -> None:
         # Benachrichtigungen ändern nichts an Zonen oder Entitäten: speichern ohne die Anlagen neu zu laden

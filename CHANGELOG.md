@@ -7,6 +7,39 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.12.0] - 2026-11-11
+
+You choose how your sensors are called: "Device - Sensor" or only the name of the sensor.
+
+### Added
+
+- **Sensor names of your choice.** The view of the overview has the switch "Device name before the sensor name". On (standard): the name is put together from device and sensor, separated by a hyphen, for example "Hue Motion Basement - Motion". This makes every sensor unambiguous, even if several are called the same by themselves. Off: only the name of the sensor ("Motion", or the name you gave the entity yourself). Unlike the rest of the view the choice applies wherever a sensor is named (lists, sensor view, log, push notifications) and on all devices; it is part of the backup too.
+
+### Changed
+
+- **A rule instead of a guess.** 1.11.0 used the entity's own name alone if you had given it to the entity yourself, and Home Assistant's display name otherwise. Your switch decides this now. If the name of the device is already part of the name of the sensor, it is not put in front once more; the main entity of a device is called like the device; sensors of older integrations that carry their full name themselves stay unchanged.
+
+## [1.11.0] - 2026-11-11
+
+The alarm in the red of the armed system, a tile that says who armed and what triggered, and a tidier log.
+
+### Added
+
+- **Attributes `armed_at` and `armed_by`** of the alarm system: since when it has been armed and who armed it. They stay during the entry delay and the alarm and after acknowledging (the system was armed all along) and survive a restart; disarming clears them.
+- **README:** the strengths come first (no automations needed, push notifications come by themselves, everything is set up graphically), new sections with an image for the sensor view and the alarm, all screenshots regenerated.
+
+### Changed
+
+- **The alarm in the same red as "armed".** The alarm band was a flat area in the error colour and looked pale next to the other reds in dark mode. It now has the same gradient and the same red border as the armed tile. The tile of the alarm system stays red during an alarm (at its strongest); until now it lost its red exactly then. There is a gap between band and tile.
+- **During an alarm the tile says what triggered and who armed.** Below "Alarm" it said "since 07:16 · Diego", as if Diego had triggered the alarm. Now it says "since 07:16" with the sensor that triggered, and on a line of its own "Armed away since 06:50 · Diego". The same applies during the entry delay.
+- **Log: a running alarm updates every second.** Duration and bar now run up evenly instead of jumping every 5 seconds. Without a running alarm it stays at 5 seconds.
+- **Log on the phone: "from" and "to" side by side.** With "Choose period" the selection is on the first line and the two date fields are below it, equally wide (until now one narrow next to the selection, the other wide below).
+
+### Fixed
+
+- **Log: the connection of the steps never runs through a symbol any more.** In the list of an alarm one continuous line ran behind the symbols and showed through their half-transparent area. Each row now draws one piece above and one below its symbol, both ending just before it (as in the alarm actions).
+- **Sensor names: sensors you did not rename keep the name of their device.** Since 1.10.2 a sensor you had not named yourself was called only like its entity in the integration, for example every motion sensor "Motion": in the list, in the log and in the alarm notification ("Alarm: Motion") it was no longer clear which one was meant. The entity's own name now stands alone only if you gave it to the entity yourself ("Living room occupancy"); otherwise the name of the device stays in front ("Hue Motion Basement Motion").
+
 ## [1.10.2] - 2026-11-11
 
 ### Fixed
@@ -865,6 +898,8 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.12.0
+[1.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.11.0
 [1.10.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.2
 [1.10.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0

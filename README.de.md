@@ -4,7 +4,7 @@
 
 [English](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.md)
 
-Eine Alarmanlage für Home Assistant, die du an einem Ort einrichtest und die ihre Sensoren selbst im Auge behält.
+Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation, mit Push-Meldungen, die von selbst kommen, und ganz in einer grafischen Oberfläche eingerichtet.
 
 > **Status:** stabil (1.0.0). Alles hier Beschriebene ist durch automatische Tests abgedeckt, und der ganze Code wurde in einem externen Code-Review geprüft. Mit allen Arten von Geräten wurde es noch nicht ausprobiert: Bitte melde Probleme als Issue.
 
@@ -12,10 +12,13 @@ Eine Alarmanlage für Home Assistant, die du an einem Ort einrichtest und die ih
 
 ## Warum Alarmageddon
 
-- **Eine Oberfläche für alles.** Sensoren, Zonen, Verzögerungen, Alarmaktionen, Benachrichtigungen, Zeitplan, Codes und Sicherung stellst du in einem Seitenpanel ein. Kein YAML, keine Helfer, keine Automationen, die man verdrahten muss.
-- **Deine Sensoren werden überwacht, nicht nur benutzt.** Batteriestand mit Prognose, nicht erreichbare Sensoren, Signal, Firmware und die letzte Änderung jedes Sensors in einer Liste. Fällt ein Sensor im scharfen Zustand aus, wird das gemeldet oder zählt auf Wunsch als Alarm.
+- **Keine Automationen nötig.** Alles, was eine Alarmanlage ausmacht, ist eingebaut: Zonen je Modus, Ein- und Ausgangsverzögerung, Sirene und Alarmton, Zeitplan, Codes pro Person, Bestätigung durch zwei Sensoren. Du verdrahtest nichts selbst, weder Automationen noch Helfer noch Skripte.
+- **Push-Meldungen kommen von selbst.** Alarm, Eingangsverzögerung, scharf und deaktiviert, Scharfschalten nicht möglich, Sensor nicht erreichbar, Batterie schwach: Du wählst nur, wer sie bekommt. Die Alarmmeldung bringt ihre Knöpfe mit ("Quittieren", "Deaktivieren", "Sirene stumm"), auf Wunsch kritisch, damit sie auch im Stumm-Modus ertönt.
+- **Alles grafisch einstellbar.** Ein Seitenpanel für Sensoren, Zonen, Verzögerungen, Alarmaktionen, Benachrichtigungen, Zeitplan, Codes und Sicherung, am Computer wie auf dem Handy. Kein YAML. Was bei einem Alarm passiert, baust du als Ablauf aus Schritten zusammen und probierst jeden Schritt mit einem Knopf an den echten Geräten aus.
+- **Deine Sensoren werden überwacht, nicht nur benutzt.** Batteriestand mit Prognose, nicht erreichbare Sensoren, Signal, Firmware und die letzte Änderung jedes Sensors in einer Liste, dazu für jeden Sensor der Verlauf der letzten 30 Tage. Fällt ein Sensor im scharfen Zustand aus, wird das gemeldet oder zählt auf Wunsch als Alarm.
+- **Du siehst, was passiert ist.** Jeder Alarm wird mit Zeitachse aufgezeichnet: welcher Sensor wann angesprochen hat, welche Schritte liefen, welche Meldungen hinausgingen, wer quittiert hat.
 - **Gebaut, um im Zweifel zu alarmieren.** Verzögerungen und Alarme überstehen einen Neustart, nichts kann die Sirene aufhalten, und ein Wächter beaufsichtigt die Alarmaktionen. Siehe [Sicherheitsmechanismen](#sicherheitsmechanismen).
-- **Passt in Home Assistant.** Jede Anlage ist eine gewöhnliche `alarm_control_panel`-Entität für Dashboards, Automationen und Apple Home. Jeder Sensor, den Home Assistant kennt, funktioniert: Zigbee, Z-Wave, Thread/Matter, WLAN oder Bluetooth.
+- **Passt in Home Assistant.** Jede Anlage ist eine gewöhnliche `alarm_control_panel`-Entität für Dashboards, eigene Automationen und Apple Home. Jeder Sensor, den Home Assistant kennt, funktioniert: Zigbee, Z-Wave, Thread/Matter, WLAN oder Bluetooth.
 - **Bleibt zu Hause.** Keine Cloud, kein Konto: alles läuft in deinem Home Assistant.
 
 ## Schnellstart
@@ -30,9 +33,15 @@ Eine Alarmanlage für Home Assistant, die du an einem Ort einrichtest und die ih
 
 ### Übersicht
 
-Alle Anlagen auf einen Blick: scharf schalten und deaktivieren, "Bereit für" je Modus mit den Sensoren, die das Scharfschalten noch verhindern, eine Statuskachel für Warnungen und alle Sensoren als Liste oder als Karten, mit Suche, Filtern, Sortierung, wählbaren Spalten und Gruppierung nach Bereich, Sensorart oder Anlage. Ein Tipp auf einen Sensor öffnet seine Ansicht: was er in den letzten Stunden oder bis zu 30 Tagen getan hat (mit einer Grafik je Sensorart und der Liste der Ereignisse), wie es um Batterie und Empfang steht, und ein Knopf, der ihn in Home Assistant öffnet. Dasselbe auf dem Handy:
+Alle Anlagen auf einen Blick: scharf schalten und deaktivieren, "Bereit für" je Modus mit den Sensoren, die das Scharfschalten noch verhindern, eine Statuskachel für Warnungen und alle Sensoren als Liste oder als Karten, mit Suche, Filtern, Sortierung, wählbaren Spalten und Gruppierung nach Bereich, Sensorart oder Anlage. Ein Tipp auf einen Sensor öffnet seine Ansicht: was er in den letzten Stunden oder bis zu 30 Tagen getan hat (mit einer Grafik je Sensorart und der Liste der Ereignisse), wie es um Batterie und Empfang steht, und ein Knopf, der ihn in Home Assistant öffnet. In der Ansicht wählst du auch, wie die Sensoren heissen: "Gerät - Sensor" oder nur der Name des Sensors, überall gleich bis in die Push-Meldung. Dasselbe auf dem Handy:
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-de.png" alt="Übersicht auf dem Handy" width="270"></p>
+
+### Sensoransicht
+
+Ein Tipp auf einen Sensor zeigt, was er getan hat: je Sensorart eine eigene Grafik über 3 Stunden bis 30 Tage (Türen und Fenster als Zeitleiste, Bewegung als Raster aus Tag und Stunde), darunter die Ereignisse mit Dauer und dem Zustand der Anlage in diesem Moment. Die Kacheln "Batterie" und "Empfang" zeigen deren Verlauf, die Batterie mit Warnschwelle, Batteriewechsel und Prognose.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensor-de.png" alt="Sensoransicht einer Tür: Verlauf über 7 Tage mit Kennzahlen und Ereignisliste" width="100%"></p>
 
 ### Sensoren und Zonen
 
@@ -58,6 +67,12 @@ Was bei einem Alarm passiert, ist ein Ablauf aus Schritten, auf Wunsch je Modus.
 ### Benachrichtigungen
 
 Empfänger wählst du getrennt für Alarme und für Wartungsmeldungen, und jede Meldung kann sie mit eigenen Empfängern überschreiben (auch je Modus). Jede Art von Meldung (Eingangsverzögerung, scharf, deaktiviert, Scharfschalten nicht möglich, Stiller Alarm, Sensor nicht erreichbar, Batterie schwach) lässt sich ein- und ausschalten, kritisch senden (ertönt auch im Stumm-Modus) und hat ihre eigene Lautstärke, auf Wunsch je Modus.
+
+### Bei einem Alarm
+
+Ein Alarm ist nicht zu übersehen: ein rotes Band mit dem Sensor, der ausgelöst hat, und den Knöpfen "Quittieren" (der Alarm endet, die Anlage bleibt scharf) und "Deaktivieren". Die Kachel der Anlage nennt, seit wann der Alarm läuft, was ihn ausgelöst hat und wer wann scharf geschaltet hat. Dieselben Knöpfe stehen in der Push-Meldung auf dem Sperrbildschirm.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/alarm-de.png" alt="Alarm auf dem Handy: rotes Band mit Quittieren und Deaktivieren, darunter die Kachel der Anlage" width="270"></p>
 
 ### Protokoll und Zeitachse des Alarms
 
@@ -111,7 +126,7 @@ Alarmageddon ist keine zertifizierte Alarmanlage. Bitte beachte:
 
 | Entität | Inhalt |
 | --- | --- |
-| `alarm_control_panel.<name>` | Die Anlage. Attribute: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by` |
+| `alarm_control_panel.<name>` | Die Anlage. Attribute: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by` |
 | `binary_sensor.<name>_zone_<modus>` | An, wenn ein Sensor der Zone dieses Modus offen ist |
 | "Bereit zum Scharfschalten" je Modus | An, wenn kein offener Sensor das Scharfschalten in diesem Modus verhindert. Attribut: `blocking_sensors` |
 

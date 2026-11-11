@@ -432,7 +432,48 @@ export class ListUi {
       <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc"], ["desc", "dirDesc"]])}</div>
       <div class="ag-label">${esc(this._t("viewColumns"))}</div><div class="ag-colist">${rows("cols")}</div>
       <div class="ag-label">${esc(this._t("viewFields"))}</div><div class="ag-colist">${rows("fields")}</div>
+      ${this._namesHtml()}
       <div class="ag-dlg-btns"><button class="ag-btn" data-list="vreset" style="margin-right:auto">${esc(this._t("viewReset"))}</button><button class="ag-btn primary" data-list="vdone">${esc(this._t("done"))}</button></div></div>`;
+  }
+
+  // Namen der Sensoren (1.12.0): "Gerät - Sensor" (an, Standard) oder nur der Name des Sensors. Anders als der Rest der Ansicht gilt das
+  // für alle Geräte und auch für die Meldungen: gespeichert wird auf dem Server, die Namen kommen danach neu von dort.
+  _withDevice() {
+    return this.host._data?.display?.names_with_device !== false;
+  }
+
+  _namesHtml() {
+    const on = this._withDevice();
+    return `<div class="ag-label">${esc(this._t("viewNames"))}</div>
+      <div class="ag-colist"><div class="ag-colrow ag-namesrow"><span class="ag-settx"><b>${esc(this._t("viewNamesDevice"))}</b><small>${esc(this._t(on ? "viewNamesOn" : "viewNamesOff"))}</small></span>
+        <button class="ag-toggle ${on ? "on" : ""}" data-list="names" role="switch" aria-checked="${on}" aria-label="${esc(this._t("viewNamesDevice"))}" ${this.namesBusy ? "disabled" : ""}></button></div></div>
+      <div class="ag-t2 ag-small ag-namesnote">${esc(this._t("viewNamesAll"))}</div>`;
+  }
+
+  _redrawView() {
+    const dlg = this.host._root.getElementById("ag-view");
+    if (!dlg?.open) return;
+    this.host._setHtml(dlg, this.viewDialogHtml());
+    this.host._placePills();
+  }
+
+  async _setNames(on) {
+    const h = this.host;
+    if (this.namesBusy || !h._data) return;
+    const before = h._data.display;
+    this.namesBusy = true;
+    h._data.display = { ...(before || {}), names_with_device: on };
+    this._redrawView();
+    try {
+      await h._hass.callWS({ type: "alarmageddon/save_display", names_with_device: on });
+      await h._fetch(); // die Namen kommen vom Server: Liste, Karten und Kacheln zeichnen danach neu
+    } catch (err) {
+      if (h._data) h._data.display = before;
+      h._toast(h._t("saveFailed", { message: String(err?.message || err?.code || err) }));
+    } finally {
+      this.namesBusy = false;
+      this._redrawView();
+    }
   }
 
   // ----- Ereignisse; true = erledigt -----
@@ -470,6 +511,8 @@ export class ListUi {
     } else if (act === "vset") {
       this.view[el.dataset.key] = el.dataset.value;
       this._applyView();
+    } else if (act === "names") {
+      this._setNames(!this._withDevice());
     } else if (act === "col") {
       const set = el.dataset.set;
       this.view[set] = this.view[set].map(([k, on]) => [k, k === el.dataset.key ? !on : on]);

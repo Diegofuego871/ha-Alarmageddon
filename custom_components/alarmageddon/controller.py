@@ -116,6 +116,11 @@ class AlarmController:
         self.deadline: datetime | None = None
         self.bypassed: set[str] = set()
         self.triggered_by: str | None = None
+        # Seit wann und von wem die Anlage scharf ist (1.11.0): die Kachel zeigt es während eines Alarms neben "Alarm seit …",
+        # sonst sähe es aus, als hätte derjenige den Alarm ausgelöst, der scharf geschaltet hat
+        self.armed_at: datetime | None = None
+        self.armed_by: str | None = None
+        self._restoring = False
         # Welche Abläufe der Alarmaktionen der laufende Alarm startet (siehe _flows_for und alarm_plan): der Modus, "always"
         # ("Immer aktiv") oder beide. Leer ohne Alarm.
         self.alarm_flows: list[str] = []
@@ -453,6 +458,10 @@ class AlarmController:
             # Alarm von Hand aus "deaktiviert" ausgelöst: danach wieder deaktiviert
             self._set(AlarmControlPanelState.DISARMED)
             return
+        # Nach einem quittierten Alarm und beim Wiederherstellen nach einem Neustart bleibt die Angabe: die Anlage war durchgehend scharf
+        if self.state != AlarmControlPanelState.TRIGGERED and not self._restoring:
+            self.armed_at = dt_util.utcnow()
+            self.armed_by = self.changed_by
         self._set(ARMED_STATE[self.mode])
 
     @callback
@@ -647,6 +656,8 @@ class AlarmController:
             changed_by = await self._async_check_code(code) or changed_by
         self._cancel_timer()
         self.mode = None
+        self.armed_at = None
+        self.armed_by = None
         self.deadline = None
         self._arming_deadline = None
         self._unconfirmed.clear()
@@ -692,6 +703,8 @@ class AlarmController:
             "bypassed": sorted(self.bypassed),
             "triggered_by": self.triggered_by,
             "changed_by": self.changed_by,
+            "armed_at": self.armed_at.isoformat() if self.armed_at else None,
+            "armed_by": self.armed_by,
             "alarm_flows": list(self.alarm_flows),
         }
 
@@ -702,6 +715,13 @@ class AlarmController:
         mit der Restzeit weiter; eine während des Neustarts abgelaufene
         Eingangsverzögerung wird zum Alarm.
         """
+        self._restoring = True
+        try:
+            self._restore(last_state, data)
+        finally:
+            self._restoring = False
+
+    def _restore(self, last_state: str | None, data: dict[str, Any] | None) -> None:
         data = data or {}
         now = dt_util.utcnow()
         mode = data.get("mode")
@@ -715,6 +735,9 @@ class AlarmController:
         self.triggered_by = data.get("triggered_by")
         self.changed_by = data.get("changed_by")
         self.mode = mode
+        # Ältere Stände kennen die Angabe nicht: dann fehlt sie bis zum nächsten Scharfschalten
+        self.armed_at = (dt_util.parse_datetime(str(data["armed_at"])) if data.get("armed_at") else None) if mode else None
+        self.armed_by = data.get("armed_by") if mode else None
         # Abläufe des laufenden Alarms; ältere Stände kennen sie nicht (dann gilt der Modus bzw. "Immer aktiv", siehe alarm_plan)
         flows = data.get("alarm_flows")
         valid = {*self.modes, WORKFLOW_ALWAYS}

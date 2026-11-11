@@ -18,6 +18,28 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - 1.1.0 (1.0.1 übersprungen, nie getaggt): Eingangsverzögerung pro Sensor (`controller.sensor_entry_delay`, `schemas.SENSOR_VALUES`, Option `entry_delay` in `sensor_options`/`sensor_modes`, Blatt `sensors.js _delayRow`, bleibt bei "Auf alle Sensoren anwenden"); eigene Empfänger je Push-Schritt und bei "Alarm endet" (`targets`, `notify._alarm_recipients`, `actions.js _ntRecipients`); Emoji in allen Standardtiteln (Test `test_every_default_title_starts_with_an_emoji`). In 1.2.0 umgesetzt.
 - 1.0.1: Kopfzeile (`.ag-headsys`, `_fillHeadSys`) in jedem Reiter; `.ag-sen-layout.open` mit `minmax(420px, 1fr)` und rechtsbündigem Blatt; Sortierschlüssel `state` mit Rang und Text (`_stateLabel`); Pfeil der Auswahlfelder als SVG; Abstand der Leiste `.ag-pmstick` als Innenabstand.
 
+## Stand (1.12.0, Namen der Sensoren wählbar: "Gerät - Sensor" oder nur der Sensor)
+
+Ausführlich: `docs/UEBERGABE-1.12.0.md`.
+
+- **Einstellung** `names_with_device` (Standard an) in `Settings` (global, Ablage `alarmageddon.settings`, in der Sicherung unter `settings`). Befehl `alarmageddon/save_display` (nur Administratoren, steht in `COMMANDS` von `tests/test_security.py`); die Daten des Panels tragen `display.names_with_device`.
+- **Regel** `devices.display_name` (ersetzt die aus 1.11.0): an = `Gerät` + `NAME_SEPARATOR` (" - ") + eigener Name der Entität (`reg.name`, sonst `original_name`); aus = nur der eigene Name. Gerätename schon im eigenen Namen enthalten: nicht doppelt. Hauptentität ohne eigenen Namen: Name des Geräts. Ohne Registry oder `has_entity_name` aus: Anzeigename von HA, in beiden Fällen. Die Funktion liest die Einstellung synchron aus `hass.data[DATA_SETTINGS]` (ohne geladene Einstellungen: an).
+- **Panel:** Schalter im Dialog "Ansicht" (`list.js` `_namesHtml`, `_setNames`, `data-list="names"`): speichert sofort auf dem Server und lädt die Daten neu (die Namen kommen vom Server, `host._name`). Der Hinweis darunter sagt, dass die Wahl überall und auf allen Geräten gilt (der Rest der Ansicht gilt je Gerät).
+- **Nachbau:** `window.__deviceNames` gibt einem Sensor Gerät und eigenen Namen, `window.__namesWithDevice` ist die Einstellung, `window.__failDisplay` lässt das Speichern scheitern.
+- Tests: `tests/test_display_name.py` (neu geschrieben, 13), Panel `names-e2e.mjs` (44); Mutationsprobe 3 Massnahmen für die Namen.
+
+## Stand (1.11.0, Alarm im Rot der scharfen Anlage; Kachel nennt Auslöser und wer scharf schaltete; Protokoll)
+
+Ausführlich: `docs/UEBERGABE-1.11.0.md`.
+
+- **Namen (Korrektur zu 1.10.2):** `devices.display_name` gibt den eigenen Namen der Entität nur dann allein zurück, wenn der Nutzer ihn selbst vergeben hat (`reg.name`). Mit dem Namen der Integration (`original_name`, "Bewegung") bleibt der Anzeigename von HA (Gerät davor): sonst hiessen alle gleichartigen Sensoren gleich. Hauptentität ohne Namen: Name des Geräts.
+- **`armed_at` / `armed_by`:** im Automaten (`controller._go_armed` setzt sie beim Scharfschalten, nicht aus dem Alarm heraus und nicht beim Wiederherstellen, `_restoring`), in `restore_data` und als Attribute der Entität. Deaktivieren löscht sie.
+- **Kachel im Alarm** (`_sysCard`): erste Zeile "seit …" und der Auslöser (`triggered_by`), zweite Zeile `.ag-sys-armed` "<Modus> scharf seit … · <Name>"; Klasse `ag-armed ag-alarmed`. Die Signatur für das Neuzeichnen enthält `armed_at`/`armed_by`.
+- **Alarmband** `.ag-alarm`: Verlauf und roter Rand wie die scharfe Kachel, im dunklen Design aus Fehlerfarbe und Kartenfarbe gemischt; `margin-bottom` als Abstand zur Kachel.
+- **Protokoll:** `.ag-seq-item::before/::after` sind die Linienstücke über und unter dem Symbol (die durchgehende Linie `.ag-seq::before` ist entfernt); `LogUi._poll` lädt bei laufendem Alarm (`_running`) jede Sekunde; Datumsfelder in `.ag-ldates` (Handy: eigene Zeile, gleich breit).
+- **README-Bilder:** `tests/panel/readme-shots.mjs` erzeugt zusätzlich `sensor-<sprache>.png` und `alarm-<sprache>.png`; der Ablauf darin nutzt die Form seit 1.10.0 (`wait: false`) und zeigt eine Aktion nach dem Quittieren.
+- Tests: `tests/test_armed_since.py` (3), `tests/test_display_name.py` (erweitert), Panel `alarmview-e2e.mjs`; Mutationsprobe 2 neue Massnahmen.
+
 ## Stand (1.10.2, ein Name für jeden Sensor)
 
 `devices.display_name(hass, entity_id)`: eigener Name der Entität (Registry-Name, sonst Originalname), ohne den Namen des Geräts; Hauptentität: Name des Geräts (`name_by_user` vor `name`); ohne Registry-Eintrag oder mit `has_entity_name` aus: Anzeigename von HA. Benutzt von `websocket_api._sensor_info` (`name`, neu `device_name`), `controller._name`, `notify._name`, `maintenance._name`. Panel `_name()` nimmt zuerst den Namen des Servers. Tests `tests/test_display_name.py`, `list-e2e.mjs`, Mutationszeile. Nicht berührt: Namen anderer Entitäten (Schalter, Sirenen) in den Aktionen, sie zeigen weiter den Anzeigenamen von HA.

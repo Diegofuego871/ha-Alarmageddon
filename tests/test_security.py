@@ -64,6 +64,7 @@ COMMANDS: dict[str, dict[str, Any]] = {
     "acknowledge": {"entry_id": "ENTRY"},
     "battery_forecast": {},
     "sensor_history": {"entity_id": "binary_sensor.fenster_kueche"},
+    "save_display": {"names_with_device": False},
     "log": {},
     "export": {},
     "import": {"data": {}},

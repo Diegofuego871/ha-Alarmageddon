@@ -147,11 +147,16 @@
     if (window.__wsFail) { const f = window.__wsFail; window.__wsFail = null; throw f; }
     if (msg.type === "alarmageddon/data") {
       const sensors = {};
-      for (const [id, info] of Object.entries(SENSORS)) sensors[id] = { ...info };
+      for (const [id, info] of Object.entries(SENSORS)) {
+        sensors[id] = { ...info };
+        // Namen wie der Server (devices.display_name): Tests geben einem Sensor über window.__deviceNames ein Gerät und einen eigenen Namen
+        const named = window.__deviceNames?.[id];
+        if (named) Object.assign(sensors[id], { device_name: named.device, name: window.__namesWithDevice === false ? named.own : `${named.device} - ${named.own}` });
+      }
       return JSON.parse(JSON.stringify({
         // Nach dem Speichern lädt HA die Anlage neu: sie fehlt kurz in der Antwort und hat danach eine neue Kennung (instance)
         systems: window.__systems.filter((s) => !(window.__reload && window.__reload.id === s.entry_id && Date.now() < window.__reload.until)).map(({ code, pcodes, instance, ...s }) => ({ ...s, instance: instance || "i0" })), sensors,
-        users: [{ id: "u_anna", name: "Anna" }, { id: "u_diego", name: "Diego" }, { id: "u_gast", name: "Gast" }], presets: window.__presets, notify: window.__notify,
+        users: [{ id: "u_anna", name: "Anna" }, { id: "u_diego", name: "Diego" }, { id: "u_gast", name: "Gast" }], presets: window.__presets, notify: window.__notify, display: { names_with_device: window.__namesWithDevice !== false },
         // Letzte echte Änderung (offen <-> zu) vom Server; die meisten Sensoren haben (noch) keine
         last_changes: { "binary_sensor.haustuer": iso(5 * 86400e3), "binary_sensor.fenster_kueche": iso(2 * 3600e3) },
         notify_services: ["notify.mobile_app_diego", "notify.mobile_app_partnerin", "notify.mobile_app_tablet"],
@@ -237,6 +242,11 @@
         window.__imported = true;
       }
       return { systems: found, missing, settings: !!d.settings };
+    }
+    if (msg.type === "alarmageddon/save_display") {
+      if (window.__failDisplay) throw err("unknown_error", "kaputt");
+      window.__namesWithDevice = msg.names_with_device;
+      return { display: { names_with_device: msg.names_with_device } };
     }
     if (msg.type === "alarmageddon/sensor_history") {
       // Sensoransicht (1.9.0): erfundener Verlauf. Tests können die Antwort mit window.__sensorHistory ersetzen (auch als abgelehntes Promise).

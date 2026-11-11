@@ -104,7 +104,10 @@ button { font: inherit; color: inherit; }
 .ag-mini.warn { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
 .ag-mini.ok { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-mini.err { background: var(--ag-error-soft); color: var(--ag-error); }
-.ag-alarm { border-radius: 18px; padding: 16px 18px; background: var(--ag-error); color: #fff; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+/* Alarmband (1.11.0): dasselbe Rot wie die scharfe Kachel, als Verlauf und mit rotem Rand. Vorher eine flache Fläche in der Fehlerfarbe,
+   die im dunklen Design blass neben den übrigen Rottönen stand. Hell: volle Farbe, nach unten etwas tiefer. Dunkel: tiefes Rot aus Farbe und Karte. */
+.ag-alarm { border-radius: 18px; padding: 16px 18px; background: linear-gradient(to top, color-mix(in srgb, var(--ag-error) 84%, #000), var(--ag-error)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ag-error) 70%, transparent), var(--ag-shadow-s); color: #fff; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: var(--ag-gap, 18px); }
+:host([dark]) .ag-alarm { background: linear-gradient(to top, color-mix(in srgb, var(--ag-error) 70%, var(--ag-card)), color-mix(in srgb, var(--ag-error) 40%, var(--ag-card))); }
 .ag-alarm b { font-size: 18px; font-weight: 500; }
 .ag-copyfrom { height: 40px; min-width: 190px; max-width: 260px; flex: 0 1 auto; border-radius: 999px; }
 :host([narrow]) .ag-foot:has(.ag-copyfrom) { flex-wrap: wrap; }
@@ -259,6 +262,11 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-sys.ag-armed-home { --ag-armed-tint: 13%; }
 .ag-sys.ag-armed-night { --ag-armed-tint: 22%; }
 .ag-sys.ag-armed-away { --ag-armed-tint: 32%; }
+/* Alarm: die Kachel bleibt rot wie "scharf", am kräftigsten; die zweite Zeile nennt, seit wann und von wem scharf geschaltet wurde */
+.ag-sys.ag-alarmed { --ag-armed-tint: 44%; border-color: var(--ag-error); }
+:host([dark]) .ag-sys.ag-alarmed { --ag-armed-tint: 66%; }
+.ag-sys-armed { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+.ag-sys-armed svg { flex: none; }
 .ag-lcard.act { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-warning) 16%, transparent), transparent 75%); }
 .ag-lrow.act td { background-image: linear-gradient(to top, color-mix(in srgb, var(--ag-warning) 14%, transparent), transparent 90%); }
 .ag-lrow.act:hover td { background-color: var(--ag-hover); }
@@ -457,7 +465,12 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 :host([narrow]) .ag-fieldrow > .ag-select { flex: 1 1 auto; }
 .ag-log-body { margin-bottom: 24px; }
 .ag-date { height: 38px; border-radius: 999px; padding: 0 12px; min-width: 150px; }
-:host([narrow]) .ag-log-tools .ag-date { flex: 1 1 140px; min-width: 0; }
+.ag-ldates { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Handy: die Auswahl füllt die erste Zeile, die Datumsfelder stehen in der zweiten, gleich breit nebeneinander */
+:host([narrow]) .ag-log-tools .ag-fieldrow { flex-wrap: wrap; }
+:host([narrow]) .ag-log-tools .ag-fieldrow > .ag-select { flex: 1 1 100%; }
+:host([narrow]) .ag-log-tools .ag-ldates { flex: 1 1 100%; flex-wrap: nowrap; }
+:host([narrow]) .ag-log-tools .ag-date { flex: 1 1 0; min-width: 0; }
 .ag-inc { padding: 0; margin-bottom: 12px; overflow: hidden; }
 .ag-inc-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .ag-inc-head:hover { background: var(--ag-hover); }
@@ -483,8 +496,14 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-lg-axis span:last-child { transform: translateX(-100%); }
 .ag-lg-legend { margin-top: 4px; }
 .ag-seq { list-style: none; margin: 14px 0 0; padding: 0; position: relative; }
-.ag-seq::before { content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; width: 2px; background: var(--ag-divider); }
+/* Verbindung der Schritte (1.11.0): je Zeile ein Stück über und eines unter dem Symbol, beide enden 3 px vor dem Symbol. So liegt nie eine
+   Linie hinter oder über einem Symbol (vorher lief eine durchgehende Linie hinter den Symbolen durch und schien durch ihre halb
+   durchsichtige Fläche). Das Symbol (28 px) steht in der Zeile mittig: darum reicht jedes Stück vom Rand der Zeile bis kurz davor. */
 .ag-seq-item { display: flex; align-items: center; gap: 12px; padding: 7px 0; position: relative; }
+.ag-seq-item::before, .ag-seq-item::after { content: ""; position: absolute; left: 13px; width: 2px; height: calc(50% - 17px); background: var(--ag-divider); }
+.ag-seq-item::before { top: 0; }
+.ag-seq-item::after { bottom: 0; }
+.ag-seq-item:first-child::before, .ag-seq-item:last-child::after { display: none; }
 .ag-seq-item .ag-mini { position: relative; z-index: 1; flex: none; }
 .ag-seq-item.err .ag-mini { background: var(--ag-error-soft); color: var(--ag-error); }
 .ag-seq-item.warn .ag-mini { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
@@ -835,5 +854,11 @@ button.ag-sv-tag.alarm { background: var(--ag-error-soft); color: var(--ag-error
 :host([narrow]) button.ag-sv-tag.alarm { margin: 4px 0 0; display: flex; width: max-content; }
 :host([narrow]) .ag-sv-note { margin: 12px 16px 16px; }
 :host([narrow]) .ag-sv-device { padding: 6px 16px 24px; }
+/* Ansicht: Schalter für die Namen der Sensoren (gilt für alle Geräte und die Meldungen, darum mit eigenem Hinweis darunter) */
+.ag-namesrow { align-items: center; gap: 12px; }
+.ag-namesrow .ag-settx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ag-namesrow .ag-settx b { font-weight: 500; }
+.ag-namesrow .ag-settx small { color: var(--ag-text2); font-size: 12.5px; overflow-wrap: anywhere; }
+.ag-namesnote { margin-top: 6px; }
 `;
 

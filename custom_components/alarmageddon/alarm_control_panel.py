@@ -78,6 +78,9 @@ class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEnti
             "triggered_by": self._ctl.triggered_by,
             "bypassed_sensors": sorted(self._ctl.bypassed),
             "deadline": self._ctl.deadline.isoformat() if self._ctl.deadline else None,
+            # Seit wann und von wem scharf (bleibt während Eingangsverzögerung und Alarm stehen)
+            "armed_at": self._ctl.armed_at.isoformat() if self._ctl.armed_at else None,
+            "armed_by": self._ctl.armed_by,
         }
 
     @property

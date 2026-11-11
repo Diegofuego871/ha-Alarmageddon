@@ -4,7 +4,7 @@
 
 [Deutsch](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.de.md)
 
-An alarm system for Home Assistant that you set up in one place, and that keeps an eye on its own sensors.
+A complete alarm system for Home Assistant: without a single automation, with push notifications that come by themselves, and set up entirely in a graphical interface.
 
 > **Status:** stable (1.0.0). Everything described here is covered by automated tests, and the whole code was reviewed by an external code review. It has not yet been tried with every kind of device: please report problems as an issue.
 
@@ -12,11 +12,14 @@ An alarm system for Home Assistant that you set up in one place, and that keeps 
 
 ## Why Alarmageddon
 
-- **One interface for everything.** Sensors, zones, delays, alarm actions, notifications, schedule, codes and backup are set in one side panel. No YAML, no helpers, no automations to wire together.
-- **Your sensors are watched, not only used.** Battery level with a forecast, unreachable sensors, signal, firmware and the last change of every sensor in one list. A sensor that fails while armed is reported, or counts as an alarm if you want.
+- **No automations needed.** Everything that makes an alarm system is built in: zones per mode, entry and exit delay, siren and alarm sound, schedule, a code per person, confirmation by two sensors. You wire up nothing yourself, neither automations nor helpers nor scripts.
+- **Push notifications come by themselves.** Alarm, entry delay, armed and disarmed, arming not possible, sensor unreachable, battery low: you only choose who receives them. The alarm notification brings its buttons along ("Acknowledge", "Disarm", "Silence siren"), critical if you like, so that it sounds even in silent mode.
+- **Everything is set up graphically.** One side panel for sensors, zones, delays, alarm actions, notifications, schedule, codes and backup, on the computer and on the phone. No YAML. What happens on an alarm is a flow you put together from steps, and you try each step on the real devices with one button.
+- **Your sensors are watched, not just used.** Battery level with a forecast, unreachable sensors, signal, firmware and the last change of every sensor in one list, plus the history of the last 30 days for each sensor. If a sensor drops out while armed, you are told, or it counts as an alarm if you like.
+- **You see what happened.** Every alarm is recorded with a timeline: which sensor responded when, which steps ran, which notifications went out, who acknowledged.
 - **Built to alarm when in doubt.** Delays and alarms survive a restart, nothing can hold up the siren, and a watchdog supervises the alarm actions. See [Safety mechanisms](#safety-mechanisms).
-- **Fits into Home Assistant.** Every alarm system is a standard `alarm_control_panel` entity for dashboards, automations and Apple Home. Any sensor Home Assistant knows works: Zigbee, Z-Wave, Thread/Matter, Wi-Fi or Bluetooth.
-- **Stays at home.** No cloud and no account: everything runs inside your Home Assistant.
+- **Fits into Home Assistant.** Each alarm system is an ordinary `alarm_control_panel` entity for dashboards, your own automations and Apple Home. Any sensor Home Assistant knows works: Zigbee, Z-Wave, Thread/Matter, Wi-Fi or Bluetooth.
+- **Stays at home.** No cloud, no account: everything runs in your Home Assistant.
 
 ## Quick start
 
@@ -30,9 +33,15 @@ An alarm system for Home Assistant that you set up in one place, and that keeps 
 
 ### Overview
 
-All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and all sensors as a list or as cards, with search, filters, sorting, a choice of columns and grouping by area, sensor type or alarm system. A tap on a sensor opens its view: what it did over the last hours or up to 30 days (with a chart for each kind of sensor and the list of events), how its battery and its signal are doing, and a button that opens it in Home Assistant. The same on the phone:
+All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and all sensors as a list or as cards, with search, filters, sorting, a choice of columns and grouping by area, sensor type or alarm system. A tap on a sensor opens its view: what it did over the last hours or up to 30 days (with a chart for each kind of sensor and the list of events), how its battery and its signal are doing, and a button that opens it in Home Assistant. In the view you also choose how the sensors are called: "Device - Sensor" or only the name of the sensor, the same everywhere down to the push notification. The same on the phone:
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-en.png" alt="Overview on the phone" width="270"></p>
+
+### Sensor view
+
+A tap on a sensor shows what it did: a chart of its own for each kind of sensor over 3 hours up to 30 days (doors and windows as a timeline, motion as a grid of day and hour), below it the events with their duration and the state of the alarm system at that moment. The tiles "Battery" and "Signal" show their history, the battery with the warning threshold, battery replacements and a forecast.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensor-en.png" alt="Sensor view of a door: history over 7 days with key figures and the list of events" width="100%"></p>
 
 ### Sensors and zones
 
@@ -58,6 +67,12 @@ What happens on an alarm is a flow you build from steps, per mode if you like. D
 ### Notifications
 
 Recipients are chosen separately for alarms and for maintenance messages, and every message can override them with its own recipients (per mode too). Every kind of message (entry delay, armed, disarmed, arming not possible, silent alarm, sensor unreachable, low battery) can be switched on or off, be critical (sounds in silent mode) and have its own volume, per mode if you like.
+
+### When there is an alarm
+
+An alarm cannot be overlooked: a red band with the sensor that triggered and the buttons "Acknowledge" (the alarm ends, the system stays armed) and "Disarm". The tile of the alarm system says since when the alarm has been running, what triggered it and who armed the system when. The same buttons are in the push notification on the lock screen.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/alarm-en.png" alt="Alarm on the phone: red band with Acknowledge and Disarm, below it the tile of the alarm system" width="270"></p>
 
 ### Log and alarm timeline
 
@@ -111,7 +126,7 @@ Alarmageddon is not a certified alarm system. Please keep in mind:
 
 | Entity | Content |
 | --- | --- |
-| `alarm_control_panel.<name>` | The alarm system. Attributes: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by` |
+| `alarm_control_panel.<name>` | The alarm system. Attributes: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by` |
 | `binary_sensor.<name>_zone_<mode>` | On when a sensor of the zone of this mode is open |
 | "Ready to arm" per mode | On when no open sensor blocks arming in this mode. Attribute: `blocking_sensors` |
 

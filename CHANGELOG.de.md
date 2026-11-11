@@ -7,6 +7,39 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.12.0] - 2026-11-11
+
+Du wählst, wie deine Sensoren heissen: "Gerät - Sensor" oder nur der Name des Sensors.
+
+### Hinzugefügt
+
+- **Namen der Sensoren wählbar.** In der Ansicht der Übersicht gibt es den Schalter "Gerätename vor dem Sensornamen". An (Standard): der Name setzt sich aus Gerät und Sensor zusammen, mit Bindestrich getrennt, zum Beispiel "Hue Motion Keller - Bewegung". So ist jeder Sensor eindeutig, auch wenn mehrere von sich aus gleich heissen. Aus: nur der Name des Sensors ("Bewegung", oder der Name, den du der Entität selbst gegeben hast). Anders als der Rest der Ansicht gilt die Wahl überall, wo ein Sensor genannt wird (Listen, Sensoransicht, Protokoll, Push-Meldungen), und auf allen Geräten; sie steht auch in der Sicherung.
+
+### Geändert
+
+- **Eine Regel statt einer Vermutung.** 1.11.0 nahm den eigenen Namen allein, wenn du ihn der Entität selbst gegeben hattest, und sonst den Anzeigenamen von Home Assistant. Das entscheidet jetzt dein Schalter. Steht der Name des Geräts schon im Namen des Sensors, wird er nicht noch einmal davorgesetzt; die Hauptentität eines Geräts heisst wie das Gerät; Sensoren älterer Integrationen, die ihren vollen Namen selbst tragen, bleiben unverändert.
+
+## [1.11.0] - 2026-11-11
+
+Der Alarm im Rot der scharfen Anlage, eine Kachel, die sagt, wer scharf geschaltet und was ausgelöst hat, und ein aufgeräumtes Protokoll.
+
+### Hinzugefügt
+
+- **Attribute `armed_at` und `armed_by`** der Anlage: seit wann sie scharf ist und wer sie scharf geschaltet hat. Sie bleiben während Eingangsverzögerung und Alarm und nach dem Quittieren stehen (die Anlage war durchgehend scharf) und überstehen einen Neustart; Deaktivieren löscht sie.
+- **README:** die Stärken stehen am Anfang (keine Automationen nötig, Push-Meldungen kommen von selbst, alles grafisch einstellbar), neue Abschnitte mit Bild für die Sensoransicht und den Alarm, alle Bildschirmfotos neu erzeugt.
+
+### Geändert
+
+- **Der Alarm im selben Rot wie "scharf".** Das Alarmband war eine flache Fläche in der Fehlerfarbe und stand im dunklen Design blass neben den übrigen Rottönen. Es hat jetzt denselben Verlauf und denselben roten Rand wie die scharfe Kachel. Die Kachel der Anlage bleibt im Alarm rot (am kräftigsten); vorher verlor sie ihr Rot genau dann. Zwischen Band und Kachel steht ein Abstand.
+- **Die Kachel sagt im Alarm, was ausgelöst hat und wer scharf geschaltet hat.** Unter "Alarm" stand "seit 07:16 · Diego", als hätte Diego den Alarm ausgelöst. Jetzt steht dort "seit 07:16" mit dem Sensor, der ausgelöst hat, und in einer eigenen Zeile "Abwesend scharf seit 06:50 · Diego". Dasselbe gilt in der Eingangsverzögerung.
+- **Protokoll: ein laufender Alarm aktualisiert sich jede Sekunde.** Dauer und Balken laufen gleichmässig hoch statt alle 5 Sekunden zu springen. Ohne laufenden Alarm bleibt es bei 5 Sekunden.
+- **Protokoll auf dem Handy: "von" und "bis" nebeneinander.** Bei "Zeitraum wählen" steht die Auswahl in der ersten Zeile, die beiden Datumsfelder stehen gleich breit darunter (vorher das eine schmal neben der Auswahl, das andere breit darunter).
+
+### Behoben
+
+- **Protokoll: die Verbindung der Schritte läuft nie mehr durch ein Symbol.** In der Liste eines Alarms lief eine durchgehende Linie hinter den Symbolen durch und schien durch deren halb durchsichtige Fläche. Jede Zeile zeichnet jetzt ein Stück über und eines unter ihrem Symbol, beide enden kurz davor (wie bei den Alarmaktionen).
+- **Sensornamen: nicht umbenannte Sensoren behalten den Namen ihres Geräts.** Seit 1.10.2 hiess ein Sensor, den du nicht selbst benannt hast, nur noch wie seine Entität in der Integration, also zum Beispiel jeder Bewegungsmelder "Bewegung": in der Liste, im Protokoll und in der Alarmmeldung ("Alarm: Bewegung") war nicht mehr zu erkennen, welcher gemeint ist. Der eigene Name steht jetzt nur dann allein, wenn du ihn der Entität selbst gegeben hast ("Wohnzimmer Belegung"); sonst bleibt der Name des Geräts davor ("Hue Motion Keller Bewegung").
+
 ## [1.10.2] - 2026-11-11
 
 ### Behoben
@@ -865,6 +898,8 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.12.0
+[1.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.11.0
 [1.10.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.2
 [1.10.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0

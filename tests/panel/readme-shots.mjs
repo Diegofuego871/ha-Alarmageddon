@@ -13,31 +13,35 @@ const server = await startServer(PORT);
 const browser = await launch();
 
 // Ein Ablauf, wie ihn die README beschreibt: Meldung, Sirene ein, drei Minuten warten, Sirene aus
+// (Schritte laufen seit 1.10.0 standardmässig weiter: "wait": false; ohne die Angabe zeigte die Karte die Pille "Wartet …")
 const FLOW = [
   { type: "notify" },
-  { type: "action", action: "siren.turn_on", target: ["siren.flur"], data: {}, restore: true },
+  { type: "action", action: "siren.turn_on", target: ["siren.flur"], data: {}, restore: true, wait: false },
   { type: "wait", seconds: 180 },
-  { type: "action", action: "siren.turn_off", target: ["siren.flur"], data: {} },
+  { type: "action", action: "siren.turn_off", target: ["siren.flur"], data: {}, wait: false },
 ];
+// Aktionen nach dem Quittieren: das Licht im Flur wieder aus
+const AFTER = [{ type: "action", action: "light.turn_off", target: ["light.flur"], data: {}, restore: false, wait: false }];
 
-async function shot(lang, name, { mobile = false, tab = "overview", prepare, height = 760, scrollTo = null } = {}) {
+async function shot(lang, name, { mobile = false, tab = "overview", prepare, height = 760, scrollTo = null, query = "" } = {}) {
   const ctx = await browser.newContext(mobile
     ? { viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }
     : { viewport: { width: 1180, height }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   await page.addInitScript((t) => localStorage.setItem("alarmageddon.tab", t), tab);
-  await page.goto(`http://127.0.0.1:${PORT}/ha-sim.html?lang=${lang}&theme=light`);
+  await page.goto(`http://127.0.0.1:${PORT}/ha-sim.html?lang=${lang}&theme=light${query}`);
   const frameEl = await page.waitForSelector("#panel-frame");
   const frame = await frameEl.contentFrame();
   await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view")`), null, { timeout: 10000 });
   // Erfundene Namen und der Ablauf der README
-  await page.evaluate((flow) => {
+  await page.evaluate(([flow, after]) => {
     const swap = (v) => (typeof v === "string" ? v.replaceAll("Diego", "Marco") : v);
     for (const s of window.__systems) {
       for (const e of s.events) e.by = swap(e.by);
       s.workflows = { home: flow, away: flow };
+      s.workflows_after = { home: after, away: after };
     }
-  }, FLOW);
+  }, [FLOW, AFTER]);
   await frame.evaluate(() => document.querySelector("alarmageddon-panel")._fetch());
   await page.waitForTimeout(400);
   if (prepare) await prepare({ page, frame });
@@ -62,9 +66,20 @@ const click = (sel) => ({ frame }) => frame.evaluate((s) => document.querySelect
 for (const lang of ["en", "de"]) {
   await shot(lang, "overview");
   await shot(lang, "sensors", { tab: "config" });
-  await shot(lang, "actions", { tab: "config", prepare: click('[data-sub="actions"]'), height: 1190 });
+  await shot(lang, "actions", { tab: "config", prepare: click('[data-sub="actions"]'), height: 1400 });
   await shot(lang, "log", { tab: "log" });
   await shot(lang, "mobile", { mobile: true });
+  // Sensoransicht einer Tür über 7 Tage (1.9.0)
+  await shot(lang, "sensor", { height: 900, prepare: async ({ page, frame }) => {
+    await frame.evaluate(() => document.querySelector("alarmageddon-panel").sensorView.open("binary_sensor.haustuer"));
+    await page.waitForTimeout(500);
+    await frame.evaluate(() => document.querySelector("alarmageddon-panel").shadowRoot.querySelector('#ag-sensor .ag-sv-range [data-hours="168"]')?.click());
+    await page.waitForTimeout(500);
+  } });
+  // Alarm auf dem Handy: rotes Band, Kachel mit Auslöser und "scharf seit … von …" (1.11.0)
+  await shot(lang, "alarm", { mobile: true, prepare: async ({ page }) => {
+    await page.evaluate(() => window.__setState("alarm_control_panel.haus", "triggered", { arm_mode: "away", changed_by: "Marco", armed_by: "Marco", armed_at: new Date(Date.now() - 95 * 60e3).toISOString(), triggered_by: "binary_sensor.haustuer", deadline: null }));
+  } });
 }
 await browser.close();
 server.close();

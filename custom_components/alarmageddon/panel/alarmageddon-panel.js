@@ -346,7 +346,7 @@ class AlarmageddonPanel extends HTMLElement {
     const parts = [];
     for (const s of this._systems()) {
       const st = this._state(s.entity_id);
-      parts.push(st ? `${st.state}|${st.attributes.changed_by}|${st.attributes.deadline}|${st.attributes.triggered_by}` : "-");
+      parts.push(st ? `${st.state}|${st.attributes.changed_by}|${st.attributes.deadline}|${st.attributes.triggered_by}|${st.attributes.armed_at}|${st.attributes.armed_by}` : "-");
     }
     for (const [id, info] of Object.entries(this._data?.sensors || {})) {
       const st = this._state(id);
@@ -800,7 +800,15 @@ class AlarmageddonPanel extends HTMLElement {
     } else if (st?.last_changed) {
       sub.push(esc(this._t("since", { time: this._fmtTime(st.last_changed) })));
     }
-    if (attrs.changed_by) sub.push(esc(attrs.changed_by));
+    // Während Eingangsverzögerung und Alarm steht hier, was ausgelöst hat. Wer scharf geschaltet hat, steht in einer eigenen Zeile
+    // darunter (1.11.0): vorher stand "Alarm · seit 07:16 · Diego", als hätte Diego den Alarm ausgelöst.
+    const alarmish = state === "pending" || state === "triggered";
+    if (alarmish && attrs.triggered_by) sub.push(esc(this._name(attrs.triggered_by)));
+    else if (attrs.changed_by && (!alarmish || !attrs.arm_mode)) sub.push(esc(attrs.changed_by));
+    const armedKey = alarmish ? { home: "stateArmedHome", away: "stateArmedAway", night: "stateArmedNight" }[attrs.arm_mode] : null;
+    const armedLine = armedKey
+      ? `<div class="ag-sys-sub ag-sys-armed">${ic(MODE_ICON[attrs.arm_mode], 14)}<span>${esc([`${this._t(armedKey)}${attrs.armed_at ? ` ${this._t("since", { time: this._fmtTime(attrs.armed_at) })}` : ""}`, attrs.armed_by || (attrs.armed_at ? "" : attrs.changed_by)].filter(Boolean).join(" · "))}</span></div>`
+      : "";
     // Auswahl des Modus; während Verzögerung zählt der Zielmodus, bei Alarm ist nichts gewählt
     const current = state === "disarmed" ? "off" : ARMED[state] || (state === "arming" ? attrs.arm_mode : null);
     const modes = ["off", ...s.modes];
@@ -817,9 +825,10 @@ class AlarmageddonPanel extends HTMLElement {
       blockers = open.map((id) => `<div class="ag-row"><span class="ag-mini warn">${ic((DC[this._sensor(id).device_class] || ["sensor"])[0], 16)}</span><span class="ag-grow">${esc(this._t("isOpen", { name: this._name(id) }))}</span></div>`).join("");
     }
     // Scharf: schwacher roter Verlauf von unten wie bei den Karten der Sensoren; je Modus dunkler (Anwesend hell, Nacht mittel, Abwesend dunkel). Deaktiviert: grün
-    const armedClass = ARMED[state] ? ` ag-armed ag-armed-${ARMED[state]}` : state === "disarmed" ? " ag-disarmed" : "";
+    // Alarm: dieselbe rote Kachel wie "scharf", am kräftigsten (vorher verlor die Kachel im Alarm ihr Rot)
+    const armedClass = ARMED[state] ? ` ag-armed ag-armed-${ARMED[state]}` : state === "triggered" ? " ag-armed ag-alarmed" : state === "disarmed" ? " ag-disarmed" : "";
     return `<div class="ag-card ag-sys${armedClass}" data-system="${esc(s.entry_id)}"><div class="ag-sys-top"><div class="ag-shield" style="background:${look.solid ? look.color : look.soft};color:${look.solid ? "#fff" : look.color}">${ic(look.icon, 28)}</div>
-      <div style="flex:1;min-width:0"><h2>${esc(s.title)}</h2><div class="ag-sys-state" style="color:${look.color}">${esc(look.text)}</div><div class="ag-sys-sub">${sub.join(" · ")}</div></div>
+      <div style="flex:1;min-width:0"><h2>${esc(s.title)}</h2><div class="ag-sys-state" style="color:${look.color}">${esc(look.text)}</div><div class="ag-sys-sub">${sub.join(" · ")}</div>${armedLine}</div>
       <button class="ag-cbtn" data-act="more" data-entity="${esc(s.entity_id)}" aria-label="${esc(s.title)}">${ic("chevRight", 16)}</button></div>
       ${seg}${ready || blockers ? `<div class="ag-rows">${ready}${blockers}</div>` : ""}</div>`;
   }

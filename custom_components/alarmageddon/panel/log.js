@@ -71,11 +71,20 @@ export class LogUi {
     this._poll();
   }
 
-  // Alle 5 Sekunden nachladen, solange der Reiter offen ist: ein laufender Alarm wächst, neue Ereignisse erscheinen von selbst
+  // Nachladen, solange der Reiter offen ist: neue Ereignisse erscheinen von selbst. Läuft ein Alarm, jede Sekunde (1.11.0): seine Dauer
+  // und der Balken laufen dann gleichmässig hoch statt alle 5 Sekunden zu springen; sonst alle 5 Sekunden.
   _poll() {
     clearTimeout(this._timer);
     if (this.host._tab !== "log") return;
-    this._timer = setTimeout(() => this.host._tab === "log" && this.load(), 5000);
+    this._timer = setTimeout(() => this.host._tab === "log" && this.load(), this._running() ? 1000 : 5000);
+  }
+
+  _running() {
+    try {
+      return (this.systems ? this.incidents() : []).some((record) => !record.end);
+    } catch (_err) {
+      return false;
+    }
   }
 
   stop() {
@@ -276,8 +285,11 @@ export class LogUi {
     const opt = (k) => `<option value="${k}" ${k === this.range ? "selected" : ""}>${esc(this._t(`logRange_${k}`))}</option>`;
     const date = (key, value, label) => `<input type="date" class="ag-input ag-date" data-log="${key}" value="${esc(value)}" aria-label="${esc(label)}">`;
     const systems = this.systems || [];
-    const dates = this.range === "day" ? date("from", this.from, this._t("logDay"))
+    // Die Datumsfelder stehen in einer eigenen Gruppe: auf dem Handy bricht die Zeile nach der Auswahl um, "von" und "bis" stehen dann
+    // gleich breit nebeneinander (vorher stand "von" schmal neben der Auswahl und "bis" breit darunter)
+    const fields = this.range === "day" ? date("from", this.from, this._t("logDay"))
       : this.range === "span" ? `${date("from", this.from, this._t("logFrom"))}<span class="ag-t2">–</span>${date("to", this.to, this._t("logTo"))}` : "";
+    const dates = fields ? `<div class="ag-ldates">${fields}</div>` : "";
     return `<div class="ag-lfields">
         <div class="ag-field"><span class="ag-label">${esc(this._t("logRange"))}</span>
           <div class="ag-fieldrow"><select class="ag-select" data-log="range" aria-label="${esc(this._t("logRange"))}">${RANGES.map(opt).join("")}</select>${dates}</div></div>

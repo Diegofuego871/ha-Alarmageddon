@@ -96,6 +96,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_presets)
     websocket_api.async_register_command(hass, ws_save_system)
     websocket_api.async_register_command(hass, ws_save_notify)
+    websocket_api.async_register_command(hass, ws_save_display)
     websocket_api.async_register_command(hass, ws_test_notify)
     websocket_api.async_register_command(hass, ws_test_end_notify)
     websocket_api.async_register_command(hass, ws_save_workflows)
@@ -252,6 +253,8 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "presets": settings.presets,
         "last_changes": await _last_changes(hass, settings, sorted(chosen)),
         "notify": settings.notify,
+        # Anzeige der Namen (für alle Geräte und die Meldungen): "Gerät - Sensor" oder nur der Name des Sensors
+        "display": {"names_with_device": settings.names_with_device},
         "notify_services": notify_services,
         "users": sorted(
             ({"id": u.id, "name": u.name} for u in await hass.auth.async_get_users() if not u.system_generated and u.is_active and u.name),
@@ -605,6 +608,16 @@ async def ws_test_end_notify(hass: HomeAssistant, connection, msg: dict[str, Any
         return
     entry.runtime_data.notifier.send_alarm_end(None, test=True, own={**msg["notify"], "enabled": True})
     connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/save_display", vol.Required("names_with_device"): bool})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_save_display(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Namen der Sensoren: "Gerät - Sensor" (an) oder nur der Name des Sensors (aus). Gilt für Panel, Protokoll und Meldungen."""
+    settings = await async_get_settings(hass)
+    await settings.async_set_names_with_device(msg["names_with_device"])
+    connection.send_result(msg["id"], {"display": {"names_with_device": settings.names_with_device}})
 
 
 @websocket_api.websocket_command(

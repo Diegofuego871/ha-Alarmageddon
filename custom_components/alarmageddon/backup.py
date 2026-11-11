@@ -49,7 +49,7 @@ async def async_export(hass: HomeAssistant, integration_version: str | None) -> 
         "version": VERSION,
         "integration_version": integration_version,
         "created": dt_util.utcnow().isoformat(),
-        "settings": {"presets": settings.presets, "notify": settings.notify},
+        "settings": {"presets": settings.presets, "notify": settings.notify, "names_with_device": settings.names_with_device},
         "systems": systems,
     }
 
@@ -74,6 +74,8 @@ def validate(data: Any) -> dict[str, Any]:
         "systems": systems,
         "presets": valid_presets(settings["presets"]) if "presets" in settings else None,
         "notify": valid_notify(settings["notify"]) if "notify" in settings else None,
+        # Anzeige der Namen (1.12.0); ältere Sicherungen kennen sie nicht, dann bleibt die Einstellung, wie sie ist
+        "names_with_device": settings["names_with_device"] if isinstance(settings.get("names_with_device"), bool) else None,
     }
 
 
@@ -82,7 +84,7 @@ def plan(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str, Any]:
     by_title = {e.title.casefold(): e for e in loaded_entries(hass)}
     found = [s["title"] for s in backup["systems"] if s["title"].casefold() in by_title]
     missing = [s["title"] for s in backup["systems"] if s["title"].casefold() not in by_title]
-    return {"systems": found, "missing": missing, "settings": any(backup[k] is not None for k in ("presets", "notify"))}
+    return {"systems": found, "missing": missing, "settings": any(backup.get(k) is not None for k in ("presets", "notify", "names_with_device"))}
 
 
 async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str, Any]:
@@ -91,6 +93,8 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str
     settings = await async_get_settings(hass)
     if backup["notify"] is not None:
         await settings.async_set_notify(backup["notify"])
+    if backup.get("names_with_device") is not None:
+        await settings.async_set_names_with_device(backup["names_with_device"])
     # Voreinstellungen zuerst und ohne Benachrichtigung: die Anlagen, deren Optionen sich gleich ändern, laden darüber neu
     # und sehen schon die neuen Voreinstellungen; die übrigen werden am Ende benachrichtigt. Jede Anlage lädt genau einmal.
     presets_changed = backup["presets"] is not None and await settings.async_store_presets(backup["presets"])
