@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.17.7] - 2026-11-11
+
+Meldungen: jeder Schalter links, sein Text wächst nach rechts.
+
+### Geändert
+
+- **Meldungen: die Schalter stehen links.** In Konfiguration › Meldungen steht jeder Schalter (die Meldungsart selbst, "Kritisch", "Zusätzlich als Benachrichtigung in Home Assistant stehen lassen") links vom Text, und der Text wächst nach rechts, am Computer und auf dem Handy. Bisher standen sie am rechten Rand, auf einem breiten Bildschirm weit vom Text entfernt und auf dem Handy an merkwürdigen Stellen umgebrochen, sodass nicht klar war, welcher Schalter zu welcher Option gehört.
+
 ## [1.17.6] - 2026-11-11
 
 "Einstellungen pro Modus" springt nicht mehr zurück.
@@ -1041,6 +1049,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7
 [1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6
 [1.17.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.5
 [1.17.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.4

@@ -290,6 +290,9 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Benachrichtigungen offen`, await s.waitFor("return !!r.querySelector('.ag-nt [data-nt=\"target-add\"]')"));
     check(`${tag}: Empfänger als Dropdown, gewählte als Pille`, await s.ev("const sels=r.querySelectorAll('select[data-nt=\"target-add\"]'); return sels.length === 2 && sels[0].options.length === 3 && sels[1].options.length === 4 && r.querySelectorAll('.ag-nt .ag-recip .ag-rpill').length === 1 && r.querySelector('.ag-nt .ag-recip .ag-rpill').innerText.includes('diego')"));
     check(`${tag}: Kapitel mit Titel (Empfänger, Alarm-Arten, Wartung)`, await s.ev("return [...r.querySelectorAll('.ag-chap-t')].length === 3"));
+    // 1.17.7: Jeder Schalter steht links, sein Text wächst nach rechts (so ist klar, welcher Schalter zu welcher Option gehört)
+    const sw = await s.ev("const bad=[]; let n=0; for (const t of r.querySelectorAll('.ag-nt .ag-toggle')) { const q=t.getBoundingClientRect(); if (!q.width) continue; n++; const row=t.parentElement; const txt=[...row.children].filter((c) => c!==t && c.textContent.trim() && !c.matches('.ag-mini')); const tl=Math.min(...txt.map((c) => c.getBoundingClientRect().left)); if (!(q.right <= tl + 1)) bad.push([(t.getAttribute('aria-label')||'').slice(0,30), Math.round(q.right), Math.round(tl)]); } return { n, bad }");
+    check(`${tag}: Meldungen: alle ${sw.n} Schalter stehen links vom Text`, sw.n >= 8 && sw.bad.length === 0, JSON.stringify(sw.bad.slice(0, 4)));
     check(`${tag}: Alarmmeldung hier nicht einstellbar und kein Hinweiskapitel: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !r.querySelector('[data-nt=\"to-actions\"]')"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
     await (await s.el('select[data-nt="target-add"][data-key="maintenance_targets"]')).selectOption("notify.mobile_app_partnerin");

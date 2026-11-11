@@ -640,10 +640,15 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-mt.sub { border-top: 0; padding: 10px 0 10px 14px; }
 .ag-mt.sub .ag-mt-body { margin-left: 0; }
 :host([narrow]) .ag-mt-subs { margin-left: 8px; }
-.ag-mt-head { display: flex; align-items: center; gap: 12px; }
+/* Schalter stehen links, der Text wächst nach rechts (1.17.7): so ist klar, welcher Schalter zu welcher Option gehört */
+.ag-mt-head { display: flex; align-items: flex-start; gap: 12px; }
+.ag-mt-head > .ag-toggle { margin-top: 3px; }
+.ag-mt-head > .ag-mini { margin-top: 0; }
+.ag-mt-opt.sw { justify-content: flex-start; align-items: flex-start; flex-wrap: nowrap; }
+.ag-mt-opt.sw > .ag-toggle { margin: 3px 0 0; }
 .ag-mt-head .ag-settx { flex: 1 1 auto; min-width: 0; }
 .ag-mt.off .ag-settx { opacity: .6; }
-.ag-mt-body { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 2px 40px; padding: 4px 12px; border-radius: 12px; background: var(--ag-subtle); }
+.ag-mt-body { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 2px 52px; padding: 4px 12px; border-radius: 12px; background: var(--ag-subtle); }
 .ag-mt-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 6px 0; }
 .ag-mt-opt > span:first-child { flex: 1 1 auto; min-width: 0; }
 .ag-mt-opt small { display: block; margin-top: 1px; color: var(--ag-text2); font-size: 12px; line-height: 1.35; }
@@ -651,6 +656,7 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-mt-opt.vol .ag-range { flex: 1 1 200px; max-width: 320px; }
 :host([narrow]) .ag-mt-body { margin-left: 0; }
 :host([narrow]) .ag-mt-opt { flex-wrap: wrap; row-gap: 8px; }
+:host([narrow]) .ag-mt-opt.sw { flex-wrap: nowrap; }
 :host([narrow]) .ag-mt-opt.vol .ag-range { flex-basis: 100%; max-width: none; }
 
 /* 0.10.0: Einstellungen je Modus */

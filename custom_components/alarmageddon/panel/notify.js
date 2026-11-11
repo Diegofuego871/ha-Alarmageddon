@@ -193,17 +193,16 @@ export class NotifyUi {
       const bad = new Set(this.invalid());
       body = `<div class="ag-mt-body">
         ${this._typeRecipients(kind, mode, name)}
-        <div class="ag-mt-opt"><span>${esc(this._t("ntCriticalShort"))}</span>${toggle(`data-nt="critical" data-kind="${kind}"${md}`, s.critical, `${name}: ${this._t("ntCriticalShort")}`)}</div>
+        <div class="ag-mt-opt sw">${toggle(`data-nt="critical" data-kind="${kind}"${md}`, s.critical, `${name}: ${this._t("ntCriticalShort")}`)}<span>${esc(this._t("ntCriticalShort"))}</span></div>
         ${s.critical ? `<div class="ag-mt-opt vol"><span>${esc(this._t("ntVolumeShort"))}: <b class="ag-vol" data-kind="${kind}"${md}>${pct} %</b></span>
           <input type="range" min="0" max="100" step="5" data-nt="volume" data-kind="${kind}"${md} value="${pct}" class="ag-range" aria-label="${esc(`${name}: ${this._t("ntVolumeShort")}`)}"></div>` : ""}
-        <div class="ag-mt-opt"><span>${esc(this._t("ntPersistent"))}<small class="ag-t2 ag-block">${esc(this._t("ntPersistentHint"))}</small></span>${toggle(`data-nt="persistent" data-kind="${kind}"${md}`, s.persistent, `${name}: ${this._t("ntPersistent")}`)}</div>
+        <div class="ag-mt-opt sw">${toggle(`data-nt="persistent" data-kind="${kind}"${md}`, s.persistent, `${name}: ${this._t("ntPersistent")}`)}<span>${esc(this._t("ntPersistent"))}<small class="ag-t2 ag-block">${esc(this._t("ntPersistentHint"))}</small></span></div>
         ${num ? `<div class="ag-mt-opt"><span>${esc(this._t(num[1]))}</span><span class="ag-num ${bad.has(num[0]) ? "bad" : ""}"><input type="number" min="${RANGES[num[0]][0]}" max="${RANGES[num[0]][1]}" step="1" inputmode="numeric" data-nt="num" data-key="${num[0]}" value="${esc(d[num[0]])}" aria-label="${esc(this._t(num[1]))}"><span class="ag-t2">${esc(num[2] === "minutes" ? this._t("minutes") : num[2])}</span></span></div>` : ""}
         <div class="ag-mt-opt"><span class="ag-t2 ag-small">${esc(this._t("ntTestHint"))}</span>
           <button class="ag-btn" data-nt="test" data-kind="${kind}"${md} ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
     }
-    return `<div class="ag-mt ${sub ? "sub" : ""} ${s.enabled ? "" : "off"}"><div class="ag-mt-head"><span class="ag-mini ${kind === "triggered" ? "err" : ""}">${ic(icon, 16)}</span>
-        <div class="ag-settx"><b>${esc(name)}</b><small>${esc(hint)}</small>${origin}</div>
-        ${toggle(`data-nt="enabled" data-kind="${kind}"${md}`, s.enabled, name)}</div>${body}</div>`;
+    return `<div class="ag-mt ${sub ? "sub" : ""} ${s.enabled ? "" : "off"}"><div class="ag-mt-head">${toggle(`data-nt="enabled" data-kind="${kind}"${md}`, s.enabled, name)}<span class="ag-mini ${kind === "triggered" ? "err" : ""}">${ic(icon, 16)}</span>
+        <div class="ag-settx"><b>${esc(name)}</b><small>${esc(hint)}</small>${origin}</div></div>${body}</div>`;
   }
 
   render() {

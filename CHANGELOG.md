@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.7] - 2026-11-11
+
+Notifications: every switch on the left, its text to the right.
+
+### Changed
+
+- **Notifications: the switches stand on the left.** In Configuration › Notifications every switch (the kind of notification itself, "Critical", "Also keep as a notification in Home Assistant") now stands left of its text and the text grows to the right, on the computer and on the phone. Until now they stood at the right edge, far from the text on a wide screen and wrapped to odd places on the phone, so it was not clear which switch belonged to which option.
+
 ## [1.17.6] - 2026-11-11
 
 "Settings per mode" no longer jumps back.
@@ -1041,6 +1049,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7
 [1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6
 [1.17.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.5
 [1.17.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.4
