@@ -14,7 +14,7 @@ for (const lang of ["de", "en"]) {
     const t = T[lang];
     const s = await open(browser, { mobile, lang, tab: "log", query: "&alarm=open" });
     await s.waitFor("return r.querySelectorAll('.ag-inc').length === 2");
-    const tabs = () => s.ev("return [...r.querySelectorAll('.ag-log-seg [data-log=\"pane\"]')].map((b) => ({ label: b.querySelector('span').textContent, n: Number(b.querySelector('.ag-log-n').textContent), on: b.classList.contains('on'), sel: b.getAttribute('aria-selected') }))");
+    const tabs = () => s.ev("return [...r.querySelectorAll('.ag-log-seg [data-log=\"pane\"]')].map((b) => ({ label: b.querySelector('span').textContent, digits: /\\d/.test(b.textContent), on: b.classList.contains('on'), sel: b.getAttribute('aria-selected') }))");
     const panes = () => s.ev("const a=r.querySelector('[data-pane=\"alarms\"].ag-log-pane'), e=r.querySelector('[data-pane=\"events\"].ag-log-pane'); return { alarms: !a.hidden && a.getBoundingClientRect().height > 0, events: !e.hidden && e.getBoundingClientRect().height > 0, cards: a.querySelectorAll('.ag-inc').length, rows: e.querySelectorAll('.ag-log .ag-row').length }");
     const reload = () => s.ev("r.host.log.rev = null; return r.host.log.load().then(() => 1)");
     const deletes = () => s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/delete_recording').map((c) => [c.entry_id, c.recording])");
@@ -22,7 +22,7 @@ for (const lang of ["de", "en"]) {
     // ----- Reiter -----
     const t0 = await tabs();
     const p0 = await panes();
-    check(`${tag}: zwei Reiter, "${t.alarms}" gewählt, mit der Anzahl im Zeitraum`, t0.length === 2 && t0[0].label === t.alarms && t0[1].label === t.events && t0[0].on && t0[0].sel === "true" && !t0[1].on && t0[0].n === 2 && t0[1].n === p0.rows && p0.rows >= 3, JSON.stringify([t0, p0]));
+    check(`${tag}: zwei Reiter, "${t.alarms}" gewählt, ohne Anzahl im Reiter`, t0.length === 2 && t0[0].label === t.alarms && t0[1].label === t.events && t0[0].on && t0[0].sel === "true" && !t0[1].on && !t0.some((x) => x.digits) && p0.cards === 2 && p0.rows >= 3, JSON.stringify([t0, p0]));
     check(`${tag}: zu sehen sind nur die Alarme; die Ereignisse stehen nicht mehr darunter`, p0.alarms && !p0.events && p0.cards === 2, JSON.stringify(p0));
     const place = await s.ev("const seg=r.querySelector('.ag-log-seg').getBoundingClientRect(); const bar=r.querySelector('.ag-log-panes'); const main=r.querySelector('.ag-tabs').getBoundingClientRect(); const sel=r.querySelector('[data-log=\"range\"]').getBoundingClientRect(); return { underMain: seg.top >= main.bottom, abovePeriod: seg.bottom <= sel.top, cfg: bar.classList.contains('ag-cfg') && bar.classList.contains('ag-stk'), sticky: getComputedStyle(bar).position, top: Math.round(seg.top), left: Math.round(seg.left), h: Math.round(seg.height), w: Math.round(seg.width), vw: innerWidth, icons: [...r.querySelectorAll('.ag-log-seg > button')].map((b) => { const i=b.querySelector('svg'), l=b.querySelector('span'); return !!i && i.getBoundingClientRect().right <= l.getBoundingClientRect().left && b.scrollWidth <= b.clientWidth + 1; }) }");
     check(`${tag}: die Reiter des Protokolls stehen als zweite Zeile direkt unter den Hauptreitern, über Zeitraum und Anlage, im festen Teil${mobile ? ", über die ganze Breite" : ""}`, place.underMain && place.abovePeriod && place.cfg && place.sticky === "sticky" && (!mobile || place.w >= place.vw - 40), JSON.stringify(place));
@@ -58,7 +58,7 @@ for (const lang of ["de", "en"]) {
     await s.sim("window.__failDelete = false");
     await ask();
     await s.ev("r.querySelector('#ag-confirm [data-c=\"yes\"]').click(); return 1");
-    check(`${tag}: bestätigt: der Alarm ist weg, der Reiter zählt einen weniger`, await s.waitFor("return r.querySelectorAll('.ag-inc').length === 1 && r.querySelector('.ag-log-seg [data-pane=\"alarms\"] .ag-log-n').textContent === '1'"));
+    check(`${tag}: bestätigt: der Alarm ist weg, der Reiter bleibt ohne Zahl`, await s.waitFor("return r.querySelectorAll('.ag-inc').length === 1 && !/\\d/.test(r.querySelector('.ag-log-seg [data-pane=\"alarms\"]').textContent)"));
     const sent = await deletes();
     check(`${tag}: gelöscht wurde genau dieser Alarm dieser Anlage`, JSON.stringify(sent.at(-1)) === JSON.stringify(["e_haus", btn.id]), JSON.stringify(sent));
 
@@ -69,8 +69,8 @@ for (const lang of ["de", "en"]) {
     await s.sim("const now=Date.now(); window.__systems[0].events.unshift(...Array.from({ length: 450 }, (_x, i) => ({ t: new Date(now - (i + 1) * 60000).toISOString(), state: i % 2 ? 'disarmed' : 'armed_home', mode: i % 2 ? null : 'home', by: 'Marco' })))");
     await reload();
     await s.waitFor("return r.querySelectorAll('.ag-log .ag-row').length === 200");
-    const m1 = await s.ev("const b=r.querySelector('[data-pane=\"events\"] [data-log=\"more\"]'); return { text: b?.textContent.trim(), n: Number(r.querySelector('.ag-log-seg [data-pane=\"events\"] .ag-log-n').textContent) }");
-    check(`${tag}: lange Liste: 200 Zeilen und "${t.more}"; der Reiter zählt alle`, m1.text === t.more && m1.n === 450 + p1.rows, JSON.stringify(m1));
+    const m1 = await s.ev("const b=r.querySelector('[data-pane=\"events\"] [data-log=\"more\"]'); return { text: b?.textContent.trim(), n: r.host.log.events().length }");
+    check(`${tag}: lange Liste: 200 Zeilen und "${t.more}"; die Liste kennt alle`, m1.text === t.more && m1.n === 450 + p1.rows, JSON.stringify(m1));
     await s.ev("r.querySelector('[data-pane=\"events\"] [data-log=\"more\"]').click(); return 1");
     check(`${tag}: "Weitere anzeigen" hängt die nächsten 200 an`, await s.waitFor("return r.querySelectorAll('.ag-log .ag-row').length === 400"));
     await s.ev("r.querySelector('[data-pane=\"events\"] [data-log=\"more\"]').click(); return 1");
@@ -79,10 +79,11 @@ for (const lang of ["de", "en"]) {
 
     // ----- Der Zeitraum gilt für beide Reiter -----
     await s.ev("const sel=r.querySelector('[data-log=\"range\"]'); sel.value='3h'; sel.dispatchEvent(new Event('change', { bubbles: true })); return 1");
-    await s.waitFor("return Number(r.querySelector('.ag-log-seg [data-pane=\"events\"] .ag-log-n').textContent) < 400");
+    await s.waitFor("return r.host.log.events().length < 400");
     const t3 = await tabs();
     const p3 = await panes();
-    check(`${tag}: Zeitraum "letzte 3 Stunden" gilt für beide Reiter (Anzahl und Listen)`, t3[1].n >= 170 && t3[1].n <= 190 && t3[0].n === p3.cards && t3[1].on, JSON.stringify([t3, p3]));
+    const n3 = await s.ev("return r.host.log.events().length");
+    check(`${tag}: Zeitraum "letzte 3 Stunden" gilt für beide Reiter (Anzahl und Listen)`, n3 >= 170 && n3 <= 190 && !t3.some((x) => x.digits) && t3[1].on, JSON.stringify([t3, p3, n3]));
     await s.tap('[data-log="pane"][data-pane="alarms"]');
     check(`${tag}: zurück zu den Alarmen: der aufgeklappte Alarm ist noch aufgeklappt`, await s.waitFor("const a=r.querySelector('[data-pane=\"alarms\"].ag-log-pane'); return !a.hidden && a.querySelectorAll('.ag-inc').length === 1 && !!a.querySelector('.ag-inc-body')"));
     check(`${tag}: kein Überlauf, keine Fehler im Browser`, (await s.ev("return document.documentElement.scrollWidth <= window.innerWidth")) && s.errors.filter((e) => !e.includes("running alarm")).length === 0, s.errors.join(" | "));

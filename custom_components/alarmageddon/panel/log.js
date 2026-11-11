@@ -368,10 +368,9 @@ export class LogUi {
       <div class="ag-log-pane" data-pane="events" role="tabpanel" ${on === "events" ? "" : "hidden"}>${chips}<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}</div></div>${more("events", events.length - this.shownEvents)}</div>`;
   }
 
-  // Reiter über der Liste, mit der Anzahl im gewählten Zeitraum
+  // Reiter über der Liste; ohne Anzahl (Entscheid des Nutzers, 1.17.2)
   _panesHtml() {
-    const counts = this.systems ? { alarms: this.incidents().length, events: this.events().length } : { alarms: "", events: "" };
-    const tab = (key, label, icon) => `<button data-log="pane" data-pane="${key}" class="${this.pane === key ? "on" : ""}" role="tab" aria-selected="${this.pane === key}">${ic(icon, 20)}<span>${esc(this._t(label))}</span> <span class="ag-t2 ag-log-n">${counts[key]}</span></button>`;
+    const tab = (key, label, icon) => `<button data-log="pane" data-pane="${key}" class="${this.pane === key ? "on" : ""}" role="tab" aria-selected="${this.pane === key}">${ic(icon, 20)}<span>${esc(this._t(label))}</span></button>`;
     return `<div class="ag-seg small ag-subs ag-log-seg" data-seg="log-pane" role="tablist">${tab("alarms", "logAlarms", "alert")}${tab("events", "logEvents", "history")}</div>`;
   }
 

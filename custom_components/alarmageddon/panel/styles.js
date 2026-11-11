@@ -864,8 +864,6 @@ button.ag-sv-tag.alarm { background: var(--ag-error-soft); color: var(--ag-error
 .ag-namesnote { margin-top: 6px; }
 /* Protokoll (1.13.0): zwei Reiter "Alarme" und "Alle Ereignisse" unter Zeitraum und Anlage (fest wie diese), je eine Liste */
 .ag-log-fields { display: flex; flex-direction: column; gap: 10px; }
-.ag-log-seg .ag-log-n { font-variant-numeric: tabular-nums; }
-.ag-log-seg > button.on .ag-log-n { color: inherit; opacity: .75; }
 .ag-log-pane[hidden] { display: none; }
 .ag-log-hint { margin: 2px 2px 12px; }
 .ag-log-more { display: flex; margin: 12px auto 4px; }
