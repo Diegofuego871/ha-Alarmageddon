@@ -142,6 +142,9 @@
   const ARM_STATE = { home: "armed_home", away: "armed_away", night: "armed_night" };
 
   async function callWS(msg) {
+    // Tests können Antworten verzögern, um die Ladeanzeige zu sehen: window.__delay = { "alarmageddon/sensor_history": 600, … }
+    const wait = window.__delay?.[msg.type];
+    if (wait) await new Promise((done) => setTimeout(done, wait));
     window.__calls.push(JSON.parse(JSON.stringify(msg)));
     if (window.__wsDelay) await new Promise((r) => setTimeout(r, window.__wsDelay));
     if (window.__wsFail) { const f = window.__wsFail; window.__wsFail = null; throw f; }
@@ -165,7 +168,7 @@
     }
     if (msg.type === "alarmageddon/log") {
       // Wie der Server (0.40.0): mit dem Stand der letzten Antwort kommt nur "unverändert", solange kein Ereignis dazukam
-      const rev = window.__systems.map((s) => `${s.entry_id}:${s.events.length}`).join("|");
+      const rev = window.__systems.map((s) => `${s.entry_id}:${s.events.length}`).join("|") + `|${(window.__deleted || []).length}:${(window.__moreRecordings || []).length}`;
       if (msg.rev && msg.rev === rev) return { unchanged: true, rev };
       // Erfundene Alarme: einer quittiert (Fenster, Bewegung, Fenster wieder zu), optional ein laufender (?alarm=open)
       const ago = (min) => (off) => iso(min * 60e3 - off * 1000);
@@ -187,7 +190,10 @@
         { t: r(61), kind: "step", step: "action", action: "siren.turn_on", targets: ["siren.flur"], test: false },
       ] };
       const open = params.get("alarm") === "open";
-      return { rev, systems: window.__systems.map((s) => ({ entry_id: s.entry_id, title: s.title, events: s.events, recordings: s.entry_id === "e_haus" ? (open ? [running, closed] : [closed]) : [], recording: s.entry_id === "e_haus" && open })) };
+      // Tests können weitere Alarme vorgeben (window.__moreRecordings) und Alarme löschen (delete_recording, window.__deleted)
+      const gone = window.__deleted || [];
+      const list = [...(open ? [running, closed] : [closed]), ...(window.__moreRecordings || [])].filter((r) => !gone.includes(r.id));
+      return { rev, systems: window.__systems.map((s) => ({ entry_id: s.entry_id, title: s.title, events: s.events, recordings: s.entry_id === "e_haus" ? list : [], recording: s.entry_id === "e_haus" && open })) };
     }
     if (msg.type === "frontend/get_translations") {
       // Wie HA: Namen der Dienste und Felder je Sprache, flach mit Pfad als Schlüssel
@@ -242,6 +248,11 @@
         window.__imported = true;
       }
       return { systems: found, missing, settings: !!d.settings };
+    }
+    if (msg.type === "alarmageddon/delete_recording") {
+      if (window.__failDelete) throw err("alarm_running", "A running alarm cannot be deleted");
+      window.__deleted = [...(window.__deleted || []), msg.recording];
+      return { ok: true };
     }
     if (msg.type === "alarmageddon/save_display") {
       if (window.__failDisplay) throw err("unknown_error", "kaputt");

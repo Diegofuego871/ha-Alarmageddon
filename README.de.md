@@ -76,7 +76,7 @@ Ein Alarm ist nicht zu übersehen: ein rotes Band mit dem Sensor, der ausgelöst
 
 ### Protokoll und Zeitachse des Alarms
 
-Jeder Alarm wird vom ersten Auslösen bis zum Quittieren aufgezeichnet: welcher Sensor wann angesprochen hat, welche Schritte liefen, welche Meldungen hinausgingen. Alle anderen Ereignisse (scharf, deaktiviert, Zeitplan, Sensorausfälle) stehen darunter, mit Filter nach Zeitraum und CSV-Export.
+Jeder Alarm wird vom ersten Auslösen bis zum Quittieren aufgezeichnet: welcher Sensor wann angesprochen hat, welche Schritte liefen, welche Meldungen hinausgingen. Alle anderen Ereignisse (scharf, deaktiviert, Zeitplan, Sensorausfälle) stehen im zweiten Reiter, mit Filter nach Zeitraum und CSV-Export. Beides bleibt ein Jahr; einen einzelnen Alarm kannst du löschen.
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/log-de.png" alt="Protokoll mit der Zeitachse eines Alarms" width="100%"></p>
 
@@ -164,7 +164,7 @@ Details für alle, die es genau wissen wollen. Zum Öffnen anklicken.
 | Warten und Dauer des Tons | 0 bis 3600 s je Schritt, bis 40 Schritte je Ablauf |
 | Test der Alarmaktionen | Endet spätestens nach 60 s |
 | Batterie schwach, Sensor nicht erreichbar | Unter 20 %, nach 60 Minuten (beides einstellbar) |
-| Aufbewahrt je Anlage | 1000 Ereignisse, 30 Alarme mit je 300 Einträgen; insgesamt 10 Sicherungen |
+| Aufbewahrt je Anlage | Ereignisse und Alarme ein Jahr (höchstens 5000 Ereignisse und 200 Alarme mit je 300 Einträgen); insgesamt 10 Sicherungen |
 
 </details>
 

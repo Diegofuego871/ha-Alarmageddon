@@ -16,7 +16,7 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Ereignisse nicht mehr in der Übersicht`, await s.ev("return !r.querySelector('.ag-log')"));
     await s.tap('[data-tab="log"]');
     check(`${tag}: ein Alarm, aufgeklappt`, await s.waitFor("return r.querySelectorAll('.ag-inc').length === 1 && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'true'"));
-    check(`${tag}: Kapitel Alarme und Ereignisse`, await s.ev(`const c=[...r.querySelectorAll('.ag-chap-t')].map((e) => e.textContent); return c.length === 2 && c[0] === '${t.alarms}' && c[1] === '${t.events}'`));
+    check(`${tag}: zwei Reiter über der Liste: Alarme (gewählt) und Alle Ereignisse, mit Anzahl`, await s.ev(`const b=[...r.querySelectorAll('.ag-log-seg [data-log="pane"]')]; const lab=b.map((e) => e.querySelector('span').textContent); return b.length === 2 && lab[0] === '${t.alarms}' && lab[1] === '${t.events}' && b[0].classList.contains('on') && /\\d/.test(b[0].textContent) && !r.querySelector('.ag-chap-t') && !r.querySelector('[data-pane="alarms"].ag-log-pane').hidden && r.querySelector('[data-pane="events"].ag-log-pane').hidden`));
     check(`${tag}: quittiert von Diego`, await s.ev(`return r.querySelector('.ag-inc-head .ag-tag.ok').textContent.trim() === '${t.ack}'`));
     check(`${tag}: zwei Bahnen (Fenster, Bewegung)`, await s.ev("const n=[...r.querySelectorAll('.ag-lg-row:not(.ag-lg-axisrow) .ag-lg-name')].map((e) => e.innerText.trim()); return n.length === 2 && n[0] === 'Fenster Bad' && n[1] === 'Bewegung Flur'"));
     check(`${tag}: Balken je Bahn, Fenster fast die ganze Dauer`, await s.ev("const rows=[...r.querySelectorAll('.ag-lg-row:not(.ag-lg-axisrow)')]; const w=(row) => parseFloat(row.querySelector('.ag-lg-bar').style.width); return rows.every((x) => x.querySelectorAll('.ag-lg-bar').length === 1) && w(rows[0]) > 90 && w(rows[1]) < 20"));
@@ -25,6 +25,9 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Zeitachse mit drei Uhrzeiten`, await s.ev("return r.querySelectorAll('.ag-lg-axis span').length === 3 && /\\d{2}:\\d{2}:\\d{2}/.test(r.querySelector('.ag-lg-axis span').textContent)"));
     check(`${tag}: Reihenfolge mit sechs Einträgen`, await s.ev(`const li=[...r.querySelectorAll('.ag-seq-item')]; return li.length === 6 && li[0].innerText.includes('${t.first}') && li[2].innerText.includes('Bewegung Flur') && li[5].innerText.includes('Diego') && li[3].innerText.includes('${t.calm}')`));
     check(`${tag}: Abstand zum Anfang`, await s.ev("const li=[...r.querySelectorAll('.ag-seq-item time small')]; return li.length === 6 && /\\+/.test(li[2].textContent) && !/\\+/.test(li[0].textContent)"));
+    // Reiter "Alle Ereignisse": die Liste der Ereignisse mit ihren Filtern
+    await s.tap('[data-log="pane"][data-pane="events"]');
+    await s.waitFor("return !r.querySelector('[data-pane=\"events\"].ag-log-pane').hidden && r.querySelector('[data-pane=\"alarms\"].ag-log-pane').hidden");
     check(`${tag}: Ereignisliste gefüllt`, await s.ev("return r.querySelectorAll('.ag-log .ag-row').length > 1"));
     check(`${tag}: Filter-Pillen kleben unter dem festen Zeitraum`, await s.ev("const c=r.querySelector('.ag-content'); const chips=r.querySelector('.ag-evchips'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop = chips.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 60; return getComputedStyle(chips).position === 'sticky' && parseFloat(getComputedStyle(chips).top) === top"));
     await s.page.waitForTimeout(900);
@@ -84,6 +87,8 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Protokoll lädt alle 5 Sekunden nach`, (await calls()) > before, `${before} -> ${await calls()}`);
 
     // Zuklappen
+    await s.tap('[data-log="pane"][data-pane="alarms"]');
+    await s.waitFor("return !r.querySelector('[data-pane=\"alarms\"].ag-log-pane').hidden");
     await s.tap('.ag-inc-head');
     check(`${tag}: zugeklappt`, await s.waitFor("return !r.querySelector('.ag-inc-body') && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'false'"));
     check(`${tag}: Reiter gemerkt`, await s.ev("return localStorage.getItem('alarmageddon.tab') === 'log'"));

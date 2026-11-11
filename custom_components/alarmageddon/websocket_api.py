@@ -103,6 +103,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_test_workflow)
     websocket_api.async_register_command(hass, ws_stop_workflow)
     websocket_api.async_register_command(hass, ws_acknowledge)
+    websocket_api.async_register_command(hass, ws_delete_recording)
     websocket_api.async_register_command(hass, ws_battery_forecast)
     websocket_api.async_register_command(hass, ws_sensor_history)
     websocket_api.async_register_command(hass, ws_log)
@@ -689,6 +690,25 @@ async def ws_acknowledge(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     connection.send_result(msg["id"], {"ok": True})
 
 
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/delete_recording", vol.Required("entry_id"): str, vol.Required("recording"): vol.All(str, vol.Length(min=1, max=64))}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_delete_recording(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Einen aufgezeichneten Alarm aus dem Protokoll löschen (nach Rückfrage im Panel). Ein laufender Alarm lässt sich nicht löschen."""
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    recorder = entry.runtime_data.recorder
+    result = recorder.async_delete(msg["recording"]) if recorder else "not_found"
+    if result == "running":
+        connection.send_error(msg["id"], "alarm_running", "A running alarm cannot be deleted")
+    elif result != "ok":
+        connection.send_error(msg["id"], "not_found", "No such alarm")
+    else:
+        connection.send_result(msg["id"], {"ok": True})
+
+
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/stop_workflow", vol.Required("entry_id"): str})
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -915,7 +935,7 @@ async def ws_log(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     Protokoll: alle Ereignisse und die aufgezeichneten Alarme (Zeitachse) je Anlage, getrennt von "data".
 
     Das Panel fragt bei offenem Reiter alle 5 Sekunden. Mit `rev` (der Stand aus der letzten Antwort) kommt nur
-    `{"unchanged": true}` zurück, solange nichts dazukam: sonst gingen jedes Mal bis zu 1000 Ereignisse und 30 Alarme
+    `{"unchanged": true}` zurück, solange nichts dazukam: sonst gingen jedes Mal alle Ereignisse und Alarme eines Jahres
     je Anlage über die Leitung.
     """
     loaded = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]

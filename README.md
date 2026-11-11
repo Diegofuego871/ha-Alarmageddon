@@ -76,7 +76,7 @@ An alarm cannot be overlooked: a red band with the sensor that triggered and the
 
 ### Log and alarm timeline
 
-Every alarm is recorded from the first trigger until someone acknowledges it: which sensor responded when, which steps ran, which notifications went out. All other events (armed, disarmed, schedule, sensor failures) are listed below, with a filter by period and a CSV export.
+Every alarm is recorded from the first trigger until someone acknowledges it: which sensor responded when, which steps ran, which notifications went out. All other events (armed, disarmed, schedule, sensor failures) are on the second tab, with a filter by period and a CSV export. Both are kept for a year; you can delete a single alarm.
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/log-en.png" alt="Log with the timeline of an alarm" width="100%"></p>
 
@@ -164,7 +164,7 @@ Details for those who want to know exactly. Click to open.
 | Wait and sound duration | 0 to 3600 s per step, up to 40 steps per flow |
 | Test of the alarm actions | Ends after 60 s at the latest |
 | Low battery, sensor unreachable | Below 20 %, after 60 minutes (both adjustable) |
-| Kept per alarm system | 1000 events, 30 alarms with 300 entries each; 10 backups in total |
+| Kept per alarm system | Events and alarms for one year (at most 5000 events and 200 alarms with 300 entries each); 10 backups in total |
 
 </details>
 

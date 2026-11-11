@@ -18,6 +18,21 @@ Einstieg für jede neue Claude-Code-Session. Zuerst diese Datei lesen, dann
 - 1.1.0 (1.0.1 übersprungen, nie getaggt): Eingangsverzögerung pro Sensor (`controller.sensor_entry_delay`, `schemas.SENSOR_VALUES`, Option `entry_delay` in `sensor_options`/`sensor_modes`, Blatt `sensors.js _delayRow`, bleibt bei "Auf alle Sensoren anwenden"); eigene Empfänger je Push-Schritt und bei "Alarm endet" (`targets`, `notify._alarm_recipients`, `actions.js _ntRecipients`); Emoji in allen Standardtiteln (Test `test_every_default_title_starts_with_an_emoji`). In 1.2.0 umgesetzt.
 - 1.0.1: Kopfzeile (`.ag-headsys`, `_fillHeadSys`) in jedem Reiter; `.ag-sen-layout.open` mit `minmax(420px, 1fr)` und rechtsbündigem Blatt; Sortierschlüssel `state` mit Rang und Text (`_stateLabel`); Pfeil der Auswahlfelder als SVG; Abstand der Leiste `.ag-pmstick` als Innenabstand.
 
+## Stand (1.13.0, Protokoll mit zwei Reitern; ein Jahr Aufbewahrung; Alarm löschen)
+
+Ausführlich: `docs/UEBERGABE-1.13.0.md`.
+
+- **Aufbewahrung:** `KEEP_DAYS` = 365 für Ereignisse (`events.EventLog._prune`) und Alarme (`recording.AlarmRecorder._prune`, ein laufender bleibt immer); verworfen wird beim Hinzufügen und beim Laden. `EVENTS_KEEP` (5000) und `RECORDINGS_KEEP` (200) sind nur noch Obergrenzen. Zeiten sind ISO in UTC und werden als Text verglichen.
+- **Löschen:** `AlarmRecorder.async_delete(id)` ("ok", "not_found", "running") erhöht `rev` und speichert. Befehl `alarmageddon/delete_recording` mit `entry_id` und `recording` (nicht `id`: das ist im WebSocket die Nummer der Nachricht), nur Administratoren, in `COMMANDS` von `tests/test_security.py`.
+- **Panel `log.js`:** `this.pane` ("alarms" oder "events"); die Reiter `.ag-log-seg` stehen in `.ag-log-panes` (seit 1.13.3 als zweite Zeile `.ag-cfg` über `.ag-log-tools`; Felder in `.ag-log-fields`, nur diese zeichnet `renderTools` neu). Beide Listen stehen im Dokument, die nicht gewählte ist `hidden` (aufgeklappte Alarme und Filter bleiben beim Wechsel). `shownAlarms`/`shownEvents` mit Knopf `data-log="more"`. Löschen: `deleteAlarm` über `host._confirm`, Knopf `data-log="delete"` in `.ag-inc-foot` (nicht beim laufenden Alarm).
+- **Nachbau:** `window.__moreRecordings`, `window.__deleted`, `window.__failDelete`.
+- **Verworfen (Entscheid des Nutzers, 2026-11-11):** Symbole in den Auswahlen "Arten" und "Bereiche" der Übersicht werden nicht gebaut. Befund dazu in `docs/UEBERGABE-1.13.0.md`, Abschnitt 4.
+- **README bei jeder Lieferung (Vorgabe des Nutzers, 2026-11-11):** Text und Bilder gehören zu jeder Übergabe; nach sichtbaren Änderungen die Bilder neu erzeugen (`tests/panel/readme-shots.mjs`, `scripts/optimize_images.py`). In 1.13.1 bis 1.13.3 fehlte das zunächst und wurde in 1.13.3 nachgeholt (alle Bilder neu).
+- **1.13.3:** Gleicher Aufbau überall: Hauptreiter, darunter an derselben Stelle die zweite Zeile `.ag-cfg` mit `.ag-subs`. Im Protokoll stehen dort die Reiter "Alarme" und "Alle Ereignisse" (`log.html`: `.ag-cfg.ag-head.ag-log-panes` vor `.ag-log-tools`; `_stickySync` erfasst sie über `.ag-cfg`). Symbole auf jeder Ebene und jedem Gerät, links vom Text (Konfiguration: `sensor`, `power`, `bell`, `shield`; Protokoll: `alert`, `history`). Handy: `.ag-subs` mit Breiten nach Inhalt. Regel: ein neuer Reiter bekommt immer ein Symbol.
+- **1.13.2:** Ladeanzeige des Panels (`loader.js`, `.ag-ld`) auch in der Sensoransicht (`sensorview.js` `_loader`, in `.ag-sv-chart`; `data-busy` an `.ag-sv` dimmt alte Kennzahlen, Grafik und Liste; erstes Laden in `.ag-sv-wait`) und beim ersten Laden des Protokolls (`.ag-log-wait`). Regel aus `loader.js` gilt überall: nie ein Text "Lädt …". Nachbau: `window.__delay = { "<Befehl>": ms }` verzögert Antworten. Suite `loader-e2e.mjs` (44).
+- **1.13.1:** Die Hauptreiter (Übersicht, Protokoll, Konfiguration) tragen ihr Symbol auch am Computer, links vom Text (`_render` gibt die Symbole immer mit; CSS `:host(:not([narrow])) .ag-tabs`).
+- Tests: `tests/test_retention.py` (5), Panel `logtabs-e2e.mjs` (68), `log-e2e.mjs` angepasst; Mutationsprobe 3 neue Massnahmen.
+
 ## Stand (1.12.0, Namen der Sensoren wählbar: "Gerät - Sensor" oder nur der Sensor)
 
 Ausführlich: `docs/UEBERGABE-1.12.0.md`.

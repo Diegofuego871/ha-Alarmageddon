@@ -7,13 +7,15 @@ Texte: das Panel formuliert sie in der Sprache von HA.
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import EVENTS_KEEP, EVENTS_STORE_KEY
+from .const import EVENTS_KEEP, EVENTS_STORE_KEY, KEEP_DAYS
 from .controller import AlarmController
 
 
@@ -36,7 +38,13 @@ class EventLog:
     async def async_load(self) -> None:
         data = await self._store.async_load()
         if isinstance(data, list):
-            self.events = [e for e in data if isinstance(e, dict)][:EVENTS_KEEP]
+            self.events = [e for e in data if isinstance(e, dict)]
+            self._prune()
+
+    def _prune(self) -> None:
+        """Ereignisse, die älter als ein Jahr sind, verwerfen (neueste zuerst; die Zeiten sind ISO in UTC und lassen sich so vergleichen)."""
+        limit = (dt_util.utcnow() - timedelta(days=KEEP_DAYS)).isoformat()
+        self.events[:] = [e for e in self.events if str(e.get("t") or limit) >= limit][:EVENTS_KEEP]
 
     @callback
     def async_start(self) -> None:
@@ -64,7 +72,7 @@ class EventLog:
     @callback
     def _add(self, event: dict[str, Any]) -> None:
         self.events.insert(0, event)
-        del self.events[EVENTS_KEEP:]
+        self._prune()
         self.rev += 1
         # Selten (nur bei Zustandswechseln): verzögertes Speichern genügt, es wird nie dauernd verschoben
         self._store.async_delay_save(lambda: self.events, 1)

@@ -406,9 +406,10 @@ class AlarmageddonPanel extends HTMLElement {
     if (!this._content) return;
     const narrow = this.hasAttribute("narrow");
     const tabs = this._segHtml("tabs", [
-      ["overview", this._t(narrow ? "tabOverviewShort" : "tabOverview"), narrow ? "shieldHome" : null],
-      ["log", this._t(narrow ? "tabLogShort" : "tabLog"), narrow ? "groups" : null],
-      ["config", this._t(narrow ? "tabConfigShort" : "tabConfig"), narrow ? "cog" : null],
+      // Symbol und Text auf jedem Gerät (1.13.1, Wunsch des Nutzers): am Computer links vom Text, auf dem Handy darüber (mit kurzem Text)
+      ["overview", this._t(narrow ? "tabOverviewShort" : "tabOverview"), "shieldHome"],
+      ["log", this._t(narrow ? "tabLogShort" : "tabLog"), "groups"],
+      ["config", this._t(narrow ? "tabConfigShort" : "tabConfig"), "cog"],
     ], this._tab, "data-tab", "ag-tabs");
     let right = "";
     if (this._tab === "overview" && !narrow) right = `<span class="ag-grow"></span><button class="ag-btn" data-act="add">${ic("plus")}${esc(this._t("addSystem"))}</button>`;
@@ -890,7 +891,8 @@ class AlarmageddonPanel extends HTMLElement {
     const narrow = this.hasAttribute("narrow");
     if (full || !this._view.querySelector(".ag-cfg")) {
       const label = (key) => this._t(narrow ? `${key}Short` : key);
-      const subs = this._segHtml("sub", [["sensors", label("subSensors")], ["actions", label("subActions")], ["notify", label("subNotify")], ["system", label("subSystem")]], this._sub, "data-sub", "small ag-subs");
+      const subs = this._segHtml("sub", [["sensors", label("subSensors"), "sensor"], ["actions", label("subActions"), "power"], ["notify", label("subNotify"), "bell"], ["system", label("subSystem"), "shield"]], this._sub, "data-sub", "small ag-subs");
+      // (Symbole seit 1.13.3 auf jeder Ebene und jedem Gerät, links vom Text; "Aktionen" trägt das Symbol, das eine Aktion auch im Protokoll hat)
       const systems = this._systems();
       const body = !systems.length ? this._emptyHtml() : this._cfgUi.html();
       this._lastHtml.delete(this._view);

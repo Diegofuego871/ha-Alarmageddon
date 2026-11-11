@@ -7,6 +7,40 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.13.3] - 2026-11-11
+
+### Changed
+
+- **The same structure in log and configuration.** At the top is the main choice (Overview, Log, Configuration), right below it, in the same place, the second row with the tabs of that area. In the log these are now "Alarms" and "All events" (until now below period and alarm system); period and alarm system follow below.
+- **Symbols on every level.** The second row carries symbols too, on the computer and on the phone, to the left of the text: Sensors, Actions, Notifications, Alarm system, as well as Alarms and All events. On the phone the widths of these tabs follow their content, so that all four fit with their symbol.
+- **README:** all screenshots regenerated (tabs with symbols, log with two tabs).
+
+## [1.13.2] - 2026-11-11
+
+### Changed
+
+- **Loading indicator in sensor view and log.** Wherever a chart is loading there is now the same loading indicator as in the whole panel (three circling dots in the colour of the panel), in the middle of the chart area and a little smaller; the text line "Loading history …" is gone. When you change the period, key figures, chart and list stay dimmed until the new data has arrived: nothing jumps. The log shows it on its first load instead of an empty tab.
+
+## [1.13.1] - 2026-11-11
+
+### Changed
+
+- **Main tabs with a symbol on the computer too.** "Overview", "Log" and "Configuration" carry the same symbol on the computer as on the phone, to the left of the text.
+
+## [1.13.0] - 2026-11-11
+
+The log with two tabs, one year of history and deleting single alarms.
+
+### Added
+
+- **Log with two tabs.** "Alarms" (selected) and "All events" are now side by side instead of one below the other, each with the number in the chosen period. Until now the events stood below the alarms and moved further down with every alarm. Period and alarm system apply to both tabs, the filters of the events are on the tab "All events". The tabs are in the fixed part at the top and always within reach while scrolling.
+- **Delete an alarm.** An opened alarm has the button "Delete alarm" with a bin at the bottom. The recording is removed only after you confirm; the entries under "All events" stay. A running alarm cannot be deleted.
+- **"Show more".** Long lists show 30 alarms or 200 events first and fetch the next ones with a button. Until now the list of events ended with a note pointing to the export.
+
+### Changed
+
+- **Kept for one year.** Alarms and events are now kept for one year and discarded after that. Until now the last 30 alarms and the last 1000 events per alarm system were kept, no matter how old: in a busy household 1000 events lasted only a few months. The number is only an upper limit now, so that the storage does not grow without bound (200 alarms and 5000 events per alarm system).
+
 ## [1.12.0] - 2026-11-11
 
 You choose how your sensors are called: "Device - Sensor" or only the name of the sensor.
@@ -898,6 +932,10 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.13.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.3
+[1.13.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.2
+[1.13.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.1
+[1.13.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.0
 [1.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.12.0
 [1.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.11.0
 [1.10.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.2

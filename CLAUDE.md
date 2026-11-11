@@ -270,7 +270,8 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
    `panel/` ändern (Cache-Buster).
 3. CHANGELOG-Eintrag in `CHANGELOG.md` und `CHANGELOG.de.md` inkl.
    Link-Fussnote.
-4. README EN und DE nachführen.
+4. README EN und DE nachführen, bei jeder Lieferung (Vorgabe des Nutzers, 2026-11-11). Hat sich die Oberfläche sichtbar
+   geändert, auch die Bilder neu erzeugen: `node tests/panel/readme-shots.mjs`, danach `python scripts/optimize_images.py`.
 5. Sicherung und Wiederherstellung prüfen: Alles, was der Nutzer eingestellt
    hat (Zonen, Szenarien, Überwachung, Einstellungen pro Gerät), gehört in
    die Sicherung, mit Prüfung des Werts und Test. Laufzeitdaten nicht.

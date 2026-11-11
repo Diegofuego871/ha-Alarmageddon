@@ -11,6 +11,8 @@ Texte: das Panel formuliert sie in der Sprache von HA.
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from typing import Any
 
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
@@ -20,7 +22,7 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import RECORDINGS_ENTRIES_KEEP, RECORDINGS_KEEP, RECORDINGS_STORE_KEY
+from .const import KEEP_DAYS, RECORDINGS_ENTRIES_KEEP, RECORDINGS_KEEP, RECORDINGS_STORE_KEY
 from .controller import AlarmController
 
 _ACTIVE = (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED)
@@ -57,7 +59,30 @@ class AlarmRecorder:
     async def async_load(self) -> None:
         data = await self._store.async_load()
         if isinstance(data, list):
-            self.recordings = [r for r in data if isinstance(r, dict) and isinstance(r.get("entries"), list)][:RECORDINGS_KEEP]
+            self.recordings = [r for r in data if isinstance(r, dict) and isinstance(r.get("entries"), list)]
+            self._prune()
+
+    def _prune(self) -> None:
+        """Alarme, die vor mehr als einem Jahr begannen, verwerfen; ein laufender bleibt immer (neueste zuerst, Zeiten ISO in UTC)."""
+        limit = (dt_util.utcnow() - timedelta(days=KEEP_DAYS)).isoformat()
+        self.recordings[:] = [r for r in self.recordings if r.get("end") is None or str(r.get("start") or limit) >= limit][:RECORDINGS_KEEP]
+
+    @callback
+    def async_delete(self, record_id: str) -> str:
+        """
+        Einen aufgezeichneten Alarm löschen (1.13.0, Knopf im Protokoll). Ergebnis: "ok", "not_found" oder "running": der laufende
+        Alarm lässt sich nicht löschen, er wird noch geschrieben.
+        """
+        for index, record in enumerate(self.recordings):
+            if record.get("id") != record_id:
+                continue
+            if record.get("end") is None:
+                return "running"
+            del self.recordings[index]
+            self.rev += 1
+            self._save()
+            return "ok"
+        return "not_found"
 
     @callback
     def async_start(self) -> None:
@@ -104,7 +129,7 @@ class AlarmRecorder:
         now = dt_util.utcnow().isoformat()
         record = {"id": now, "start": now, "end": None, "ended_by": None, "mode": self._ctl.mode, "sensor": self._ctl.triggered_by, "entries": []}
         self.recordings.insert(0, record)
-        del self.recordings[RECORDINGS_KEEP:]
+        self._prune()
         self.rev += 1
         # Der erste Sensor hat schon angesprochen, bevor wir zuhören: mit dem echten Zeitpunkt nachtragen
         sensor = self._ctl.triggered_by

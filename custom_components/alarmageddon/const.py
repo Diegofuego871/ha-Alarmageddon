@@ -60,7 +60,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 91  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 95  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -73,9 +73,12 @@ DATA_STATIC: Final = f"{DOMAIN}_static_registered"
 
 # Ereignisprotokoll pro Anlage (Übersicht "Letzte Ereignisse")
 EVENTS_STORE_KEY: Final = f"{DOMAIN}.events"
-EVENTS_KEEP: Final = 1000  # Einträge je Anlage (Protokoll mit Zeitraum und Export)
+# Aufbewahrung (1.13.0, Wunsch des Nutzers): Ereignisse und Alarme ein Jahr; ältere werden verworfen. Die Anzahl ist nur noch eine
+# Obergrenze, damit die Ablage nicht unbegrenzt wächst (vorher 1000 Ereignisse und 30 Alarme je Anlage, ohne Blick auf das Alter).
+KEEP_DAYS: Final = 365
+EVENTS_KEEP: Final = 5000  # Obergrenze der Ereignisse je Anlage (Protokoll mit Zeitraum und Export)
 RECORDINGS_STORE_KEY: Final = f"{DOMAIN}.recordings"
-RECORDINGS_KEEP: Final = 30  # Alarme je Anlage
+RECORDINGS_KEEP: Final = 200  # Obergrenze der Alarme je Anlage
 RECORDINGS_ENTRIES_KEEP: Final = 300  # Einträge je Alarm
 
 # Sensoren, die das Panel als Kandidaten für Zonen anbietet (Geräteklassen von binary_sensor)

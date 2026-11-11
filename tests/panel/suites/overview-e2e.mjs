@@ -91,6 +91,12 @@ for (const lang of ["de", "en"]) {
     await s.waitFor("return !!r.querySelector('.ag-alarm')");
     check(`${tag}: Alarm in der Warnkachel`, await s.waitFor(`return r.querySelector('.ag-status').innerText.includes("Haus")`));
 
+    if (!mobile) {
+      // Computer (1.13.1): die Hauptreiter tragen dasselbe Symbol wie auf dem Handy, links vom Text, in einer Zeile
+      const dt = await s.ev(`const bs=[...r.querySelectorAll('.ag-tabs > button')]; const seg=r.querySelector('.ag-tabs').getBoundingClientRect(); return { n: bs.length, rows: bs.map((b) => { const i=b.querySelector('svg'), l=b.querySelector('span'); if (!i || !l) return null; const ib=i.getBoundingClientRect(), lb=l.getBoundingClientRect(), bb=b.getBoundingClientRect(); return { left: ib.right <= lb.left, mid: Math.abs((ib.top + ib.bottom) / 2 - (lb.top + lb.bottom) / 2) < 2, size: Math.round(ib.width), fits: b.scrollWidth <= b.clientWidth + 1, h: Math.round(bb.height) }; }), segH: Math.round(seg.height), pill: (() => { const on=r.querySelector('.ag-tabs > button.on').getBoundingClientRect(), p=r.querySelector('.ag-tabs > .ag-pill')?.getBoundingClientRect(); return p ? Math.abs(p.left - on.left) + Math.abs(p.right - on.right) : -1; })() }`);
+      check(`${tag}: Hauptreiter am Computer: Symbol links vom Text, auf einer Linie, nichts abgeschnitten`, dt.n === 3 && dt.rows.every((x) => x && x.left && x.mid && x.size === 18 && x.fits && x.h <= 40) && dt.segH <= 48, JSON.stringify(dt));
+      check(`${tag}: die Kapsel sitzt um den gewählten Reiter`, await s.waitFor(`const on=r.querySelector('.ag-tabs > button.on').getBoundingClientRect(), p=r.querySelector('.ag-tabs > .ag-pill')?.getBoundingClientRect(); return !!p && Math.abs(p.left - on.left) + Math.abs(p.right - on.right) < 3`));
+    }
     if (mobile) {
       // Reiter mit Symbol und kurzem Text über die ganze Breite (Entscheid des Nutzers)
       const tabs = await s.ev(`const t=r.querySelector('.ag-tabs').getBoundingClientRect(); const c=r.querySelector('.ag-content').getBoundingClientRect(); return [t.width, c.width, r.querySelectorAll('.ag-tabs svg').length]`);

@@ -4,6 +4,7 @@
 // Die Daten kommen ausgewertet vom Server (sensor_history.py); hier wird nur gezeichnet.
 const V = new URL(import.meta.url).search;
 const { DC, MODE_ICON, MODE_KEY, TYPES, errText, esc, ic } = await import(`./common.js${V}`);
+const { loaderHtml, loaderStart } = await import(`./loader.js${V}`);
 
 const RANGES = { state: [3, 12, 24, 168, 720], signal: [3, 12, 24, 168, 720], battery: [720, 2160, 8760] };
 const RANGE_LABEL = { 3: "svR3h", 12: "svR12h", 24: "svR1d", 168: "svR7d", 720: "svR30d", 2160: "svR90d", 8760: "svR1y" };
@@ -116,6 +117,7 @@ export class SensorView {
       this.close();
       this.host.log.touched = true;
       this.host.log.open = new Set([id]);
+      this.host.log.pane = "alarms";
       this.host._root.querySelector('[data-tab="log"]')?.click();
     } else if (act === "config") {
       const id = this.id;
@@ -186,7 +188,7 @@ export class SensorView {
     const tiles = this.tabs().map((tab) => `<button type="button" class="ag-sv-tile ${tab === this.tab ? "on" : ""}" data-sv="tab" data-tab="${tab}" role="tab" aria-selected="${tab === this.tab}">
         <span class="ag-sv-ti">${ic(TAB_ICON[tab], 22)}</span><span class="ag-sv-tx"><small>${esc(this._t(`svTab_${tab}`))}</small><b>${esc(tileValue[tab]())}</b></span></button>`).join("");
     const body = this.tab === "device" ? this._deviceHtml() : this._tabHtml();
-    this.host._setHtml(dlg, `<div class="ag-sv" data-flavor="${this.flavor()}">
+    this.host._setHtml(dlg, `<div class="ag-sv" data-flavor="${this.flavor()}" ${body.busy ? "data-busy" : ""}>
       <div class="ag-sv-fix">
         <div class="ag-sv-head"><span class="ag-av ${stateCls === "act" ? "open" : stateCls === "off" ? "missing" : ""}">${ic(icon, 22)}</span>
           <div class="ag-sv-ttl"><b>${esc(info.name || this.id)}</b><small>${esc(sub)}</small></div>
@@ -196,6 +198,7 @@ export class SensorView {
         ${body.fix}
       </div>
       <div class="ag-sv-list">${body.list}</div></div>`);
+    if (body.busy) loaderStart(this.host._root, this.host);
   }
 
   _entityValue(entityId, fallbackUnit) {
@@ -223,14 +226,22 @@ export class SensorView {
     const seg = this._rangeSeg();
     if (this.error) return { fix: `${seg}<div class="ag-sv-msg">${esc(this._t("svError"))} <span class="ag-t2">${esc(this.error)}</span><br><button type="button" class="ag-btn" data-sv="retry">${esc(this._t("svRetry"))}</button></div>`, list: "" };
     const d = this.data;
-    if (!d || d.kind !== this.tab || d.hours !== this.hours[this.tab]) return { fix: `${seg}<div class="ag-sv-msg ag-t2">${esc(this._t("svLoading"))}</div>`, list: "" };
-    if (this.tab === "state") return this._stateHtml(d, seg);
-    return this._numericHtml(d, seg);
+    // Laden (1.13.2): dieselbe Ladeanzeige wie im ganzen Panel, mitten in der Grafik; nie ein Text "Lädt …" (Regel in loader.js).
+    // Gibt es schon Daten dieses Reiters (anderer Zeitraum), bleiben Kennzahlen, Grafik und Liste gedimmt stehen und die Ladeanzeige
+    // liegt über der Grafik: so springt nichts. Beim ersten Laden steht sie in einer leeren Fläche in der Höhe der Grafik.
+    const waiting = !d || d.kind !== this.tab || d.hours !== this.hours[this.tab];
+    if (waiting && (!d || d.kind !== this.tab)) return { fix: `${seg}<div class="ag-sv-chart ag-sv-wait">${this._loader()}</div>`, list: "", busy: true };
+    const out = this.tab === "state" ? this._stateHtml(d, seg, waiting) : this._numericHtml(d, seg, waiting);
+    return { ...out, busy: waiting };
   }
 
   // ----- Verlauf -----
 
-  _stateHtml(d, seg) {
+  _loader() {
+    return loaderHtml(esc(this._t("svLoading")));
+  }
+
+  _stateHtml(d, seg, busy = false) {
     const flavor = this.flavor();
     const s = d.summary;
     const last = s.last ? this.host._fmtTime(s.last) : "–";
@@ -255,7 +266,7 @@ export class SensorView {
       chart = d.hours <= 24 ? this._band(d, W) : this._dayRows(d, W);
       legend = this._legend([["sv-i-on", onLabel], ["sv-i-armed", this._t("svLegArmed")], ["sv-i-alarm", this._t("svLegAlarm")], ...(s.gone_count ? [["sv-i-gone", this._t("svGone")]] : [])]);
     }
-    return { fix: `${seg}${this._kpis(kpis)}<div class="ag-sv-chart">${chart}</div>${legend}`, list: this._eventsHtml(d, flavor) };
+    return { fix: `${seg}${this._kpis(kpis)}<div class="ag-sv-chart">${chart}${busy ? this._loader() : ""}</div>${legend}`, list: this._eventsHtml(d, flavor) };
   }
 
   _eventsHtml(d, flavor) {
@@ -444,7 +455,7 @@ export class SensorView {
 
   // ----- Batterie und Empfang -----
 
-  _numericHtml(d, seg) {
+  _numericHtml(d, seg, busy = false) {
     const s = d.summary;
     const battery = d.kind === "battery";
     const unit = d.unit || (battery ? "%" : "");
@@ -460,7 +471,7 @@ export class SensorView {
       kpis = [[fmt(s.current), this._t("svKCurrent")], [fmt(s.mean), this._t("svKMean")], [fmt(s.min), this._t("svKWeakest")]];
     }
     const chart = d.points.length < 2 ? `<div class="ag-sv-msg ag-t2">${esc(this._t("svNoValues"))}</div>` : this._line(d, this.narrow ? 358 : 832);
-    return { fix: `${seg}${this._kpis(kpis)}<div class="ag-sv-chart">${chart}</div>`, list: this._valuesHtml(d, fmt) };
+    return { fix: `${seg}${this._kpis(kpis)}<div class="ag-sv-chart">${chart}${busy ? this._loader() : ""}</div>`, list: this._valuesHtml(d, fmt) };
   }
 
   // Linie mit Fläche: Batterie mit Schwelle der Warnung, Batteriewechsel und Prognose; Empfang in dBm mit den Zonen gut, mittel, schwach

@@ -4,7 +4,8 @@
 // darunter die Reihenfolge mit Uhrzeit und Abstand zum Anfang.
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, DC, chapter, errText } = await import(`./common.js${V}`);
+const { ic, esc, DC, errText } = await import(`./common.js${V}`);
+const { loaderHtml, loaderStart } = await import(`./loader.js${V}`);
 
 // Zeiträume des Protokolls; "day" = ein gewählter Tag, "span" = von … bis (je ganze Tage)
 const RANGES = ["all", "3h", "24h", "today", "yesterday", "7d", "30d", "day", "span"];
@@ -15,12 +16,16 @@ const stamp = (d) => `${dayStr(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}:$
 const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const parseDay = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(s || "") ? new Date(`${s}T00:00:00`) : null);
 
-const SHOWN = 300; // Zeilen in der Liste; der Export enthält alles im Zeitraum
+const SHOWN = 200; // Ereignisse je Schritt in der Liste ("Weitere anzeigen" holt die nächsten); der Export enthält alles im Zeitraum
+const SHOWN_ALARMS = 30; // Alarme je Schritt
 
 const STATE_COLOR = { pending: "warn", triggered: "err", disarmed: "ok", restart: "none" };
 
 export class LogUi {
   constructor(host) {
+    this.pane = "alarms"; // gewählter Reiter: "alarms" (Standard) oder "events"
+    this.shownEvents = SHOWN;
+    this.shownAlarms = SHOWN_ALARMS;
     this.host = host;
     this.systems = null; // Antwort des Servers
     this.open = new Set(); // aufgeklappte Alarme (id); ohne Eintrag: der neueste
@@ -49,6 +54,7 @@ export class LogUi {
   // Aufgerufen beim Öffnen des Reiters und bei Zustandsänderungen; Antworten, die überholt wurden, verwirft sie (LEARNINGS)
   async load() {
     const seq = ++this.seq;
+    if (!this.systems) loaderStart(this.host._root, this.host);
     try {
       // Mit dem Stand der letzten Antwort: der Server schickt nur dann wieder alles, wenn etwas dazukam
       const res = await this.host._hass.callWS({ type: "alarmageddon/log", ...(this.rev && this.systems ? { rev: this.rev } : {}) });
@@ -122,7 +128,7 @@ export class LogUi {
   incidents() {
     const [lo, hi] = this.window();
     return this._sys()
-      .flatMap((s) => (s.recordings || []).map((r) => ({ ...r, system: s.title })))
+      .flatMap((s) => (s.recordings || []).map((r) => ({ ...r, system: s.title, entry_id: s.entry_id })))
       // Ein Alarm gehört dazu, wenn er sich mit dem Zeitraum überschneidet
       .filter((r) => (hi === null || new Date(r.start).getTime() < hi) && (lo === null || new Date(r.end || Date.now()).getTime() >= lo))
       .sort((a, b) => String(b.start).localeCompare(String(a.start)));
@@ -262,11 +268,33 @@ export class LogUi {
         <span class="ag-inc-text"><b>${esc(record.system)} · ${esc(this._day(record.start))}</b>
           <span class="ag-t2 ag-small">${esc(this._t("logFirst", { sensor: first }))} · ${esc(this._dur(end - new Date(record.start).getTime()))}</span></span>
         ${tag}<span class="ag-cbtn ag-inc-arrow">${ic("chevRight", 16)}</span></button>
-      ${expanded ? `<div class="ag-inc-body">${this._chart(record)}${this._sequence(record)}</div>` : ""}</div>`;
+      ${expanded ? `<div class="ag-inc-body">${this._chart(record)}${this._sequence(record)}${open ? "" : `<div class="ag-inc-foot"><button class="ag-btn ag-inc-del" data-log="delete" data-id="${esc(record.id)}" data-entry="${esc(record.entry_id || "")}">${ic("trash", 18)}${esc(this._t("logDelete"))}</button></div>`}</div>` : ""}</div>`;
+  }
+
+  // Einen aufgezeichneten Alarm löschen (1.13.0): erst nach Rückfrage. Der laufende Alarm hat keinen Knopf (der Server lehnte es auch ab).
+  async deleteAlarm(entryId, id) {
+    const h = this.host;
+    const record = this.incidents().find((r) => r.id === id);
+    if (!record || this.deleting) return;
+    const text = this._t("logDeleteText", { system: record.system, time: `${this._day(record.start)}` });
+    if (!(await h._confirm(this._t("logDeleteTitle"), text, this._t("logDeleteOk")))) return;
+    this.deleting = true;
+    try {
+      await h._hass.callWS({ type: "alarmageddon/delete_recording", entry_id: entryId, recording: id });
+      this.open.delete(id);
+      this.rev = null; // den ganzen Stand neu holen
+      await this.load();
+    } catch (err) {
+      h._toast(this._t("errGeneric", { message: errText(err) }));
+    } finally {
+      this.deleting = false;
+    }
   }
 
   html() {
-    return `<div class="ag-tools ag-log-tools">${this._toolsHtml()}</div><div class="ag-log-body">${this.systems ? this._body() : ""}</div>
+    // Aufbau wie in der Konfiguration (1.13.3): unter den Hauptreitern steht an derselben Stelle die zweite Zeile mit den Reitern dieses
+    // Bereichs (hier "Alarme" und "Alle Ereignisse"), erst darunter Zeitraum und Anlage. Dieselben Klassen wie dort (.ag-cfg, .ag-subs).
+    return `<div class="ag-cfg ag-head ag-log-panes ${this.host.hasAttribute("narrow") ? "narrow" : ""}">${this._panesHtml()}</div><div class="ag-tools ag-log-tools"><div class="ag-log-fields">${this._toolsHtml()}</div></div><div class="ag-log-body">${this.systems ? this._body() : ""}</div>
       <div class="ag-foot ag-log-foot"><span class="ag-t2 ag-log-count"></span><span class="ag-grow"></span>
         <button class="ag-iconbtn" data-log="export-csv" title="${esc(this._t("logExportHint"))}" aria-label="${esc(this._t("logExportCsv"))}">${ic("arrowLine", 22)}</button></div>`;
   }
@@ -300,7 +328,7 @@ export class LogUi {
   }
 
   renderTools() {
-    const el = this.host._view?.querySelector(".ag-log-tools");
+    const el = this.host._view?.querySelector(".ag-log-fields");
     if (el) el.innerHTML = this._toolsHtml();
     this._count();
   }
@@ -311,12 +339,18 @@ export class LogUi {
   }
 
   _body() {
-    if (!this.systems && !this.error) return "";
+    // Erstes Laden: dieselbe Ladeanzeige wie im ganzen Panel in einer leeren Fläche (vorher blieb der Reiter kurz leer)
+    if (!this.systems && !this.error) return `<div class="ag-log-wait">${loaderHtml(esc(this._t("loading")))}</div>`;
     if (this.error) return `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t("errGeneric", { message: this.error }))}</span></div>`;
+    // Zwei Reiter (1.13.0): "Alarme" und "Alle Ereignisse". Zu sehen ist nur der gewählte: mit einem Jahr Aufbewahrung wären beide
+    // Listen untereinander endlos, und die Ereignisse rutschten mit jedem Alarm weiter nach unten. Zeitraum und Anlage gelten für
+    // beide. Beide Listen stehen im Dokument (die nicht gewählte ist ausgeblendet): so bleiben aufgeklappte Alarme und Filter beim Wechsel.
+    const more = (kind, rest) => (rest > 0 ? `<button class="ag-btn ag-log-more" data-log="more" data-kind="${kind}">${esc(this._t("logShowMore", { count: Math.min(rest, kind === "alarms" ? SHOWN_ALARMS : SHOWN) }))}</button>` : "");
     const incidents = this.incidents();
     const expanded = (r, i) => (this.touched ? this.open.has(r.id) : i === 0);
+    const shown = incidents.slice(0, this.shownAlarms);
     const alarms = incidents.length
-      ? incidents.map((r, i) => this._card(r, expanded(r, i))).join("")
+      ? shown.map((r, i) => this._card(r, expanded(r, i))).join("") + more("alarms", incidents.length - shown.length)
       : `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(this.range === "all" && this.system === "all" ? "logNoAlarms" : "logNoAlarmsRange"))}</span></div>`;
     const all = this.events();
     const cat = (e) => (e.kind === "arm_failed" ? "failed" : e.state === "pending" || e.state === "triggered" ? "alarm" : e.state === "disarmed" ? "disarmed" : String(e.state || "").startsWith("armed") || e.state === "arming" ? "armed" : "other");
@@ -327,17 +361,29 @@ export class LogUi {
     const chips = `<div class="ag-tools ag-evchips" style="margin-bottom:10px">${[["all", "evFilterAll"], ["alarm", "evFilterAlarm"], ["armed", "evFilterArmed"], ["disarmed", "evFilterDisarmed"], ["failed", "evFilterFailed"]]
       .map(([k, label]) => `<button class="ag-chip ${filter === k ? "on" : ""} ${count(k) || k === "all" ? "" : "zero"}" data-log="evfilter" data-filter="${k}">${esc(this._t(label))} <span class="ag-t2">${count(k)}</span></button>`).join("")}</div>`;
     const rows = events.length
-      ? events.slice(0, SHOWN).map((e) => `<div class="ag-row"><time>${esc(this.host._fmtTime(e.t))}</time><span class="ag-grow"><b style="font-weight:500">${esc(e.system)}</b> · ${esc(this.host._eventText(e))}</span></div>`).join("")
+      ? events.slice(0, this.shownEvents).map((e) => `<div class="ag-row"><time>${esc(this.host._fmtTime(e.t))}</time><span class="ag-grow"><b style="font-weight:500">${esc(e.system)}</b> · ${esc(this.host._eventText(e))}</span></div>`).join("")
       : `<div class="ag-row ag-t2">${esc(this._t("logNoEventsRange"))}</div>`;
-    const more = events.length > SHOWN ? `<div class="ag-row ag-t2">${esc(this._t("logMore", { count: events.length - SHOWN }))}</div>` : "";
-    return chapter(this._t("logAlarms"), alarms, this._t("logAlarmsHint"))
-      + chapter(this._t("logEvents"), `${chips}<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}${more}</div></div>`);
+    const on = this.pane === "events" ? "events" : "alarms";
+    return `<div class="ag-log-pane" data-pane="alarms" role="tabpanel" ${on === "alarms" ? "" : "hidden"}><p class="ag-t2 ag-small ag-log-hint">${esc(this._t("logAlarmsHint"))}</p>${alarms}</div>
+      <div class="ag-log-pane" data-pane="events" role="tabpanel" ${on === "events" ? "" : "hidden"}>${chips}<div class="ag-card ag-log"><div class="ag-rows" style="border-top:0">${rows}</div></div>${more("events", events.length - this.shownEvents)}</div>`;
+  }
+
+  // Reiter über der Liste, mit der Anzahl im gewählten Zeitraum
+  _panesHtml() {
+    const counts = this.systems ? { alarms: this.incidents().length, events: this.events().length } : { alarms: "", events: "" };
+    const tab = (key, label, icon) => `<button data-log="pane" data-pane="${key}" class="${this.pane === key ? "on" : ""}" role="tab" aria-selected="${this.pane === key}">${ic(icon, 20)}<span>${esc(this._t(label))}</span> <span class="ag-t2 ag-log-n">${counts[key]}</span></button>`;
+    return `<div class="ag-seg small ag-subs ag-log-seg" data-seg="log-pane" role="tablist">${tab("alarms", "logAlarms", "alert")}${tab("events", "logEvents", "history")}</div>`;
   }
 
   render() {
     const view = this.host._view?.querySelector(".ag-log-body");
     if (!view || this.host._tab !== "log") return;
     this.host._setHtml(view, this._body());
+    const panes = this.host._view?.querySelector(".ag-log-panes");
+    if (panes) {
+      this.host._setHtml(panes, this._panesHtml());
+      this.host._placePills();
+    }
     this._count();
   }
 
@@ -397,9 +443,26 @@ export class LogUi {
     if (el?.dataset?.log === "export-csv") return this.exportFile(), true;
     if (el?.dataset?.log === "evfilter") {
       this.evFilter = el.dataset.filter;
+      this.shownEvents = SHOWN;
       this.render();
       return true;
     }
+    if (el?.dataset?.log === "pane") {
+      if (this.pane === el.dataset.pane) return true;
+      this.pane = el.dataset.pane;
+      this.render();
+      // Der neue Reiter beginnt oben (die andere Liste war vielleicht weit gescrollt)
+      if (this.host._content) this.host._content.scrollTop = 0;
+      this.host._stickySync?.();
+      return true;
+    }
+    if (el?.dataset?.log === "more") {
+      if (el.dataset.kind === "alarms") this.shownAlarms += SHOWN_ALARMS;
+      else this.shownEvents += SHOWN;
+      this.render();
+      return true;
+    }
+    if (el?.dataset?.log === "delete") return this.deleteAlarm(el.dataset.entry, el.dataset.id), true;
     if (!el || el.dataset.log !== "toggle") return false;
     if (!this.touched) {
       this.touched = true;

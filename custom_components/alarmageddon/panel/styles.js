@@ -860,5 +860,33 @@ button.ag-sv-tag.alarm { background: var(--ag-error-soft); color: var(--ag-error
 .ag-namesrow .ag-settx b { font-weight: 500; }
 .ag-namesrow .ag-settx small { color: var(--ag-text2); font-size: 12.5px; overflow-wrap: anywhere; }
 .ag-namesnote { margin-top: 6px; }
+/* Protokoll (1.13.0): zwei Reiter "Alarme" und "Alle Ereignisse" unter Zeitraum und Anlage (fest wie diese), je eine Liste */
+.ag-log-fields { display: flex; flex-direction: column; gap: 10px; }
+.ag-log-seg .ag-log-n { font-variant-numeric: tabular-nums; }
+.ag-log-seg > button.on .ag-log-n { color: inherit; opacity: .75; }
+.ag-log-pane[hidden] { display: none; }
+.ag-log-hint { margin: 2px 2px 12px; }
+.ag-log-more { display: flex; margin: 12px auto 4px; }
+/* Löschen eines Alarms: unten in der geöffneten Karte, rechts, in der Farbe einer Aktion, die nicht zurückzunehmen ist */
+.ag-inc-foot { display: flex; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ag-divider); }
+.ag-inc-del { color: var(--ag-error); border-color: color-mix(in srgb, var(--ag-error) 45%, var(--ag-divider)); }
+.ag-inc-del:hover { background: var(--ag-error-soft); }
+/* Hauptreiter am Computer: das Symbol links vom Text, etwas kleiner als auf dem Handy (dort steht es über dem Text) */
+:host(:not([narrow])) .ag-tabs > button > svg { width: 18px; height: 18px; flex: none; }
+:host(:not([narrow])) .ag-tabs > button { gap: 7px; }
+/* Ladeanzeige in Sensoransicht und Protokoll (1.13.2): dieselbe wie im ganzen Panel (.ag-ld), mitten in der Grafik und etwas kleiner.
+   Mit alten Daten bleiben Kennzahlen, Grafik und Liste gedimmt stehen; beim ersten Laden steht sie in einer leeren Fläche. */
+.ag-sv-chart { position: relative; }
+.ag-sv-chart > .ag-ld, .ag-log-wait > .ag-ld { top: 50%; transform: scale(.78); }
+.ag-sv-wait { min-height: 200px; }
+:host([narrow]) .ag-sv-wait { min-height: 170px; }
+.ag-sv[data-busy] .ag-sv-kpis, .ag-sv[data-busy] .ag-sv-chart > :not(.ag-ld), .ag-sv[data-busy] .ag-sv-legend, .ag-sv[data-busy] .ag-sv-list > * { opacity: .28; pointer-events: none; }
+.ag-log-wait { position: relative; min-height: 240px; }
+/* Zweite Zeile der Reiter (Konfiguration, Protokoll; 1.13.3): Symbol links vom Text, auf jedem Gerät. Auf dem Handy richten sich die
+   Breiten nach dem Inhalt statt gleich breit zu sein: so haben vier Reiter mit Symbol auch auf schmalen Handys Platz. */
+.ag-subs > button > svg { width: 16px; height: 16px; flex: none; }
+:host([narrow]) .ag-subs { grid-auto-columns: auto; }
+:host([narrow]) .ag-subs > button { gap: 3px; padding: 0 4px; font-size: 13px; }
+:host([narrow]) .ag-subs > button > svg { width: 15px; height: 15px; }
 `;
 

@@ -7,6 +7,40 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.13.3] - 2026-11-11
+
+### Geändert
+
+- **Derselbe Aufbau in Protokoll und Konfiguration.** Zuoberst steht die Hauptwahl (Übersicht, Protokoll, Konfiguration), direkt darunter an derselben Stelle die zweite Zeile mit den Reitern des Bereichs. Im Protokoll stehen dort jetzt "Alarme" und "Alle Ereignisse" (vorher unter Zeitraum und Anlage); Zeitraum und Anlage folgen darunter.
+- **Symbole auf jeder Ebene.** Auch die zweite Zeile trägt Symbole, am Computer wie auf dem Handy, links vom Text: Sensoren, Aktionen, Benachrichtigungen, Anlage sowie Alarme und Alle Ereignisse. Auf dem Handy richten sich die Breiten dieser Reiter nach ihrem Inhalt, damit alle vier mit Symbol Platz haben.
+- **README:** alle Bildschirmfotos neu erzeugt (Reiter mit Symbolen, Protokoll mit zwei Reitern).
+
+## [1.13.2] - 2026-11-11
+
+### Geändert
+
+- **Ladeanzeige in Sensoransicht und Protokoll.** Wo eine Grafik lädt, steht jetzt dieselbe Ladeanzeige wie im ganzen Panel (drei kreisende Punkte in der Farbe des Panels), mitten in der Fläche der Grafik und etwas kleiner; die Textzeile "Verlauf wird geladen …" entfällt. Beim Wechsel des Zeitraums bleiben Kennzahlen, Grafik und Liste gedimmt stehen, bis die neuen Daten da sind: nichts springt. Das Protokoll zeigt sie beim ersten Laden statt eines leeren Reiters.
+
+## [1.13.1] - 2026-11-11
+
+### Geändert
+
+- **Hauptreiter mit Symbol auch am Computer.** "Übersicht", "Protokoll" und "Konfiguration" tragen am Computer dasselbe Symbol wie auf dem Handy, links vom Text.
+
+## [1.13.0] - 2026-11-11
+
+Das Protokoll mit zwei Reitern, ein Jahr Aufbewahrung und das Löschen einzelner Alarme.
+
+### Hinzugefügt
+
+- **Protokoll mit zwei Reitern.** "Alarme" (gewählt) und "Alle Ereignisse" stehen jetzt nebeneinander statt untereinander, jeder mit der Anzahl im gewählten Zeitraum. Vorher standen die Ereignisse unter den Alarmen und rutschten mit jedem Alarm weiter nach unten. Zeitraum und Anlage gelten für beide Reiter, die Filter der Ereignisse stehen im Reiter "Alle Ereignisse". Die Reiter stehen im festen Teil oben und sind beim Scrollen immer erreichbar.
+- **Einen Alarm löschen.** Ein geöffneter Alarm hat unten den Knopf "Alarm löschen" mit Papierkorb. Erst nach einer Rückfrage wird die Aufzeichnung entfernt; die Einträge unter "Alle Ereignisse" bleiben. Ein laufender Alarm lässt sich nicht löschen.
+- **"Weitere anzeigen".** Lange Listen zeigen zuerst 30 Alarme oder 200 Ereignisse und holen mit einem Knopf die nächsten. Vorher endete die Liste der Ereignisse mit einem Hinweis auf den Export.
+
+### Geändert
+
+- **Aufbewahrung: ein Jahr.** Alarme und Ereignisse bleiben jetzt ein Jahr und werden danach verworfen. Bisher blieben die letzten 30 Alarme und die letzten 1000 Ereignisse je Anlage, gleich wie alt: in einem lebhaften Haushalt reichten 1000 Ereignisse nur für wenige Monate. Die Anzahl ist nur noch eine Obergrenze, damit die Ablage nicht unbegrenzt wächst (200 Alarme und 5000 Ereignisse je Anlage).
+
 ## [1.12.0] - 2026-11-11
 
 Du wählst, wie deine Sensoren heissen: "Gerät - Sensor" oder nur der Name des Sensors.
@@ -898,6 +932,10 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.13.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.3
+[1.13.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.2
+[1.13.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.1
+[1.13.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.13.0
 [1.12.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.12.0
 [1.11.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.11.0
 [1.10.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.2
