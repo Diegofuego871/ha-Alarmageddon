@@ -71,7 +71,8 @@ for (const lang of ["en", "de"]) {
   await shot(lang, "overview");
   await shot(lang, "sensors", { tab: "config" });
   await shot(lang, "actions", { tab: "config", prepare: click('[data-sub="actions"]'), height: 1800 });
-  await shot(lang, "log", { tab: "log" });
+  // Beendete Alarme sind zugeklappt (1.17.9): fürs Bild den neuesten aufklappen
+  await shot(lang, "log", { tab: "log", prepare: click(".ag-inc-head") });
   await shot(lang, "mobile", { mobile: true });
   // Sensoransicht einer Tür über 7 Tage (1.9.0)
   await shot(lang, "sensor", { height: 900, prepare: async ({ page, frame }) => {

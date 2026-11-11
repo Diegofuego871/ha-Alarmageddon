@@ -264,7 +264,8 @@ class AlarmageddonPanel extends HTMLElement {
       if (!view) return;
       w.history.replaceState(w.history.state, "", w.location.pathname);
       if (view === "log" && this._systems().length) {
-        this.log.touched = false; // der neueste Alarm ist aufgeklappt
+        this.log.touched = false;
+        this.log.expandFirst = true; // der neueste Alarm ist aufgeklappt, auch wenn er inzwischen beendet ist
         this._tab = "log";
         this._savePref("tab", "log");
         this._render();

@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.9] - 2026-11-11
+
+The log opens with all alarms collapsed.
+
+### Changed
+
+- **Log: the latest alarm is collapsed too.** Until now the newest alarm was always open when you opened the log, and the list began with its long timeline. Now every finished alarm is collapsed and a tap opens it. Two cases stay open by themselves: an alarm that is still running, and the newest alarm after a tap on the alarm notification.
+
 ## [1.17.8] - 2026-11-11
 
 Every switch on the left, its text right next to it, in the whole panel.
@@ -1059,6 +1067,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.9]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.9
 [1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8
 [1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7
 [1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6

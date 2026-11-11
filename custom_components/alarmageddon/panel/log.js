@@ -28,8 +28,9 @@ export class LogUi {
     this.shownAlarms = SHOWN_ALARMS;
     this.host = host;
     this.systems = null; // Antwort des Servers
-    this.open = new Set(); // aufgeklappte Alarme (id); ohne Eintrag: der neueste
+    this.open = new Set(); // aufgeklappte Alarme (id), sobald der Nutzer einen auf- oder zugeklappt hat (touched)
     this.touched = false;
+    this.expandFirst = false; // Tipp auf die Alarmmeldung: der neueste Alarm ist aufgeklappt, auch wenn er schon beendet ist
     this.seq = 0;
     this.error = null;
     // Filter (Zeitraum und Anlage), der Zeitraum bleibt pro Browser gemerkt
@@ -255,6 +256,13 @@ export class LogUi {
     }).join("")}</ol>${record.truncated ? `<div class="ag-t2 ag-small">${esc(this._t("logTruncated"))}</div>` : ""}`;
   }
 
+  // Was ohne Zutun aufgeklappt ist (1.17.9): beendete Alarme sind zu, auch der neueste (Vorgabe des Nutzers). Offen ist nur
+  // ein laufender Alarm (dort zählt, was gerade passiert) und der neueste nach einem Tipp auf die Alarmmeldung.
+  _initialOpen(incidents) {
+    const first = incidents[0];
+    return new Set(first && (!first.end || this.expandFirst) ? [first.id] : []);
+  }
+
   _card(record, expanded) {
     const open = !record.end;
     const first = record.sensor ? this.host._name(record.sensor) : this._t("evTriggeredManual");
@@ -347,10 +355,11 @@ export class LogUi {
     // beide. Beide Listen stehen im Dokument (die nicht gewählte ist ausgeblendet): so bleiben aufgeklappte Alarme und Filter beim Wechsel.
     const more = (kind, rest) => (rest > 0 ? `<button class="ag-btn ag-log-more" data-log="more" data-kind="${kind}">${esc(this._t("logShowMore", { count: Math.min(rest, kind === "alarms" ? SHOWN_ALARMS : SHOWN) }))}</button>` : "");
     const incidents = this.incidents();
-    const expanded = (r, i) => (this.touched ? this.open.has(r.id) : i === 0);
+    const initial = this._initialOpen(incidents);
+    const expanded = (r) => (this.touched ? this.open.has(r.id) : initial.has(r.id));
     const shown = incidents.slice(0, this.shownAlarms);
     const alarms = incidents.length
-      ? shown.map((r, i) => this._card(r, expanded(r, i))).join("") + more("alarms", incidents.length - shown.length)
+      ? shown.map((r) => this._card(r, expanded(r))).join("") + more("alarms", incidents.length - shown.length)
       : `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(this.range === "all" && this.system === "all" ? "logNoAlarms" : "logNoAlarmsRange"))}</span></div>`;
     const all = this.events();
     const cat = (e) => (e.kind === "arm_failed" ? "failed" : e.state === "pending" || e.state === "triggered" ? "alarm" : e.state === "disarmed" ? "disarmed" : String(e.state || "").startsWith("armed") || e.state === "arming" ? "armed" : "other");
@@ -465,8 +474,7 @@ export class LogUi {
     if (!el || el.dataset.log !== "toggle") return false;
     if (!this.touched) {
       this.touched = true;
-      const first = this.incidents()[0];
-      this.open = new Set(first ? [first.id] : []);
+      this.open = this._initialOpen(this.incidents());
     }
     const id = el.dataset.id;
     if (this.open.has(id)) this.open.delete(id);

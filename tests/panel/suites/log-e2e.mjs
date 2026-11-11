@@ -15,7 +15,12 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Reiter Protokoll`, await s.ev(`return r.querySelector('[data-tab="log"]').innerText.includes('${t.tab}')`));
     check(`${tag}: Ereignisse nicht mehr in der Übersicht`, await s.ev("return !r.querySelector('.ag-log')"));
     await s.tap('[data-tab="log"]');
-    check(`${tag}: ein Alarm, aufgeklappt`, await s.waitFor("return r.querySelectorAll('.ag-inc').length === 1 && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'true'"));
+    // 1.17.9: ein beendeter Alarm ist zugeklappt, auch der neueste; erst ein Tipp klappt ihn auf
+    check(`${tag}: ein Alarm, zugeklappt (auch der neueste)`, await s.waitFor("return r.querySelectorAll('.ag-inc').length === 1 && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'false' && !r.querySelector('.ag-inc-body')"));
+    await s.page.waitForTimeout(5600); // bleibt auch nach dem nächsten Nachladen zu
+    check(`${tag}: nach dem Nachladen noch zugeklappt`, await s.ev("return r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'false' && !r.querySelector('.ag-inc-body')"));
+    await s.tap('.ag-inc-head');
+    check(`${tag}: ein Tipp klappt ihn auf`, await s.waitFor("return r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'true' && !!r.querySelector('.ag-inc-body')"));
     check(`${tag}: zwei Reiter über der Liste: Alarme (gewählt) und Alle Ereignisse, ohne Anzahl`, await s.ev(`const b=[...r.querySelectorAll('.ag-log-seg [data-log="pane"]')]; const lab=b.map((e) => e.querySelector('span').textContent); return b.length === 2 && lab[0] === '${t.alarms}' && lab[1] === '${t.events}' && b[0].classList.contains('on') && !/\\d/.test(b[0].textContent) && !r.querySelector('.ag-chap-t') && !r.querySelector('[data-pane="alarms"].ag-log-pane').hidden && r.querySelector('[data-pane="events"].ag-log-pane').hidden`));
     check(`${tag}: quittiert von Diego`, await s.ev(`return r.querySelector('.ag-inc-head .ag-tag.ok').textContent.trim() === '${t.ack}'`));
     check(`${tag}: zwei Bahnen (Fenster, Bewegung)`, await s.ev("const n=[...r.querySelectorAll('.ag-lg-row:not(.ag-lg-axisrow) .ag-lg-name')].map((e) => e.innerText.trim()); return n.length === 2 && n[0] === 'Fenster Bad' && n[1] === 'Bewegung Flur'"));
@@ -100,6 +105,11 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Deep Link öffnet das Protokoll mit dem neuesten Alarm aufgeklappt`, await d.waitFor("return !!r.querySelector('.ag-inc') && r.querySelector('[data-tab=\"log\"]').classList.contains('on') && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'true'"));
     check(`${tag}: Parameter danach entfernt`, !new URL(d.page.url()).searchParams.get("view"));
     await d.ctx.close();
+
+    // Tipp auf die Alarmmeldung, wenn der Alarm schon beendet ist: der neueste ist trotzdem aufgeklappt (darum ging der Tipp)
+    const e = await open(browser, { mobile, lang, query: "&view=log" });
+    check(`${tag}: Deep Link nach beendetem Alarm: der neueste ist aufgeklappt`, await e.waitFor("return !!r.querySelector('.ag-inc-body') && r.querySelector('.ag-inc-head').getAttribute('aria-expanded') === 'true' && !r.querySelector('.ag-inc-head .ag-tag.err')"));
+    await e.ctx.close();
 
     // Laufender Alarm: neuester oben und aufgeklappt, der ältere zu
     const r = await open(browser, { mobile, lang, query: "&alarm=open" });
