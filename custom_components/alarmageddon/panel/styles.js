@@ -424,6 +424,10 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-ef-row .ag-toggle { margin: 0; }
 .ag-ef-range label { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ag-text2); }
 .ag-ef-range { max-width: 50%; min-width: 260px; }
+/* Regler je Medienplayer (1.17.3): Luft zum Schalter darüber, zwischen den Reglern und zur Beschriftung */
+.ag-ef-range label { margin-bottom: 8px; }
+.ag-ef-range + .ag-ef-range, .ag-pervol + .ag-ef-range { margin-top: 20px; }
+.ag-pervol { margin-bottom: 4px; }
 :host([narrow]) .ag-ef-range { max-width: none; min-width: 0; }
 .ag-ef-range .ag-range { max-width: none; }
 .ag-ef-val { font-weight: 500; color: var(--ag-text); font-variant-numeric: tabular-nums; }

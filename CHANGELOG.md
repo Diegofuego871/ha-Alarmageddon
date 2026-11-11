@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.3] - 2026-11-11
+
+More room between the volume sliders of the media players.
+
+### Changed
+
+- **Volume for each media player: more room.** With "Separately for each media player" the sliders now have a clear gap to the switch above them, between each other and between the name of the speaker and its slider. Until now they sat tightly under one another.
+
 ## [1.17.2] - 2026-11-11
 
 The tabs of the log without numbers.
@@ -1009,6 +1017,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.3
 [1.17.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.2
 [1.17.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.1
 [1.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.0
