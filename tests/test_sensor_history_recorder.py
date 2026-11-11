@@ -143,3 +143,53 @@ async def test_statistics_are_preferred_and_thinned_out(recorder_mock, hass: Hom
     assert year["points"][0][1] > year["points"][-1][1] and year["summary"]["current"] == 64
     assert dt_util.parse_datetime(year["start"]) <= now - timedelta(days=364)
     MockConfigEntry  # noqa: B018 - Import wird von den Hilfen oben gebraucht
+
+
+async def test_signal_line_runs_to_now_with_the_current_value(recorder_mock, hass: HomeAssistant, hass_ws_client, freezer) -> None:
+    """Ein Wert, der sich im Zeitraum nicht ändert, ergab nur einen Punkt (den Stand am Anfang): statt der Grafik stand dort
+    "noch keine Werte". Die Linie läuft jetzt bis jetzt, mit dem aktuellen Wert als letztem Punkt (1.17.11)."""
+    _device(hass, WINDOW, BAT_WINDOW)
+    device_id = er.async_get(hass).async_get(WINDOW).device_id
+    er.async_get(hass).async_get_or_create("sensor", "test", "fenster_rssi", device_id=device_id, original_device_class="signal_strength", suggested_object_id="fenster_kueche_rssi")
+    now = dt_util.utcnow()
+    freezer.move_to(now - timedelta(hours=30))
+    hass.states.async_set(SIGNAL_WINDOW, "-56", {"unit_of_measurement": "dBm"})
+    await async_wait_recording_done(hass)
+    freezer.move_to(now)
+    await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    steady = (await _ask(client, 1, entity_id=WINDOW, kind="signal", hours=12))["result"]
+    assert [value for _when, value in steady["points"]] == [-56, -56], steady["points"]
+    assert dt_util.parse_datetime(steady["points"][0][0]) == now - timedelta(hours=12)
+    assert dt_util.parse_datetime(steady["points"][-1][0]) == now
+    assert steady["summary"] == {"current": -56, "mean": -56, "min": -56, "max": -56}
+
+
+async def test_signal_line_uses_the_live_value_when_the_history_lags(recorder_mock, hass: HomeAssistant, hass_ws_client, monkeypatch) -> None:
+    """Kennt der Verlauf nur den Stand am Anfang, der Sensor zeigt aber schon einen anderen Wert: die Linie endet beim aktuellen Wert.
+    Liefert die Statistik weniger als zwei Punkte, wird zusätzlich der Verlauf gefragt und die längere Reihe genommen."""
+    from custom_components.alarmageddon import sensor_history
+
+    _device(hass, WINDOW, BAT_WINDOW)
+    device_id = er.async_get(hass).async_get(WINDOW).device_id
+    er.async_get(hass).async_get_or_create("sensor", "test", "fenster_rssi", device_id=device_id, original_device_class="signal_strength", suggested_object_id="fenster_kueche_rssi")
+    hass.states.async_set(SIGNAL_WINDOW, "-52", {"unit_of_measurement": "dBm"})
+    asked: list[str] = []
+
+    async def statistics(_hass, _entity_id, start, _period):
+        asked.append("statistics")
+        return [(start + timedelta(minutes=5), -57.0)]
+
+    async def states(_hass, _entity_id, start):
+        asked.append("history")
+        return [(start, "-56"), (start + timedelta(hours=1), "-60")]
+
+    monkeypatch.setattr(sensor_history, "_statistics", statistics)
+    monkeypatch.setattr(sensor_history, "async_states", states)
+    await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    signal = (await _ask(client, 1, entity_id=WINDOW, kind="signal", hours=12))["result"]
+    assert asked == ["statistics", "history"]
+    assert [value for _when, value in signal["points"]] == [-56, -60, -52], signal["points"]
+    assert signal["points"][-1][0] == signal["now"] and signal["summary"]["current"] == -52
+    assert signal["summary"]["min"] == -60 and signal["summary"]["max"] == -52

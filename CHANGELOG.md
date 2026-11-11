@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.11] - 2026-11-11
+
+The charts for signal and battery no longer stay empty.
+
+### Fixed
+
+- **Sensor view: "No values in this period yet" although there was a value.** The history of Home Assistant only knows changes. If the signal (or the battery level) did not change in the chosen period, there was only the level at the beginning, a single point, and instead of the chart the note appeared, although current value, mean and weakest value were shown right above it. The line now runs up to now and ends with the current value; a value that stays the same is a level line. If the statistics of Home Assistant deliver fewer than two values, the history is asked as well.
+
 ## [1.17.10] - 2026-11-11
 
 Windows open without the search field jumping in.
@@ -1075,6 +1083,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11
 [1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10
 [1.17.9]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.9
 [1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8

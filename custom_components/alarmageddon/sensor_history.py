@@ -35,6 +35,7 @@ STATS_STORE_KEY = f"{DOMAIN}.sensor_stats"
 STATS_KEEP_HOURS = 30 * 24
 EVENTS_MAX = 300  # Zeilen der Liste je Abfrage (neueste zuerst)
 POINTS_MAX = 240  # Punkte einer Linie (Batterie, Empfang)
+LIVE_POINT_GAP = 60  # Sekunden: ist der letzte Punkt älter, endet die Linie mit dem aktuellen Wert bei "jetzt"
 BATTERY_JUMP = 20  # Sprung nach oben um so viele Prozentpunkte gilt als Batteriewechsel
 GONE = ("unavailable", "unknown")
 ARMED = {"armed_home": "home", "armed_away": "away", "armed_night": "night"}
@@ -344,11 +345,15 @@ async def async_numeric(hass: HomeAssistant, entity_id: str, start: datetime, ho
         points = await _statistics(hass, entity_id, start, "5minute" if hours <= 24 else "hour" if hours <= 720 else "day")
     except Exception:  # noqa: BLE001 - ohne Statistik bleibt der Verlauf
         _LOGGER.debug("No statistics for %s", entity_id, exc_info=True)
-    if not points:
-        points = [(when, value) for when, state in await async_states(hass, entity_id, start) if (value := _number(state)) is not None]
-    if len(points) <= POINTS_MAX:
+    if len(points) < 2:
+        # Ohne Statistik (oder mit nur einem Wert daraus) der Verlauf; die längere Reihe gilt
+        changes = [(when, value) for when, state in await async_states(hass, entity_id, start) if (value := _number(state)) is not None]
+        if len(changes) > len(points):
+            points = changes
+    limit = POINTS_MAX - 1  # ein Punkt bleibt frei für den aktuellen Wert am Ende der Linie
+    if len(points) <= limit:
         return points
-    size = -(-len(points) // POINTS_MAX)
+    size = -(-len(points) // limit)
     return [(chunk[len(chunk) // 2][0], sum(v for _w, v in chunk) / len(chunk)) for chunk in (points[i:i + size] for i in range(0, len(points), size))]
 
 
@@ -364,6 +369,11 @@ async def async_numeric_history(hass: HomeAssistant, entity_id: str, kind: str, 
     points = await async_numeric(hass, entity_id, start, hours)
     state = hass.states.get(entity_id)
     current = _number(state.state) if state else None
+    # Die Linie läuft bis jetzt (1.17.11): Der Verlauf kennt nur Wechsel. Ein Wert, der sich im Zeitraum nicht ändert, ergab
+    # nur den Stand am Anfang, also einen einzigen Punkt, und statt der Grafik stand "noch keine Werte". Der aktuelle Wert
+    # ist der letzte Punkt; er gilt auch, wenn der Verlauf dem Sensor hinterherhinkt.
+    if current is not None and points and (now - points[-1][0]).total_seconds() >= LIVE_POINT_GAP:
+        points = [*points, (now, current)]
     values = [v for _w, v in points]
     out: dict[str, Any] = {
         "kind": kind, "hours": hours, "now": now.isoformat(), "start": start.isoformat(), "entity_id": entity_id,

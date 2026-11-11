@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.17.11] - 2026-11-11
+
+Die Grafiken für Empfang und Batterie bleiben nicht mehr leer.
+
+### Behoben
+
+- **Sensoransicht: "In diesem Zeitraum gibt es noch keine Werte", obwohl es einen Wert gab.** Der Verlauf von Home Assistant kennt nur Wechsel. Änderte sich der Empfang (oder der Batteriestand) im gewählten Zeitraum nicht, gab es nur den Stand am Anfang, also einen einzigen Punkt, und statt der Grafik stand der Hinweis da, obwohl direkt darüber aktueller Wert, Mittel und schwächster Wert standen. Die Linie läuft jetzt bis jetzt und endet mit dem aktuellen Wert; ein gleichbleibender Wert ist eine waagrechte Linie. Liefert die Statistik von Home Assistant weniger als zwei Werte, wird zusätzlich der Verlauf gefragt.
+
 ## [1.17.10] - 2026-11-11
 
 Fenster öffnen, ohne dass das Suchfeld aufspringt.
@@ -1075,6 +1083,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11
 [1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10
 [1.17.9]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.9
 [1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8
