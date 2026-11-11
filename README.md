@@ -2,11 +2,18 @@
 
 # Alarmageddon
 
+<p align="center">
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases/latest"><img src="https://img.shields.io/github/v/release/Diegofuego871/ha-Alarmageddon?style=flat-square&label=version" alt="Version"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/tests.yml?branch=main&style=flat-square&label=tests" alt="Tests"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/validate.yml?branch=main&style=flat-square&label=HACS%20%2B%20hassfest" alt="HACS and hassfest"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases"><img src="https://img.shields.io/github/downloads/Diegofuego871/ha-Alarmageddon/total?style=flat-square&label=downloads" alt="Downloads"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Diegofuego871/ha-Alarmageddon?style=flat-square&label=license" alt="License"></a>
+<a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Integration-41BDF5?style=flat-square" alt="HACS"></a>
+</p>
+
 [Deutsch](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.de.md)
 
 A complete alarm system for Home Assistant: without a single automation, with push notifications that come by themselves, and set up entirely in a graphical interface.
-
-> **Status:** stable (1.0.0). Everything described here is covered by automated tests, and the whole code was reviewed by an external code review. It has not yet been tried with every kind of device: please report problems as an issue.
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/overview-en.png" alt="Overview with two alarm systems, the status tile and the sensor list" width="100%"></p>
 

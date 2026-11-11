@@ -7,6 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.1] - 2026-11-11
+
+Badges at the top of the README; the 1.17.0 changes (not released separately) are included.
+
+### Changed
+
+- **README:** at the top there are now badges with the version, the state of the tests and of the HACS and hassfest checks, the number of downloads and the license.
+- **README:** the note "Status: stable (1.0.0)" is removed.
+
 ## [1.17.0] - 2026-11-11
 
 Tones play in one piece instead of choppy.
@@ -992,6 +1001,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.1
 [1.17.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.0
 [1.16.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.16.0
 [1.15.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.15.0

@@ -2,11 +2,18 @@
 
 # Alarmageddon
 
+<p align="center">
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases/latest"><img src="https://img.shields.io/github/v/release/Diegofuego871/ha-Alarmageddon?style=flat-square&label=Version" alt="Version"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/tests.yml?branch=main&style=flat-square&label=Tests" alt="Tests"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/validate.yml?branch=main&style=flat-square&label=HACS%20%2B%20hassfest" alt="HACS and hassfest"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases"><img src="https://img.shields.io/github/downloads/Diegofuego871/ha-Alarmageddon/total?style=flat-square&label=Downloads" alt="Downloads"></a>
+<a href="https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Diegofuego871/ha-Alarmageddon?style=flat-square&label=Lizenz" alt="Lizenz"></a>
+<a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Integration-41BDF5?style=flat-square" alt="HACS"></a>
+</p>
+
 [English](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.md)
 
 Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation, mit Push-Meldungen, die von selbst kommen, und ganz in einer grafischen Oberfläche eingerichtet.
-
-> **Status:** stabil (1.0.0). Alles hier Beschriebene ist durch automatische Tests abgedeckt, und der ganze Code wurde in einem externen Code-Review geprüft. Mit allen Arten von Geräten wurde es noch nicht ausprobiert: Bitte melde Probleme als Issue.
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/overview-de.png" alt="Übersicht mit zwei Anlagen, der Statuskachel und der Sensorliste" width="100%"></p>
 
