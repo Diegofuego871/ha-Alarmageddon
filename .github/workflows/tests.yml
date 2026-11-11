@@ -66,8 +66,14 @@ jobs:
       - name: Abhängigkeiten
         run: npm ci
 
+      # Zuerst nur der Browser (Download von Playwright, kein apt): Die Paketquellen des Runners waren mehrfach
+      # nicht erreichbar, und "--with-deps" hielt die Prüfung dann 10 Minuten fest. Die Systembibliotheken
+      # bringt das Runner-Abbild mit; fehlen sie, holt der zweite Aufruf sie nach.
       - name: Chromium
-        run: npx playwright-core install --with-deps chromium
+        timeout-minutes: 8
+        run: |
+          npx playwright-core install chromium
+          node -e "const {chromium}=require('playwright-core');chromium.launch().then(b=>b.close()).then(()=>console.log('Chromium startet'))" || npx playwright-core install --with-deps chromium
 
       - name: Suiten
         run: node run.mjs
