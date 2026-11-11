@@ -23,7 +23,7 @@ for (const lang of ["de", "en"]) {
 
     // ----- Drei feste Punkte, grösser als bisher, auf einer Achse -----
     const marks = await s.ev("return [...r.querySelectorAll('.ag-wf-start')].map((m) => { const i=m.querySelector('.ag-mini').getBoundingClientRect(); const cs=getComputedStyle(m); return { text: m.textContent.trim(), top: Math.round(m.getBoundingClientRect().top), box: Math.round(i.width), icon: Math.round(m.querySelector('svg').getBoundingClientRect().width), size: cs.fontSize, weight: cs.fontWeight, mid: Math.round(i.left + i.width / 2), cls: m.querySelector('.ag-mini').className }; })");
-    check(`${tag}: drei feste Punkte in dieser Reihenfolge: "${t.armed}", "${t.start}", "${t.end}"`, marks.length === 3 && marks[0].text === t.armed && marks[1].text === t.start && marks[2].text === t.end && marks[0].top < marks[1].top && marks[1].top < marks[2].top, JSON.stringify(marks.map((m) => [m.text, m.top])));
+    check(`${tag}: drei feste Punkte in dieser Reihenfolge: "${t.armed}", "${t.start}", "${t.end}"`, marks.length === 3 && marks[0].text.startsWith(t.armed) && marks[1].text.startsWith(t.start) && marks[2].text.startsWith(t.end) && marks[0].top < marks[1].top && marks[1].top < marks[2].top, JSON.stringify(marks.map((m) => [m.text, m.top])));
     check(`${tag}: die Punkte sind grösser und kräftiger (Symbol 36 px, Schrift 16 px fett) und stehen auf einer Achse mit den Plus`, marks.every((m) => m.box === 36 && m.icon === 20 && m.size === "16px" && Number(m.weight) >= 600) && new Set(marks.map((m) => m.mid)).size === 1 && (await s.ev(`const x=(e) => { const b=e.getBoundingClientRect(); return Math.round(b.left + b.width / 2); }; return [...r.querySelectorAll('.ag-wf-add')].every((b) => Math.abs(x(b) - ${marks[0].mid}) <= 1)`)), JSON.stringify(marks));
     check(`${tag}: scharf mit Schild in Rot, Alarm kräftig rot, Ende grün`, marks[0].cls.includes("arm") && marks[1].cls.includes("alarm") && marks[2].cls.includes("ok") && (await s.ev("const probe=document.createElement('i'); probe.style.color='var(--ag-error)'; r.appendChild(probe); const err=getComputedStyle(probe).color; probe.remove(); const m=[...r.querySelectorAll('.ag-wf-start .ag-mini')]; return getComputedStyle(m[0]).color === err && getComputedStyle(m[1]).backgroundColor === err")));
     const plus0 = await s.ev("const z=r.querySelector('.ag-wf-armed'); const p=z.querySelector('.ag-wf-plus'); const h=p.querySelector('.ag-wf-plushint'); return { n: z.querySelectorAll('.ag-wf-plus').length, hint: h?.textContent || '', right: h ? h.getBoundingClientRect().right : 0, vw: innerWidth, zone: z.dataset.zone, lower: getComputedStyle(p.querySelectorAll('.ag-wf-seg')[1]).visibility }");
@@ -97,6 +97,21 @@ for (const lang of ["de", "en"]) {
     if (mobile) check(`${tag}: Handy: Beschreibungen und Hinweise einheitlich 14.5 px`, font.hint === "14.5px" && font.sub === "14.5px" && font.set === "14.5px", JSON.stringify(font));
     else check(`${tag}: Desktop: Beschreibungen wie bisher`, font.set === "12.5px" && font.hint === "12px", JSON.stringify(font));
     check(`${tag}: kein Überlauf, keine Fehler im Browser`, (await s.ev("return document.documentElement.scrollWidth <= window.innerWidth")) && s.errors.length === 0, s.errors.join(" | "));
+
+    // ----- 1.17.5: mit getrennten Aktionen je Modus steht der Modus in Klammern hinter den drei festen Punkten -----
+    const titles = () => s.ev("return [...r.querySelectorAll('.ag-wf-start')].map((m) => m.textContent.trim())");
+    const modeName = (key) => s.ev(`return r.host.actions._t(${JSON.stringify(key)})`);
+    const awayName = await modeName("modeAway");
+    const homeName = await modeName("modeHome");
+    check(`${tag}: der Ablauf ist getrennt (Reiter "${awayName}"): der Modus steht hinter allen drei Punkten`, JSON.stringify(await titles()) === JSON.stringify([`${t.armed} (${awayName})`, `${t.start} (${awayName})`, `${t.end} (${awayName})`]), JSON.stringify(await titles()));
+    await s.tap('[data-trigger="home"]');
+    check(`${tag}: der Reiter "${homeName}" zeigt seinen Modus`, await s.waitFor(`return [...r.querySelectorAll('.ag-wf-start')].every((m) => m.textContent.trim().endsWith(${JSON.stringify(` (${homeName})`)}))`));
+    await s.ev("r.querySelector('[data-wf=\"permode\"]').click(); return 1");
+    await s.waitFor("return !r.querySelector('[data-trigger]')");
+    check(`${tag}: ohne getrennte Aktionen stehen die Titel wie bisher, ohne Modus`, JSON.stringify(await titles()) === JSON.stringify([t.armed, t.start, t.end]), JSON.stringify(await titles()));
+    await s.ev("r.querySelector('[data-wf=\"permode\"]').click(); return 1");
+    await s.waitFor("return !!r.querySelector('[data-trigger]')");
+    check(`${tag}: wieder getrennt: der Modus steht wieder dahinter`, (await titles()).every((x) => x.endsWith(`(${homeName})`)), JSON.stringify(await titles()));
     await s.ctx.close();
   }
 }

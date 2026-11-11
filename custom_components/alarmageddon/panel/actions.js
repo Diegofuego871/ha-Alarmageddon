@@ -384,17 +384,25 @@ export class ActionsUi {
     const plus = (i) => `<div class="ag-wf-plus"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span></div>`;
     const cards = steps.map((step, i) => this._card(step, i, running)).map((c, i) => c + plus(i + 1)).join("");
     h._setHtml(body, `${this._armedHtml(running)}<div class="ag-wf-line ag-wf-main">
-        <div class="ag-wf-start"><span class="ag-mini err alarm">${ic("alert", 20)}</span>${esc(this._t("wfStart"))}</div>${plus(0)}
+        <div class="ag-wf-start"><span class="ag-mini err alarm">${ic("alert", 20)}</span>${esc(this._fixedTitle("wfStart"))}</div>${plus(0)}
         ${steps.length ? cards : `<div class="ag-card ag-empty ag-wf-empty"><span class="ag-t2">${esc(this._t("wfEmpty"))}</span><button class="ag-btn primary" data-wf="add" data-at="0">${ic("plus", 18)}${esc(this._t("wfAdd"))}</button></div>`}
       </div>${this._endHtml()}${this._afterHtml(running)}`);
     h._placePills();
     this.renderFoot();
   }
 
+  // Titel der drei festen Punkte; mit getrennten Aktionen je Modus steht der Modus in Klammern dahinter, damit man
+  // beim Scrollen sieht, für welchen Reiter der Ablauf gilt. Ohne getrennte Aktionen bleibt der Titel wie er war.
+  _fixedTitle(key) {
+    const text = this._t(key);
+    if (!this.draft?.perMode) return text;
+    return `${text} (${this._t(MODE_KEY[this.trigger] || "wfAlways")})`;
+  }
+
   // Festes Ende des Ablaufs: "Alarm endet" (Deaktivieren/Quittieren); alle Einstellungen im Fenster wie bei den Schritten
   _endHtml() {
     const e = normEnd(this.draft?.end?.[this.trigger]);
-    return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok ag-end-ic">${ic("check", 20)}</span>${esc(this._t("wfEnd"))}</div>
+    return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok ag-end-ic">${ic("check", 20)}</span>${esc(this._fixedTitle("wfEnd"))}</div>
       <div class="ag-card ag-wf-endcard"><span class="ag-wf-icon k-end">${ic("bell", 20)}</span><div class="ag-wf-text"><b>${esc(this._t(e.notify ? "wfEndOwn" : "wfEndDefault"))}</b><small class="ag-t2 ag-small">${esc(this._t(e.notify ? "wfEndOwnHint" : "wfEndDefaultHint"))}</small></div>
         <div class="ag-wf-btns"><button class="ag-iconbtn" data-wf="end-edit" aria-label="${esc(this._t("wfEndEdit"))}" title="${esc(this._t("wfEndEdit"))}">${ic("pencil", 18)}</button></div></div></div>`;
   }
@@ -405,7 +413,7 @@ export class ActionsUi {
     if (this.trigger === "always") return "";
     const steps = this.steps("armed");
     const plus = (i) => `<div class="ag-wf-plus ${i === steps.length ? "last" : ""}"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfArmedAdd"))}" title="${esc(this._t("wfArmedAdd"))}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span>${i === steps.length ? `<small class="ag-wf-plushint ag-t2 ag-small">${esc(this._t(steps.length ? "wfArmedMore" : "wfArmedHint"))}</small>` : ""}</div>`;
-    return `<div class="ag-wf-line ag-wf-armed" data-zone="armed"><div class="ag-wf-start"><span class="ag-mini arm">${ic("shield", 20)}</span>${esc(this._t("wfArmed"))}</div>${plus(0)}${steps.map((step, i) => this._card(step, i, running, "armed") + plus(i + 1)).join("")}</div>`;
+    return `<div class="ag-wf-line ag-wf-armed" data-zone="armed"><div class="ag-wf-start"><span class="ag-mini arm">${ic("shield", 20)}</span>${esc(this._fixedTitle("wfArmed"))}</div>${plus(0)}${steps.map((step, i) => this._card(step, i, running, "armed") + plus(i + 1)).join("")}</div>`;
   }
 
   // Aktionen nach dem Quittieren: eigene Liste hinter "Alarm endet", mit denselben Karten und demselben Plus wie oben. Möglich sind
