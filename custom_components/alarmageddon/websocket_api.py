@@ -73,7 +73,7 @@ from .const import (
     SENSOR_OPTIONS,
     SENSOR_TYPES,
 )
-from .devices import battery_of, device_sensors
+from .devices import battery_of, device_sensors, display_name
 from .forecast import async_forecasts
 from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_end, valid_step
 from .sensor_history import BATTERY_HOURS, STATE_HOURS, async_get_stats, async_numeric_history, async_state_history
@@ -157,7 +157,8 @@ async def _sensor_info(hass: HomeAssistant, extra: set[str]) -> dict[str, dict[s
         area_id = (reg.area_id if reg else None) or (device.area_id if device else None)
         area = area_reg.async_get_area(area_id) if area_id else None
         out[state.entity_id] = {
-            "name": state.name,
+            "name": display_name(hass, state.entity_id),
+            "device_name": (device.name_by_user or device.name) if device else None,
             "device_class": device_class,
             "type": sensor_type(hass, state.entity_id),
             "area": area.name if area else None,

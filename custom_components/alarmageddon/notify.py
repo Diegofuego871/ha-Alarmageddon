@@ -21,6 +21,7 @@ from homeassistant.util import dt as dt_util, slugify
 
 from .const import ICON_URL_PATH, NOTIFY_MODE_KINDS, NOTIFY_TYPES, PUSH_ACTION_ACK, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
 from .controller import AlarmController
+from .devices import display_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -262,8 +263,7 @@ class Notifier:
         return text(self.hass, key, **values)
 
     def _name(self, entity_id: str | None) -> str:
-        state = self.hass.states.get(entity_id) if entity_id else None
-        return state.name if state else (entity_id or "")
+        return display_name(self.hass, entity_id) if entity_id else ""
 
     def _mode(self, mode: str | None) -> str:
         return self._t(f"mode_{mode}") if mode in ("home", "away", "night") else ""

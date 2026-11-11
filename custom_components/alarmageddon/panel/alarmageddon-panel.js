@@ -322,8 +322,12 @@ class AlarmageddonPanel extends HTMLElement {
     return this._hass?.states?.[entityId];
   }
 
+  // Name eines Sensors überall gleich: der eigene Name der Entität vom Server (devices.display_name), ohne den Namen des Geräts davor;
+  // nur ohne Angabe des Servers (Entität nicht in der Anlage, Daten noch nicht da) der Anzeigename von Home Assistant
   _name(entityId) {
-    return this._state(entityId)?.attributes?.friendly_name || this._sensor(entityId).name || entityId;
+    const info = this._data?.sensors?.[entityId];
+    if (info && !info.missing && info.name) return info.name;
+    return this._state(entityId)?.attributes?.friendly_name || entityId;
   }
 
   // Schwelle "Batterie schwach" aus den Benachrichtigungen (global), damit Liste, Kachel und Meldung übereinstimmen

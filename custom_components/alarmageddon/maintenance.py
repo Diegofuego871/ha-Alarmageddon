@@ -33,7 +33,7 @@ from .const import (
     MAINTENANCE_START_DELAY,
     MAINTENANCE_STORE_KEY,
 )
-from .devices import battery_of
+from .devices import battery_of, display_name
 from .notify import async_persist, async_send, build_payload, text
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,8 +139,7 @@ class Maintenance:
         return found
 
     def _name(self, entity_id: str) -> str:
-        state = self.hass.states.get(entity_id)
-        return state.name if state else entity_id
+        return display_name(self.hass, entity_id)
 
     def _time(self, when: datetime) -> str:
         return dt_util.as_local(when).strftime(text(self.hass, "time_format"))

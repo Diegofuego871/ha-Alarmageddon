@@ -10,6 +10,9 @@ for (const lang of ["de", "en"]) {
     const rowSel = ".ag-lrow"; // Standard ist die Liste, auch auf dem Handy
     const count = () => s.ev(`return r.querySelectorAll('${rowSel}').length`);
     check(`${tag}: alle zugeordneten Sensoren`, (await count()) === 10, String(await count()));
+    // Name des Sensors: der vom Server (eigener Name der Entität), nicht der Anzeigename von HA mit dem Namen des Geräts davor
+    await s.sim(`window.__setState("binary_sensor.fenster_kueche", "off", { friendly_name: "Aqara Gerät Wohnzimmer Fenster Küche" })`);
+    check(`${tag}: Name ohne den Namen des Geräts davor`, await s.waitFor(`const row=r.querySelector('${rowSel}[data-entity="binary_sensor.fenster_kueche"]'); return !!row && row.innerText.includes('Fenster Küche') && !row.innerText.includes('Aqara Gerät')`));
     check(`${tag}: offene Sensoren mit schwachem Farbverlauf von unten, ruhige ohne`, await s.ev(`const rows=[...r.querySelectorAll('${rowSel}')]; const act=rows.filter((x) => x.classList.contains('act')); const bg=(x) => getComputedStyle(x.querySelector('td')).backgroundImage.includes('gradient'); return act.length > 0 && act.length < rows.length && act.every((x) => bg(x) && x.querySelector('.ag-av.open')) && rows.filter((x) => !x.classList.contains('act')).every((x) => !bg(x))`));
     if (mobile) {
       await s.ev("const c=r.querySelector('.ag-content'); const th=r.querySelector('.ag-table th'); const top=parseFloat(c.style.getPropertyValue('--ag-th-top')); c.scrollTop += th.getBoundingClientRect().top - c.getBoundingClientRect().top - top + 20;");

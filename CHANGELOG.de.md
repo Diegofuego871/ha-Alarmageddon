@@ -7,6 +7,12 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.10.2] - 2026-11-11
+
+### Behoben
+
+- **Ein Name für jeden Sensor, überall.** Home Assistant setzt den Anzeigenamen einer Entität aus dem Namen des Geräts und ihrem eigenen Namen zusammen. Wer das Gerät umbenannt hat, bekam in jeder Liste einen langen Namen wie "Aqara FP400 Anwesenheitssensor Wohnzimmer Wohnzimmer Belegung". Das Panel und alle Meldungen (Alarm, Eingangsverzögerung, Stiller Alarm, nicht erreichbar, Batterie, Scharfschalten nicht möglich) verwenden jetzt nur den eigenen Namen der Entität ("Wohnzimmer Belegung"); die Hauptentität eines Geräts, die keinen eigenen Namen hat, heisst wie das Gerät. Entitäten, die ihren vollen Namen selbst tragen, behalten ihn. Der Name des Geräts bleibt wie bisher sichtbar (Sensoransicht, Kachel "Gerät"). Eine Regel für Server und Panel (`devices.display_name`), damit der Name in Liste, Blatt, Protokoll und Push-Meldung gleich ist.
+
 ## [1.10.1] - 2026-11-10
 
 ### Behoben
@@ -859,6 +865,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.10.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.2
 [1.10.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0
 [1.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.9.0

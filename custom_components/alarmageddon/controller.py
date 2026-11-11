@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_track_point_in_utc_time, async_tra
 from homeassistant.util import dt as dt_util
 
 from .code import match_code
+from .devices import display_name
 from .last_change import is_real_change
 from .const import (
     ARM_ON_CLOSE_SETTLE,
@@ -680,8 +681,7 @@ class AlarmController:
         self._go_triggered()
 
     def _name(self, entity_id: str) -> str:
-        state = self.hass.states.get(entity_id)
-        return state.name if state else entity_id
+        return display_name(self.hass, entity_id)
 
     # ----- Neustart -----
 

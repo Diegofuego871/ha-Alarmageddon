@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.2] - 2026-11-11
+
+### Fixed
+
+- **One name for every sensor, everywhere.** Home Assistant builds the display name of an entity from the name of its device and its own name. Whoever renamed the device got a long name such as "Aqara FP400 Presence sensor Living room Living room occupancy" in every list. The panel and all messages (alarm, entry delay, silent alarm, unreachable, battery, arming not possible) now use only the own name of the entity ("Living room occupancy"); the main entity of a device, which has no own name, is called like the device. Entities that carry their full name themselves keep it. The name of the device stays visible as before (sensor view, tile "Device"). One rule for server and panel (`devices.display_name`), so the name is the same in the list, the sheet, the log and the push message.
+
 ## [1.10.1] - 2026-11-10
 
 ### Fixed
@@ -859,6 +865,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.10.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.2
 [1.10.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.10.0
 [1.9.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.9.0
