@@ -7,6 +7,16 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.8] - 2026-11-11
+
+Every switch on the left, its text right next to it, in the whole panel.
+
+### Changed
+
+- **Switches stand on the left everywhere.** What 1.17.7 did for the notifications now applies to the whole panel: in the sensor sheet, in the step editor of the actions ("Set volume", "Until the alarm system is disarmed", "Undo", "Wait until the action has finished", the buttons of the push notification), in "Alarm ends", in the defaults, in the window "View" and when renaming, every switch stands on the left and its text right next to it, growing to the right. Until now the switches stood at the right edge, far from their text on a wide screen.
+- **Schedule:** the switch of a time stands at the front of its row. On the phone the row is tidier: switch, time and bin on the first line, the action in full width below, then the weekdays; the action is no longer cut off.
+- **Step editor:** a row with a switch has more room to what stands above it and to its slider.
+
 ## [1.17.7] - 2026-11-11
 
 Notifications: every switch on the left, its text to the right.
@@ -1049,6 +1059,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8
 [1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7
 [1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6
 [1.17.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.5

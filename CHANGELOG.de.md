@@ -7,6 +7,16 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.17.8] - 2026-11-11
+
+Jeder Schalter links, sein Text gleich daneben, im ganzen Panel.
+
+### Geändert
+
+- **Schalter stehen überall links.** Was 1.17.7 für die Meldungen gemacht hat, gilt jetzt im ganzen Panel: im Sensor-Blatt, im Schritt-Editor der Aktionen ("Lautstärke setzen", "Bis die Alarmanlage deaktiviert wird", "Rückgängig", "Warten, bis die Aktion beendet ist", die Knöpfe der Push-Meldung), bei "Alarm endet", in den Voreinstellungen, im Fenster "Ansicht" und beim Umbenennen steht jeder Schalter links und sein Text gleich daneben und wächst nach rechts. Bisher standen die Schalter am rechten Rand, auf einem breiten Bildschirm weit weg von ihrem Text.
+- **Zeitplan:** Der Schalter einer Zeit steht vorn in seiner Zeile. Auf dem Handy ist die Zeile aufgeräumter: Schalter, Uhrzeit und Papierkorb in der ersten Zeile, darunter die Aktion in voller Breite, dann die Wochentage; die Aktion wird nicht mehr abgeschnitten.
+- **Schritt-Editor:** Eine Zeile mit Schalter hat mehr Luft zu dem, was über ihr steht, und zu ihrem Regler.
+
 ## [1.17.7] - 2026-11-11
 
 Meldungen: jeder Schalter links, sein Text wächst nach rechts.
@@ -1049,6 +1059,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8
 [1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7
 [1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6
 [1.17.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.5

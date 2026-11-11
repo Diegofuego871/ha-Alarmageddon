@@ -153,6 +153,9 @@ button { font: inherit; color: inherit; }
 .ag-toggle.on { background: var(--ag-primary); }
 .ag-toggle.on::after { left: 20px; }
 .ag-toggle:disabled { opacity: .35; cursor: default; }
+/* Grundregel (Vorgabe des Nutzers, 1.17.8): Jeder Schalter steht links, sein Text rechts davon und wächst nach rechts.
+   Zentral für alle Zeilenarten, damit auch jede neue Zeile der Regel folgt (Test: tests/panel/suites/switches-e2e.mjs). */
+.ag-orow > .ag-toggle, .ag-ef-row > .ag-toggle, .ag-setrow > .ag-toggle, .ag-colrow > .ag-toggle, .ag-schrow > .ag-toggle { order: -1; }
 .ag-batt { font-variant-numeric: tabular-nums; color: var(--ag-text2); }
 .ag-batt.low { color: var(--ag-error); font-weight: 500; }
 .ag-entry { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ag-warning-text); background: var(--ag-warning-soft); padding: 2px 7px; border-radius: 999px; }
@@ -278,7 +281,7 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-colrow .ag-iconbtn { width: 34px; height: 34px; }
 .ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-colrow:last-child { border-bottom: 0; }
-.ag-colrow .ag-toggle { margin: 0; }
+.ag-colrow .ag-toggle { margin: 0 8px 0 0; }
 .ag-ready { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; padding: 10px 2px; border-bottom: 1px solid var(--ag-divider); }
 .ag-ready:last-child { border-bottom: 0; }
 .ag-rchip { display: inline-flex; gap: 5px; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 500; }
@@ -422,9 +425,12 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-ef { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
 .ag-ef-l { font-weight: 500; }
 .ag-ef-h { color: var(--ag-text2); font-size: 12.5px; line-height: 1.35; }
-.ag-ef-row { display: flex; flex-direction: row; align-items: center; gap: 12px; }
+.ag-ef-row { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; }
 .ag-ef-row .ag-settx { min-width: 0; }
-.ag-ef-row .ag-toggle { margin: 0; }
+.ag-ef-row .ag-toggle { margin: 1px 0 0; }
+/* Eine Schalterzeile hat Luft zu dem, was vor ihr steht, und zum Regler, der zu ihr gehört */
+.ag-efcard > * + .ag-ef-row { margin-top: 14px; }
+.ag-ef-row + .ag-ef-range { margin-top: 14px; }
 .ag-ef-range label { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ag-text2); }
 .ag-ef-range { max-width: 50%; min-width: 260px; }
 /* Regler je Medienplayer (1.17.3): Luft zum Schalter darüber, zwischen den Reglern und zur Beschriftung */
@@ -575,7 +581,7 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ag-schrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--ag-divider); }
 .ag-schrow.dim > :not(.ag-toggle):not(.ag-iconbtn) { opacity: .55; }
 .ag-schrow .ag-time { width: 140px; }
-.ag-schrow .ag-toggle { margin: 0 0 0 auto; }
+.ag-schrow .ag-toggle { margin: 0 4px 0 0; }
 .ag-schrow select.ag-input { min-width: 150px; }
 .ag-days { display: flex; gap: 4px; flex-wrap: wrap; }
 .ag-day { width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--ag-divider); background: var(--ag-card); color: var(--ag-text2); font: inherit; font-size: 13px; cursor: pointer; padding: 0; }
@@ -583,7 +589,11 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ag-day:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 2px; }
 .ag-schwarn { flex-basis: 100%; }
 :host([narrow]) .ag-schrow .ag-time, :host([narrow]) .ag-schrow select.ag-input { flex: 1 1 120px; min-width: 0; }
-:host([narrow]) .ag-schrow .ag-days { flex-basis: 100%; }
+:host([narrow]) .ag-schrow .ag-days { flex-basis: 100%; order: 3; }
+/* Handy: Schalter, Uhrzeit und Papierkorb in der ersten Zeile, darunter die Aktion in voller Breite, dann die Wochentage */
+:host([narrow]) .ag-schrow > .ag-iconbtn { order: 1; }
+:host([narrow]) .ag-schrow select.ag-input { order: 2; flex-basis: 100%; }
+:host([narrow]) .ag-schrow > .ag-schwarn { order: 4; }
 .ag-btnrow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 :host([narrow]) .ag-codes .ag-btnrow { justify-content: flex-start; }
 /* Lange Texte in der Auswahl "Offener Sensor" auf dem Handy: volle Breite, Text darf umbrechen statt abgeschnitten zu werden */

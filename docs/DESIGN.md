@@ -61,6 +61,15 @@ offline = `--ag-error`, keine Daten = `--ag-text3`.
 
 - **Tabellenkopf klebt immer:** Die oberste Zeile jeder Tabelle (Beschriftung, Filtern, Sortieren) scrollt nie weg, auch auf dem Handy. Dort scrollen die Filter weg, die Tabelle passt ohne seitliches Rollen (`overflow: clip` statt `auto`; ein Rollbereich verhindert `position: sticky`). Fallback bei zu vielen gewählten Spalten: Klasse `hscroll` (seitlich wischen, Kopf klebt dann nicht).
 
+## Schalter links, Text rechts (Grundregel, Vorgabe des Nutzers, 2026-11-11)
+
+- Jeder Schalter (`.ag-toggle`) steht links, sein Text rechts davon und nahe dabei; der Text wächst nach rechts. So ist auf einem breiten Bildschirm wie auf dem Handy klar, welcher Schalter zu welcher Option gehört.
+- Reihenfolge in einer Zeile: Schalter, Symbol der Option (falls vorhanden), Titel mit Beschreibung. Höchstens das Symbol steht zwischen Schalter und Text.
+- Umsetzung zentral in `styles.js`: `.ag-orow`, `.ag-ef-row`, `.ag-setrow`, `.ag-colrow`, `.ag-schrow` setzen den Schalter mit `order: -1` nach vorn; `.ag-pmsw`, `.ag-mt-head` und `.ag-mt-opt.sw` haben ihn im Markup vorn. Eine neue Zeilenart wird dort ergänzt.
+- In einer Zeile aus Eingabefeldern (Zeitplan) steht der Schalter ebenfalls links, vor Uhrzeit und Aktion.
+- Ausnahme: Schalter in Tabellenzellen (Spalte "Eingangsverzögerung"); dort ist der Spaltenkopf die Beschriftung.
+- Test: `tests/panel/suites/switches-e2e.mjs` prüft alle Reiter der Konfiguration und alle Fenster mit Schaltern, je Sprache auf Desktop und Handy.
+
 ## Vorgehen bei neuen Ansichten
 
 Erst Mockup (HTML, Deutsch, erfundene Daten, Desktop und Handy, 2–4

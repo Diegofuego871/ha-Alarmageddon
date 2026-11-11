@@ -209,6 +209,12 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   Festkleben). Jede neue Tabelle bekommt einen Test, der auf Desktop und Handy
   scrollt und die Lage des Kopfes prüft.
 - **Orange Punkte (Vorgabe des Nutzers, 2026-11-10):** Ein orange Punkt bedeutet immer "ungespeicherte Änderung" (zum Beispiel am Reiter). Jede andere Markierung, etwa "eigener Wert", ist blau. Verschwindet ein orange Punkt nach dem Speichern nicht, ist es ein Fehler.
+- **Schalter links, Text rechts (Grundregel, Vorgabe des Nutzers, 2026-11-11):** Jeder Schalter steht links, sein Text
+  rechts davon und nahe dabei; der Text wächst nach rechts. Nie ein Schalter am rechten Rand, weit weg von seinem Text,
+  auf Desktop und auf dem Handy. Zwischen Schalter und Text darf nur das Symbol der Option stehen. Die Regel gilt
+  zentral im CSS für alle Zeilenarten (`order: -1` in `styles.js`); eine neue Zeilenart wird dort ergänzt. Ausnahme:
+  Schalter in Tabellenzellen (die Spalte ist ihre Beschriftung). `tests/panel/suites/switches-e2e.mjs` prüft das ganze
+  Panel samt allen Fenstern; jede neue Ansicht mit Schaltern kommt dort dazu.
 - **Kapitel:** Einstellungen stehen in Kapiteln; jedes hat einen Titel mit
   einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte.
   Reiter der Konfiguration gleiten beim Wechsel seitlich herein.
