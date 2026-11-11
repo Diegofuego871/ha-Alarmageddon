@@ -188,6 +188,7 @@ button { font: inherit; color: inherit; }
 .ag-mcards.grid > .ag-group-head:first-child { margin-top: 2px; }
 
 /* Dialoge (Code, Rückfrage): auf dem Handy als Blatt von unten */
+dialog.ag-dlg:focus, dialog.ag-dlg:focus-visible { outline: none; }
 dialog.ag-dlg { border: 0; padding: 0; border-radius: 22px; background: var(--ag-card); color: var(--ag-text); box-shadow: var(--ag-shadow); width: min(420px, calc(100vw - 32px)); }
 dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 /* Dialog: Kopf mit rundem X oben rechts (wie Device Panel), Inhalt scrollt, Knöpfe unten bleiben stehen */

@@ -1014,9 +1014,17 @@ class AlarmageddonPanel extends HTMLElement {
       }).observe(dlg, { childList: true, subtree: true });
       // Schliesst ein Dialog, gibt der Browser den Fokus zurück und scrollt dabei zum Auslöser (oft ganz oben): Position wie beim Öffnen
       const open = dlg.showModal.bind(dlg);
+      // Der Browser setzt beim Öffnen den Fokus auf das erste Feld. Beginnt ein Fenster mit einem Suchfeld (Schritt-Editor:
+      // Geräte, Medienplayer), klappte dadurch die Vorschlagsliste auf, und auf dem Handy kam die Tastatur (1.17.10).
+      // Deshalb bekommt das Fenster selbst den Fokus. Fenster, die bewusst im Feld starten (Umbenennen, Code), setzen ihn
+      // nach dem Öffnen ausdrücklich.
+      dlg.tabIndex = -1;
+      dlg.setAttribute("autofocus", "");
       dlg.showModal = () => {
         this._dlgScroll = this._content?.scrollTop ?? 0;
         open();
+        const a = this._root.activeElement;
+        if (a && a !== dlg && dlg.contains(a) && a.matches("input:not([type=range]):not([type=checkbox]), textarea, select")) dlg.focus({ preventScroll: true });
       };
       dlg.addEventListener("close", () => {
         const c = this._content;

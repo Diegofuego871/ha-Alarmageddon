@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.17.10] - 2026-11-11
+
+Fenster öffnen, ohne dass das Suchfeld aufspringt.
+
+### Behoben
+
+- **Aktionen: das Suchfeld geht nicht mehr von selbst auf.** Beim Öffnen eines Schritts setzte der Browser die Schreibmarke ins erste Feld des Fensters. Bei "Gerät schalten", Alarmton, Voralarm und Aktivierungston ist das die Suche nach Geräten oder Medienplayern: die Vorschlagsliste klappte auf, und auf dem Handy kam die Tastatur, obwohl du den Schritt nur ansehen wolltest. Ein Fenster öffnet jetzt ruhig; die Liste erscheint, sobald du ins Suchfeld tippst. Das gilt auch für "Sensoren hinzufügen" und den Schritt "Warten". Fenster, die bewusst im Feld starten (Umbenennen, Code), tun das weiterhin.
+
 ## [1.17.9] - 2026-11-11
 
 Das Protokoll öffnet mit zugeklappten Alarmen.
@@ -1067,6 +1075,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10
 [1.17.9]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.9
 [1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8
 [1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7

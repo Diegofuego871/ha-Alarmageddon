@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.10] - 2026-11-11
+
+Windows open without the search field jumping in.
+
+### Fixed
+
+- **Actions: the search field no longer opens by itself.** When you opened a step, the browser put the cursor into the first field of the window. For "Switch device", alarm sound, pre-alarm and arming tone that is the search for devices or media players: the list of suggestions dropped down and the keyboard came up on the phone, although you only wanted to look at the step. A window now opens calmly; the list appears as soon as you tap into the search field. This also applies to "Add sensors" and to the step "Wait". Windows that are meant to start in their field (rename, code) still do.
+
 ## [1.17.9] - 2026-11-11
 
 The log opens with all alarms collapsed.
@@ -1067,6 +1075,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10
 [1.17.9]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.9
 [1.17.8]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.8
 [1.17.7]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.7
