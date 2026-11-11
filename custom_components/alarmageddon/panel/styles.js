@@ -395,8 +395,11 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-text { flex: 1; min-width: 0; }
 .ag-wf-text b { font-weight: 500; }
 .ag-wf-text .ag-small { overflow-wrap: anywhere; }
-.ag-wf-btns { display: flex; gap: 6px; flex: none; }
-.ag-wf-btns .ag-iconbtn { width: 36px; height: 36px; }
+/* Knöpfe je Schritt (1.17.4): umrandet wie Knöpfe, mindestens 44 px, mit Abstand, damit sie sich auf dem Handy treffen lassen */
+.ag-wf-btns { display: flex; gap: 10px; flex: none; }
+.ag-wf-btns .ag-iconbtn { width: 44px; height: 44px; border: 1px solid color-mix(in srgb, var(--ag-text2) 40%, transparent); background: var(--ag-card); color: var(--ag-text); }
+.ag-wf-btns .ag-iconbtn:hover { background: var(--ag-hover); }
+.ag-wf-btns .ag-iconbtn[data-wf="delete"] { color: var(--ag-error); }
 .ag-wf-btns .ag-iconbtn:disabled { opacity: .3; cursor: default; }
 .ag-wf-empty { margin-left: 20px; }
 /* Ende des Ablaufs: die Linie des Ablaufs endet an der Marke "Alarm endet" und läuft nie durch die Karten */
@@ -558,9 +561,8 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ag-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 .ag-evgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 24px; margin-top: 6px; }
 .ag-warntext { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }
-:host([narrow]) .ag-wf-btns .ag-iconbtn { width: 32px; height: 32px; }
 :host([narrow]) .ag-wf-step { flex-wrap: wrap; }
-:host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; }
+:host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; gap: 14px; margin-top: 4px; }
 :host([narrow]) .ag-wf-endcard .ag-wf-btns { width: auto; }
 :host([narrow]) .ag-wf-line, :host([narrow]) .ag-wf-end { --wf-x: 30px; }
 

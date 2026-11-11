@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.4] - 2026-11-11
+
+Easier to tap: the buttons of the alarm steps.
+
+### Changed
+
+- **Actions: larger buttons with a frame.** Test, edit and delete of a step are now real buttons with a frame, at least 44 pixels large and with more room between them (on the phone even more), so that they are easy to hit with a finger. Delete is shown in red.
+
 ## [1.17.3] - 2026-11-11
 
 More room between the volume sliders of the media players.
@@ -1017,6 +1025,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.4
 [1.17.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.3
 [1.17.2]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.2
 [1.17.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.1
