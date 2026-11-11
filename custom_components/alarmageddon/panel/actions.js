@@ -345,6 +345,13 @@ export class ActionsUi {
       .map((k) => ["data-trigger", k]);
   }
 
+  // Ein Entwurf, den die Abfrage nicht verwerfen darf, auch wenn kein Inhalt abweicht: der Nutzer hat "Einstellungen pro Modus"
+  // umgestellt. Der Schalter wird nicht gespeichert (er folgt daraus, ob die Abläufe sich unterscheiden), aber bis zum
+  // Speichern, Abbrechen oder Verlassen soll er stehen bleiben (1.17.6).
+  pinned() {
+    return !!this.draft?.touched;
+  }
+
   dirtyCount() {
     const s = this.system;
     const d = this.draft;
@@ -1247,6 +1254,7 @@ export class ActionsUi {
         this.trigger = first;
       }
       dr.perMode = !dr.perMode;
+      dr.touched = true; // der Schalter allein ändert keinen Inhalt: der Entwurf darf trotzdem nicht verworfen werden (pinned)
       this.render();
       return true;
     }

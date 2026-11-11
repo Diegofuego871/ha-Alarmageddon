@@ -231,7 +231,7 @@ class AlarmageddonPanel extends HTMLElement {
       this._data = data;
       this._connError = false;
       if (!this._systems().some((s) => s.entry_id === this._sel)) this._sel = this._systems()[0]?.entry_id || null;
-      for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) if (!ui.dirtyCount()) ui.draft = null;
+      for (const ui of [this.sensors, this.systemUi, this.actions, this.notify]) if (!ui.dirtyCount() && !ui.pinned?.()) ui.draft = null;
       this._sig = this._stateSig();
       this._fetchForecast();
       // Erstes Laden: alles; danach nur die Ansicht, damit Suchfeld und Fokus bleiben

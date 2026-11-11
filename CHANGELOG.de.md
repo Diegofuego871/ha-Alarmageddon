@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.17.6] - 2026-11-11
+
+"Einstellungen pro Modus" springt nicht mehr zurück.
+
+### Behoben
+
+- **Aktionen: "Einstellungen pro Modus" sprang nach 10 bis 20 Sekunden zurück auf "aus".** Wer den Schalter einschaltete und noch nichts anderes geändert hatte, dessen Entwurf hielt das Panel bei der nächsten regelmässigen Aktualisierung für unverändert und verwarf ihn; der Schalter fiel auf "aus" zurück. Der Schalter bleibt jetzt so, wie du ihn gesetzt hast, bis du speicherst, abbrichst oder die Seite verlässt.
+
 ## [1.17.5] - 2026-11-11
 
 Der Modus in den Titeln des Ablaufs.
@@ -1033,6 +1041,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6
 [1.17.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.5
 [1.17.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.4
 [1.17.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.3

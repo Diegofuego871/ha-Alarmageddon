@@ -112,6 +112,19 @@ for (const lang of ["de", "en"]) {
     await s.ev("r.querySelector('[data-wf=\"permode\"]').click(); return 1");
     await s.waitFor("return !!r.querySelector('[data-trigger]')");
     check(`${tag}: wieder getrennt: der Modus steht wieder dahinter`, (await titles()).every((x) => x.endsWith(`(${homeName})`)), JSON.stringify(await titles()));
+
+    // ----- 1.17.6: "Einstellungen pro Modus" springt bei der nächsten Abfrage nicht mehr zurück -----
+    // Sind alle Abläufe gleich, ändert der Schalter allein nichts am Inhalt; der Entwurf galt dann als unverändert und wurde
+    // von der regelmässigen Abfrage (alle paar Sekunden) verworfen: der Schalter sprang nach 10 bis 20 Sekunden zurück auf "aus".
+    await s.sim("const x=window.__systems[0]; x.workflows={}; x.workflows_armed={}; x.workflows_after={}; x.workflow_end={}");
+    await s.ev("r.host.actions.reset(); return r.host._fetch().then(() => { r.host._renderView(true); return 1; })");
+    await s.waitFor("return !!r.querySelector('[data-wf=\"permode\"]') && !r.querySelector('[data-trigger]')");
+    await s.ev("r.querySelector('[data-wf=\"permode\"]').click(); return 1");
+    check(`${tag}: Schalter "pro Modus" eingeschaltet: die Reiter erscheinen`, await s.waitFor("return !!r.querySelector('[data-trigger]')"));
+    for (let k = 0; k < 3; k++) await s.ev("return r.host._fetch().then(() => 1)");
+    await s.page.waitForTimeout(300);
+    check(`${tag}: nach mehreren Abfragen steht der Schalter noch auf "ein" (nicht zurückgesprungen), die Reiter sind noch da`, (await s.ev("return !!r.querySelector('[data-trigger]') && r.querySelector('[data-wf=\"permode\"]').getAttribute('aria-checked') === 'true' && r.host.actions.draft?.perMode === true")));
+    await s.ev("r.querySelector('[data-wf=\"cancel\"], .ag-foot [data-wf=\"cancel\"]')?.click(); return 1");
     await s.ctx.close();
   }
 }

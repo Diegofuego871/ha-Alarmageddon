@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.6] - 2026-11-11
+
+"Settings per mode" no longer jumps back.
+
+### Fixed
+
+- **Actions: "Settings per mode" jumped back to off after 10 to 20 seconds.** If you switched it on and had not changed anything else yet, the panel took the draft for unchanged at its next regular refresh and threw it away; the switch fell back to "off". The switch now stays as you set it until you save, cancel or leave the page.
+
 ## [1.17.5] - 2026-11-11
 
 The mode in the titles of the flow.
@@ -1033,6 +1041,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.6]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.6
 [1.17.5]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.5
 [1.17.4]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.4
 [1.17.3]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.3
