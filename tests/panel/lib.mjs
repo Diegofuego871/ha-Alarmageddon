@@ -24,8 +24,8 @@ export function check(name, ok, detail = "") {
 export const done = () => process.exit(failures ? 1 : 0);
 
 // Seite im Nachbau öffnen; tab: gespeicherter Reiter; query: zusätzliche Parameter
-export async function open(browser, { mobile = false, lang = "de", theme = "light", tab = "overview", query = "" } = {}) {
-  const ctx = await browser.newContext(mobile ? MOBILE : DESKTOP);
+export async function open(browser, { mobile = false, lang = "de", theme = "light", tab = "overview", query = "", size = null } = {}) {
+  const ctx = await browser.newContext(size ? { viewport: size } : mobile ? MOBILE : DESKTOP);
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));

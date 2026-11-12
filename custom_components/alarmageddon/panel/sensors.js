@@ -494,7 +494,7 @@ export class SensorsUi {
     const h = this.host;
     const side = h._view?.querySelector(".ag-side");
     const layout = h._view?.querySelector(".ag-sen-layout");
-    const narrow = h.hasAttribute("narrow");
+    const narrow = h.hasAttribute("narrow") || h.hasAttribute("medium"); // Handy und Tablet: Fenster; breit: Blatt neben der Tabelle
     const dlg = h._root.getElementById("ag-sheet");
     if (!side) return;
     if (!this.detail) {
@@ -782,7 +782,7 @@ export class SensorsUi {
       this.resetOption(id, el.dataset.key);
       this.render();
     } else if (act === "detail") {
-      this.detail = this.detail === id && !this.host.hasAttribute("narrow") ? null : id;
+      this.detail = this.detail === id && !this.host.hasAttribute("narrow") && !this.host.hasAttribute("medium") ? null : id;
       this.render();
     } else if (act === "close-detail") {
       this.detail = null;

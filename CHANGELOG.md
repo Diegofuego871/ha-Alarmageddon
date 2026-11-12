@@ -24,6 +24,8 @@ Every tone puts the speaker back afterwards.
 - **Actions: the field under "Alarm ends" is just called "Closing message".** The long description is gone; only if you have not written an own message it says "Standard: "Alarm ended"".
 - **Actions: the preview of a tone is one button, like the test buttons.** It starts as a play symbol and turns into a stop symbol while the tone plays; the separate pause button is gone. The yellow frame stays, because it points to the note that the preview plays on this phone or computer, not on the real system.
 - **Notifications: the recipient group of a message can be removed first.** On every kind of message (and per mode) you can now remove the last recipient, as with the recipients of alarms at the top. A warning appears. When you save without a recipient, the switch of that message is switched off automatically and its own list goes back to the default, so nothing looks active that is not. Before, the last recipient could not be removed, so you had to add the new one first.
+- **Tablet (iPad in landscape): the options of a sensor open as a window and scroll.** Under 1300 px width the sheet no longer lies over the sensor table (the table header covered its title). It opens like on the phone as a window in the middle with its own scrolling and the button "Done". On wide screens the sheet stays next to the table, but is never taller than the visible area: the header stays, the options scroll inside.
+- **The tile "Settings per mode" is only as wide as needed**.
 - Alarm sounds in the lists outside the alarm flow that were saved before with "undo" off keep that value; switch it on in the step if you want it.
 
 ## [1.25.1] - 2026-11-12

@@ -297,7 +297,10 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-sen-layout.open { grid-template-columns: minmax(0, 1180px) minmax(420px, 1fr); }
 .ag-sen-layout.open > .ag-side { justify-self: end; width: 420px; max-width: 100%; }
 .ag-side:empty { display: none; }
-.ag-sheet { position: sticky; top: var(--ag-th-top, 0px); overflow: hidden; }
+/* Das Blatt neben der Tabelle klebt, ist aber nie höher als der sichtbare Bereich: Kopf steht fest, die Optionen scrollen darin (1.26.0) */
+.ag-sheet { position: sticky; top: var(--ag-th-top, 0px); overflow: hidden; display: flex; flex-direction: column; max-height: calc(var(--ag-ch, 100vh) - var(--ag-th-top, 0px) - 96px); }
+.ag-sheet > .ag-side-body { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.ag-sheet > .ag-side-head { flex: none; }
 .ag-side-head { display: flex; gap: 12px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--ag-divider); }
 .ag-side-head h3 { margin: 0; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
 .ag-side-body { padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 4px; }
@@ -311,8 +314,9 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-otx b { font-weight: 500; display: block; }
 .ag-otx small { display: block; color: var(--ag-text2); font-size: 12.5px; margin-top: 2px; line-height: 1.35; }
 /* Einstellungen pro Modus: Schalter mit Text, daneben die Reiter; Punkt am Kästchen = eigener Wert dieses Modus */
-.ag-pmbar { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin: 22px 0; padding: 14px 18px; border: 1px solid var(--ag-divider); border-radius: 16px; background: var(--ag-card); }
-.ag-pmsw { display: flex; align-items: center; gap: 12px; }
+.ag-pmbar { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; width: fit-content; max-width: 100%; margin: 22px 0; padding: 14px 18px; border: 1px solid var(--ag-divider); border-radius: 16px; background: var(--ag-card); }
+.ag-pmsw { display: flex; align-items: center; gap: 12px; max-width: 560px; }
+:host([narrow]) .ag-pmbar { width: auto; }
 .ag-pmsw .ag-toggle { margin: 0; flex: none; }
 /* Schalter, Reiter und alles, was zu den Reitern gehört, stehen in einem umrandeten Bereich: so ist klar, bis wohin die Einstellung greift */
 /* Der Abstand unter der Leiste gehört zur festen Leiste (Innenabstand): er bleibt beim Scrollen gleich */
@@ -363,6 +367,12 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-numlabel { display: flex; flex-direction: column; gap: 4px; }
 .ag-cfg { margin-top: 0; }
 :host([narrow]) .ag-sen-layout.open { grid-template-columns: 1fr; }
+/* Tablet (unter 1300 px): die Optionen eines Sensors als Fenster in der Mitte, wie auf dem Handy mit eigenem Scrollen */
+:host([medium]:not([narrow])) .ag-sen-layout.open { grid-template-columns: minmax(0, 1180px); }
+:host([medium]:not([narrow])) dialog.ag-sheetdlg { width: min(560px, calc(100vw - 48px)); overflow: hidden; padding-bottom: 0; }
+:host([medium]:not([narrow])) dialog.ag-sheetdlg > .ag-side-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: none; }
+:host([medium]:not([narrow])) dialog.ag-sheetdlg .ag-grab { display: none; }
+dialog.ag-sheetdlg > .ag-side-body:focus, .ag-sheet > .ag-side-body:focus { outline: none; }
 /* Blatt des Sensors auf dem Handy: ganzer Bildschirm wie jedes Fenster; nur die Optionen scrollen, Kopf und Leiste "Fertig" stehen fest */
 :host([narrow]) dialog.ag-sheetdlg { overflow: hidden; padding-bottom: 0; }
 :host([narrow]) dialog.ag-sheetdlg > .ag-side-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: none; }
