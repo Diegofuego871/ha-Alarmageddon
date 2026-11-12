@@ -25,13 +25,23 @@ for (const lang of ["de", "en"]) {
     // Pille entfernen
     await s.tap(`${box} [data-nt="kt-del"][data-target="notify.mobile_app_tablet"]`);
     check(`${tag}: Pille entfernt`, await s.waitFor(`return !r.host.notify.draft.types.${kind}.targets.includes('notify.mobile_app_tablet')`));
-    // Der letzte Empfänger lässt sich entfernen (1.26.0, wie oben bei den Empfängern von Alarmen): Warnung, Speichern gesperrt
+    // Der letzte Empfänger lässt sich entfernen (1.26.0, wie oben bei den Empfängern von Alarmen): Warnung; beim Speichern geht die Meldung aus
     const last = await s.ev(`return r.host.notify.draft.types.${kind}.targets[0] || null`);
     if (last) {
       await s.ev(`const d=r.host.notify.draft; d.types.${kind}.targets=[d.types.${kind}.targets[0]]; r.host.notify.render(); return 1`);
       await s.tap(`${box} [data-nt="kt-del"]`);
       check(`${tag}: der letzte Empfänger lässt sich entfernen: keine Pille, Warnung`, await s.waitFor(`const b=r.querySelector('${box}'); return b.querySelectorAll('.ag-mt-pills .ag-rpill').length === 0 && !!b.querySelector('.ag-warntext')`));
-      check(`${tag}: ohne Empfänger lässt sich nicht speichern (Meldung unten, Speichern gesperrt)`, await s.ev("return r.querySelector('.ag-foot [data-nt=\"save\"]').disabled && r.querySelector('.ag-foot .ag-err')?.textContent.length > 20"));
+      check(`${tag}: ohne Empfänger ist es eine offene Änderung (Speichern möglich, kein Fehler unten)`, await s.ev("return !r.querySelector('.ag-foot [data-nt=save]').disabled && !r.querySelector('.ag-foot .ag-err') && r.host.notify.dirtyCount() >= 1"));
+      await s.tap('.ag-foot [data-nt="save"]');
+      await s.waitFor("return r.querySelector('.ag-foot').innerText.match(/Gespeichert|Saved/) !== null");
+      const off = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_notify').at(-1)");
+      check(`${tag}: beim Speichern ohne Empfänger geht die Meldung aus, die eigene Liste zurück auf den Standard`, off?.notify?.types?.[kind]?.enabled === false && (off.notify.types[kind].targets || []).length === 0, JSON.stringify(off?.notify?.types?.[kind]));
+      await s.tap(`[data-nt="enabled"][data-kind="${kind}"]`);
+      await s.waitFor(`return !!r.querySelector('${box} select[data-nt="kt-add"]')`);
+      await (await s.el(`${box} select[data-nt="kt-add"]`)).selectOption("notify.mobile_app_tablet");
+      await s.waitFor(`return r.host.notify.draft.types.${kind}.targets.includes('notify.mobile_app_tablet')`);
+      await s.ev(`const d=r.host.notify.draft; d.types.${kind}.targets=[d.types.${kind}.targets[0]]; r.host.notify.render(); return 1`);
+      await s.tap(`${box} [data-nt="kt-del"]`);
       await (await s.el(`${box} select[data-nt="kt-add"]`)).selectOption("notify.mobile_app_partnerin");
       check(`${tag}: ein neuer Empfänger hebt die Sperre auf`, await s.waitFor(`const b=r.querySelector('${box}'); return b.querySelectorAll('.ag-mt-pills .ag-rpill').length === 1 && !b.querySelector('.ag-warntext') && !r.querySelector('.ag-foot [data-nt="save"]').disabled`));
       await s.ev(`const d=r.host.notify.draft; d.types.${kind}.targets=[d.types.${kind}.targets[0]]; r.host.notify.render(); return 1`);
@@ -43,7 +53,7 @@ for (const lang of ["de", "en"]) {
       await s.tap(`${box} [data-nt="kt-del"]`);
       await s.waitFor(`return !!r.querySelector('${box} .ag-warntext')`);
       await s.tap('.ag-foot [data-nt="cancel"]');
-      check(`${tag}: Abbrechen verwirft auch die leere Auswahl`, await s.waitFor(`return r.host.notify.noRecipient().length === 0 && !r.querySelector('${box} .ag-warntext') && r.querySelector('.ag-foot [data-nt=save]').disabled`));
+      check(`${tag}: Abbrechen verwirft auch die leere Auswahl`, await s.waitFor(`return r.host.notify._empty().size === 0 && !r.querySelector('${box} .ag-warntext') && r.querySelector('.ag-foot [data-nt=save]').disabled`));
       await s.tap(`[data-nt="enabled"][data-kind="${kind}"]`);
       await s.waitFor(`return !!r.querySelector('${box} select[data-nt="kt-add"]')`);
       await (await s.el(`${box} select[data-nt="kt-add"]`)).selectOption("notify.mobile_app_tablet");

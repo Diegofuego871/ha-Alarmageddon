@@ -96,11 +96,6 @@ export class NotifyUi {
     return d ? Object.entries(RANGES).filter(([k, [lo, hi]]) => !Number.isInteger(d[k]) || d[k] < lo || d[k] > hi).map(([k]) => k) : [];
   }
 
-  // Meldungen ohne Empfänger (letzten entfernt, keinen neuen gewählt): blockiert das Speichern
-  noRecipient() {
-    return this.draft ? [...this._empty()] : [];
-  }
-
   html() {
     return `<div class="ag-nt"></div><div class="ag-foot"></div>`;
   }
@@ -263,10 +258,9 @@ export class NotifyUi {
     const foot = h._view?.querySelector(".ag-foot");
     if (!foot) return;
     const n = this.dirtyCount();
-    const bad = this.invalid().length + this.noRecipient().length;
+    const bad = this.invalid().length;
     let status;
-    if (!this.invalid().length && this.noRecipient().length) status = `<span class="ag-err">${esc(this._t("ntNeedRecipient"))}</span>`;
-    else if (bad) status = `<span class="ag-err">${esc(this._t("ntInvalid"))}</span>`;
+    if (bad) status = `<span class="ag-err">${esc(this._t("ntInvalid"))}</span>`;
     else if (this.saveState === "saved" && !n) status = `<span class="ag-saved">${ic("check", 16)} ${esc(this._t("saved"))}</span>`;
     else if (this.saveState && this.saveState !== "saved") status = `<span class="ag-err">${esc(this.saveState)}</span>`;
     else status = `<span class="ag-t2">${esc(n === 0 ? this._t("noChanges") : n === 1 ? this._t("change") : this._t("changes", { count: n }))}</span>`;
@@ -278,7 +272,19 @@ export class NotifyUi {
 
   async save() {
     const h = this.host;
-    if (!this.draft || this.saving || this.invalid().length || this.noRecipient().length) return;
+    if (!this.draft || this.saving || this.invalid().length) return;
+    // Eine Meldung ohne Empfänger wird beim Speichern ausgeschaltet (Schalter aus, eigene Liste zurück auf den Standard): so ist
+    // nichts vorgetäuscht, denn eine leere Liste hiesse beim Server "es gilt die Gruppe oben"
+    for (const key of this._empty()) {
+      const [kind, mode] = key.split("|");
+      if (mode) {
+        this._setOwn(kind, mode, "enabled", false);
+        this._setTargets(kind, mode, null);
+      } else {
+        this.draft.types[kind].enabled = false;
+        this.draft.types[kind].targets = [];
+      }
+    }
     this.saving = true;
     this.renderFoot();
     try {
