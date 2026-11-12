@@ -215,3 +215,27 @@ async def test_the_watchdog_never_cuts_a_set_wait_short(hass: HomeAssistant, mon
     await settle(hass)
     assert len(s["switch.turn_off"]) == 1
     assert not _watchdog(entry)
+
+
+async def test_a_tone_follows_the_running_delay_and_ends_with_it(hass: HomeAssistant, freezer) -> None:
+    """
+    Ton "so lange wie die Verzögerung" (1.18.0): seine Dauer steht nicht im Schritt, sie ist die Restzeit der Verzögerung, die
+    gerade läuft. Startet er 10 Sekunden nach dem Scharfschalten, spielt er die übrigen 20 Sekunden; er endet mit der Verzögerung.
+    """
+    await hass.config.async_update(internal_url="http://192.168.1.2:8123")
+    hass.states.async_set(PLAYER, "idle")
+    calls = {name: async_mock_service(hass, "media_player", name) for name in ("play_media", "media_stop", "volume_set")}
+    tone = {"type": "chime", "players": [PLAYER], "sound": "tone_pip", "duration": 3, "delay": True}
+    await setup_alarm(hass, workflows_arming={"away": [_wait(10), tone]}, exit_delay_away=30)
+    await call(hass, "alarm_arm_away")
+    await settle(hass)
+    assert state(hass) == AlarmControlPanelState.ARMING and not calls["play_media"]
+    await advance(hass, freezer, 10)
+    await settle(hass)
+    assert len(calls["play_media"]) == 1
+    assert calls["play_media"][0].data["media_content_id"].endswith("/20000/tone_pip.wav")  # die Restzeit, nicht die 3 s des Schritts
+    await advance(hass, freezer, 19)
+    assert state(hass) == AlarmControlPanelState.ARMING and not calls["media_stop"]
+    await advance(hass, freezer, 2)
+    await settle(hass)
+    assert state(hass) == AlarmControlPanelState.ARMED_AWAY and len(calls["media_stop"]) >= 1 and len(calls["play_media"]) == 1

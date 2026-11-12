@@ -58,6 +58,8 @@ from .const import (
     CONF_WORKFLOWS_AFTER,
     CHIMES,
     CONF_WORKFLOWS_ARMED,
+    CONF_WORKFLOWS_ARMING,
+    CONF_WORKFLOWS_ENTRY,
     CONF_WORKFLOWS,
     CONF_ZONE_PREFIX,
     MAX_STEPS,
@@ -78,7 +80,7 @@ from .const import (
 )
 from .devices import battery_of, device_sensors, display_name
 from .forecast import async_forecasts
-from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_armed_step, valid_end, valid_step
+from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_armed_step, valid_arming_step, valid_end, valid_entry_step, valid_step
 from .sensor_history import BATTERY_HOURS, STATE_HOURS, async_get_stats, async_numeric_history, async_state_history
 from .settings import async_get_settings, sensor_type
 
@@ -221,6 +223,9 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                     **{mode: {"exit_delay": ctl.exit_delay(mode), "entry_delay": ctl.entry_delay_for(mode),
                               "confirm_window": ctl.confirm_window_for(mode)} for mode in MODES},
                 },
+                # Längste Eingangsverzögerung je Modus (Sensoren mit eigenem Wert eingerechnet): 0 = dort läuft nie eine, das Panel
+                # zeigt den Punkt "Eingangsverzögerung läuft" dann nicht (1.18.0)
+                "entry_delay_max": {mode: ctl.longest_entry_delay(mode) for mode in ctl.modes},
                 "night_enabled": ctl.night_enabled,
                 "always_enabled": ctl.always_enabled,
                 "schedules": entry.options.get(CONF_SCHEDULES) or [],
@@ -233,6 +238,8 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "workflow_end": entry.options.get(CONF_WORKFLOW_END) or {},
                 "workflows_after": entry.options.get(CONF_WORKFLOWS_AFTER) or {},
                 "workflows_armed": entry.options.get(CONF_WORKFLOWS_ARMED) or {},
+                "workflows_arming": entry.options.get(CONF_WORKFLOWS_ARMING) or {},
+                "workflows_entry": entry.options.get(CONF_WORKFLOWS_ENTRY) or {},
                 # Läuft gerade ein Alarm oder ein Test (die Aktionen nach dem Quittieren zählen nicht dazu)
                 "workflow_running": _alarm_run(entry).get("trigger"),
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
@@ -642,6 +649,9 @@ async def ws_save_display(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         vol.Optional("workflow_end"): {vol.In(WORKFLOW_TRIGGERS): valid_end},
         vol.Optional("workflows_after"): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
         vol.Optional("workflows_armed"): {vol.In(MODES): vol.All([valid_armed_step], vol.Length(max=MAX_STEPS))},
+        # Aktionen während der Ausgangs- und der Eingangsverzögerung (1.18.0), je Modus
+        vol.Optional("workflows_arming"): {vol.In(MODES): vol.All([valid_arming_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional("workflows_entry"): {vol.In(MODES): vol.All([valid_entry_step], vol.Length(max=MAX_STEPS))},
     }
 )
 @websocket_api.require_admin
@@ -661,6 +671,10 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
     if "workflows_armed" in msg:
         kept_armed = {k: v for k, v in (options.get(CONF_WORKFLOWS_ARMED) or {}).items() if k not in msg["workflows_armed"]}
         options[CONF_WORKFLOWS_ARMED] = {**kept_armed, **{k: v for k, v in msg["workflows_armed"].items() if v}}
+    for key, conf in (("workflows_arming", CONF_WORKFLOWS_ARMING), ("workflows_entry", CONF_WORKFLOWS_ENTRY)):
+        if key in msg:
+            kept_delay = {k: v for k, v in (options.get(conf) or {}).items() if k not in msg[key]}
+            options[conf] = {**kept_delay, **{k: v for k, v in msg[key].items() if v}}
     if "workflows_after" in msg:
         kept_after = {k: v for k, v in (options.get(CONF_WORKFLOWS_AFTER) or {}).items() if k not in msg["workflows_after"]}
         options[CONF_WORKFLOWS_AFTER] = {**kept_after, **{k: v for k, v in msg["workflows_after"].items() if v}}

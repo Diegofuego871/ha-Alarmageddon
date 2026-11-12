@@ -193,6 +193,19 @@ class AlarmController:
         """Eingangsverzögerung des Modus, in dem die Anlage gerade scharf ist (oder wird)."""
         return self.entry_delay_for(self.mode)
 
+    def longest_entry_delay(self, mode: str) -> int:
+        """
+        Längste Eingangsverzögerung, die in diesem Modus laufen kann: die der Eingangssensoren seiner Zone (eigener Wert des
+        Sensors oder der des Modus). 0: in diesem Modus läuft nie eine Eingangsverzögerung, die Aktionen dazu kämen nie zum Zug.
+        """
+        return max((self.sensor_entry_delay(entity, mode) for entity in self.zone(mode) if entity in self.entry_sensors), default=0)
+
+    def delay_left(self) -> float | None:
+        """Restzeit der Verzögerung, die gerade läuft (Ausgang oder Eingang), in Sekunden; sonst None."""
+        if self.state not in (AlarmControlPanelState.ARMING, AlarmControlPanelState.PENDING) or self.deadline is None:
+            return None
+        return max(0.0, (self.deadline - dt_util.utcnow()).total_seconds())
+
     def sensor_entry_delay(self, entity_id: str, mode: str | None) -> int:
         """
         Eingangsverzögerung eines Sensors in Sekunden: bei Einstellungen je Modus der eigene Wert für diesen Modus, dann der eigene

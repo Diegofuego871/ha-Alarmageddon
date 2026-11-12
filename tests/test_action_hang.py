@@ -634,3 +634,138 @@ async def test_a_slow_stop_never_touches_the_next_alarm(hass: HomeAssistant) -> 
         release.set()
         await hass.services.async_call("alarm_control_panel", "alarm_disarm", arm, blocking=True)
         await settle(hass)
+
+
+# ----- Aktionen während der Verzögerungen (1.18.0): der Alarm wartet nie auf sie -----
+
+FRONT_DOOR = "binary_sensor.haustuer"
+PLAYER = "media_player.flur"
+DELAY_TONE = {"type": "prealarm", "players": [PLAYER], "sound": "pre_beep", "duration": 5, "delay": True}
+
+
+async def _pending(hass: HomeAssistant, entry_steps: list[dict]):
+    """Anlage scharf, die Haustür (Eingangssensor) öffnet: die Eingangsverzögerung läuft, ihre Aktionen sind gestartet."""
+    await hass.config.async_update(internal_url="http://192.168.1.2:8123")
+    hass.states.async_set(PLAYER, "idle")
+    entry = await setup_alarm(hass, workflows={"home": [STEP_SIREN]}, workflows_entry={"home": entry_steps})
+    await hass.services.async_call("alarm_control_panel", "alarm_arm_home", {"entity_id": ALARM}, blocking=True)
+    await open_sensor(hass, FRONT_DOOR)
+    assert hass.states.get(ALARM).state == AlarmControlPanelState.PENDING
+    return entry
+
+
+async def test_hanging_devices_of_the_entry_delay_never_hold_up_the_alarm(hass: HomeAssistant, monkeypatch) -> None:
+    """
+    Während der Eingangsverzögerung hängen ein Gerät und der Lautsprecher des Voralarms (Start und Stopp antworten nie). Beginnt
+    der Alarm, laufen seine Aktionen trotzdem: das Ende der Schritte der Verzögerung wird höchstens SNAPSHOT_TIMEOUT abgewartet.
+    """
+    _fast(monkeypatch)
+    on = async_mock_service(hass, "switch", "turn_on")
+    release = asyncio.Event()
+    hung: list[str] = []
+
+    async def hang(service_call: ServiceCall) -> None:
+        hung.append(f"{service_call.domain}.{service_call.service}")
+        await release.wait()
+
+    hass.services.async_register("hang", "now", hang)
+    for service in ("play_media", "media_stop", "volume_set"):
+        hass.services.async_register("media_player", service, hang)
+    try:
+        entry = await _pending(hass, [{**STEP_HANG, "wait": True}, DELAY_TONE])
+        runner = entry.runtime_data.workflow
+        assert runner.running.get("phase") == "pending" and "hang.now" in hung
+        await asyncio.sleep(0.3)  # das hängende Gerät ist verlassen, der Ton der Verzögerung ist gestartet (und hängt ebenfalls)
+        assert "media_player.play_media" in hung
+        await open_sensor(hass, WINDOW)  # Sensor ohne Verzögerung: der Alarm beginnt sofort
+        assert hass.states.get(ALARM).state == AlarmControlPanelState.TRIGGERED
+        await asyncio.sleep(0.5)
+        await settle(hass)
+        assert len(on) == 1 and on[0].data["entity_id"] == [SIREN], "die Sirene des Alarms schaltet, obwohl die Schritte der Verzögerung hängen"
+        assert runner.running and not runner.running.get("after")
+    finally:
+        release.set()
+        await hass.services.async_call("alarm_control_panel", "alarm_disarm", {"entity_id": ALARM}, blocking=True)
+        await settle(hass)
+
+
+@pytest.mark.parametrize("part", ["Schritt scheitert", "Schritte nicht lesbar", "Start scheitert"])
+async def test_failing_actions_of_the_entry_delay_never_stop_the_alarm(hass: HomeAssistant, monkeypatch, part: str) -> None:
+    """Scheitert während der Eingangsverzögerung ein Schritt, das Lesen der Schritte oder der Start ihres Laufs: der Alarm kommt trotzdem."""
+    on = async_mock_service(hass, "switch", "turn_on")
+
+    async def broken(_service_call: ServiceCall) -> None:
+        raise RuntimeError("Gerät defekt")
+
+    for service in ("play_media", "media_stop"):
+        hass.services.async_register("media_player", service, broken)
+    hass.services.async_register("hang", "now", broken)
+    await hass.config.async_update(internal_url="http://192.168.1.2:8123")
+    hass.states.async_set(PLAYER, "idle")
+    entry = await setup_alarm(hass, workflows={"home": [STEP_SIREN]}, workflows_entry={"home": [STEP_HANG, DELAY_TONE]})
+    runner = entry.runtime_data.workflow
+
+    def fail(*_args, **_kwargs):
+        raise RuntimeError("kaputt")
+
+    if part == "Schritte nicht lesbar":
+        monkeypatch.setattr(runner, "steps_delay", fail)
+    elif part == "Start scheitert":
+        monkeypatch.setattr(runner, "_begin", lambda run: fail() if run.get("phase") == "pending" else wf.WorkflowRunner._begin(runner, run))
+    await hass.services.async_call("alarm_control_panel", "alarm_arm_home", {"entity_id": ALARM}, blocking=True)
+    await open_sensor(hass, FRONT_DOOR)
+    assert hass.states.get(ALARM).state == AlarmControlPanelState.PENDING
+    await open_sensor(hass, WINDOW)
+    await asyncio.sleep(0.2)
+    await settle(hass)
+    assert hass.states.get(ALARM).state == AlarmControlPanelState.TRIGGERED
+    assert [c.data["entity_id"] for c in on] == [[SIREN]]
+    await hass.services.async_call("alarm_control_panel", "alarm_disarm", {"entity_id": ALARM}, blocking=True)
+    await settle(hass)
+
+
+async def test_hanging_devices_of_the_exit_delay_never_hold_up_arming_or_the_alarm(hass: HomeAssistant, monkeypatch) -> None:
+    """
+    Während der Ausgangsverzögerung hängt der Lautsprecher des Aktivierungstons. Die Anlage wird trotzdem pünktlich scharf (der
+    Automat wartet auf keinen Schritt), und ein Alarm danach startet seine Aktionen.
+    """
+    _fast(monkeypatch)
+    on = async_mock_service(hass, "switch", "turn_on")
+    release = asyncio.Event()
+
+    async def hang(_service_call: ServiceCall) -> None:
+        await release.wait()
+
+    for service in ("play_media", "media_stop", "volume_set"):
+        hass.services.async_register("media_player", service, hang)
+    await hass.config.async_update(internal_url="http://192.168.1.2:8123")
+    hass.states.async_set(PLAYER, "idle")
+    tone = {"type": "chime", "players": [PLAYER], "sound": "tone_pip", "duration": 3, "delay": True}
+    entry = await setup_alarm(hass, workflows={"away": [STEP_SIREN]}, workflows_arming={"away": [tone]}, exit_delay_away=30)
+    runner = entry.runtime_data.workflow
+    controller = entry.runtime_data.controller
+    try:
+        await hass.services.async_call("alarm_control_panel", "alarm_arm_away", {"entity_id": ALARM}, blocking=True)
+        await settle(hass)
+        assert hass.states.get(ALARM).state == AlarmControlPanelState.ARMING and runner.running.get("phase") == "arming"
+        controller._go_armed()  # die Ausgangsverzögerung ist um
+        await settle(hass)
+        assert hass.states.get(ALARM).state == AlarmControlPanelState.ARMED_AWAY
+        await open_sensor(hass, WINDOW)
+        await asyncio.sleep(0.5)
+        await settle(hass)
+        assert hass.states.get(ALARM).state == AlarmControlPanelState.TRIGGERED
+        assert [c.data["entity_id"] for c in on] == [[SIREN]]
+        assert runner.running and not runner.running.get("after")
+    finally:
+        release.set()
+        await hass.services.async_call("alarm_control_panel", "alarm_disarm", {"entity_id": ALARM}, blocking=True)
+        await settle(hass)
+
+
+def test_a_tone_that_follows_the_delay_never_blocks_the_steps_after_it() -> None:
+    """Ein Ton "so lange wie die Verzögerung" endet erst mit ihr: der Ablauf wartet nie auf ihn, auch nicht mit "wait" (sonst liefe nichts danach)."""
+    for kind in ("chime", "prealarm"):
+        assert wf.step_waits({"type": kind, "players": [PLAYER], "duration": 5, "delay": True}) is False
+        assert wf.step_waits({"type": kind, "players": [PLAYER], "duration": 5, "delay": True, "wait": True}) is False
+    assert wf.step_waits({"type": "prealarm", "players": [PLAYER], "duration": 5}) is True  # ohne die Angabe wie bisher

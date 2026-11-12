@@ -227,6 +227,16 @@ AFTER_STEP_TYPES: Final = ("action", "sound", "chime", "wait")
 CONF_WORKFLOWS_ARMED: Final = "workflows_armed"
 ARMED_STEP_TYPES: Final = ("action", "chime", "wait")
 CHIME_MAX_SECONDS: Final = 300
+# Aktionen während der Verzögerungen (1.18.0), je Modus wie CONF_WORKFLOWS_ARMED:
+# - CONF_WORKFLOWS_ARMING: Schritte, die laufen, solange die Ausgangsverzögerung läuft (ab dem Befehl zum Scharfschalten bis die
+#   Anlage scharf ist). CONF_WORKFLOWS_ARMED läuft wie bisher danach.
+# - CONF_WORKFLOWS_ENTRY: Schritte, die laufen, solange die Eingangsverzögerung läuft (Zeit zum Deaktivieren, vor dem Alarm).
+# Ein Ton mit "delay": true dauert so lange wie die Verzögerung, die gerade läuft (Wert des Modus oder des Sensors); die Dauer
+# steht damit nie fest im Schritt, sie folgt der Einstellung der Anlage. Der Alarm hat immer Vorrang und wartet nie auf sie.
+CONF_WORKFLOWS_ARMING: Final = "workflows_arming"
+ARMING_STEP_TYPES: Final = ("action", "chime", "wait")
+CONF_WORKFLOWS_ENTRY: Final = "workflows_entry"
+ENTRY_STEP_TYPES: Final = ("action", "chime", "prealarm", "wait")
 WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor bei deaktivierter Anlage
 WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
 STEP_TYPES: Final = ("notify", "action", "wait", "sound")

@@ -30,8 +30,12 @@ from .const import (
     AFTER_STEP_TYPES,
     ALL_SOUNDS,
     ARMED_STEP_TYPES,
+    ARMING_STEP_TYPES,
     CHIME_MAX_SECONDS,
     CONF_WORKFLOWS_ARMED,
+    CONF_WORKFLOWS_ARMING,
+    CONF_WORKFLOWS_ENTRY,
+    ENTRY_STEP_TYPES,
     CONF_WORKFLOW_END,
     CONF_WORKFLOWS_AFTER,
     CONF_WORKFLOWS,
@@ -113,6 +117,8 @@ STEP_SCHEMAS = {
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
         vol.Optional("volumes"): PLAYER_VOLUMES,
         vol.Optional("duration", default=3): vol.All(vol.Coerce(int), vol.Range(min=1, max=CHIME_MAX_SECONDS)),
+        # So lange wie die laufende Verzögerung (1.18.0); nur in den Listen der Verzögerungen, sonst entfällt die Angabe (valid_step)
+        vol.Optional("delay"): bool,
         vol.Optional("wait"): bool,
     }),
     # Voralarm (1.15.0): leiser Warnton vor der Sirene, mit Dauer; der Ablauf wartet standardmässig auf sein Ende
@@ -123,6 +129,7 @@ STEP_SCHEMAS = {
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
         vol.Optional("volumes"): PLAYER_VOLUMES,
         vol.Optional("duration", default=20): vol.All(vol.Coerce(int), vol.Range(min=1, max=PREALARM_MAX_SECONDS)),
+        vol.Optional("delay"): bool,
         vol.Optional("wait"): bool,
     }),
 }
@@ -149,10 +156,13 @@ def valid_end(value: Any) -> dict[str, Any]:
     return END_SCHEMA(value)
 
 
-def valid_step(value: Any) -> dict[str, Any]:
+def valid_step(value: Any, delay: bool = False) -> dict[str, Any]:
+    """Ein Schritt. `delay`: Liste einer Verzögerung; nur dort bleibt die Angabe "so lange wie die Verzögerung" erhalten."""
     if not isinstance(value, dict) or value.get("type") not in STEP_SCHEMAS:
         raise vol.Invalid("unknown step type")
     step = STEP_SCHEMAS[value["type"]](value)
+    if not (delay and step.get("delay")):
+        step.pop("delay", None)
     if "volumes" in step:
         # Nur für Lautsprecher dieses Schritts; ein leerer Eintrag entfällt
         step["volumes"] = {player: level for player, level in step["volumes"].items() if player in step.get("players", [])}
@@ -184,6 +194,25 @@ def valid_armed_step(value: Any) -> dict[str, Any]:
     if "restore" in step:
         step["restore"] = False
     return step
+
+
+def _valid_delay_step(value: Any, types: tuple[str, ...]) -> dict[str, Any]:
+    step = valid_step(value, delay=True)
+    if step["type"] not in types:
+        raise vol.Invalid("this step is not possible during a delay")
+    if "restore" in step:
+        step["restore"] = False
+    return step
+
+
+def valid_arming_step(value: Any) -> dict[str, Any]:
+    """Schritt während der Ausgangsverzögerung: Gerät, Aktivierungston und Warten; "Rückgängig" gibt es dort nicht."""
+    return _valid_delay_step(value, ARMING_STEP_TYPES)
+
+
+def valid_entry_step(value: Any) -> dict[str, Any]:
+    """Schritt während der Eingangsverzögerung: Gerät, Aktivierungston, Voralarm und Warten; "Rückgängig" gibt es dort nicht."""
+    return _valid_delay_step(value, ENTRY_STEP_TYPES)
 
 
 def _days(value: Any) -> list[int]:
@@ -242,6 +271,8 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): valid_end},
         vol.Optional(CONF_WORKFLOWS_AFTER): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOWS_ARMED): {vol.In(MODES): vol.All([valid_armed_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional(CONF_WORKFLOWS_ARMING): {vol.In(MODES): vol.All([valid_arming_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional(CONF_WORKFLOWS_ENTRY): {vol.In(MODES): vol.All([valid_entry_step], vol.Length(max=MAX_STEPS))},
     },
     extra=vol.REMOVE_EXTRA,
 )

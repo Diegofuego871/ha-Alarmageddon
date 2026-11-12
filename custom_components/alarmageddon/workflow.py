@@ -18,6 +18,7 @@ from contextvars import ContextVar
 from datetime import timedelta
 from functools import partial
 import logging
+import math
 from typing import Any
 
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
@@ -28,13 +29,29 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import ALL_SOUNDS, CONF_WORKFLOWS, CONF_WORKFLOWS_AFTER, CONF_WORKFLOWS_ARMED, RESTORABLE_DOMAINS, TEST_SECONDS, WORKFLOW_STORE_KEY
+from .const import (
+    ALL_SOUNDS,
+    CONF_WORKFLOWS,
+    CONF_WORKFLOWS_AFTER,
+    CONF_WORKFLOWS_ARMED,
+    CONF_WORKFLOWS_ARMING,
+    CONF_WORKFLOWS_ENTRY,
+    RESTORABLE_DOMAINS,
+    TEST_SECONDS,
+    WORKFLOW_STORE_KEY,
+)
 from .controller import ARMED_STATE, AlarmController
 from .sound_loop import LOOP_MAX_SECONDS, loop_url
 
 _LOGGER = logging.getLogger(__name__)
 
 ARMED_STATES = frozenset(str(state) for state in ARMED_STATE.values())
+# Läufe während einer Verzögerung (1.18.0): Phase des Laufs und die Liste der Schritte dazu, je Zustand der Anlage
+DELAY_PHASES = {
+    str(AlarmControlPanelState.ARMING): ("arming", CONF_WORKFLOWS_ARMING),
+    str(AlarmControlPanelState.PENDING): ("pending", CONF_WORKFLOWS_ENTRY),
+}
+SIDE_PHASES = ("armed", "arming", "pending")  # Läufe neben dem Alarm, die mit dem Deaktivieren sofort enden
 # Ein Gerät, das länger nicht antwortet, hält den Ablauf nie auf: nach dieser Zeit (Sekunden) läuft er mit dem nächsten Schritt weiter.
 # Der hängende Aufruf wird nicht abgebrochen (ein Skript soll weiterlaufen dürfen), nur nicht mehr abgewartet; Deaktivieren beendet ihn.
 SERVICE_TIMEOUT = 10
@@ -84,6 +101,9 @@ def step_waits(step: dict[str, Any]) -> bool:
     if kind not in ("action", "sound", "chime", "prealarm"):
         return True
     if kind == "sound" and step.get("duration") == 0:
+        return False
+    if step.get("delay") and kind in ("chime", "prealarm"):
+        # Ein Ton, der der Verzögerung folgt (1.18.0), endet erst mit ihr: wartete der Ablauf, käme kein Schritt danach je zum Zug
         return False
     if "wait" in step:
         return bool(step["wait"])
@@ -184,6 +204,9 @@ class WorkflowRunner:
                     self._spawn(saved, int(also.get("index", 0) or 0), str(also["trigger"]))
             else:
                 await self.async_stop()
+        if str(self._ctl.state) in DELAY_PHASES and self._run is None:
+            # Neuladen oder Neustart mitten in einer Verzögerung: ihre Töne laufen für die Restzeit weiter
+            self.hass.async_create_task(self._start_delay(self._ctl.mode, resumed=True))
 
     async def async_unload(self) -> None:
         """Beim Entladen (Neustart, neue Optionen) nur anhalten, nichts zurücksetzen: der Alarm geht weiter."""
@@ -229,12 +252,16 @@ class WorkflowRunner:
             plan = self._plan or ([run["trigger"], *([run["also"]["trigger"]] if isinstance(run.get("also"), dict) else [])] if run else [])
             self._plan = None
             self.hass.async_create_task(self._end(plan))
+        elif state in DELAY_PHASES:
+            # Eine Verzögerung beginnt (1.18.0): die Aktionen dazu, solange sie läuft. Sie enden mit ihr (scharf, Alarm) oder
+            # beim Deaktivieren; der Alarm wartet nie auf sie (async_run beendet sie unter Aufsicht).
+            self.hass.async_create_task(self._start_delay(self._ctl.mode))
         elif state in ARMED_STATES and previous not in (None, AlarmControlPanelState.PENDING):
             # Scharf geschaltet (auch Wechsel des Modus): die Aktionen beim Scharfschalten dieses Modus. Nicht beim Start von Home
             # Assistant (da war die Anlage schon scharf) und nicht nach einem quittierten Alarm (der Zweig darüber).
             self.hass.async_create_task(self.async_run_armed(self._ctl.mode))
-        elif state == AlarmControlPanelState.DISARMED and self._run is not None and self._run.get("phase") == "armed":
-            # Deaktiviert, während der Aktivierungston noch läuft: sofort still
+        elif state == AlarmControlPanelState.DISARMED and self._run is not None and self._run.get("phase") in SIDE_PHASES:
+            # Deaktiviert, während ein Ton der Verzögerung oder der Aktivierungston noch läuft: sofort still
             self.hass.async_create_task(self._stop_side_run())
 
     async def _end(self, plan: list[str]) -> None:
@@ -251,10 +278,15 @@ class WorkflowRunner:
         if run is None or not run.get("after"):
             return
         await self._end_test()
-        players = sorted({p for step in run.get("steps") or [] if step.get("type") in ("sound", "chime") for p in step.get("players", [])})
+        if self._run is not None:
+            # Währenddessen hat ein neuer Lauf begonnen (der Alarm): ab hier gehören Lautsprecher und Ablage ihm. Ein Stopp
+            # jetzt brächte seine Sirene zum Schweigen, das Löschen nähme ihm den Stand für den Neustart (1.18.0).
+            return
+        players = sorted({p for step in run.get("steps") or [] if step.get("type") in ("sound", "chime", "prealarm") for p in step.get("players", [])})
         if players:
             await self._call("media_player", "media_stop", {"entity_id": players})
-        self.hass.async_create_task(self._store.async_remove())
+        if self._run is None:
+            self.hass.async_create_task(self._store.async_remove())
 
     def steps_armed(self, mode: str | None) -> list[dict[str, Any]]:
         return list((self.entry.options.get(CONF_WORKFLOWS_ARMED) or {}).get(mode or "") or [])
@@ -266,6 +298,9 @@ class WorkflowRunner:
         Quittieren: unter Aufsicht, endet von selbst, stellt nichts zurück. Ein Alarm hat Vorrang und bricht ihn ab, Deaktivieren
         ebenso; läuft noch ein solcher Lauf (rasch hintereinander scharf geschaltet), ersetzt ihn der neue.
         """
+        if self._run is not None and self._run.get("phase") == "arming":
+            # Die Ausgangsverzögerung ist um: ihre Aktionen enden hier, auch wenn danach nichts folgt
+            await self._stop_side_run()
         steps = self.steps_armed(mode)
         if not steps or self._ctl.state not in ARMED_STATES:
             return False
@@ -277,6 +312,73 @@ class WorkflowRunner:
         self._run = run
         self._begin(run)
         return True
+
+    def steps_delay(self, state: str, mode: str | None) -> list[dict[str, Any]]:
+        """Schritte, die während der Verzögerung dieses Zustands laufen (Ausgang: arming, Eingang: pending), für den Modus."""
+        conf = DELAY_PHASES[state][1]
+        return list((self.entry.options.get(conf) or {}).get(mode or "") or [])
+
+    async def async_run_delay(self, mode: str | None, resumed: bool = False) -> bool:
+        """
+        Aktionen während einer Verzögerung starten (1.18.0): "Scharfschalten beginnt" (die Ausgangsverzögerung läuft) oder
+        "Eingangsverzögerung läuft" (Zeit zum Deaktivieren). Der Lauf verhält sich wie die Aktionen beim Scharfschalten: unter
+        Aufsicht, stellt nichts zurück, Deaktivieren beendet ihn sofort. Er endet mit der Verzögerung: scharf geschaltet
+        (async_run_armed) oder Alarm (async_run, unter Aufsicht: der Alarm wartet nie auf ihn).
+
+        `resumed`: nach einem Neuladen oder Neustart mitten in der Verzögerung laufen nur die Töne weiter, die der Verzögerung
+        folgen ("delay"), für die Restzeit; ein Gerät wird nicht ein zweites Mal geschaltet.
+        """
+        state = str(self._ctl.state)
+        if state not in DELAY_PHASES:
+            return False
+        phase = DELAY_PHASES[state][0]
+        steps = self.steps_delay(state, mode)
+        if resumed:
+            steps = [step for step in steps if step.get("delay")]
+        if not steps:
+            return False
+        if self._run is not None:
+            if not self._run.get("after"):
+                return False  # ein Alarm oder ein Test läuft
+            await self._stop_side_run()
+        if str(self._ctl.state) != state:
+            return False  # währenddessen scharf, ausgelöst oder deaktiviert
+        if self._run is not None:
+            return False  # währenddessen hat der Alarm begonnen: er hat Vorrang
+        run: dict[str, Any] = {"trigger": mode, "index": 0, "test": False, "after": True, "phase": phase, "snapshot": {}, "sonos": [], "steps": steps}
+        self._run = run
+        try:
+            self._begin(run)
+        except Exception:
+            if self._run is run:
+                self._run = None  # kein halber Lauf bleibt stehen (er gälte sonst als laufend)
+            raise
+        return True
+
+    async def _start_delay(self, mode: str | None, resumed: bool = False) -> None:
+        """Aktionen einer Verzögerung starten. Sie sind Zusatz: scheitert ihr Start, steht es im Log, Automat und Alarm laufen weiter."""
+        try:
+            await self.async_run_delay(mode, resumed)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - Sicherheitsregel: nichts aus den Verzögerungen darf den Alarm berühren
+            _LOGGER.exception("%s: starting the actions of the delay failed; the alarm system goes on", self.entry.title)
+
+    def _timed(self, step: dict[str, Any]) -> dict[str, Any] | None:
+        """
+        Schritt mit der Dauer, die jetzt gilt. Ein Ton "so lange wie die Verzögerung" (delay) bekommt die Restzeit der laufenden
+        Verzögerung (Wert des Modus oder des Sensors, der sie ausgelöst hat): er endet zusammen mit ihr. Ohne laufende Verzögerung
+        (Test eines Schritts) gilt die Dauer des Schritts. None: nichts mehr zu spielen (die Verzögerung ist um).
+        """
+        if not step.get("delay") or step.get("type") not in ("chime", "prealarm"):
+            return step
+        run = self._run or {}
+        left = self._ctl.delay_left() if run.get("phase") in ("arming", "pending") else None
+        if left is None:
+            return {key: value for key, value in step.items() if key != "delay"}
+        if left < 1:
+            return None
+        return {**step, "duration": math.ceil(left)}
 
     def steps_after(self, trigger: str) -> list[dict[str, Any]]:
         return list((self.entry.options.get(CONF_WORKFLOWS_AFTER) or {}).get(trigger) or [])
@@ -614,6 +716,15 @@ class WorkflowRunner:
             self._positions[trigger] = index  # zuerst und ohne Fehlerquelle: hier macht der Wächter nach einem Abbruch weiter
             step = steps[index]
             try:
+                # Ein Ton, der der Verzögerung folgt, bekommt hier seine Dauer (die Restzeit); ist sie um, entfällt der Schritt
+                timed = self._timed(step)
+            except Exception:  # noqa: BLE001 - Sicherheitsregel: ohne Restzeit gilt die Dauer des Schritts
+                _LOGGER.exception("%s: the duration of step %s cannot be determined", self.entry.title, index + 1)
+                timed = step
+            if timed is None:
+                continue
+            step = timed
+            try:
                 # Mitschreiben (gespeicherter Stand für den Neustart, Zeitachse) ist Zusatz: ein Fehler darin hält keinen Schritt auf
                 self._state(self._run, trigger)["index"] = index
                 self._store.async_delay_save(lambda: self._run or {}, 0)
@@ -708,6 +819,9 @@ class WorkflowRunner:
             await self._bounded(self.hass.services.async_call(domain, service, data, blocking=True), f"{domain}.{service}")
         elif kind == "sound":
             await self._play(step, resumable)
+        elif kind == "chime" and step.get("delay"):
+            # Aktivierungston, solange die Verzögerung läuft: durchgehend bis zu ihrem Ende (kein Abzählen ganzer Wiederholungen)
+            await self._play({**step, "sound": step.get("sound", "tone_pip"), "duration": int(step.get("duration") or 3)})
         elif kind == "chime":
             await self._play_whole(step)
         elif kind == "prealarm":
