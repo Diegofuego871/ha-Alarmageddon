@@ -20,6 +20,7 @@ Every tone puts the speaker back afterwards.
 
 - **A speaker that was off is switched off again** when the alarm sound is put back on disarm (before, it stayed on after the sound).
 - **Safe as before.** Remembering and putting back are never an obstacle: if a speaker does not answer, the tone, the flow and the siren go on after the time limits (tests with hanging and failing speakers, and in the mutation check).
+- **Actions: no hint box in an empty flow any more.** Under "Alarm starts" the plus is enough; the box "No actions yet. Add a first step…" with its own button is gone and takes no space.
 - Alarm sounds in the lists outside the alarm flow that were saved before with "undo" off keep that value; switch it on in the step if you want it.
 
 ## [1.25.1] - 2026-11-12

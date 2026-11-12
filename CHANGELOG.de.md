@@ -20,6 +20,7 @@ Jeder Ton stellt den Lautsprecher danach zurück.
 
 - **Ein Lautsprecher, der aus war, wird wieder ausgeschaltet**, wenn der Alarmton beim Deaktivieren zurückgestellt wird (vorher blieb er nach dem Ton an).
 - **Sicher wie bisher.** Merken und Zurückstellen sind nie ein Hindernis: Antwortet ein Lautsprecher nicht, gehen Ton, Ablauf und Sirene nach den Zeitgrenzen weiter (Tests mit hängenden und scheiternden Lautsprechern, dazu in der Mutationsprobe).
+- **Aktionen: kein Hinweisfeld mehr in einem leeren Ablauf.** Unter "Alarm beginnt" genügt das Plus; das Feld "Noch keine Aktionen. Füge einen ersten Schritt hinzu …" mit eigenem Knopf entfällt und nimmt keinen Platz mehr weg.
 - Alarmtöne in den Listen ausserhalb des Alarmablaufs, die früher mit "Rückgängig" aus gespeichert wurden, behalten diesen Wert; im Schritt lässt er sich einschalten.
 
 ## [1.25.1] - 2026-11-12

@@ -422,8 +422,8 @@ export class ActionsUi {
     // Zwei Kapitel (1.19.0): "Beim Scharfschalten" und "Bei einem Alarm"; im Reiter "Immer aktiv" (nie scharf geschaltet) ohne Titel
     const chap = (title, hint) => (this.trigger === "always" ? "" : `<div class="ag-wf-chap"><h3 class="ag-chap-t">${esc(this._t(title))}</h3><p class="ag-chap-h">${esc(this._t(hint))}</p></div>`);
     h._setHtml(body, `${chap("wfChapArm", "wfChapArmHint")}${arm}${chap("wfChapAlarm", "wfChapAlarmHint")}${entry}<div class="ag-wf-line ag-wf-main">
-        <div class="ag-wf-start"><span class="ag-mini err alarm">${ic("alert", 20)}</span>${esc(this._fixedTitle("wfStart"))}</div>${plus(0)}
-        ${steps.length ? cards : `<div class="ag-card ag-empty ag-wf-empty"><span class="ag-t2">${esc(this._t("wfEmpty"))}</span><button class="ag-btn primary" data-wf="add" data-at="0">${ic("plus", 18)}${esc(this._t("wfAdd"))}</button></div>`}
+        <div class="ag-wf-start"><span class="ag-mini err alarm">${ic("alert", 20)}</span>${esc(this._fixedTitle("wfStart"))}</div>${steps.length ? plus(0) : plus(0).replace('class="ag-wf-plus"', 'class="ag-wf-plus last"')}
+        ${cards}
       </div>${this._endHtml()}${this._afterHtml(running)}`);
     h._placePills();
     this.renderFoot();

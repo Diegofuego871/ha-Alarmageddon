@@ -416,7 +416,6 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-btns .ag-iconbtn:hover { background: var(--ag-hover); }
 .ag-wf-btns .ag-iconbtn[data-wf="delete"] { color: var(--ag-error); }
 .ag-wf-btns .ag-iconbtn:disabled { opacity: .3; cursor: default; }
-.ag-wf-empty { margin-left: 20px; }
 /* Ende des Ablaufs: die Linie des Ablaufs endet an der Marke "Alarm endet" und läuft nie durch die Karten */
 .ag-wf-end { position: relative; max-width: 820px; }
 .ag-wf-end::before { content: ""; display: block; width: 2px; height: 12px; margin-left: calc(var(--wf-x) - 1px); background: var(--ag-divider); }

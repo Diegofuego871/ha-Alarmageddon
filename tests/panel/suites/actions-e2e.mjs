@@ -278,10 +278,10 @@ for (const lang of ["de", "en"]) {
 
     // Auslöser wechseln: "Nacht" leer, gemerkt
     await s.tap('.ag-wf-head [data-trigger="night"]');
-    check(`${tag}: leerer Ablauf mit Hinweis`, await s.waitFor("return !!r.querySelector('.ag-wf-empty') && r.querySelector('[data-wf=\"test\"]').disabled"));
+    check(`${tag}: leerer Ablauf: nur das Plus, kein Hinweisfeld (1.26.1)`, await s.waitFor("return !r.querySelector('.ag-wf-empty, .ag-wf-main .ag-empty') && !!r.querySelector('.ag-wf-main [data-wf=\"add\"][data-at=\"0\"]') && r.querySelector('[data-wf=\"test\"]').disabled"));
     check(`${tag}: Auslöser gemerkt`, await s.ev("return localStorage.getItem('alarmageddon.trigger') === 'night'"));
     // Mit Änderung wegklicken verliert nichts: der Ablauf bleibt als Entwurf, ein Punkt am Reiter zeigt es
-    await s.tap('.ag-wf-empty [data-wf="add"]');
+    await s.tap('.ag-wf-main [data-wf="add"][data-at="0"]');
     await s.tap('#ag-step [data-wf="kind"][data-kind="notify"]');
     await s.tap('#ag-step [data-wf="apply"]');
     await s.waitFor("return r.querySelectorAll('.ag-wf-step').length === 1");
