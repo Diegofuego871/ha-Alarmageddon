@@ -57,7 +57,9 @@ from .const import (
     CONF_WORKFLOW_END,
     CONF_WORKFLOWS_AFTER,
     CHIMES,
+    DECHIMES,
     CONF_WORKFLOWS_ARMED,
+    CONF_WORKFLOWS_DISARMED,
     CONF_WORKFLOWS_ARMING,
     CONF_WORKFLOWS_ENTRY,
     CONF_WORKFLOWS,
@@ -80,7 +82,7 @@ from .const import (
 )
 from .devices import battery_of, device_sensors, display_name
 from .forecast import async_forecasts
-from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_armed_step, valid_arming_step, valid_end, valid_entry_step, valid_step
+from .schemas import END_NOTIFY_SCHEMA, NOTIFY_TARGETS, SCHEDULES, SENSOR_VALUES, SECONDS as _SECONDS, valid_after_step, valid_armed_step, valid_arming_step, valid_disarmed_step, valid_end, valid_entry_step, valid_step
 from .sensor_history import BATTERY_HOURS, STATE_HOURS, async_get_stats, async_numeric_history, async_state_history
 from .settings import async_get_settings, sensor_type
 
@@ -240,6 +242,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "workflows_armed": entry.options.get(CONF_WORKFLOWS_ARMED) or {},
                 "workflows_arming": entry.options.get(CONF_WORKFLOWS_ARMING) or {},
                 "workflows_entry": entry.options.get(CONF_WORKFLOWS_ENTRY) or {},
+                "workflows_disarmed": entry.options.get(CONF_WORKFLOWS_DISARMED) or {},
                 # Läuft gerade ein Alarm oder ein Test (die Aktionen nach dem Quittieren zählen nicht dazu)
                 "workflow_running": _alarm_run(entry).get("trigger"),
                 "workflow_test": bool((entry.runtime_data.workflow.running or {}).get("test")) if entry.runtime_data.workflow else False,
@@ -279,6 +282,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "sounds": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in SOUNDS.items()],
         # Eigene Töne für "Aktivierungston" und "Voralarm" (1.15.0)
         "chimes": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in CHIMES.items()],
+        "dechimes": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in DECHIMES.items()],
         "prealarms": [{"id": key, "seconds": seconds, "url": f"{SOUNDS_URL_PATH}/{key}.wav"} for key, seconds in PREALARMS.items()],
     })
 
@@ -657,6 +661,8 @@ async def ws_save_display(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         # Aktionen während der Ausgangs- und der Eingangsverzögerung (1.18.0), je Modus
         vol.Optional("workflows_arming"): {vol.In(MODES): vol.All([valid_arming_step], vol.Length(max=MAX_STEPS))},
         vol.Optional("workflows_entry"): {vol.In(MODES): vol.All([valid_entry_step], vol.Length(max=MAX_STEPS))},
+        # Aktionen beim Deaktivieren (1.27.0), je Modus, der gerade scharf war
+        vol.Optional("workflows_disarmed"): {vol.In(MODES): vol.All([valid_disarmed_step], vol.Length(max=MAX_STEPS))},
     }
 )
 @websocket_api.require_admin
@@ -676,7 +682,7 @@ async def ws_save_workflows(hass: HomeAssistant, connection, msg: dict[str, Any]
     if "workflows_armed" in msg:
         kept_armed = {k: v for k, v in (options.get(CONF_WORKFLOWS_ARMED) or {}).items() if k not in msg["workflows_armed"]}
         options[CONF_WORKFLOWS_ARMED] = {**kept_armed, **{k: v for k, v in msg["workflows_armed"].items() if v}}
-    for key, conf in (("workflows_arming", CONF_WORKFLOWS_ARMING), ("workflows_entry", CONF_WORKFLOWS_ENTRY)):
+    for key, conf in (("workflows_arming", CONF_WORKFLOWS_ARMING), ("workflows_entry", CONF_WORKFLOWS_ENTRY), ("workflows_disarmed", CONF_WORKFLOWS_DISARMED)):
         if key in msg:
             kept_delay = {k: v for k, v in (options.get(conf) or {}).items() if k not in msg[key]}
             options[conf] = {**kept_delay, **{k: v for k, v in msg[key].items() if v}}

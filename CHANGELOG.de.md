@@ -7,7 +7,23 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.27.0] - 2026-11-12
+
+Aktionen beim Deaktivieren, mit einem Deaktivierungston.
+
+### Hinzugefügt
+
+- **Neues Kapitel "Beim Deaktivieren" ganz unten auf der Seite "Aktionen".** Unter dem festen Punkt "Anlage deaktiviert" steht eine eigene Liste mit einem Plus, wie beim Scharfschalten. Was dort steht, **läuft immer, wenn die Alarmanlage deaktiviert wird**: aus dem scharfen Zustand, mitten in der Ausgangs- oder Eingangsverzögerung und im Alarm (dann nach den Aktionen nach dem Quittieren). Es gilt je Modus, für den Modus, der scharf war; "Immer aktiv" hat keine. Möglich sind ein Deaktivierungston, ein Gerät, Warten, eine Szene oder eine eigene Aktion. Wieder scharf schalten oder ein Alarm beendet sie sofort, und der Alarm wartet nie darauf (auch ein hängender Lautsprecher hält nichts auf).
+- **Neue Art von Ton: der Deaktivierungston,** das Gegenstück zum Aktivierungston. Er ist kurz, hat eine Dauer, die du wählst, läuft nie endlos und stellt den Lautsprecher danach zurück (standardmässig an, je Schritt abschaltbar). Er hat **fünf eigene Klänge**, die zu den Aktivierungstönen passen, aber fallen statt steigen: "Dreiklang absteigend", "Abschluss, zwei Töne", "Tiefe Glocke", "Sanft ausklingend" und "Doppelpiep, fallend". Jeder lässt sich im Panel probehören.
+- **In der Sicherung und bei "Aktionen übernehmen von".** Die Liste gehört zu den Einstellungen, die gesichert und wiederhergestellt werden, und sie wird mit den anderen Listen kopiert.
+
+### Geändert
+
+- **Drag and Drop kennt die neue Liste.** Ein Schritt lässt sich wie in die anderen Listen nach "Beim Deaktivieren" ziehen, aber nur, was dort hingehört (Gerät, Warten, Szene, eigene Aktion, Deaktivierungston); der Deaktivierungston geht in keine andere Liste.
+
 ## [1.26.0] - 2026-11-12
+
+Nicht veröffentlicht; enthalten in 1.27.0.
 
 Jeder Ton stellt den Lautsprecher danach zurück.
 
@@ -30,7 +46,7 @@ Jeder Ton stellt den Lautsprecher danach zurück.
 
 ## [1.25.1] - 2026-11-12
 
-Nicht veröffentlicht; enthalten in 1.26.0.
+Nicht veröffentlicht; enthalten in 1.27.0.
 
 Einheitliche Benennung der Aktionen der Push-Meldung.
 
@@ -1218,7 +1234,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.26.0
+[1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0

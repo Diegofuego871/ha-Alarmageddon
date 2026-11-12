@@ -341,6 +341,7 @@ HANGING_STEPS = {
     "Ton mit fester Dauer": {"type": "sound", "players": ["media_player.wohnzimmer"], "sound": "siren", "duration": 1},
     "Aktivierungston": {"type": "chime", "players": ["media_player.wohnzimmer"], "sound": "tone_pip", "duration": 1, "wait": True},  # abgewartet wie die anderen Fälle
     "Voralarm": {"type": "prealarm", "players": ["media_player.wohnzimmer"], "sound": "pre_beep", "duration": 1},
+    "Deaktivierungston": {"type": "dechime", "players": ["media_player.wohnzimmer"], "sound": "off_fall", "duration": 1, "wait": True},
 }
 
 
@@ -396,6 +397,7 @@ def test_every_step_type_has_a_budget() -> None:
         "sound": {"type": "sound", "players": ["media_player.wohnzimmer"], "sound": "siren", "duration": 60},
         "chime": {"type": "chime", "players": ["media_player.wohnzimmer"], "sound": "tone_pip", "duration": 5},
         "prealarm": {"type": "prealarm", "players": ["media_player.wohnzimmer"], "sound": "pre_beep", "duration": 20},
+        "dechime": {"type": "dechime", "players": ["media_player.wohnzimmer"], "sound": "off_fall", "duration": 5},
     }
     assert set(examples) == set(STEP_SCHEMAS)
     assert {HANGING_STEPS[name]["type"] for name in HANGING_STEPS} == set(STEP_SCHEMAS)
@@ -769,3 +771,75 @@ def test_a_tone_that_follows_the_delay_never_blocks_the_steps_after_it() -> None
         assert wf.step_waits({"type": kind, "players": [PLAYER], "duration": 5, "delay": True}) is False
         assert wf.step_waits({"type": kind, "players": [PLAYER], "duration": 5, "delay": True, "wait": True}) is False
     assert wf.step_waits({"type": "prealarm", "players": [PLAYER], "duration": 5}) is True  # ohne die Angabe wie bisher
+
+
+async def test_hanging_devices_of_the_disarm_actions_never_hold_up_arming_or_the_alarm(hass: HomeAssistant, monkeypatch) -> None:
+    """
+    Beim Deaktivieren hängt der Lautsprecher des Deaktivierungstons (1.27.0). Das Deaktivieren selbst ist sofort durch (der Automat
+    wartet auf keinen Schritt), und ein "immer aktiver" Sensor löst danach trotzdem seinen Alarm aus: seine Aktionen starten.
+    """
+    from .test_sensor_options import SMOKE, _classes
+
+    _fast(monkeypatch)
+    _classes(hass)
+    on = async_mock_service(hass, "switch", "turn_on")
+    release = asyncio.Event()
+
+    async def hang(_service_call: ServiceCall) -> None:
+        await release.wait()
+
+    for service in ("play_media", "media_stop", "volume_set", "turn_off"):
+        hass.services.async_register("media_player", service, hang)
+    await hass.config.async_update(internal_url="http://192.168.1.2:8123")
+    hass.states.async_set(PLAYER, "off", {"volume_level": 0.2})
+    tone = {"type": "dechime", "players": [PLAYER], "sound": "off_fall", "duration": 3}
+    entry = await setup_alarm(hass, workflows={"home": [STEP_SIREN], "always": [STEP_SIREN]}, workflows_disarmed={"home": [tone, {**STEP_SIREN, "target": ["switch.licht"]}]},
+                              sensor_options={SMOKE: {"always": True}})
+    try:
+        await hass.services.async_call("alarm_control_panel", "alarm_arm_home", {"entity_id": ALARM}, blocking=True)
+        await settle(hass)
+        await hass.services.async_call("alarm_control_panel", "alarm_disarm", {"entity_id": ALARM}, blocking=True)
+        await settle(hass)
+        assert hass.states.get(ALARM).state == AlarmControlPanelState.DISARMED
+        await asyncio.sleep(0.3)  # der Lautsprecher hängt, die Grenzen greifen: der Ablauf geht weiter
+        await settle(hass)
+        assert any(c.data["entity_id"] == ["switch.licht"] for c in on), "der nächste Schritt läuft, obwohl der Lautsprecher hängt"
+        await open_sensor(hass, SMOKE)
+        await settle(hass)
+        assert hass.states.get(ALARM).state == AlarmControlPanelState.TRIGGERED
+        await asyncio.sleep(0.5)  # der Alarm beendet den hängenden Lauf nach den Grenzen und startet seine Aktionen
+        await settle(hass)
+        assert any(c.data["entity_id"] == [SIREN] for c in on), "die Sirene des Alarms schaltet trotz hängendem Lautsprecher"
+        assert entry.runtime_data.workflow.running and not entry.runtime_data.workflow.running.get("after")
+    finally:
+        release.set()
+        await hass.services.async_call("alarm_control_panel", "alarm_disarm", {"entity_id": ALARM}, blocking=True)
+        await settle(hass)
+
+
+async def test_a_failing_start_of_the_disarm_actions_never_stops_disarming(hass: HomeAssistant, monkeypatch) -> None:
+    """Scheitert der Start der Aktionen beim Deaktivieren, steht es im Log; die Anlage ist deaktiviert und ein späterer Alarm läuft."""
+    async def broken(self, _mode):
+        raise RuntimeError("kaputt")
+
+    monkeypatch.setattr(wf.WorkflowRunner, "async_run_disarmed", broken)
+    on = async_mock_service(hass, "switch", "turn_on")
+    await setup_alarm(hass, workflows={"home": [STEP_SIREN]}, workflows_disarmed={"home": [STEP_SIREN]})
+    await call(hass, "alarm_arm_home")
+    await settle(hass)
+    await call(hass, "alarm_disarm")
+    await settle(hass)
+    assert hass.states.get(ALARM).state == AlarmControlPanelState.DISARMED and not on
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    assert hass.states.get(ALARM).state == AlarmControlPanelState.TRIGGERED and [c.data["entity_id"] for c in on] == [[SIREN]]
+    await call(hass, "alarm_disarm")
+    await settle(hass)
+
+
+def test_the_disarm_tone_never_blocks_the_steps_after_it() -> None:
+    """Der Deaktivierungston läuft wie der Aktivierungston standardmässig weiter; nur mit "wait" wartet der Ablauf, und nie ohne Ende."""
+    step = {"type": "dechime", "players": [PLAYER], "duration": 5}
+    assert wf.step_waits(step) is False
+    assert wf.step_waits({**step, "wait": True}) is True
+    assert wf.step_budget(step) > 5

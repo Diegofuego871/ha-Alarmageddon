@@ -412,6 +412,7 @@ dialog.ag-sheetdlg > .ag-side-body:focus, .ag-sheet > .ag-side-body:focus { outl
 .ag-wf-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; position: relative; z-index: 1; }
 .ag-wf-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--ag-primary-soft); color: var(--ag-primary); }
 .ag-wf-icon.k-notify, .ag-wf-icon.k-sound { background: var(--ag-error-soft); color: var(--ag-error); }
+.ag-wf-icon.k-dechime { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-wf-icon.k-acknowledge { background: var(--ag-success-soft); color: var(--ag-success); }
 /* Voralarm: Warnfarbe (leiser Vorbote), Aktivierungston: die Farbe des Panels (freundlich); der Alarmton bleibt rot */
 .ag-wf-icon.k-prealarm { background: var(--ag-warning-soft); color: var(--ag-warning-text); }

@@ -30,9 +30,11 @@ from .const import (
     AFTER_STEP_TYPES,
     ALL_SOUNDS,
     ARMED_STEP_TYPES,
+    DISARMED_STEP_TYPES,
     ARMING_STEP_TYPES,
     CHIME_MAX_SECONDS,
     CONF_WORKFLOWS_ARMED,
+    CONF_WORKFLOWS_DISARMED,
     CONF_WORKFLOWS_ARMING,
     CONF_WORKFLOWS_ENTRY,
     ENTRY_STEP_TYPES,
@@ -123,6 +125,18 @@ STEP_SCHEMAS = {
         vol.Optional("delay"): bool,
         vol.Optional("wait"): bool,
     }),
+    # Deaktivierungston (1.27.0): wie der Aktivierungston ein kurzer Ton mit Dauer, aber mit eigenen, fallenden Klängen (DECHIMES);
+    # nur in "Beim Deaktivieren". Er läuft ohne Angabe weiter (wie der Aktivierungston) und stellt den Lautsprecher danach zurück.
+    "dechime": vol.Schema({
+        vol.Required("type"): "dechime",
+        vol.Required("players"): vol.All(ENTITY_LIST, vol.Length(min=1)),
+        vol.Optional("sound", default="off_fall"): vol.In(list(ALL_SOUNDS)),
+        vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
+        vol.Optional("volumes"): PLAYER_VOLUMES,
+        vol.Optional("duration", default=3): vol.All(vol.Coerce(int), vol.Range(min=1, max=CHIME_MAX_SECONDS)),
+        vol.Optional("restore", default=True): bool,
+        vol.Optional("wait"): bool,
+    }),
     # Voralarm (1.15.0): leiser Warnton vor der Sirene, mit Dauer; der Ablauf wartet standardmässig auf sein Ende
     "prealarm": vol.Schema({
         vol.Required("type"): "prealarm",
@@ -208,6 +222,16 @@ def _valid_delay_step(value: Any, types: tuple[str, ...]) -> dict[str, Any]:
     return step
 
 
+def valid_disarmed_step(value: Any) -> dict[str, Any]:
+    """Schritt beim Deaktivieren: Gerät, Deaktivierungston und Warten; "Rückgängig" gibt es bei Geräten dort nicht."""
+    step = valid_step(value)
+    if step["type"] not in DISARMED_STEP_TYPES:
+        raise vol.Invalid("this step is not possible when disarming")
+    if step["type"] == "action":
+        step["restore"] = False
+    return step
+
+
 def valid_arming_step(value: Any) -> dict[str, Any]:
     """Schritt während der Ausgangsverzögerung: Gerät, Aktivierungston und Warten; "Rückgängig" gibt es dort nicht."""
     return _valid_delay_step(value, ARMING_STEP_TYPES)
@@ -274,6 +298,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_WORKFLOW_END): {vol.In(WORKFLOW_TRIGGERS): valid_end},
         vol.Optional(CONF_WORKFLOWS_AFTER): {vol.In(WORKFLOW_TRIGGERS): vol.All([valid_after_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOWS_ARMED): {vol.In(MODES): vol.All([valid_armed_step], vol.Length(max=MAX_STEPS))},
+        vol.Optional(CONF_WORKFLOWS_DISARMED): {vol.In(MODES): vol.All([valid_disarmed_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOWS_ARMING): {vol.In(MODES): vol.All([valid_arming_step], vol.Length(max=MAX_STEPS))},
         vol.Optional(CONF_WORKFLOWS_ENTRY): {vol.In(MODES): vol.All([valid_entry_step], vol.Length(max=MAX_STEPS))},
     },

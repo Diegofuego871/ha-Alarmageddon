@@ -60,7 +60,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 126  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 127  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -248,6 +248,11 @@ CONF_WORKFLOWS_ARMING: Final = "workflows_arming"
 ARMING_STEP_TYPES: Final = ("action", "chime", "wait")
 CONF_WORKFLOWS_ENTRY: Final = "workflows_entry"
 ENTRY_STEP_TYPES: Final = ("action", "chime", "prealarm", "wait")
+# Aktionen beim Deaktivieren (1.27.0): Schritte, die immer laufen, wenn die Anlage deaktiviert wird (auch mitten in der
+# Verzögerung oder im Alarm), je Modus, der gerade scharf war. Der Deaktivierungston ("dechime") ist das Gegenstück zum
+# Aktivierungston: kurz, mit Dauer, nie endlos, mit eigenen Klängen (DECHIMES).
+CONF_WORKFLOWS_DISARMED: Final = "workflows_disarmed"
+DISARMED_STEP_TYPES: Final = ("action", "dechime", "wait")
 WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor bei deaktivierter Anlage
 WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
 STEP_TYPES: Final = ("notify", "action", "wait", "sound")
@@ -264,7 +269,9 @@ SOUNDS: Final = {"siren": 4.0, "beep": 3.0, "klaxon": 3.0, "hilo": 3.0, "yelp": 
 PREALARMS: Final = {"chime": 2.0, "warning": 2.0, "pre_beep": 1.0, "pre_pulse": 1.0, "pre_rising": 1.0}
 # Aktivierungston: kurz, dezent oder freundlich
 CHIMES: Final = {"tone_pip": 1.0, "tone_double": 1.0, "tone_soft": 1.5, "tone_bell": 2.0, "tone_rise": 2.0, "tone_confirm": 1.5, "tone_tick": 1.0}
-ALL_SOUNDS: Final = {**SOUNDS, **PREALARMS, **CHIMES}
+# Deaktivierungston (1.27.0): das Gegenstück zum Aktivierungston für "Beim Deaktivieren", fallend statt steigend
+DECHIMES: Final = {"off_fall": 2.0, "off_confirm": 1.5, "off_bell": 2.0, "off_soft": 1.5, "off_double": 1.0}
+ALL_SOUNDS: Final = {**SOUNDS, **PREALARMS, **CHIMES, **DECHIMES}
 PREALARM_MAX_SECONDS: Final = 600
 SOUNDS_URL_PATH: Final = "/alarmageddon_sounds"
 DATA_SOUNDS: Final = f"{DOMAIN}_sounds_registered"

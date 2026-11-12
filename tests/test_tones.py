@@ -17,7 +17,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import HomeAssistant
 
 from custom_components.alarmageddon import workflow as wf
-from custom_components.alarmageddon.const import ALL_SOUNDS, CHIMES, PREALARMS, SOUNDS
+from custom_components.alarmageddon.const import ALL_SOUNDS, CHIMES, DECHIMES, PREALARMS, SOUNDS
 from custom_components.alarmageddon.notify import TEXTS
 
 from .conftest import WINDOW, setup_alarm
@@ -49,12 +49,13 @@ async def _tick(hass: HomeAssistant, freezer, seconds: int) -> None:
         await advance(hass, freezer, 1)
 
 
-def test_three_kinds_with_at_least_five_sounds_each() -> None:
+def test_four_kinds_with_at_least_five_sounds_each() -> None:
     """Jede Art hat mindestens fünf eigene Klänge; keiner steht in zwei Arten. Gong und Warnung gehören zum Voralarm."""
-    assert len(SOUNDS) >= 5 and len(PREALARMS) >= 5 and len(CHIMES) >= 5
-    assert not set(SOUNDS) & set(PREALARMS) and not set(SOUNDS) & set(CHIMES) and not set(PREALARMS) & set(CHIMES)
+    kinds = (SOUNDS, PREALARMS, CHIMES, DECHIMES)
+    assert all(len(kind) >= 5 for kind in kinds)
+    assert sum(len(kind) for kind in kinds) == len({name for kind in kinds for name in kind})
     assert {"chime", "warning"} <= set(PREALARMS) and "siren" in SOUNDS
-    assert ALL_SOUNDS == {**SOUNDS, **PREALARMS, **CHIMES}
+    assert ALL_SOUNDS == {**SOUNDS, **PREALARMS, **CHIMES, **DECHIMES}
 
 
 @pytest.mark.parametrize("name", sorted(ALL_SOUNDS))
@@ -71,7 +72,7 @@ def test_own_prealarm_and_arming_tones_are_quieter_than_the_alarm() -> None:
     """Die neuen Töne von Voralarm und Aktivierung sind leiser als jeder Alarmton (dazu kommt die Lautstärke des Schritts)."""
     alarm = min(_loudness(name) for name in SOUNDS)
     assert alarm > 0.25
-    for name in [n for n in PREALARMS if n.startswith("pre_")] + list(CHIMES):
+    for name in [n for n in PREALARMS if n.startswith("pre_")] + list(CHIMES) + list(DECHIMES):
         assert _loudness(name) < alarm and _peak(name) <= 0.6, name
 
 
@@ -86,8 +87,8 @@ async def test_the_panel_gets_one_list_per_kind(hass: HomeAssistant, hass_ws_cli
     client = await hass_ws_client(hass)
     await client.send_json_auto_id({"type": "alarmageddon/data"})
     data = (await client.receive_json())["result"]
-    assert [s["id"] for s in data["sounds"]] == list(SOUNDS) and [s["id"] for s in data["prealarms"]] == list(PREALARMS) and [s["id"] for s in data["chimes"]] == list(CHIMES)
-    assert all(s["url"].endswith(f"/{s['id']}.wav") and s["seconds"] > 0 for kind in ("sounds", "prealarms", "chimes") for s in data[kind])
+    assert [s["id"] for s in data["sounds"]] == list(SOUNDS) and [s["id"] for s in data["prealarms"]] == list(PREALARMS) and [s["id"] for s in data["chimes"]] == list(CHIMES) and [s["id"] for s in data["dechimes"]] == list(DECHIMES)
+    assert all(s["url"].endswith(f"/{s['id']}.wav") and s["seconds"] > 0 for kind in ("sounds", "prealarms", "chimes", "dechimes") for s in data[kind])
 
 
 async def test_prealarm_plays_quietly_then_the_alarm_sound_follows(hass: HomeAssistant, freezer) -> None:

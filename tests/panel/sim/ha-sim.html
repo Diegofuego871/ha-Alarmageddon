@@ -168,6 +168,7 @@
         sounds: [["siren", 4], ["beep", 3], ["klaxon", 3], ["hilo", 3], ["yelp", 3]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
         prealarms: [["chime", 2], ["warning", 2], ["pre_beep", 1], ["pre_pulse", 1], ["pre_rising", 1]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
         chimes: [["tone_pip", 1], ["tone_double", 1], ["tone_soft", 1.5], ["tone_bell", 2], ["tone_rise", 2], ["tone_confirm", 1.5], ["tone_tick", 1]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
+        dechimes: [["off_fall", 2], ["off_confirm", 1.5], ["off_bell", 2], ["off_soft", 1.5], ["off_double", 1]].map(([id, seconds]) => ({ id, seconds, url: `/alarmageddon_sounds/${id}.wav` })),
       }));
     }
     if (msg.type === "alarmageddon/log") {
@@ -342,13 +343,14 @@
         return out;
       };
       const keep = (flows) => Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(flows))).filter(([, v]) => v.length).map(([k, v]) => [k, v.map(norm)]));
-      const state = () => JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}, sys.workflows_arming || {}, sys.workflows_entry || {}]);
+      const state = () => JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}, sys.workflows_arming || {}, sys.workflows_entry || {}, sys.workflows_disarmed || {}]);
       const before = state();
       sys.workflows = keep(msg.workflows);
       if (msg.workflows_armed) sys.workflows_armed = keep(msg.workflows_armed);
       if (msg.workflows_after) sys.workflows_after = keep(msg.workflows_after);
       if (msg.workflows_arming) sys.workflows_arming = keep(msg.workflows_arming);
       if (msg.workflows_entry) sys.workflows_entry = keep(msg.workflows_entry);
+      if (msg.workflows_disarmed) sys.workflows_disarmed = keep(msg.workflows_disarmed);
       if (msg.workflow_end) sys.workflow_end = Object.fromEntries(Object.entries(msg.workflow_end).filter(([, v]) => v !== "restore_marked" && Object.keys(v || {}).length));
       // Home Assistant lädt die Anlage nur neu, wenn sich etwas geändert hat
       const reload = before !== state();

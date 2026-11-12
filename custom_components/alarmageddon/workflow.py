@@ -34,6 +34,7 @@ from .const import (
     CONF_WORKFLOWS,
     CONF_WORKFLOWS_AFTER,
     CONF_WORKFLOWS_ARMED,
+    CONF_WORKFLOWS_DISARMED,
     CONF_WORKFLOWS_ARMING,
     CONF_WORKFLOWS_ENTRY,
     RESTORABLE_DOMAINS,
@@ -77,7 +78,7 @@ def step_budget(step: dict[str, Any]) -> float:
         return WATCHDOG_GRACE  # sofort, ohne Gerätezugriff
     if kind == "wait":
         return max(0, int(step.get("seconds", 0) or 0)) + WATCHDOG_GRACE
-    if kind in ("sound", "chime", "prealarm"):
+    if kind in ("sound", "chime", "dechime", "prealarm"):
         length = ALL_SOUNDS.get(step.get("sound"), max(ALL_SOUNDS.values()))
         duration = step.get("duration")
         if duration is None:  # ältere Form: so oft wiederholen, jeder Aufruf höchstens SERVICE_TIMEOUT
@@ -99,7 +100,7 @@ def step_waits(step: dict[str, Any]) -> bool:
     selbst, auf ihn lässt sich nicht warten. Warten, Meldung und Quittieren gehören zum Ablauf selbst (kein Nebenher).
     """
     kind = step.get("type")
-    if kind not in ("action", "sound", "chime", "prealarm"):
+    if kind not in ("action", "sound", "chime", "dechime", "prealarm"):
         return True
     if kind == "sound" and step.get("duration") == 0:
         return False
@@ -108,7 +109,7 @@ def step_waits(step: dict[str, Any]) -> bool:
         return False
     if "wait" in step:
         return bool(step["wait"])
-    if kind == "chime":
+    if kind in ("chime", "dechime"):
         return False  # neue Schrittart (1.14.0): kennt die ältere Regel nicht, läuft ohne Angabe weiter
     if kind == "prealarm":
         return True  # Voralarm (1.15.0): er steht vor der Sirene, ohne Angabe wartet der Ablauf auf sein Ende
@@ -160,6 +161,7 @@ class WorkflowRunner:
         self._late: set[asyncio.Task] = set()  # Aufrufe, auf die nicht mehr gewartet wird (Zeit überschritten)
         self._run: dict[str, Any] | None = None  # laufender Ablauf: Auslöser, Schritt, Schnappschuss, Test
         self._last_state: str | None = None
+        self._mode_seen: str | None = None  # Modus der Anlage, solange sie nicht deaktiviert ist (beim Deaktivieren ist er schon gelöscht)
         self._unsubs: list[Any] = []
         self._test_timer = None
         # Wächter: der Lauf, dessen Schritte schon gestartet sind (nie zweimal starten), der Schritt, an dem der Ablauf steht
@@ -193,6 +195,7 @@ class WorkflowRunner:
         wiederhergestellt.
         """
         self._last_state = str(self._ctl.state)
+        self._mode_seen = self._ctl.mode
         self._unsubs.append(self._ctl.add_listener(self._on_change))
         saved = await self._store.async_load()
         if isinstance(saved, dict) and saved.get("trigger"):
@@ -238,6 +241,8 @@ class WorkflowRunner:
         state = str(self._ctl.state)
         previous = self._last_state
         self._last_state = state
+        if state != AlarmControlPanelState.DISARMED:
+            self._mode_seen = self._ctl.mode
         if state == previous:
             return
         if state == AlarmControlPanelState.TRIGGERED:
@@ -252,7 +257,8 @@ class WorkflowRunner:
             run = self._run if self._run and not self._run.get("test") and not self._run.get("after") else None
             plan = self._plan or ([run["trigger"], *([run["also"]["trigger"]] if isinstance(run.get("also"), dict) else [])] if run else [])
             self._plan = None
-            self.hass.async_create_task(self._end(plan))
+            # Deaktiviert (nicht nur quittiert): danach auch die Aktionen "Beim Deaktivieren" des Modus, der scharf war (1.27.0)
+            self.hass.async_create_task(self._end(plan, self._mode_seen if state == AlarmControlPanelState.DISARMED else None))
         elif state in DELAY_PHASES:
             # Eine Verzögerung beginnt (1.18.0): die Aktionen dazu, solange sie läuft. Sie enden mit ihr (scharf, Alarm) oder
             # beim Deaktivieren; der Alarm wartet nie auf sie (async_run beendet sie unter Aufsicht).
@@ -261,15 +267,19 @@ class WorkflowRunner:
             # Scharf geschaltet (auch Wechsel des Modus): die Aktionen beim Scharfschalten dieses Modus. Nicht beim Start von Home
             # Assistant (da war die Anlage schon scharf) und nicht nach einem quittierten Alarm (der Zweig darüber).
             self.hass.async_create_task(self.async_run_armed(self._ctl.mode))
-        elif state == AlarmControlPanelState.DISARMED and self._run is not None and self._run.get("phase") in SIDE_PHASES:
-            # Deaktiviert, während ein Ton der Verzögerung oder der Aktivierungston noch läuft: sofort still
-            self.hass.async_create_task(self._stop_side_run())
+        elif state == AlarmControlPanelState.DISARMED:
+            # Deaktiviert: ein Ton der Verzögerung oder der Aktivierungston, der noch läuft, wird sofort still; danach laufen die
+            # Aktionen "Beim Deaktivieren" des Modus, der scharf war (1.27.0)
+            self.hass.async_create_task(self._on_disarmed(self._mode_seen))
 
-    async def _end(self, plan: list[str]) -> None:
-        """Der Alarm ist zu Ende: Ablauf stoppen und Geräte zurückstellen; erst dann laufen die Aktionen nach dem Quittieren."""
+    async def _end(self, plan: list[str], disarmed_mode: str | None = None) -> None:
+        """
+        Der Alarm ist zu Ende: Ablauf stoppen und Geräte zurückstellen; erst dann laufen die Aktionen nach dem Quittieren, bei
+        einem Deaktivieren danach (im selben Lauf) die Aktionen "Beim Deaktivieren" des Modus, der scharf war.
+        """
         await self.async_stop()
         try:
-            await self.async_run_after(plan)
+            await self.async_run_after(plan, disarmed_mode)
         except Exception:  # noqa: BLE001 - das Ende des Alarms selbst ist schon erledigt
             _LOGGER.exception("%s: the actions after the alarm could not be started", self.entry.title)
 
@@ -283,7 +293,7 @@ class WorkflowRunner:
             # Währenddessen hat ein neuer Lauf begonnen (der Alarm): ab hier gehören Lautsprecher und Ablage ihm. Ein Stopp
             # jetzt brächte seine Sirene zum Schweigen, das Löschen nähme ihm den Stand für den Neustart (1.18.0).
             return
-        players = sorted({p for step in run.get("steps") or [] if step.get("type") in ("sound", "chime", "prealarm") for p in step.get("players", [])})
+        players = sorted({p for step in run.get("steps") or [] if step.get("type") in ("sound", "chime", "dechime", "prealarm") for p in step.get("players", [])})
         if players:
             await self._call("media_player", "media_stop", {"entity_id": players})
         if self._run is None:
@@ -299,8 +309,9 @@ class WorkflowRunner:
         Quittieren: unter Aufsicht, endet von selbst, stellt nichts zurück. Ein Alarm hat Vorrang und bricht ihn ab, Deaktivieren
         ebenso; läuft noch ein solcher Lauf (rasch hintereinander scharf geschaltet), ersetzt ihn der neue.
         """
-        if self._run is not None and self._run.get("phase") == "arming":
-            # Die Ausgangsverzögerung ist um: ihre Aktionen enden hier, auch wenn danach nichts folgt
+        if self._run is not None and self._run.get("phase") in ("arming", "disarmed"):
+            # Die Ausgangsverzögerung ist um: ihre Aktionen enden hier, auch wenn danach nichts folgt. Ebenso der Ton beim
+            # Deaktivieren, der noch läuft, wenn wieder scharf geschaltet wird (1.27.0)
             await self._stop_side_run()
         steps = self.steps_armed(mode)
         if not steps or self._ctl.state not in ARMED_STATES:
@@ -333,6 +344,8 @@ class WorkflowRunner:
         if state not in DELAY_PHASES:
             return False
         phase = DELAY_PHASES[state][0]
+        if self._run is not None and self._run.get("phase") == "disarmed":
+            await self._stop_side_run()  # die Aktionen beim Deaktivieren enden, sobald wieder scharf geschaltet wird (oder ein Sensor auslöst)
         steps = self.steps_delay(state, mode)
         if resumed:
             steps = [step for step in steps if step.get("delay")]
@@ -384,11 +397,13 @@ class WorkflowRunner:
     def steps_after(self, trigger: str) -> list[dict[str, Any]]:
         return list((self.entry.options.get(CONF_WORKFLOWS_AFTER) or {}).get(trigger) or [])
 
-    async def async_run_after(self, plan: list[str]) -> bool:
+    async def async_run_after(self, plan: list[str], disarmed_mode: str | None = None) -> bool:
         """
         Aktionen nach dem Quittieren starten (1.10.0): die Schritte, die der Nutzer hinter "Alarm endet" gelegt hat, für jeden
         Ablauf des beendeten Alarms (Modus, "Immer aktiv"; derselbe Ablauf nur einmal). Sie laufen unter derselben Aufsicht wie
         die Alarmaktionen. Ein neuer Alarm hat Vorrang: läuft schon einer, starten sie nicht, und ein Alarm bricht sie ab.
+
+        `disarmed_mode`: wurde deaktiviert, folgen im selben Lauf die Aktionen "Beim Deaktivieren" dieses Modus (1.27.0).
         """
         steps: list[dict[str, Any]] = []
         seen: list[list[dict[str, Any]]] = []
@@ -397,11 +412,58 @@ class WorkflowRunner:
             if own and own not in seen:
                 seen.append(own)
                 steps.extend(own)
+        if disarmed_mode:
+            steps.extend(self.steps_disarmed(disarmed_mode))
         if not steps or self._run is not None or self._ctl.state == AlarmControlPanelState.TRIGGERED:
             return False
-        run: dict[str, Any] = {"trigger": plan[0], "index": 0, "test": False, "after": True, "snapshot": {}, "sonos": [], "steps": steps}
+        run: dict[str, Any] = {"trigger": plan[0] if plan else str(disarmed_mode), "index": 0, "test": False, "after": True, "snapshot": {}, "sonos": [], "steps": steps}
         self._run = run
         self._begin(run)
+        return True
+
+    def steps_disarmed(self, mode: str | None) -> list[dict[str, Any]]:
+        """Schritte "Beim Deaktivieren" für den Modus, der scharf war (nicht für "Immer aktiv": dort wird nie scharf geschaltet)."""
+        return list((self.entry.options.get(CONF_WORKFLOWS_DISARMED) or {}).get(mode or "") or [])
+
+    async def _on_disarmed(self, mode: str | None) -> None:
+        """
+        Die Anlage wurde deaktiviert (nicht aus einem Alarm, den _end behandelt): ein Ton der Verzögerung oder der Aktivierungston,
+        der noch läuft, wird still, danach laufen die Aktionen "Beim Deaktivieren". Sie sind Zusatz: scheitert etwas hier, steht
+        es im Log, Automat und Alarm laufen weiter.
+        """
+        try:
+            if self._run is not None and self._run.get("phase") in SIDE_PHASES:
+                await self._stop_side_run()
+            await self.async_run_disarmed(mode)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - Sicherheitsregel: nichts davon darf den Alarm oder das Scharfschalten berühren
+            _LOGGER.exception("%s: starting the actions when disarming failed; the alarm system goes on", self.entry.title)
+
+    async def async_run_disarmed(self, mode: str | None) -> bool:
+        """
+        Aktionen "Beim Deaktivieren" starten (1.27.0): die Schritte des Modus, der gerade scharf war (zum Beispiel ein
+        Deaktivierungston). Sie laufen immer, wenn deaktiviert wird, auch mitten in der Verzögerung. Der Lauf verhält sich wie die
+        Aktionen beim Scharfschalten: unter Aufsicht, endet von selbst, stellt nichts zurück. Scharfschalten oder ein Alarm beenden
+        ihn sofort (sie ersetzen jeden Lauf neben dem Alarm).
+        """
+        steps = self.steps_disarmed(mode)
+        if not steps or self._ctl.state != AlarmControlPanelState.DISARMED:
+            return False
+        if self._run is not None:
+            if not self._run.get("after"):
+                return False  # ein Test läuft
+            await self._stop_side_run()
+        if self._ctl.state != AlarmControlPanelState.DISARMED or self._run is not None:
+            return False  # währenddessen wurde wieder scharf geschaltet oder ein Alarm begann
+        run: dict[str, Any] = {"trigger": str(mode), "index": 0, "test": False, "after": True, "phase": "disarmed", "snapshot": {}, "sonos": [], "steps": steps}
+        self._run = run
+        try:
+            self._begin(run)
+        except Exception:
+            if self._run is run:
+                self._run = None  # kein halber Lauf bleibt stehen (er gälte sonst als laufend)
+            raise
         return True
 
     @callback
@@ -767,7 +829,7 @@ class WorkflowRunner:
         if step.get("type") == "action":
             entry["action"] = step.get("action")
             entry["targets"] = list(step.get("target") or [])
-        elif step.get("type") in ("sound", "chime", "prealarm"):
+        elif step.get("type") in ("sound", "chime", "dechime", "prealarm"):
             entry["targets"] = list(step.get("players") or [])
             entry["sound"] = step.get("sound")
         elif step.get("type") == "wait":
@@ -823,7 +885,7 @@ class WorkflowRunner:
         elif kind == "chime" and step.get("delay"):
             # Aktivierungston, solange die Verzögerung läuft: durchgehend bis zu ihrem Ende (kein Abzählen ganzer Wiederholungen)
             await self._play({**step, "sound": step.get("sound", "tone_pip"), "duration": int(step.get("duration") or 3)})
-        elif kind == "chime":
+        elif kind in ("chime", "dechime"):
             await self._play_whole(step)
         elif kind == "prealarm":
             # Voralarm: derselbe Weg wie der Alarmton, als Schleife über seine Dauer (nie endlos)
@@ -883,7 +945,7 @@ class WorkflowRunner:
         if not step.get("restore", True):
             return False
         kind = step.get("type")
-        if kind in ("chime", "prealarm"):
+        if kind in ("chime", "dechime", "prealarm"):
             return True
         return kind == "sound" and bool((self._run or {}).get("after")) and bool(step.get("duration"))
 
@@ -927,7 +989,7 @@ class WorkflowRunner:
         der Melodie abgeschnitten: bei 3 Sekunden spielt ein Ton von 1 Sekunde dreimal, einer von 2 Sekunden einmal.
         """
         players = list(step.get("players", []))
-        sound = step.get("sound", "tone_pip")
+        sound = step.get("sound", "off_fall" if step.get("type") == "dechime" else "tone_pip")
         if not players or sound not in ALL_SOUNDS:
             return
         try:
@@ -1020,7 +1082,7 @@ class WorkflowRunner:
             return True
         # Ablauf schon zu Ende (alle Schritte durch), der Ton klingt aber vielleicht noch: auf jeden Fall stoppen
         if self._run is None and self._ctl.state == AlarmControlPanelState.TRIGGERED:
-            players = sorted({p for flow in self._ctl.alarm_plan() for st in self.steps(flow) if st.get("type") in ("sound", "prealarm", "chime") for p in st.get("players", [])})
+            players = sorted({p for flow in self._ctl.alarm_plan() for st in self.steps(flow) if st.get("type") in ("sound", "prealarm", "chime", "dechime") for p in st.get("players", [])})
             if players:
                 await self._call("media_player", "media_stop", {"entity_id": players})
                 return True

@@ -3,7 +3,7 @@ Erzeugt die mitgelieferten Alarmtöne als WAV (16 Bit, mono, 22 050 Hz).
 
 Selbst erzeugt statt heruntergeladen: keine Lizenzfragen, und WAV spielen
 Sonos und die meisten Medienplayer ab. Aufruf: python3 scripts/make_sounds.py
-Die Längen stehen in const.SOUNDS, const.CHIMES und const.PREALARMS (eine Wiederholung).
+Die Längen stehen in const.SOUNDS, const.CHIMES, const.DECHIMES und const.PREALARMS (eine Wiederholung).
 Jede Datei ist eine Wiederholung, die sich nahtlos aneinanderreihen lässt: Töne mit Pausen enden in Stille, durchgehende
 Töne (Sirene, Zweiton, Jaulton) schliessen ohne Sprung an ihren Anfang an. Die Wiedergabe reiht sie zu einer einzigen Datei
 in der gewünschten Länge (sound_loop.py) und blendet Anfang und Ende.
@@ -90,6 +90,12 @@ def soft(freq, seconds, volume=0.35):
     return [volume * math.sin(math.pi * i / n) ** 2 * math.sin(2 * math.pi * freq * i / RATE) for i in range(n)]
 
 
+def glide(f0, f1, seconds, volume=0.35):
+    """Weicher Ton, dessen Tonhöhe von f0 nach f1 gleitet (Phase ausgerechnet, nicht aufsummiert): schwillt an und ab."""
+    n = int(seconds * RATE)
+    return [volume * math.sin(math.pi * i / n) ** 2 * math.sin(2 * math.pi * (f0 * (i / RATE) + (f1 - f0) * (i / RATE) ** 2 / (2 * seconds))) for i in range(n)]
+
+
 def fit(samples, seconds):
     """Auf die Länge einer Wiederholung bringen (mit Stille auffüllen)."""
     return (samples + [0.0] * max(0, int(seconds * RATE) - len(samples)))[: int(seconds * RATE)]
@@ -115,3 +121,9 @@ write("tone_tick", fit(note(2000, 0.05, 0.5, 90.0), 1.0))  # Ticken, sehr dezent
 write("pre_beep", fit(tone(800, 0.2, 0.4), 1.0))  # langsames Piepsen
 write("pre_pulse", fit(soft(600, 0.8, 0.4), 1.0))  # pulsierend
 write("pre_rising", fit(tone(lambda t: 500 + 500 * t / 0.7, 0.7, 0.4), 1.0))  # ansteigend
+# Deaktivierungstöne (1.27.0): das Gegenstück zu den Aktivierungstönen, jeder passt zu einem davon, nur fallend statt steigend
+write("off_fall", fit(mix(note(783.99, 0.6, 0.45, 7.0, ((1.0, 1.0), (4.0, 0.15))), at(0.17, note(659.25, 0.6, 0.45, 7.0, ((1.0, 1.0), (4.0, 0.15)))), at(0.34, note(523.25, 1.2, 0.5, 4.0, ((1.0, 1.0), (4.0, 0.15))))), 2.0))  # Dreiklang absteigend (Gegenstück zu tone_rise)
+write("off_confirm", fit(mix(note(1046.5, 0.3, 0.45, 9.0), at(0.15, note(783.99, 0.9, 0.5, 5.0))), 1.5))  # Abschluss, zwei Töne fallend (Gegenstück zu tone_confirm)
+write("off_bell", fit(note(587.33, 1.8, 0.55, 3.0, ((1.0, 1.0), (2.01, 0.4), (2.99, 0.2), (4.2, 0.08))), 2.0))  # tiefe Glocke (Gegenstück zu tone_bell)
+write("off_soft", fit(glide(660, 440, 0.8, 0.35), 1.5))  # sanft ausklingend, die Tonhöhe sinkt (Gegenstück zu tone_soft)
+write("off_double", fit(tone(900, 0.08, 0.5) + silence(0.07) + tone(600, 0.08, 0.5), 1.0))  # Doppelpiep, der zweite tiefer (Gegenstück zu tone_double)

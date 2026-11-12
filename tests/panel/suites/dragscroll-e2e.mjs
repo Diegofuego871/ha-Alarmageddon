@@ -31,7 +31,8 @@ for (const lang of ["de", "en"]) {
     };
 
     // ----- 1. Nach oben mitscrollen: das Gerät ganz unten anfassen, an den oberen Rand fahren und dort halten -----
-    await s.ev("const c=r.host._content; c.scrollTop = c.scrollHeight; return 1");
+    // Das letzte Gerät des langen Ablaufs ins Bild holen (unter dem Alarmablauf folgen noch "Alarm endet" und "Beim Deaktivieren")
+    await s.ev("const c=r.host._content; const e=r.querySelectorAll('.ag-wf-main .ag-wf-step')[14]; c.scrollTop += e.getBoundingClientRect().top - (r.querySelector('.ag-cfg').getBoundingClientRect().bottom + 260); return 1");
     await s.page.waitForTimeout(250);
     const before = await scroller();
     const grab = await box('.ag-wf-main .ag-wf-step[data-index="14"] [data-wf="grab"]');

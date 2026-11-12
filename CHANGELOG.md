@@ -7,7 +7,23 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.27.0] - 2026-11-12
+
+Actions when disarming, with a disarming tone.
+
+### Added
+
+- **New chapter "When disarming" at the very bottom of the actions page.** Under the fixed point "Alarm system disarmed" there is a list of its own with a plus, like for arming. Whatever you put there **always runs when the alarm system is disarmed**: from an armed system, in the middle of the exit delay or the entry delay, and during an alarm (then after the actions after acknowledging). It is set per mode, for the mode that was armed; "Always active" has none. You can add a disarming tone, a device, a wait, a scene or your own action. Arming again or an alarm ends it at once, and the alarm never waits for it (also a hanging speaker holds up nothing).
+- **New kind of tone: the disarming tone,** the counterpart to the arming tone. It is short, has a duration you choose, never runs endlessly and puts the speaker back afterwards (on by default, switchable per step). It has **five sounds of its own** that match the arming tones, but fall instead of rise: "Triad falling", "Closing, two tones", "Deep bell", "Soft, fading" and "Double beep, falling". You can preview each one in the panel.
+- **In the backup and "Copy actions from".** The list belongs to the settings that are saved and restored, and it is copied with the other lists.
+
+### Changed
+
+- **Drag and drop knows the new list.** A step moves into "When disarming" like into the other lists, but only what belongs there (device, wait, scene, own action, disarming tone); the disarming tone does not go into other lists.
+
 ## [1.26.0] - 2026-11-12
+
+Not released; included in 1.27.0.
 
 Every tone puts the speaker back afterwards.
 
@@ -30,7 +46,7 @@ Every tone puts the speaker back afterwards.
 
 ## [1.25.1] - 2026-11-12
 
-Not released; included in 1.26.0.
+Not released; included in 1.27.0.
 
 Same naming for the actions of the push notification.
 
@@ -1218,7 +1234,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.26.0
+[1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0

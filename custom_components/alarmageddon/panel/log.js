@@ -183,7 +183,7 @@ export class LogUi {
       if (e.step === "notify") return this._t("logStepNotify") + test;
       if (e.step === "acknowledge") return this._t("logStepAck") + test;
       if (e.step === "wait") return this._t("logStepWait", { seconds: e.seconds }) + test;
-      if (e.step === "sound" || e.step === "chime" || e.step === "prealarm") return this._t("logStepSound", { targets }) + test;
+      if (e.step === "sound" || e.step === "chime" || e.step === "dechime" || e.step === "prealarm") return this._t("logStepSound", { targets }) + test;
       return this._t("logStepAction", { action: e.action || "?", targets: targets || "–" }) + test;
     }
     // Zustandseinträge wie im Ereignisprotokoll formulieren (dort ohne "kind", damit die Person erscheint)
