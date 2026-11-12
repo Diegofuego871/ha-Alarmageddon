@@ -23,6 +23,7 @@ Every tone puts the speaker back afterwards.
 - **Actions: no hint box in an empty flow any more.** Under "Alarm starts" the plus is enough; the box "No actions yet. Add a first step…" with its own button is gone and takes no space.
 - **Actions: the field under "Alarm ends" is just called "Closing message".** The long description is gone; only if you have not written an own message it says "Standard: "Alarm ended"".
 - **Actions: the preview of a tone is one button, like the test buttons.** It starts as a play symbol and turns into a stop symbol while the tone plays; the separate pause button is gone. The yellow frame stays, because it points to the note that the preview plays on this phone or computer, not on the real system.
+- **Notifications: the recipient group of a message can be removed first.** On every kind of message (and per mode) you can now remove the last recipient, as with the recipients of alarms at the top. A warning appears, and saving is blocked until you choose a new recipient or go back to the default (link "Reset"). Before, the last recipient could not be removed, so you had to add the new one first.
 - Alarm sounds in the lists outside the alarm flow that were saved before with "undo" off keep that value; switch it on in the step if you want it.
 
 ## [1.25.1] - 2026-11-12

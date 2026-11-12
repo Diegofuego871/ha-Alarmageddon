@@ -25,12 +25,29 @@ for (const lang of ["de", "en"]) {
     // Pille entfernen
     await s.tap(`${box} [data-nt="kt-del"][data-target="notify.mobile_app_tablet"]`);
     check(`${tag}: Pille entfernt`, await s.waitFor(`return !r.host.notify.draft.types.${kind}.targets.includes('notify.mobile_app_tablet')`));
-    // Letzten Empfänger lässt die Liste nicht leer
+    // Der letzte Empfänger lässt sich entfernen (1.26.0, wie oben bei den Empfängern von Alarmen): Warnung, Speichern gesperrt
     const last = await s.ev(`return r.host.notify.draft.types.${kind}.targets[0] || null`);
     if (last) {
       await s.ev(`const d=r.host.notify.draft; d.types.${kind}.targets=[d.types.${kind}.targets[0]]; r.host.notify.render(); return 1`);
       await s.tap(`${box} [data-nt="kt-del"]`);
-      check(`${tag}: der letzte Empfänger lässt sich nicht entfernen (sonst ginge nichts hinaus)`, (await s.ev(`return r.host.notify.draft.types.${kind}.targets.length`)) === 1);
+      check(`${tag}: der letzte Empfänger lässt sich entfernen: keine Pille, Warnung`, await s.waitFor(`const b=r.querySelector('${box}'); return b.querySelectorAll('.ag-mt-pills .ag-rpill').length === 0 && !!b.querySelector('.ag-warntext')`));
+      check(`${tag}: ohne Empfänger lässt sich nicht speichern (Meldung unten, Speichern gesperrt)`, await s.ev("return r.querySelector('.ag-foot [data-nt=\"save\"]').disabled && r.querySelector('.ag-foot .ag-err')?.textContent.length > 20"));
+      await (await s.el(`${box} select[data-nt="kt-add"]`)).selectOption("notify.mobile_app_partnerin");
+      check(`${tag}: ein neuer Empfänger hebt die Sperre auf`, await s.waitFor(`const b=r.querySelector('${box}'); return b.querySelectorAll('.ag-mt-pills .ag-rpill').length === 1 && !b.querySelector('.ag-warntext') && !r.querySelector('.ag-foot [data-nt="save"]').disabled`));
+      await s.ev(`const d=r.host.notify.draft; d.types.${kind}.targets=[d.types.${kind}.targets[0]]; r.host.notify.render(); return 1`);
+      await s.tap(`${box} [data-nt="kt-del"]`);
+      await s.waitFor(`return !!r.querySelector('${box} .ag-warntext')`);
+      await s.tap(`${box} [data-nt="kt-reset"]`);
+      check(`${tag}: "Zurücksetzen" nimmt die Warnung weg und kehrt zum Standard zurück`, await s.waitFor(`const b=r.querySelector('${box}'); return !b.querySelector('.ag-warntext') && b.querySelectorAll('.ag-mt-pills .ag-rpill').length > 0 && r.host.notify.draft.types.${kind}.targets.length === 0`));
+      await s.ev(`const d=r.host.notify.draft; d.types.${kind}.targets=[d.types.${kind}.targets[0] || 'notify.mobile_app_diego']; r.host.notify.render(); return 1`);
+      await s.tap(`${box} [data-nt="kt-del"]`);
+      await s.waitFor(`return !!r.querySelector('${box} .ag-warntext')`);
+      await s.tap('.ag-foot [data-nt="cancel"]');
+      check(`${tag}: Abbrechen verwirft auch die leere Auswahl`, await s.waitFor(`return r.host.notify.noRecipient().length === 0 && !r.querySelector('${box} .ag-warntext') && r.querySelector('.ag-foot [data-nt=save]').disabled`));
+      await s.tap(`[data-nt="enabled"][data-kind="${kind}"]`);
+      await s.waitFor(`return !!r.querySelector('${box} select[data-nt="kt-add"]')`);
+      await (await s.el(`${box} select[data-nt="kt-add"]`)).selectOption("notify.mobile_app_tablet");
+      await s.waitFor(`return r.host.notify.draft.types.${kind}.targets.includes('notify.mobile_app_tablet')`);
     }
     // Zurück zum Standard
     await s.tap(`${box} [data-nt="kt-reset"]`);

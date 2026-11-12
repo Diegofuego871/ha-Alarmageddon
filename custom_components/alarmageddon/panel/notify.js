@@ -53,7 +53,14 @@ export class NotifyUi {
     return this.draft;
   }
 
+  // Arten (und Modi), bei denen der Nutzer den letzten Empfänger entfernt hat und noch keinen neuen gewählt (1.26.0): nur im Entwurf,
+  // "Art|Modus". Gespeichert wird so nicht (eine leere eigene Liste hiesse beim Server: es gilt die Gruppe oben).
+  _empty() {
+    return (this.emptyOwn ||= new Set());
+  }
+
   reset() {
+    this._empty().clear();
     this.draft = null;
     this.saveState = null;
   }
@@ -77,6 +84,7 @@ export class NotifyUi {
     }
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
     for (const k of ARM_BUTTONS) if ((a[k] !== false) !== (d[k] !== false)) n += 1;
+    n += this._empty().size; // entfernter letzter Empfänger einer Meldung: offene Änderung
     if (Boolean(a.per_mode) !== Boolean(d.per_mode)) n += 1; // der Schalter zählt als eigene Änderung
     // Eigene Werte je Modus: jeder Modus mit Änderung zählt einmal
     for (const m of ALL_MODES) if (JSON.stringify(a.modes?.[m] || {}) !== JSON.stringify(d.modes?.[m] || {})) n += 1;
@@ -86,6 +94,11 @@ export class NotifyUi {
   invalid() {
     const d = this.draft;
     return d ? Object.entries(RANGES).filter(([k, [lo, hi]]) => !Number.isInteger(d[k]) || d[k] < lo || d[k] > hi).map(([k]) => k) : [];
+  }
+
+  // Meldungen ohne Empfänger (letzten entfernt, keinen neuen gewählt): blockiert das Speichern
+  noRecipient() {
+    return this.draft ? [...this._empty()] : [];
   }
 
   html() {
@@ -120,6 +133,7 @@ export class NotifyUi {
   // Empfänger einer Art (Entwurf): eigene Liste des Modus (Reiter), sonst eigene Liste der Art, sonst die Gruppe oben (Alarm oder Wartung)
   _recipientsOf(kind, mode) {
     const group = this.draft[TARGET_KEY[GROUP_OF[kind]]] || [];
+    if (this._empty().has(`${kind}|${mode || ""}`)) return { list: [], own: true, ownHere: true, group };
     const own = this._eff(kind, mode).targets;
     return { list: own?.length ? own : group, own: Boolean(own?.length), ownHere: mode ? Boolean(this.draft.modes?.[mode]?.[kind]?.targets?.length) : Boolean(this.draft.types[kind].targets?.length), group };
   }
@@ -155,7 +169,7 @@ export class NotifyUi {
     const select = services.length
       ? `<select class="ag-input ag-rsel" data-nt="kt-add" data-kind="${kind}"${md} aria-label="${esc(`${name}: ${this._t("ntAdd")}`)}" ${free.length ? "" : "disabled"}><option value="">${esc(this._t(free.length ? "ntAdd" : "ntAllChosen"))}</option>${free.map((s) => `<option value="${esc(s)}">${esc(short(s))}</option>`).join("")}</select>`
       : "";
-    return `<div class="ag-mt-opt ag-mt-recip"><span>${esc(this._t("ntRecipientsShort"))}<small class="ag-t2 ag-block">${origin}</small></span>${select}</div>${pills ? `<div class="ag-rpills ag-mt-pills">${pills}</div>` : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("ntNoneChosen"))}</small>`}`;
+    return `<div class="ag-mt-opt ag-mt-recip"><span>${esc(this._t("ntRecipientsShort"))}<small class="ag-t2 ag-block">${origin}</small></span>${select}</div>${pills ? `<div class="ag-rpills ag-mt-pills">${pills}</div>` : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("ntNoneOwn"))}</small>`}`;
   }
 
   // Eigenen Wert eines Modus setzen; entspricht er dem gemeinsamen Wert, entfällt er (so folgt er späteren Änderungen mit)
@@ -249,9 +263,10 @@ export class NotifyUi {
     const foot = h._view?.querySelector(".ag-foot");
     if (!foot) return;
     const n = this.dirtyCount();
-    const bad = this.invalid().length;
+    const bad = this.invalid().length + this.noRecipient().length;
     let status;
-    if (bad) status = `<span class="ag-err">${esc(this._t("ntInvalid"))}</span>`;
+    if (!this.invalid().length && this.noRecipient().length) status = `<span class="ag-err">${esc(this._t("ntNeedRecipient"))}</span>`;
+    else if (bad) status = `<span class="ag-err">${esc(this._t("ntInvalid"))}</span>`;
     else if (this.saveState === "saved" && !n) status = `<span class="ag-saved">${ic("check", 16)} ${esc(this._t("saved"))}</span>`;
     else if (this.saveState && this.saveState !== "saved") status = `<span class="ag-err">${esc(this.saveState)}</span>`;
     else status = `<span class="ag-t2">${esc(n === 0 ? this._t("noChanges") : n === 1 ? this._t("change") : this._t("changes", { count: n }))}</span>`;
@@ -263,12 +278,13 @@ export class NotifyUi {
 
   async save() {
     const h = this.host;
-    if (!this.draft || this.saving || this.invalid().length) return;
+    if (!this.draft || this.saving || this.invalid().length || this.noRecipient().length) return;
     this.saving = true;
     this.renderFoot();
     try {
       const result = await h._hass.callWS({ type: "alarmageddon/save_notify", notify: this.draft });
       if (h._data) h._data.notify = result?.notify || JSON.parse(JSON.stringify(this.draft));
+      this._empty().clear();
       this.draft = null;
       this.saveState = "saved";
       this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
@@ -315,9 +331,12 @@ export class NotifyUi {
     } else if (act === "kt-del") {
       const { kind, mode } = el.dataset;
       const next = this._recipientsOf(kind, mode || null).list.filter((x) => x !== el.dataset.target);
-      if (!next.length) return true; // ohne Empfänger ginge nichts hinaus: die Liste bleibt, bis ein anderer gewählt ist
-      this._setTargets(kind, mode || null, next);
+      // Der letzte lässt sich auch entfernen (wie oben bei den Empfängern von Alarmen): es erscheint die Warnung, und gespeichert
+      // wird erst, wenn ein neuer Empfänger gewählt oder die Gruppe oben wieder übernommen ist
+      if (!next.length) this._empty().add(`${kind}|${mode || ""}`);
+      else this._setTargets(kind, mode || null, next);
     } else if (act === "kt-reset") {
+      this._empty().delete(`${el.dataset.kind}|${el.dataset.mode || ""}`);
       this._setTargets(el.dataset.kind, el.dataset.mode || null, null);
     } else if (act === "mode-reset") {
       const { kind, mode } = el.dataset;
@@ -325,7 +344,7 @@ export class NotifyUi {
       delete kinds[kind];
       if (Object.keys(kinds).length) d.modes[mode] = kinds;
       else delete d.modes[mode];
-    } else if (act === "cancel") this.draft = null;
+    } else if (act === "cancel") { this._empty().clear(); this.draft = null; }
     else if (act === "save") return this.save(), true;
     else if (act === "test") return this.test(el.dataset.kind, el.dataset.mode), true;
     else return false;
@@ -349,6 +368,7 @@ export class NotifyUi {
       this.ensureDraft();
       const { kind, mode } = el.dataset;
       const cur = this._recipientsOf(kind, mode || null).list;
+      this._empty().delete(`${kind}|${mode || ""}`);
       if (!cur.includes(el.value)) this._setTargets(kind, mode || null, [...cur, el.value]);
       this.saveState = null;
       this.render();
