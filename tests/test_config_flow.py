@@ -25,7 +25,9 @@ async def test_create_alarm_system(hass: HomeAssistant) -> None:
     options = result["options"]
     assert options["night_enabled"] is True
     # Code nur als Hash, nie im Klartext
-    assert "2468" not in str(result["data"]) + str(options)
+    # Hash und Salz sind Hexwerte und können die Ziffern "2468" zufällig enthalten: nur die übrigen Felder prüfen
+    others = {k: v for k, v in {**result["data"], **options}.items() if k not in ("code_hash", "code_salt")}
+    assert "2468" not in str(others) and options["code_hash"] != "2468" and options["code_salt"] != "2468"
     assert verify_code("2468", options["code_hash"], options["code_salt"])
     await hass.async_block_till_done()
     assert hass.states.get("alarm_control_panel.haus") is not None

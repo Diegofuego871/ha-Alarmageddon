@@ -50,7 +50,13 @@ async def test_code_never_stored_or_returned_in_clear(hass: HomeAssistant, hass_
     entry, client = await _with_codes(hass, hass_ws_client)
     await _ws(client, type="alarmageddon/add_code", entry_id=entry.entry_id, name="Anna", code="5678")
     await hass.async_block_till_done()
-    assert "5678" not in json.dumps(dict(entry.options))
+    # Hash und Salz sind Hexwerte und können "5678" zufällig enthalten: sie zählen nicht mit
+    def strip(value):
+        if isinstance(value, dict):
+            return {k: strip(v) for k, v in value.items() if k not in ("hash", "salt", "code_hash", "code_salt")}
+        return [strip(v) for v in value] if isinstance(value, list) else value
+    assert "5678" not in json.dumps(strip(dict(entry.options)))
+    assert all(c["hash"] != "5678" and c["salt"] != "5678" for c in entry.options["codes"])
     data = await _ws(client, type="alarmageddon/data")
     system = data["result"]["systems"][0]
     assert system["codes"] == [{"id": system["codes"][0]["id"], "name": "Anna", "user_id": None}]
