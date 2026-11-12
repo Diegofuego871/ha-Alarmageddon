@@ -64,9 +64,16 @@ for (const lang of ["de", "en"]) {
     await s.tap('.ag-wf-step[data-index="2"] [data-wf="test-step"]');
     await s.waitFor("return r.getElementById('ag-confirm').open");
     await s.tap('#ag-confirm [data-c="yes"]');
-    check(`${tag}: nur dieser Schritt gesendet`, await s.waitFor("return !!r.querySelector('[data-wf=\"test-stop\"]')") && await s.sim("const c=window.__calls.filter((x) => x.type === 'alarmageddon/test_workflow').at(-1); return c?.step?.type === 'wait' && c.trigger === 'away'"));
-    await s.tap('[data-wf="test-stop"]');
-    await s.waitFor("return !!r.querySelector('[data-wf=\"test\"]')");
+    check(`${tag}: nur dieser Schritt gesendet`, await s.waitFor("return !!r.querySelector('.ag-wf-step [data-wf=\"test-step-stop\"]')") && await s.sim("const c=window.__calls.filter((x) => x.type === 'alarmageddon/test_workflow').at(-1); return c?.step?.type === 'wait' && c.trigger === 'away'"));
+    // 1.18.1: beim Schritt-Test wird dessen Play-Knopf zum Stopp-Knopf (nur bei diesem Schritt); unten gibt es keinen Stopp, "Test" ist gesperrt
+    check(`${tag}: Stopp-Knopf nur am getesteten Schritt, die anderen Schritte gesperrt, unten kein Stopp`, await s.ev("const st=[...r.querySelectorAll('.ag-wf-main .ag-wf-step')]; return st[2].querySelector('[data-wf=\"test-step-stop\"]') && st.filter((c, k) => k !== 2).every((c) => c.querySelector('[data-wf=\"test-step\"]')?.disabled) && !r.querySelector('.ag-foot [data-wf=\"test-stop\"]') && r.querySelector('.ag-foot [data-wf=\"test\"]')?.disabled"));
+    await s.tap('.ag-wf-step[data-index="2"] [data-wf="test-step-stop"]');
+    check(`${tag}: Stopp am Schritt beendet den Test, alles wieder bedienbar`, await s.waitFor("return !r.querySelector('[data-wf=\"test-step-stop\"]') && !r.querySelector('.ag-wf-step [data-wf=\"test-step\"]').disabled") && await s.sim("return window.__calls.some((x) => x.type === 'alarmageddon/stop_workflow')"));
+    // Ganzer Ablauf: der Knopf unten wird zum Stopp, die Schritte bleiben gesperrt
+    await s.tap('.ag-foot [data-wf="test"]');
+    check(`${tag}: Test des ganzen Ablaufs: unten Stopp, an den Schritten kein Stopp`, await s.waitFor("return !!r.querySelector('.ag-foot [data-wf=\"test-stop\"]') && !r.querySelector('[data-wf=\"test-step-stop\"]') && [...r.querySelectorAll('.ag-wf-main [data-wf=\"test-step\"]')].every((b) => b.disabled)"));
+    await s.tap('.ag-foot [data-wf="test-stop"]');
+    await s.waitFor("return !!r.querySelector('.ag-foot [data-wf=\"test\"]') && !r.querySelector('.ag-foot [data-wf=\"test\"]').disabled");
 
     // Warten bearbeiten: 30 -> 45 s
     await s.tap('.ag-wf-step[data-index="2"] [data-wf="edit"]');

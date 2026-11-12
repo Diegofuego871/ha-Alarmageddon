@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.18.1] - 2026-11-12
+
+Test button of a step becomes a stop button.
+
+### Changed
+
+- **Actions: the test of a step is stopped at the step.** When you test a single step, its play button turns into a stop button, and you stop the test right there. The button in the footer stays locked during such a test: it is only for the test of the whole flow, and during that test it is the stop button.
+
 ## [1.18.0] - 2026-11-12
 
 "Arming not possible" with buttons: try again, or arm anyway.
@@ -1105,6 +1113,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
 [1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0
 [1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12
 [1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11

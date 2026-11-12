@@ -259,6 +259,7 @@ export class ActionsUi {
     this.draft = null;
     this.saveState = null;
     this.saving = false;
+    this.testSource = null; // was gerade getestet wird: { kind: "all" } oder { kind: "step", zone, index }
     this.edit = null; // { index, insert, form, q, error, open }
     this.drag = null;
     this.previewing = null; // URL des Tons, der gerade auf diesem Gerät läuft
@@ -515,7 +516,7 @@ export class ActionsUi {
       <button class="ag-handle" data-wf="grab" data-index="${i}" aria-label="${esc(this._t("stepGrab"))}" title="${esc(this._t("stepGrab"))}">${ic("grip", 20)}</button>
       <span class="ag-wf-icon k-${f.kind}">${ic(k.icon, 20)}</span>
       <div class="ag-wf-text"><b>${esc(title)}</b> ${restore}<div class="ag-t2 ag-small">${esc(this._summary(f))}</div>${this._waitPill(f)}</div>
-      <div class="ag-wf-btns"><button class="ag-iconbtn" data-wf="test-step" data-index="${i}" ${running ? "disabled" : ""} aria-label="${esc(this._t("stepTest"))}" title="${esc(running ? this._t("stepTestBusy") : this._t("stepTest"))}">${ic("play", 18)}</button>
+      <div class="ag-wf-btns">${this._stepTestBtn(i, zone, running)}
         <button class="ag-iconbtn" data-wf="edit" data-index="${i}" aria-label="${esc(this._t("stepEdit"))}">${ic("pencil", 18)}</button>
         <button class="ag-iconbtn" data-wf="delete" data-index="${i}" aria-label="${esc(this._t("stepDelete"))}">${ic("trash", 18)}</button></div></div>`;
   }
@@ -535,12 +536,25 @@ export class ActionsUi {
     return `<span class="ag-waitpill">${ic("timer", 14)}<span>${esc(this._t("wfWaits"))}</span></span>`;
   }
 
+  // Ist der Test dieses Schritts der laufende (1.18.1)? Dann wird sein Play-Knopf zum Stopp-Knopf; der Knopf unten bleibt gesperrt
+  _isStepTest(index, zone) {
+    const t = this.testSource;
+    return !!(this.system?.workflow_running && this.system.workflow_test && t?.kind === "step" && t.zone === zone && t.index === index);
+  }
+
+  _stepTestBtn(i, zone, running) {
+    if (this._isStepTest(i, zone)) return `<button class="ag-iconbtn on" data-wf="test-step-stop" data-index="${i}" aria-label="${esc(this._t("stepTestStop"))}" title="${esc(this._t("stepTestStop"))}">${ic("stop", 18)}</button>`;
+    return `<button class="ag-iconbtn" data-wf="test-step" data-index="${i}" ${running ? "disabled" : ""} aria-label="${esc(this._t("stepTest"))}" title="${esc(running ? this._t("stepTestBusy") : this._t("stepTest"))}">${ic("play", 18)}</button>`;
+  }
+
   // "Testen" steht unten bei den anderen Knöpfen (auf dem Handy nur das Symbol, damit alle drei Platz haben)
   _testBtnHtml(dirty) {
     const s = this.system;
     const running = s?.workflow_running;
     const label = this._t(running && s.workflow_test ? "wfTestStop" : "wfTest");
     const text = this.host.hasAttribute("narrow") ? "" : esc(label);
+    // Läuft der Test eines einzelnen Schritts, hat dieser Schritt den Stopp-Knopf; unten bleibt "Test" gesperrt (1.18.1)
+    if (running && s.workflow_test && this.testSource?.kind === "step") return `<button class="ag-btn" data-wf="test" aria-label="${esc(this._t("wfTest"))}" disabled title="${esc(this._t("stepTestBusy"))}">${ic("play", 18)}${this.host.hasAttribute("narrow") ? "" : esc(this._t("wfTest"))}</button>`;
     if (running && s.workflow_test) return `<button class="ag-btn" data-wf="test-stop" aria-label="${esc(label)}">${ic("stop", 18)}${text}</button>`;
     return `<button class="ag-btn" data-wf="test" aria-label="${esc(label)}" ${dirty || running || !this.steps().length ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("wfTestHint"))}">${ic("play", 18)}${text}</button>`;
   }
@@ -1086,13 +1100,14 @@ export class ActionsUi {
     }
   }
 
-  async test(stop, step) {
+  async test(stop, step, source) {
     const h = this.host;
     const s = this.system;
     try {
       const msg = stop ? { type: "alarmageddon/stop_workflow", entry_id: s.entry_id } : { type: "alarmageddon/test_workflow", entry_id: s.entry_id, trigger: this.trigger };
       if (step) msg.step = step;
       await h._hass.callWS(msg);
+      this.testSource = stop ? null : source || { kind: "all" };
       s.workflow_running = stop ? null : this.trigger;
       s.workflow_test = !stop;
       this.render();
@@ -1107,7 +1122,7 @@ export class ActionsUi {
     const step = this.steps(zone)[index];
     if (!step) return;
     const ok = await this.host._confirm(this._t("stepTestTitle"), this._t("stepTestText"), this._t("stepTestRun"));
-    if (ok) await this.test(false, step);
+    if (ok) await this.test(false, step, { kind: "step", zone, index });
   }
 
   // ----- Ziehen am Griff (Pointer-Ereignisse am Fenster, Tastatur mit Pfeiltasten) -----
@@ -1278,6 +1293,7 @@ export class ActionsUi {
       this.saveState = null;
       this.render();
     } else if (act === "test-step") this.testStep(i, zone);
+    else if (act === "test-step-stop") this.test(true);
     else if (act === "pick") {
       if (!form.targets.includes(el.dataset.ent)) form.targets = [...form.targets, el.dataset.ent];
       this.edit.q = "";

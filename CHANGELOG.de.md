@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.18.1] - 2026-11-12
+
+Der Testknopf eines Schritts wird zum Stopp-Knopf.
+
+### Geändert
+
+- **Aktionen: der Test eines Schritts wird beim Schritt gestoppt.** Testest du einen einzelnen Schritt, wird sein Play-Knopf zum Stopp-Knopf, und du beendest den Test genau dort. Der Knopf in der Fusszeile bleibt bei einem solchen Test gesperrt: er gehört zum Test des ganzen Ablaufs und ist während dieses Tests der Stopp-Knopf.
+
 ## [1.18.0] - 2026-11-12
 
 "Scharfschalten nicht möglich" mit Knöpfen: erneut versuchen oder trotzdem scharf schalten.
@@ -1105,6 +1113,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
 [1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0
 [1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12
 [1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11
