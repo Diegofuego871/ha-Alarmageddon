@@ -733,6 +733,24 @@ select.ag-select[data-act="system"] { height: 52px; padding-left: 22px; font-siz
 .ag-actrow > * { flex: none; margin: 0; }
 .ag-clickrow { cursor: pointer; }
 .ag-table tr.ag-clickrow:hover td { background: color-mix(in srgb, var(--ag-text) 4%, transparent); }
+/* Easter Egg (1.20.0): Dreifachklick aufs Logo. Bewegung reduzieren gilt hier bewusst nicht (Vorgabe des Nutzers). */
+.ag-logo { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ag-egg { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 16px; }
+.ag-egg-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.72); }
+.ag-egg-pop { position: relative; width: min(340px, 100%); padding: 26px 22px 22px; border-radius: 28px; background: #17181b; border: 1px solid #2e2f34; color: #e8e8ea; text-align: center; overflow: hidden; outline: none; box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+.ag-egg-stage { position: relative; width: 200px; height: 200px; margin: 0 auto 10px; perspective: 700px; }
+.ag-egg-beam { position: absolute; left: 50%; top: 50%; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%; mix-blend-mode: screen;
+  background: conic-gradient(from 0deg, rgba(255,150,60,0) 0deg, rgba(255,120,50,.55) 18deg, rgba(255,106,61,0) 44deg, transparent 180deg, rgba(255,120,50,.55) 198deg, rgba(255,106,61,0) 224deg, transparent 360deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%); mask: radial-gradient(circle, #000 18%, transparent 68%); animation: ag-egg-z 2.4s linear infinite; }
+.ag-egg-glow { position: absolute; left: 50%; top: 46%; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; background: radial-gradient(circle, rgba(255,200,120,.95), rgba(255,106,61,.5) 45%, transparent 70%); animation: ag-egg-pulse 1.2s ease-in-out infinite; }
+.ag-egg-logo { position: absolute; inset: 0; transform-style: preserve-3d; animation: ag-egg-y 4s linear infinite; }
+.ag-egg-logo svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 14px rgba(255,106,61,.55)); }
+.ag-egg-pop h2 { margin: 6px 0 2px; font-size: 26px; font-weight: 600; }
+.ag-egg-v { color: #ffb45e; font-weight: 700; font-size: 18px; }
+.ag-egg-x { display: inline-block; margin-top: 18px; padding: 10px 26px; border-radius: 999px; background: #26272b; color: #e8e8ea; }
+@keyframes ag-egg-y { to { transform: rotateY(360deg); } }
+@keyframes ag-egg-z { to { transform: rotate(360deg); } }
+@keyframes ag-egg-pulse { 50% { transform: scale(1.35); opacity: .7; } }
 .ag-logo { flex: none; width: 40px; height: 40px; border-radius: 11px; object-fit: cover; }
 /* Blatt (Handy): X rechts oben im Kopf, der Kopf lässt Platz dafür */
 dialog.ag-sheetdlg .ag-dlg-x { top: 8px; right: 10px; width: 38px; height: 38px; }

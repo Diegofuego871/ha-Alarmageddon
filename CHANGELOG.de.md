@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.20.0] - 2026-11-12
+
+Eine kleine Überraschung in der Kopfzeile.
+
+### Hinzugefügt
+
+- **Easter Egg: Dreifachklick aufs Logo.** Tippt man das Logo oben links dreimal rasch hintereinander an, zoomt es in die Bildmitte und wird zum Pop-up: Das Schild dreht sich um seine Achse, ein Lichtkegel kreist wie bei einer Sirenenleuchte, und das "A" pulsiert. Darunter steht die installierte Version. Ein Tipp irgendwohin oder Escape schliesst es. Die Animation läuft auch, wenn die Systemeinstellung "Bewegung reduzieren" an ist (Wunsch des Nutzers).
+
 ## [1.19.0] - 2026-11-12
 
 Aktionen während der Ausgangs- und der Eingangsverzögerung.
@@ -1130,6 +1138,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
 [1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0

@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.20.0] - 2026-11-12
+
+A small surprise in the header.
+
+### Added
+
+- **Easter egg: triple tap on the logo.** Tap the logo at the top left three times in quick succession and it zooms into the middle of the screen and becomes a pop-up: the shield turns around its axis, a beam of light circles like a siren lamp and the "A" pulses. Below it you see the installed version. A tap anywhere or Escape closes it. The animation also runs if the system setting "Reduce motion" is on (the user's request).
+
 ## [1.19.0] - 2026-11-12
 
 Actions during the exit delay and during the entry delay.
@@ -1130,6 +1138,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
 [1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0

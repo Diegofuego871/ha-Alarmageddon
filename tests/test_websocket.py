@@ -69,6 +69,8 @@ async def test_data(hass: HomeAssistant, hass_ws_client) -> None:
 
     result = await _ws(hass, hass_ws_client, type="alarmageddon/data")
     assert result["success"]
+    # Version für das Easter Egg im Panel (1.20.0): die der geladenen Anlage, ein Text und kein Geheimnis
+    assert result["result"]["version"] == entry_alarm.runtime_data.version
     system = result["result"]["systems"][0]
     assert system["entry_id"] == entry_alarm.entry_id
     assert system["entity_id"] == ALARM

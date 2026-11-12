@@ -417,7 +417,14 @@ class AlarmageddonPanel extends HTMLElement {
     this._lastHtml.delete(this._content);
     this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head ag-head-cfg"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()"><div class="ag-headsys"></div>${tabs}${right}</div><div class="ag-view"></div>`));
     this._view = this._content.querySelector(".ag-view");
-    this._content.querySelector(".ag-logo")?.addEventListener("load", () => this._stickySync());
+    const logo = this._content.querySelector(".ag-logo");
+    logo?.addEventListener("load", () => this._stickySync());
+    // Easter Egg (1.20.0): dreimal rasch aufs Logo tippen, es zoomt in die Mitte und zeigt die Version
+    let taps = 0, timer = 0;
+    logo?.addEventListener("click", () => {
+      clearTimeout(timer);
+      if (++taps >= 3) { taps = 0; this._openEgg(logo); } else timer = setTimeout(() => (taps = 0), 600);
+    });
     this._view.style.display = "contents";
     this._renderView(true);
   }
@@ -926,6 +933,42 @@ class AlarmageddonPanel extends HTMLElement {
     const text = this.hasAttribute("narrow") ? "" : esc(label);
     return `${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
       <button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>`;
+  }
+
+  // Easter Egg: das Logo zoomt aus seiner Lage in die Mitte; das Schild dreht sich, ein Lichtkegel kreist wie bei einer
+  // Sirenenleuchte. Die Einstellung "Bewegung reduzieren" gilt hier bewusst nicht (Vorgabe des Nutzers, 2026-11-12).
+  _openEgg(logo) {
+    if (this._root.querySelector(".ag-egg")) return;
+    const shield = `<svg viewBox="22 22 212 212" aria-hidden="true"><defs><linearGradient id="ag-egg-g" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#E5304A"/></linearGradient></defs><path d="M128 36 L204 64 V122 C204 170 172 204 128 222 C84 204 52 170 52 122 V64 Z" fill="none" stroke="url(#ag-egg-g)" stroke-width="22" stroke-linejoin="round"/><path d="M94 164 L128 92 L162 164" fill="none" stroke="url(#ag-egg-g)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><path d="M110 138 H146" fill="none" stroke="url(#ag-egg-g)" stroke-width="16" stroke-linecap="round"/></svg>`;
+    const egg = this.ownerDocument.createElement("div");
+    egg.className = "ag-egg";
+    egg.setAttribute("role", "dialog");
+    egg.setAttribute("aria-modal", "true");
+    egg.setAttribute("aria-label", "Alarmageddon");
+    const version = this._data?.version;
+    egg.innerHTML = `<div class="ag-egg-scrim"></div><div class="ag-egg-pop" tabindex="-1"><div class="ag-egg-stage"><div class="ag-egg-beam"></div><div class="ag-egg-glow"></div><div class="ag-egg-logo">${shield}</div></div><h2>Alarmageddon</h2>${version ? `<div class="ag-egg-v">${esc(this._t("eggVersion", { v: version }))}</div>` : ""}<span class="ag-egg-x">${esc(this._t("eggClose"))}</span></div>`;
+    this._root.appendChild(egg);
+    const pop = egg.querySelector(".ag-egg-pop");
+    const scrim = egg.querySelector(".ag-egg-scrim");
+    const a = logo.getBoundingClientRect();
+    const b = pop.getBoundingClientRect();
+    const dx = a.left + a.width / 2 - (b.left + b.width / 2);
+    const dy = a.top + a.height / 2 - (b.top + b.height / 2);
+    const from = `translate(${dx}px, ${dy}px) scale(${a.width / b.width}) rotate(-200deg)`;
+    pop.animate([{ opacity: 0, transform: from }, { opacity: 1, offset: 0.25 }, { opacity: 1, transform: "none" }], { duration: 700, easing: "cubic-bezier(.2,.9,.25,1.1)" });
+    scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
+    pop.focus({ preventScroll: true });
+    let closing = false;
+    const close = () => {
+      if (closing) return;
+      closing = true;
+      this.ownerDocument.removeEventListener("keydown", onKey, true);
+      pop.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: from }], { duration: 380, easing: "ease-in", fill: "forwards" });
+      scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, fill: "forwards" }).onfinish = () => egg.remove();
+    };
+    const onKey = (ev) => { if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); close(); } };
+    this.ownerDocument.addEventListener("keydown", onKey, true);
+    egg.addEventListener("click", close);
   }
 
   _openRename() {

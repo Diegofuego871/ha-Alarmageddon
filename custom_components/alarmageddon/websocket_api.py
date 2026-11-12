@@ -260,7 +260,10 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         info["integration"] = names.get(info["platform"], info["platform"])
     settings = await async_get_settings(hass)
     notify_services = sorted(f"notify.{name}" for name in hass.services.async_services().get("notify", {}) if name not in ("notify", "send_message", "persistent_notification"))
+    loaded = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
     connection.send_result(msg["id"], {
+        # Version der installierten Integration (Easter Egg im Panel, 1.20.0); kein Geheimnis
+        "version": loaded[0].runtime_data.version if loaded else None,
         "systems": systems,
         "sensors": sensors,
         "presets": settings.presets,
