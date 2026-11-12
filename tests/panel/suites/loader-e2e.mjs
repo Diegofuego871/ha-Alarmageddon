@@ -8,8 +8,10 @@ const DOOR = "binary_sensor.haustuer";
 const browser = await launch();
 for (const lang of ["de", "en"]) {
   for (const mobile of [false, true]) {
-    const tag = `${lang}/${mobile ? "Handy" : "Desktop"}`;
+    const tag = `${lang}/${mobile ? "Handy" : "Desktop"}${mobile ? "/Bewegung reduzieren" : ""}`;
     const s = await open(browser, { mobile, lang });
+    // Auf dem Handy mit eingeschalteter Systemeinstellung: die Ladeanzeige kreist trotzdem (Vorgabe des Nutzers, 1.21.0)
+    if (mobile) await s.page.emulateMedia({ reducedMotion: "reduce" });
     await s.waitFor(`return !!r.querySelector('[data-act="more"][data-entity="${DOOR}"]')`);
     await s.sim('window.__delay = { "alarmageddon/sensor_history": 900, "alarmageddon/log": 900 }');
     // Lage und Aussehen der Ladeanzeige in der Fläche der Grafik

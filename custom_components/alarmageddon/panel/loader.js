@@ -8,7 +8,8 @@ export function loaderHtml(label, color = "var(--ag-primary)", top = false) {
 
 // root: Shadow-Root des Panels; state: Objekt des Panels für Zeitgeber (_ldRaf, _ldIdle)
 export function loaderStart(root, state) {
-  if (state._ldRaf || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  // "Bewegung reduzieren" gilt hier bewusst nicht (Vorgabe des Nutzers, 2026-11-12): die Punkte kreisen immer
+  if (state._ldRaf) return;
   state._ldIdle = 0;
   const K = { a: 1.7, b: 0.9, p: 0, c: 1.3, d: 1.3, q: 1.7, e: 0.9, f: 0.7, r: 3.1 };
   const SPEED = 2.1; // Umdrehungen schneller als die ersten Entwürfe (zu langsam)

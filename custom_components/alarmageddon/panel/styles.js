@@ -552,7 +552,6 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-ld s:nth-child(1) { left: 55px; top: 29px; }
 .ag-ld s:nth-child(2) { left: 17px; top: 51px; }
 .ag-ld s:nth-child(3) { left: 17px; top: 7px; }
-@media (prefers-reduced-motion: reduce) { .ag-ld s { animation: ag-ld-pulse 1.4s ease-in-out infinite; } @keyframes ag-ld-pulse { 50% { opacity: .35; } } }
 .ag-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .ag-kind { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: left; padding: 12px; border: 1px solid var(--ag-divider); border-radius: 14px; background: var(--ag-card); cursor: pointer; font: inherit; color: inherit; }
 .ag-kind:hover { border-color: var(--ag-primary); }
