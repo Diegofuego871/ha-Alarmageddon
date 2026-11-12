@@ -441,7 +441,7 @@ export class ActionsUi {
   _endHtml() {
     const e = normEnd(this.draft?.end?.[this.trigger]);
     return `<div class="ag-wf-end"><div class="ag-wf-start"><span class="ag-mini ok ag-end-ic">${ic("check", 20)}</span>${esc(this._fixedTitle("wfEnd"))}</div>
-      <div class="ag-card ag-wf-endcard"><span class="ag-wf-icon k-end">${ic("bell", 20)}</span><div class="ag-wf-text"><b>${esc(this._t(e.notify ? "wfEndOwn" : "wfEndDefault"))}</b><small class="ag-t2 ag-small">${esc(this._t(e.notify ? "wfEndOwnHint" : "wfEndDefaultHint"))}</small></div>
+      <div class="ag-card ag-wf-endcard"><span class="ag-wf-icon k-end">${ic("bell", 20)}</span><div class="ag-wf-text"><b>${esc(this._t(e.notify ? "wfEndOwn" : "wfEndDefault"))}</b>${e.notify ? "" : `<small class="ag-t2 ag-small">${esc(this._t("wfEndDefaultHint"))}</small>`}</div>
         <div class="ag-wf-btns"><button class="ag-iconbtn" data-wf="end-edit" aria-label="${esc(this._t("wfEndEdit"))}" title="${esc(this._t("wfEndEdit"))}">${ic("pencil", 18)}</button></div></div></div>`;
   }
 
