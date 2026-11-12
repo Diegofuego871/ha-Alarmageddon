@@ -71,7 +71,7 @@ def valid_notify(value: Any) -> dict[str, Any]:
     for key in ("alarm_targets", "maintenance_targets"):
         if isinstance(value.get(key), list):
             out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str) and t.startswith("notify.")]
-    for key in ("disarm_action", "open_action", "silence_action", "acknowledge_action"):
+    for key in ("disarm_action", "open_action", "silence_action", "acknowledge_action", "arm_retry_action", "arm_force_action"):
         if isinstance(value.get(key), bool):
             out[key] = value[key]
     for key, (low, high) in (("battery_threshold", BATTERY_THRESHOLD_RANGE), ("offline_minutes", OFFLINE_MINUTES_RANGE)):

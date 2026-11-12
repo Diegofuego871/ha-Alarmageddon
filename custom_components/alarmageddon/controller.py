@@ -630,8 +630,10 @@ class AlarmController:
 
     # ----- Befehle -----
 
-    async def async_arm(self, mode: str, code: str | None, changed_by: str | None = None, skip_code: bool = False) -> None:
-        # skip_code nur für den Zeitplan, den ein Administrator eingerichtet hat
+    async def async_arm(self, mode: str, code: str | None, changed_by: str | None = None, skip_code: bool = False, force: bool = False) -> None:
+        # skip_code nur für den Zeitplan, den ein Administrator eingerichtet hat, und für die Knöpfe der Meldung "Scharfschalten
+        # nicht möglich". force (nur dieser Knopf, 1.18.0): offene Sensoren verhindern das Scharfschalten nicht, sie werden bis
+        # zum Deaktivieren übergangen wie mit der Option "Umgehen".
         if mode not in self.modes:
             raise _error("mode_not_enabled", mode=mode)
         if self.state in (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED):
@@ -643,7 +645,7 @@ class AlarmController:
             if self.state in (AlarmControlPanelState.PENDING, AlarmControlPanelState.TRIGGERED):
                 raise _error("disarm_first")
         # Offen und nicht erlaubt: mit der Option "Umgehen" bis zum Deaktivieren übergangen, sonst verhindert der Sensor das Scharfschalten
-        open_now = self.blocking_sensors(mode)
+        open_now = [] if force else self.blocking_sensors(mode)
         if open_now:
             self._emit("arm_failed", mode=mode, sensors=list(open_now))
             raise _error("open_sensors", sensors=", ".join(self._name(e) for e in open_now))

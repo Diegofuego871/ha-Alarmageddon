@@ -571,6 +571,8 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
             vol.Optional("open_action"): bool,
             vol.Optional("silence_action"): bool,
             vol.Optional("acknowledge_action"): bool,
+            vol.Optional("arm_retry_action"): bool,
+            vol.Optional("arm_force_action"): bool,
             vol.Optional("battery_threshold"): vol.All(vol.Coerce(int), vol.Range(min=BATTERY_THRESHOLD_RANGE[0], max=BATTERY_THRESHOLD_RANGE[1])),
             vol.Optional("offline_minutes"): vol.All(vol.Coerce(int), vol.Range(min=OFFLINE_MINUTES_RANGE[0], max=OFFLINE_MINUTES_RANGE[1])),
         },

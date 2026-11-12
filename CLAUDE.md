@@ -124,6 +124,11 @@ Umsetzung:
   begrenzen nur Antwortzeiten und liegen immer über der eingestellten Zeit. Jede Änderung an Schritten mit Dauer braucht einen
   Test in `tests/test_duration.py`.
 - Deaktivieren per Push-Aktion ist standardmässig aus.
+- Scharfschalten per Push-Knopf (seit 1.18.0, Meldung "Scharfschalten nicht möglich": "Erneut versuchen", "Trotzdem scharf
+  schalten") ist standardmässig an (Entscheid des Nutzers, 2026-11-12). Die Knöpfe wirken nur bei deaktivierter Anlage, eine
+  Stunde lang (`ARM_BUTTONS_VALID`), nur vom Handy eines Empfängers dieser Meldung, für den Modus des gescheiterten Versuchs
+  (nie aus dem Ereignis des Handys) und ohne Code. Jede dieser Bedingungen hat einen Test in `tests/test_arm_buttons.py`
+  und eine Zeile in `scripts/mutation_check.py`.
 - Jede Änderung am Zustandsautomaten oder an der Szenario-Engine braucht
   Tests für: Deaktivieren während Verzögerung, Neustart während Alarm,
   Sensor fällt im scharfen Zustand aus.

@@ -15,6 +15,7 @@ const MODE_KINDS = [["sensor_report", "bell"], ["sensor_offline", "alert"], ["pe
 const ALL_MODES = ["home", "away", "night"];
 const TARGET_KEY = { alarm: "alarm_targets", maintenance: "maintenance_targets" };
 const RANGES = { battery_threshold: [5, 50], offline_minutes: [5, 1440] };
+const ARM_BUTTONS = ["arm_retry_action", "arm_force_action"];
 // Arten mit einem Zahlenfeld: Schlüssel, Beschriftung, Einheit
 const NUMBERS = { battery_low: ["battery_threshold", "ntThreshold", "%"], sensor_unavailable: ["offline_minutes", "ntOfflineAfter", "minutes"] };
 const GROUP_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([g, list]) => list.map(([k]) => [k, g])));
@@ -38,6 +39,11 @@ export class NotifyUi {
   get base() {
     const types = Object.fromEntries(KINDS.map((k) => [k, { enabled: true, critical: false, volume: 0.8 }]));
     return (this.host._data?.notify || { alarm_targets: [], maintenance_targets: [], types, battery_threshold: 20, offline_minutes: 60 });
+  }
+
+  // Knopf der Meldung "Scharfschalten nicht möglich": "retry" oder "force"; ohne gespeicherten Wert an
+  _armButton(key) {
+    return (this.draft || this.base)[`arm_${key}_action`] !== false;
   }
 
   ensureDraft() {
@@ -70,6 +76,7 @@ export class NotifyUi {
       if (!!x.enabled !== !!y.enabled || !!x.critical !== !!y.critical || !!x.persistent !== !!y.persistent || Math.round((x.volume ?? 0) * 100) !== Math.round(y.volume * 100) || JSON.stringify(x.targets || []) !== JSON.stringify(y.targets || [])) n += 1;
     }
     for (const k of Object.keys(RANGES)) if (a[k] !== d[k]) n += 1;
+    for (const k of ARM_BUTTONS) if ((a[k] !== false) !== (d[k] !== false)) n += 1;
     if (Boolean(a.per_mode) !== Boolean(d.per_mode)) n += 1; // der Schalter zählt als eigene Änderung
     // Eigene Werte je Modus: jeder Modus mit Änderung zählt einmal
     for (const m of ALL_MODES) if (JSON.stringify(a.modes?.[m] || {}) !== JSON.stringify(d.modes?.[m] || {})) n += 1;
@@ -197,6 +204,7 @@ export class NotifyUi {
         ${s.critical ? `<div class="ag-mt-opt vol"><span>${esc(this._t("ntVolumeShort"))}: <b class="ag-vol" data-kind="${kind}"${md}>${pct} %</b></span>
           <input type="range" min="0" max="100" step="5" data-nt="volume" data-kind="${kind}"${md} value="${pct}" class="ag-range" aria-label="${esc(`${name}: ${this._t("ntVolumeShort")}`)}"></div>` : ""}
         <div class="ag-mt-opt sw">${toggle(`data-nt="persistent" data-kind="${kind}"${md}`, s.persistent, `${name}: ${this._t("ntPersistent")}`)}<span>${esc(this._t("ntPersistent"))}<small class="ag-t2 ag-block">${esc(this._t("ntPersistentHint"))}</small></span></div>
+        ${kind === "arm_failed" ? ["retry", "force"].map((key) => `<div class="ag-mt-opt sw">${toggle(`data-nt="armbtn" data-key="${key}"`, this._armButton(key), `${name}: ${this._t(`ntArm_${key}`)}`)}<span>${esc(this._t(`ntArm_${key}`))}<small class="ag-t2 ag-block">${esc(this._t(`ntArmHint_${key}`))}</small></span></div>`).join("") : ""}
         ${num ? `<div class="ag-mt-opt"><span>${esc(this._t(num[1]))}</span><span class="ag-num ${bad.has(num[0]) ? "bad" : ""}"><input type="number" min="${RANGES[num[0]][0]}" max="${RANGES[num[0]][1]}" step="1" inputmode="numeric" data-nt="num" data-key="${num[0]}" value="${esc(d[num[0]])}" aria-label="${esc(this._t(num[1]))}"><span class="ag-t2">${esc(num[2] === "minutes" ? this._t("minutes") : num[2])}</span></span></div>` : ""}
         <div class="ag-mt-opt"><span class="ag-t2 ag-small">${esc(this._t("ntTestHint"))}</span>
           <button class="ag-btn" data-nt="test" data-kind="${kind}"${md} ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
@@ -296,6 +304,9 @@ export class NotifyUi {
       this.modeTab = act.slice(4);
       this.render();
       return true;
+    } else if (act === "armbtn") {
+      // Knöpfe der Meldung "Scharfschalten nicht möglich" (1.18.0); ohne gespeicherten Wert an
+      d[`arm_${el.dataset.key}_action`] = !this._armButton(el.dataset.key);
     } else if (act === "enabled" || act === "critical" || act === "persistent") {
       const { kind, mode } = el.dataset;
       const key = act;

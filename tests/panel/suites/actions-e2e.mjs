@@ -293,6 +293,17 @@ for (const lang of ["de", "en"]) {
     // 1.17.7: Jeder Schalter steht links, sein Text wächst nach rechts (so ist klar, welcher Schalter zu welcher Option gehört)
     const sw = await s.ev("const bad=[]; let n=0; for (const t of r.querySelectorAll('.ag-nt .ag-toggle')) { const q=t.getBoundingClientRect(); if (!q.width) continue; n++; const row=t.parentElement; const txt=[...row.children].filter((c) => c!==t && c.textContent.trim() && !c.matches('.ag-mini')); const tl=Math.min(...txt.map((c) => c.getBoundingClientRect().left)); if (!(q.right <= tl + 1)) bad.push([(t.getAttribute('aria-label')||'').slice(0,30), Math.round(q.right), Math.round(tl)]); } return { n, bad }");
     check(`${tag}: Meldungen: alle ${sw.n} Schalter stehen links vom Text`, sw.n >= 8 && sw.bad.length === 0, JSON.stringify(sw.bad.slice(0, 4)));
+    // 1.18.0: Knöpfe der Meldung "Scharfschalten nicht möglich" ("Erneut versuchen", "Trotzdem scharf schalten"): zwei Schalter, beide an
+    const arm = () => s.ev("return [...r.querySelectorAll('.ag-nt [data-nt=\"armbtn\"]')].map((b) => ({ key: b.dataset.key, on: b.getAttribute('aria-checked') === 'true', inType: !!b.closest('.ag-mt')?.querySelector('[data-nt=\"enabled\"][data-kind=\"arm_failed\"]'), hint: (b.parentElement.querySelector('small')?.textContent.length || 0) > 20 }))");
+    const arm0 = await arm();
+    check(`${tag}: "Scharfschalten nicht möglich" hat zwei Schalter für die Knöpfe der Meldung, beide an, mit Beschreibung`, arm0.length === 2 && arm0[0].key === "retry" && arm0[1].key === "force" && arm0.every((x) => x.on && x.inType && x.hint), JSON.stringify(arm0));
+    await s.ev("r.querySelector('.ag-nt [data-nt=\"armbtn\"][data-key=\"force\"]').click(); return 1");
+    check(`${tag}: ausgeschaltet zählt als Änderung (Punkt am Reiter)`, await s.waitFor("return r.host.notify.dirtyCount() === 1 && r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit') && r.querySelector('.ag-nt [data-nt=\"armbtn\"][data-key=\"force\"]').getAttribute('aria-checked') === 'false'"));
+    await s.tap('.ag-foot [data-nt="save"]');
+    check(`${tag}: gespeichert: der Server bekommt "arm_force_action": false, danach ist nichts mehr offen`, await s.waitFor("return r.host.notify.dirtyCount() === 0 && !r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit')") && (await s.sim("const c=window.__calls.filter((x) => x.type === 'alarmageddon/save_notify').pop(); return c.notify.arm_force_action === false && c.notify.arm_retry_action !== false")));
+    await s.ev("r.querySelector('.ag-nt [data-nt=\"armbtn\"][data-key=\"force\"]').click(); return 1");
+    await s.tap('.ag-foot [data-nt="save"]');
+    await s.waitFor("return r.host.notify.dirtyCount() === 0");
     check(`${tag}: Alarmmeldung hier nicht einstellbar und kein Hinweiskapitel: keine Art "Alarm", keine Knöpfe`, await s.ev("return !r.querySelector('[data-nt=\"enabled\"][data-kind=\"triggered\"]') && !r.querySelector('[data-nt=\"button\"]') && !r.querySelector('[data-nt=\"to-actions\"]')"));
     // Empfänger der Wartung: im Dropdown wählen, als Pille mit x
     await (await s.el('select[data-nt="target-add"][data-key="maintenance_targets"]')).selectOption("notify.mobile_app_partnerin");

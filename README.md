@@ -20,7 +20,7 @@ A complete alarm system for Home Assistant: without a single automation, with pu
 ## Why Alarmageddon
 
 - **No automations needed.** Everything that makes an alarm system is built in: zones per mode, entry and exit delay, siren and alarm sound, schedule, a code per person, confirmation by two sensors. You wire up nothing yourself, neither automations nor helpers nor scripts.
-- **Push notifications come by themselves.** Alarm, entry delay, armed and disarmed, arming not possible, sensor unreachable, battery low: you only choose who receives them. The alarm notification brings its buttons along ("Acknowledge", "Disarm", "Silence alarm sound"), critical if you like, so that it sounds even in silent mode.
+- **Push notifications come by themselves.** Alarm, entry delay, armed and disarmed, arming not possible, sensor unreachable, battery low: you only choose who receives them. The alarm notification brings its buttons along ("Acknowledge", "Disarm", "Silence alarm sound"), critical if you like, so that it sounds even in silent mode. If an open window keeps the system from arming, the message offers "Try again" and "Arm anyway".
 - **Everything is set up graphically.** One side panel for sensors, zones, delays, alarm actions, notifications, schedule, codes and backup, on the computer and on the phone. No YAML. What happens on an alarm is a flow you put together from steps, and you try each step on the real devices with one button.
 - **Your sensors are watched, not just used.** Battery level with a forecast, unreachable sensors, signal, firmware and the last change of every sensor in one list, plus the history of the last 30 days for each sensor. If a sensor drops out while armed, you are told, or it counts as an alarm if you like.
 - **You see what happened.** Every alarm is recorded with a timeline: which sensor responded when, which steps ran, which notifications went out, who acknowledged.
@@ -73,7 +73,7 @@ What happens on an alarm is a flow you build from steps, per mode if you like. D
 
 ### Notifications
 
-Recipients are chosen separately for alarms and for maintenance messages, and every message can override them with its own recipients (per mode too). Every kind of message (entry delay, armed, disarmed, arming not possible, silent alarm, sensor unreachable, low battery) can be switched on or off, be critical (sounds in silent mode) and have its own volume, per mode if you like.
+Recipients are chosen separately for alarms and for maintenance messages, and every message can override them with its own recipients (per mode too). Every kind of message (entry delay, armed, disarmed, arming not possible, silent alarm, sensor unreachable, low battery) can be switched on or off, be critical (sounds in silent mode) and have its own volume, per mode if you like. "Arming not possible" carries two buttons: "Try again" arms the same mode once more, "Arm anyway" arms although sensors are open and bypasses them until you disarm. They work for one hour, only while the system is disarmed and only from the phone of a recipient of that message; each can be switched off.
 
 ### When there is an alarm
 

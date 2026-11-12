@@ -60,7 +60,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 108  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 109  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -193,6 +193,10 @@ DEFAULT_NOTIFY: Final = {
     # "Alarm quittieren" (1.2.0): beendet den Alarm, die Anlage bleibt scharf. Standardmässig an: es schaltet nichts ab
     # (anders als "Deaktivieren"), ein neuer Auslöser alarmiert wieder
     "acknowledge_action": True,
+    # Knöpfe der Meldung "Scharfschalten nicht möglich" (1.18.0), beide standardmässig an (Entscheid des Nutzers): "Erneut
+    # versuchen" und "Trotzdem scharf schalten" (übergeht die offenen Sensoren bis zum Deaktivieren)
+    "arm_retry_action": True,
+    "arm_force_action": True,
     # Wartung (0.5.0): Batterie schwach unter dieser Schwelle (%), nicht erreichbar ab so vielen Minuten
     "battery_threshold": 20,
     "offline_minutes": 60,
@@ -211,6 +215,13 @@ PUSH_ACTION_DISARM: Final = "ALARMAGEDDON_DISARM_"  # + entry_id
 PUSH_ACTION_OPEN: Final = "ALARMAGEDDON_OPEN"
 PUSH_ACTION_SILENCE: Final = "ALARMAGEDDON_SILENCE_"  # + entry_id
 PUSH_ACTION_ACK: Final = "ALARMAGEDDON_ACK_"  # + entry_id (Alarm quittieren, 1.1.0)
+# Knöpfe der Meldung "Scharfschalten nicht möglich" (1.18.0): denselben Modus noch einmal versuchen oder trotz offener Sensoren
+# scharf schalten (sie werden bis zum Deaktivieren übergangen). Der Modus kommt nie aus dem Ereignis des Handys, sondern aus dem
+# gemerkten gescheiterten Versuch (DATA_ARM_FAILED[entry_id] = {"mode", "at"}); er gilt ARM_BUTTONS_VALID Sekunden.
+PUSH_ACTION_RETRY: Final = "ALARMAGEDDON_RETRY_"  # + entry_id
+PUSH_ACTION_FORCE: Final = "ALARMAGEDDON_FORCE_"  # + entry_id
+ARM_BUTTONS_VALID: Final = 3600  # Entscheid des Nutzers (2026-11-12): eine Stunde
+DATA_ARM_FAILED: Final = f"{DOMAIN}_arm_failed"
 
 # Aktionen als Ablauf (0.4.0): pro Anlage und Auslöser eine Liste von Schritten (CONF_WORKFLOWS[auslöser])
 CONF_WORKFLOWS: Final = "workflows"

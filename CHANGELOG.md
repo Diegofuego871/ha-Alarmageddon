@@ -7,6 +7,16 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.18.0] - 2026-11-12
+
+"Arming not possible" with buttons: try again, or arm anyway.
+
+### Added
+
+- **Buttons in the message "Arming not possible".** If an open sensor keeps the alarm system from arming, the push notification now carries two buttons. "Try again" arms the same mode once more, for example after you closed the window; if it is still open, the message comes again. "Arm anyway" arms although sensors are open: they are bypassed until you disarm and do not raise an alarm (shown as bypassed like with the option "Bypass when arming"); all other sensors are watched.
+- **Safe by design.** The buttons work for one hour and only while the alarm system is disarmed; once it has been armed (by whatever means) an older message is used up. Only the phone of a recipient of this message can press them. The mode is the one that failed, with its exit delay. No code is needed, also if the alarm system asks for one when arming.
+- **Each button can be switched off** under Configuration › Notifications › "Arming not possible". Both are on by default.
+
 ## [1.17.12] - 2026-11-12
 
 The orange dot goes away after saving, and the modes are switches.
@@ -1095,6 +1105,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0
 [1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12
 [1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11
 [1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10

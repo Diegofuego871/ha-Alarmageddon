@@ -17,9 +17,22 @@ from typing import Any
 from homeassistant.components import persistent_notification
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util, slugify
 
-from .const import ICON_URL_PATH, NOTIFY_MODE_KINDS, NOTIFY_TYPES, PUSH_ACTION_ACK, PUSH_ACTION_DISARM, PUSH_ACTION_OPEN, PUSH_ACTION_SILENCE
+from .const import (
+    ARM_BUTTONS_VALID,
+    DATA_ARM_FAILED,
+    ICON_URL_PATH,
+    NOTIFY_MODE_KINDS,
+    NOTIFY_TYPES,
+    PUSH_ACTION_ACK,
+    PUSH_ACTION_DISARM,
+    PUSH_ACTION_FORCE,
+    PUSH_ACTION_OPEN,
+    PUSH_ACTION_RETRY,
+    PUSH_ACTION_SILENCE,
+)
 from .controller import AlarmController
 from .devices import display_name
 
@@ -59,6 +72,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "by_push": "push notification",
         "by_step": "alarm action",
         "action_ack": "Acknowledge",
+        "action_retry": "Try again", "action_force": "Arm anyway",
         "report_title": "🔕 Silent alarm: {name}",
         "report": "{sensor} responded while armed. No alarm was triggered because this sensor is set to \"Silent alarm\".",
         "type_triggered": "Alarm", "type_pending": "Entry delay", "type_armed": "Armed", "type_disarmed": "Disarmed",
@@ -105,6 +119,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "by_push": "Push-Meldung",
         "by_step": "Alarmaktion",
         "action_ack": "Quittieren",
+        "action_retry": "Erneut versuchen", "action_force": "Trotzdem scharf schalten",
         "report_title": "🔕 Stiller Alarm: {name}",
         "report": "{sensor} hat im scharfen Zustand angesprochen. Es wurde kein Alarm ausgelöst, weil dieser Sensor auf \"Stiller Alarm\" steht.",
         "type_triggered": "Alarm", "type_pending": "Eingangsverzögerung", "type_armed": "Scharf geschaltet", "type_disarmed": "Deaktiviert",
@@ -299,6 +314,10 @@ class Notifier:
         if state == previous:
             return
         self._last_state = state
+        if state != AlarmControlPanelState.DISARMED:
+            # Scharf geschaltet (gleich auf welchem Weg): die Knöpfe einer älteren Meldung "Scharfschalten nicht möglich" sind
+            # verbraucht, sie schalten nach dem nächsten Deaktivieren nicht noch einmal scharf
+            self._arm_attempts().pop(self.entry.entry_id, None)
         name = self.entry.title
         if state == AlarmControlPanelState.TRIGGERED:
             # Der Hauptablauf des Alarms bestimmt Alarmmeldung und "Alarm endet"; laufen zwei Abläufe (Modus und "Immer aktiv"),
@@ -332,8 +351,14 @@ class Notifier:
         name = self.entry.title
         if kind == "arm_failed" and self._on("arm_failed"):
             sensors = ", ".join(self._name(e) for e in data.get("sensors", []))
+            actions = []
+            if data.get("mode") in self._ctl.modes:
+                # Der gescheiterte Versuch wird gemerkt: die Knöpfe schalten genau diesen Modus scharf, und nur eine Zeit lang
+                self._arm_attempts()[self.entry.entry_id] = {"mode": data["mode"], "at": dt_util.utcnow()}
+                actions = [{"action": f"{prefix}{self.entry.entry_id}", "title": self._t(f"action_{key}")}
+                           for key, prefix in (("retry", PUSH_ACTION_RETRY), ("force", PUSH_ACTION_FORCE)) if self.cfg.get(f"arm_{key}_action")]
             self._send("arm_failed", self._t("arm_failed_title", name=name, mode=self._mode(data.get("mode"))),
-                       self._t("arm_failed", sensors=sensors))
+                       self._t("arm_failed", sensors=sensors), actions=actions or None)
         elif kind == "sensor_offline" and self._on("sensor_offline", self._ctl.mode):
             # Im scharfen Zustand ist ein ausgefallener Melder ein blinder Fleck (Standard: kritisch an die Alarm-Empfänger)
             self._send("sensor_offline", self._t("offline_title", name=self._name(data.get("sensor"))),
@@ -367,6 +392,10 @@ class Notifier:
         zu den konfigurierten Alarm-Empfängern gehört.
         """
         action = event.data.get("action")
+        arm = {f"{PUSH_ACTION_RETRY}{self.entry.entry_id}": "retry", f"{PUSH_ACTION_FORCE}{self.entry.entry_id}": "force"}.get(action)
+        if arm is not None:
+            self._on_arm_action(arm, event)
+            return
         key = {f"{PUSH_ACTION_DISARM}{self.entry.entry_id}": "disarm", f"{PUSH_ACTION_SILENCE}{self.entry.entry_id}": "silence",
                f"{PUSH_ACTION_ACK}{self.entry.entry_id}": "acknowledge"}.get(action)
         if key is None or self._ctl.state != AlarmControlPanelState.TRIGGERED or not self._button_allowed(key):
@@ -383,6 +412,42 @@ class Notifier:
             self._ctl.acknowledge(self._t("by_push"))
         elif self.silence:
             self.hass.async_create_task(self._silence())
+
+    def _arm_attempts(self) -> dict[str, dict[str, Any]]:
+        """Gescheiterte Versuche scharf zu schalten, je Anlage der letzte. Ausserhalb der Anlage abgelegt: sie überstehen ihr Neuladen."""
+        return self.hass.data.setdefault(DATA_ARM_FAILED, {})
+
+    @callback
+    def _on_arm_action(self, key: str, event: Event) -> None:
+        """
+        Knöpfe der Meldung "Scharfschalten nicht möglich" (1.18.0): "Erneut versuchen" und "Trotzdem scharf schalten".
+
+        Ein Knopf auf dem Handy schaltet hier die Anlage, darum gilt jede dieser Bedingungen (je mit Test und Mutationszeile):
+        der Knopf ist eingeschaltet; die Anlage ist deaktiviert; es gibt einen gescheiterten Versuch, er ist höchstens
+        ARM_BUTTONS_VALID Sekunden alt (eine alte Meldung schaltet nicht Tage später scharf); der Absender ist ein
+        Benutzer, der diese Meldung bekommt. Der Modus kommt aus dem gemerkten Versuch, nie
+        aus dem Ereignis. Ein Code ist nicht nötig (Entscheid des Nutzers): Scharfschalten erhöht den Schutz.
+        """
+        if not self.cfg.get(f"arm_{key}_action"):
+            return
+        if self._ctl.state != AlarmControlPanelState.DISARMED:
+            return
+        attempt = self._arm_attempts().get(self.entry.entry_id)
+        if not attempt or (dt_util.utcnow() - attempt["at"]).total_seconds() > ARM_BUTTONS_VALID:
+            return
+        mode = attempt["mode"]  # einen inzwischen abgeschalteten Modus lehnt der Automat ab (async_arm)
+        user_id = event.context.user_id
+        if not user_id or user_id not in recipient_users(self.hass, self._targets("arm_failed")):
+            _LOGGER.warning("%s: push action '%s' ignored, the sender is not a recipient of this message", self.entry.title, key)
+            return
+        self.hass.async_create_task(self._arm_by_push(mode, force=key == "force"))
+
+    async def _arm_by_push(self, mode: str, force: bool) -> None:
+        try:
+            await self._ctl.async_arm(mode, None, self._t("by_push"), skip_code=True, force=force)
+        except HomeAssistantError:
+            # "Erneut versuchen" bei immer noch offenem Sensor: der Automat hat es schon gemeldet (neue Meldung mit Knöpfen)
+            _LOGGER.debug("%s: arming by push action was not possible", self.entry.title)
 
     def _alarm_steps(self) -> list[dict[str, Any]]:
         """Push-Schritte des Ablaufs für den laufenden Alarm (leer: es geht die Standardmeldung raus)."""

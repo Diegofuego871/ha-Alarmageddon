@@ -7,6 +7,16 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.18.0] - 2026-11-12
+
+"Scharfschalten nicht möglich" mit Knöpfen: erneut versuchen oder trotzdem scharf schalten.
+
+### Hinzugefügt
+
+- **Knöpfe in der Meldung "Scharfschalten nicht möglich".** Verhindert ein offener Sensor das Scharfschalten, trägt die Push-Meldung jetzt zwei Knöpfe. "Erneut versuchen" schaltet denselben Modus noch einmal scharf, zum Beispiel nachdem du das Fenster geschlossen hast; ist es noch offen, kommt die Meldung erneut. "Trotzdem scharf schalten" schaltet scharf, obwohl Sensoren offen sind: sie werden bis zum Deaktivieren übergangen und lösen keinen Alarm aus (angezeigt als übergangen wie mit der Option "Beim Scharfschalten umgehen"); alle anderen Sensoren werden überwacht.
+- **Sicher gebaut.** Die Knöpfe gelten eine Stunde und nur, solange die Anlage deaktiviert ist; wurde sie scharf geschaltet (gleich auf welchem Weg), ist eine ältere Meldung verbraucht. Nur das Handy eines Empfängers dieser Meldung kann sie drücken. Scharf geschaltet wird der Modus, der gescheitert ist, mit seiner Ausgangsverzögerung. Ein Code ist nicht nötig, auch wenn die Anlage zum Scharfschalten einen verlangt.
+- **Jeder Knopf lässt sich abschalten** unter Konfiguration › Meldungen › "Scharfschalten nicht möglich". Beide sind standardmässig an.
+
 ## [1.17.12] - 2026-11-12
 
 Der orange Punkt verschwindet nach dem Speichern, und die Modi sind Schalter.
@@ -1095,6 +1105,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0
 [1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12
 [1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11
 [1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10

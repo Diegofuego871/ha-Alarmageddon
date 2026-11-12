@@ -20,7 +20,7 @@ Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation
 ## Warum Alarmageddon
 
 - **Keine Automationen nötig.** Alles, was eine Alarmanlage ausmacht, ist eingebaut: Zonen je Modus, Ein- und Ausgangsverzögerung, Sirene und Alarmton, Zeitplan, Codes pro Person, Bestätigung durch zwei Sensoren. Du verdrahtest nichts selbst, weder Automationen noch Helfer noch Skripte.
-- **Push-Meldungen kommen von selbst.** Alarm, Eingangsverzögerung, scharf und deaktiviert, Scharfschalten nicht möglich, Sensor nicht erreichbar, Batterie schwach: Du wählst nur, wer sie bekommt. Die Alarmmeldung bringt ihre Knöpfe mit ("Quittieren", "Deaktivieren", "Alarmton stumm"), auf Wunsch kritisch, damit sie auch im Stumm-Modus ertönt.
+- **Push-Meldungen kommen von selbst.** Alarm, Eingangsverzögerung, scharf und deaktiviert, Scharfschalten nicht möglich, Sensor nicht erreichbar, Batterie schwach: Du wählst nur, wer sie bekommt. Die Alarmmeldung bringt ihre Knöpfe mit ("Quittieren", "Deaktivieren", "Alarmton stumm"), auf Wunsch kritisch, damit sie auch im Stumm-Modus ertönt. Verhindert ein offenes Fenster das Scharfschalten, bietet die Meldung "Erneut versuchen" und "Trotzdem scharf schalten" an.
 - **Alles grafisch einstellbar.** Ein Seitenpanel für Sensoren, Zonen, Verzögerungen, Alarmaktionen, Benachrichtigungen, Zeitplan, Codes und Sicherung, am Computer wie auf dem Handy. Kein YAML. Was bei einem Alarm passiert, baust du als Ablauf aus Schritten zusammen und probierst jeden Schritt mit einem Knopf an den echten Geräten aus.
 - **Deine Sensoren werden überwacht, nicht nur benutzt.** Batteriestand mit Prognose, nicht erreichbare Sensoren, Signal, Firmware und die letzte Änderung jedes Sensors in einer Liste, dazu für jeden Sensor der Verlauf der letzten 30 Tage. Fällt ein Sensor im scharfen Zustand aus, wird das gemeldet oder zählt auf Wunsch als Alarm.
 - **Du siehst, was passiert ist.** Jeder Alarm wird mit Zeitachse aufgezeichnet: welcher Sensor wann angesprochen hat, welche Schritte liefen, welche Meldungen hinausgingen, wer quittiert hat.
@@ -73,7 +73,7 @@ Was bei einem Alarm passiert, ist ein Ablauf aus Schritten, auf Wunsch je Modus.
 
 ### Benachrichtigungen
 
-Empfänger wählst du getrennt für Alarme und für Wartungsmeldungen, und jede Meldung kann sie mit eigenen Empfängern überschreiben (auch je Modus). Jede Art von Meldung (Eingangsverzögerung, scharf, deaktiviert, Scharfschalten nicht möglich, Stiller Alarm, Sensor nicht erreichbar, Batterie schwach) lässt sich ein- und ausschalten, kritisch senden (ertönt auch im Stumm-Modus) und hat ihre eigene Lautstärke, auf Wunsch je Modus.
+Empfänger wählst du getrennt für Alarme und für Wartungsmeldungen, und jede Meldung kann sie mit eigenen Empfängern überschreiben (auch je Modus). Jede Art von Meldung (Eingangsverzögerung, scharf, deaktiviert, Scharfschalten nicht möglich, Stiller Alarm, Sensor nicht erreichbar, Batterie schwach) lässt sich ein- und ausschalten, kritisch senden (ertönt auch im Stumm-Modus) und hat ihre eigene Lautstärke, auf Wunsch je Modus. "Scharfschalten nicht möglich" trägt zwei Knöpfe: "Erneut versuchen" schaltet denselben Modus noch einmal scharf, "Trotzdem scharf schalten" schaltet scharf, obwohl Sensoren offen sind, und übergeht sie bis zum Deaktivieren. Sie gelten eine Stunde, nur solange die Anlage deaktiviert ist und nur vom Handy eines Empfängers dieser Meldung; jeder lässt sich abschalten.
 
 ### Bei einem Alarm
 
