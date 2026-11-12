@@ -1223,20 +1223,37 @@ export class ActionsUi {
     ev.preventDefault();
     const rects = cards.map((c) => c.getBoundingClientRect());
     const slot = (rects[from + 1] ? rects[from + 1].top : rects[from].bottom + 40) - rects[from].top;
-    // Alle Listen, die gerade sichtbar sind: ein Schritt lässt sich auch in eine andere Liste ziehen (1.22.0), auch in eine leere
+    // Alle anderen Listen, die gerade sichtbar sind: ein Schritt lässt sich auch in eine andere Liste ziehen (1.22.0), auch in eine
+    // leere. Lagen werden beim Start gemessen (in Bildschirmkoordinaten dieses Moments); beim Mitscrollen wird der Zeiger darauf
+    // umgerechnet. "ok" = die Liste nimmt diese Art von Schritt auf; sonst zeigt sie rot, dass es dort nicht geht.
     const zone = line.dataset?.zone || "main";
     const kind = fromStep(this.steps(zone)[from] || {}).kind;
-    const lines = [...root.querySelectorAll(".ag-wf-line")].map((el) => ({ el, zone: el.dataset?.zone || "main" })).filter((l) => l.zone !== zone && this._zoneKinds(l.zone).includes(kind));
-    this.drag = { from, to: from, startY: ev.clientY, cards, rects, slot, moved: false, zone, lines, target: null };
+    const lines = [...root.querySelectorAll(".ag-wf-line")].map((el) => ({ el, zone: el.dataset?.zone || "main" })).filter((l) => l.zone !== zone).map((l) => {
+      // Die Fläche der Liste samt ihren Plus: bei einer leeren Liste ragt das Plus über den Rahmen der Liste hinaus
+      const rs = [l.el, ...l.el.querySelectorAll(".ag-wf-plus")].map((e) => e.getBoundingClientRect());
+      return { ...l, ok: this._zoneKinds(l.zone).includes(kind), top: Math.min(...rs.map((r) => r.top)), bottom: Math.max(...rs.map((r) => r.bottom)), centers: [...l.el.querySelectorAll(".ag-wf-step")].map((c) => { const b = c.getBoundingClientRect(); return b.top + b.height / 2; }) };
+    });
+    this.drag = { from, to: from, startY: ev.clientY, lastY: ev.clientY, sc0: this.host._content?.scrollTop ?? 0, cards, rects, slot, moved: false, zone, lines, target: null };
     cards[from].classList.add("dragging");
     root.classList.add("ag-dragging");
+    this._dragScrollLoop();
   }
 
   onPointerMove(ev) {
     const d = this.drag;
     if (!d) return;
-    const dy = ev.clientY - d.startY;
-    if (Math.abs(dy) > 4) d.moved = true;
+    d.lastY = ev.clientY;
+    if (Math.abs(ev.clientY - d.startY) > 4) d.moved = true;
+    this._dragUpdate();
+  }
+
+  // Lage der gezogenen Karte, Platz in der eigenen Liste und Zielliste neu berechnen (bei Bewegung und beim Mitscrollen)
+  _dragUpdate() {
+    const d = this.drag;
+    if (!d) return;
+    const sc = (this.host._content?.scrollTop ?? 0) - d.sc0; // so weit ist die Seite seit dem Start gescrollt
+    const dy = d.lastY - d.startY + sc;
+    const py = d.lastY + sc; // Zeiger in den Koordinaten vom Start
     d.cards[d.from].style.transform = `translateY(${dy}px)`;
     const center = d.rects[d.from].top + d.rects[d.from].height / 2 + dy;
     // Neue Stelle: so viele andere Karten, wie oberhalb der Mitte der gezogenen liegen
@@ -1245,18 +1262,22 @@ export class ActionsUi {
       if (i !== d.from && r.top + r.height / 2 < center) to += 1;
     });
     d.to = to;
-    // Über einer anderen Liste, die den Schritt aufnimmt: sie leuchtet auf, die Karte landet beim Loslassen dort
+    // Über einer anderen Liste (auch über einer ihrer Aktionen oder knapp daneben): sie leuchtet auf, die Karte landet beim Loslassen
+    // dort. Nimmt sie den Schritt nicht auf, leuchtet sie rot. Liegt der Zeiger in keiner, gilt die nächste in 48 px Abstand.
     d.target = null;
-    for (const l of d.lines) {
-      const r = l.el.getBoundingClientRect();
-      const hit = ev.clientY >= r.top && ev.clientY <= r.bottom;
-      l.el.classList.toggle("ag-drop", hit);
-      if (hit) {
-        const cards = [...l.el.querySelectorAll(".ag-wf-step")];
-        d.target = { zone: l.zone, at: cards.filter((c) => { const b = c.getBoundingClientRect(); return b.top + b.height / 2 < ev.clientY; }).length };
-      }
+    let hit = d.lines.find((l) => py >= l.top && py <= l.bottom);
+    if (!hit) {
+      const near = d.lines.map((l) => [Math.min(Math.abs(py - l.top), Math.abs(py - l.bottom)), l]).filter(([gap]) => gap <= 48).sort((x, y) => x[0] - y[0])[0];
+      hit = near?.[1];
     }
-    if (d.target) d.to = d.from;
+    for (const l of d.lines) {
+      l.el.classList.toggle("ag-drop", l === hit && l.ok);
+      l.el.classList.toggle("ag-drop-no", l === hit && !l.ok);
+    }
+    if (hit?.ok) {
+      d.target = { zone: hit.zone, at: hit.centers.filter((c) => c < py).length };
+      d.to = d.from;
+    }
     d.cards.forEach((c, i) => {
       if (i === d.from) return;
       let shift = 0;
@@ -1265,10 +1286,38 @@ export class ActionsUi {
       else if (d.from > d.to && i < d.from && i >= d.to) shift = d.slot;
       c.style.transform = shift ? `translateY(${shift}px)` : "";
     });
-    // Am Rand des Fensters mitscrollen
+  }
+
+  // Am oberen und unteren Rand des sichtbaren Bereichs scrollt die Seite von selbst mit, solange der Zeiger dort steht: umso
+  // schneller, je näher am Rand (1.24.0). Die festen Leisten oben (Reiter) und unten (Speichern) gehören nicht zum Bereich.
+  _dragScrollLoop() {
     const win = this.host.ownerDocument.defaultView;
-    if (ev.clientY < 70) win.scrollBy(0, -12);
-    else if (ev.clientY > win.innerHeight - 70) win.scrollBy(0, 12);
+    const step = () => {
+      const d = this.drag;
+      const c = this.host._content;
+      if (!d || !c) return;
+      const cr = c.getBoundingClientRect();
+      const view = this.host._view;
+      let top = cr.top;
+      for (const el of [c.querySelector(":scope > .ag-head"), view?.querySelector(":scope > .ag-cfg")]) if (el) top = Math.max(top, el.getBoundingClientRect().bottom);
+      const foot = view?.querySelector(".ag-foot");
+      const bottom = foot ? Math.min(cr.bottom, foot.getBoundingClientRect().top) : cr.bottom;
+      const band = 90;
+      let v = 0;
+      if (d.lastY < top + band) v = -Math.min(1, (top + band - d.lastY) / band) * 22;
+      else if (d.lastY > bottom - band) v = Math.min(1, (d.lastY - (bottom - band)) / band) * 22;
+      if (v) {
+        const before = c.scrollTop;
+        c.scrollTop = before + v;
+        if (c.scrollTop !== before) {
+          d.moved = true;
+          this._dragUpdate();
+        }
+      }
+      this._dragRaf = win.requestAnimationFrame(step);
+    };
+    win.cancelAnimationFrame(this._dragRaf);
+    this._dragRaf = win.requestAnimationFrame(step);
   }
 
   onPointerEnd() {
@@ -1276,12 +1325,13 @@ export class ActionsUi {
     const d = this.drag;
     if (!d) return;
     this.drag = null;
+    this.host.ownerDocument.defaultView.cancelAnimationFrame(this._dragRaf);
     this.host._view?.classList.remove("ag-dragging");
     d.cards.forEach((c) => {
       c.style.transform = "";
       c.classList.remove("dragging");
     });
-    for (const l of d.lines || []) l.el.classList.remove("ag-drop");
+    for (const l of d.lines || []) l.el.classList.remove("ag-drop", "ag-drop-no");
     if (d.moved && d.target) this._moveAcross(d.from, d.zone, d.target.zone, d.target.at);
     else if (d.moved && d.to !== d.from) this._move(d.from, d.to, d.zone);
   }

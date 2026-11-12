@@ -7,6 +7,16 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.24.0] - 2026-11-12
+
+Schritte ziehen: die Seite scrollt mit.
+
+### Hinzugefügt
+
+- **Die Seite scrollt beim Ziehen mit.** Hält man einen Schritt nahe am oberen oder unteren Rand des sichtbaren Bereichs (unter den festen Reitern, über der Leiste mit "Speichern"), scrollt die Seite von selbst, umso schneller, je näher am Rand. So erreicht man auch eine weit entfernte Liste in einem langen Ablauf. Bisher funktionierte das Scrollen am Rand im Panel nicht.
+- **Eine Liste nimmt den Schritt auch an, wenn man ihn nur auf eine ihrer Aktionen zieht** oder knapp daneben (bis 48 px), nicht nur auf das Plus. Eine leere Liste gilt samt ihrem Plus.
+- **Eine Liste, die den Schritt nicht aufnimmt, leuchtet rot.** Zum Beispiel die Sirene über "Eingangsverzögerung läuft": nichts wird verschoben, und man sieht, warum.
+
 ## [1.23.0] - 2026-11-12
 
 Symbole in allen Auswahlknöpfen der Ansicht.
@@ -1167,6 +1177,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.24.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0

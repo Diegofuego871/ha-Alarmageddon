@@ -7,6 +7,16 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.24.0] - 2026-11-12
+
+Dragging steps: the page scrolls along.
+
+### Added
+
+- **The page scrolls along while you drag.** If you hold a step near the upper or lower edge of the visible area (below the fixed tabs, above the bar with "Save"), the page scrolls by itself, faster the closer you are to the edge. So you can also reach a far away list in a long flow. Before, the scrolling at the edge did not work in the panel.
+- **A list takes the step also if you only drag it onto one of its actions** or just next to it (up to 48 px), not only onto the plus. An empty list counts with its plus.
+- **A list that does not take the step lights up red.** For example the siren over "Entry delay running": nothing is moved, and you see why.
+
 ## [1.23.0] - 2026-11-12
 
 Symbols in all selection buttons of the view.
@@ -1167,6 +1177,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.24.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0

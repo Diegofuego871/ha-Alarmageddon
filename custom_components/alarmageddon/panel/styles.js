@@ -435,6 +435,8 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-step { transition: transform .15s ease; }
 /* Liste, in die der gezogene Schritt beim Loslassen fällt (1.22.0) */
 .ag-wf-line.ag-drop { outline: 2px dashed var(--ag-primary); outline-offset: 8px; border-radius: 18px; background: var(--ag-primary-soft); }
+/* Liste, die diese Art von Schritt nicht aufnimmt */
+.ag-wf-line.ag-drop-no { outline: 2px dashed var(--ag-error); outline-offset: 8px; border-radius: 18px; background: var(--ag-error-soft); }
 .ag-dragging, .ag-dragging * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
 .ag-ef { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
 .ag-ef-l { font-weight: 500; }
