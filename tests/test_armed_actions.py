@@ -153,7 +153,7 @@ async def test_arming_actions_are_saved_shown_and_part_of_the_backup(hass: HomeA
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
     saved = entry.options["workflows_armed"]["home"]
-    assert saved[0] == {"type": "chime", "players": [PLAYER], "sound": "tone_pip", "duration": 5, "volume": 0.4} and saved[1]["restore"] is False
+    assert saved[0] == {"type": "chime", "players": [PLAYER], "sound": "tone_pip", "duration": 5, "volume": 0.4, "restore": True} and saved[1]["restore"] is False
     assert entry.options["workflows_after"]["home"][0]["type"] == "chime"
     await client.send_json_auto_id({"type": "alarmageddon/data"})
     assert (await client.receive_json())["result"]["systems"][0]["workflows_armed"] == entry.options["workflows_armed"]

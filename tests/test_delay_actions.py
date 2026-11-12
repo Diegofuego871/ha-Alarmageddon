@@ -291,7 +291,7 @@ async def test_delay_actions_are_saved_shown_and_part_of_the_backup(hass: HomeAs
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
     saved = entry.options["workflows_arming"]["away"]
-    assert saved[0] == {"type": "chime", "players": [PLAYER], "sound": "tone_pip", "duration": 5, "delay": True, "volume": 0.4} and saved[1]["restore"] is False
+    assert saved[0] == {"type": "chime", "players": [PLAYER], "sound": "tone_pip", "duration": 5, "delay": True, "volume": 0.4, "restore": True} and saved[1]["restore"] is False
     assert entry.options["workflows_entry"]["home"][0]["delay"] is True and "delay" not in entry.options["workflows_entry"]["home"][1]
     # Ausserhalb der Verzögerungen gibt es die Angabe nicht: dort gilt immer die Dauer des Schritts
     for key in ("workflows", "workflows_armed", "workflows_after"):

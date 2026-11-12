@@ -82,9 +82,10 @@ def step_budget(step: dict[str, Any]) -> float:
         duration = step.get("duration")
         if duration is None:  # ältere Form: so oft wiederholen, jeder Aufruf höchstens SERVICE_TIMEOUT
             repeat = max(1, int(step.get("repeat", 1) or 1))
-            return repeat * (length + SERVICE_TIMEOUT) + SERVICE_TIMEOUT + WATCHDOG_GRACE
-        # Lautstärke, letzter Start und Stopp je höchstens SERVICE_TIMEOUT, dazu ein angefangener Ton
-        return int(duration or 0) + length + 3 * SERVICE_TIMEOUT + WATCHDOG_GRACE
+            return repeat * (length + SERVICE_TIMEOUT) + SERVICE_TIMEOUT + SNAPSHOT_TIMEOUT + 4 * SERVICE_TIMEOUT + WATCHDOG_GRACE
+        # Lautstärke, letzter Start und Stopp je höchstens SERVICE_TIMEOUT, dazu ein angefangener Ton. Dazu das Merken des Zustands
+        # vorher (SNAPSHOT_TIMEOUT) und das Zurückstellen danach (Stopp, Wiedergabe oder Lautstärke, Stummschaltung, Ausschalten)
+        return int(duration or 0) + length + 3 * SERVICE_TIMEOUT + SNAPSHOT_TIMEOUT + 4 * SERVICE_TIMEOUT + WATCHDOG_GRACE
     return SERVICE_TIMEOUT + WATCHDOG_GRACE  # Aktion (und jeder künftige Typ, bis er eine eigene Grenze bekommt)
 
 
@@ -140,7 +141,7 @@ async def async_remove_workflow_store(hass: HomeAssistant, entry_id: str) -> Non
 
 def step_entities(step: dict[str, Any]) -> list[str]:
     """Geräte, die ein Schritt verändert und die beim Deaktivieren zurückgesetzt werden sollen (Einstellung "Rückgängig" des Schritts)."""
-    if step.get("type") == "sound" and step.get("restore", True):
+    if step.get("type") in ("sound", "prealarm") and step.get("restore", True):
         return list(step.get("players", []))
     if step.get("type") == "action" and step.get("restore", False):
         return [e for e in step.get("target", []) if e.split(".")[0] in RESTORABLE_DOMAINS]
@@ -846,6 +847,7 @@ class WorkflowRunner:
             except NoURLAvailableError:
                 _LOGGER.error("%s: no Home Assistant URL for the alarm sound; set it under Settings › System › Network", self.entry.title)
                 return
+        remembered = await self._remember(step, players)
         await self._set_volumes(step, players)
         duration = step.get("duration")
         if duration is None:  # ältere Form (Wiederholungen): so lang wie die Wiederholungen zusammen
@@ -870,6 +872,40 @@ class WorkflowRunner:
         finally:
             # Zeit um, deaktiviert oder "Alarmton stumm": der Ton darf nicht ausklingen oder weiterlaufen
             await self._call("media_player", "media_stop", {"entity_id": players})
+            await self._put_back(remembered)
+
+    def _restores_itself(self, step: dict[str, Any]) -> bool:
+        """
+        Stellt dieser Ton die Lautsprecher nach seinem Ende selbst zurück (1.26.0)? Aktivierungston und Voralarm immer, wenn
+        "restore" (Standard an) nicht ausgeschaltet ist; ein Alarmton in den Listen ausserhalb des Alarmablaufs ebenso (er endet
+        dort von selbst). Im Alarmablauf stellt der Alarmton erst beim Deaktivieren zurück (Schnappschuss des Laufs).
+        """
+        if not step.get("restore", True):
+            return False
+        kind = step.get("type")
+        if kind in ("chime", "prealarm"):
+            return True
+        return kind == "sound" and bool((self._run or {}).get("after")) and bool(step.get("duration"))
+
+    async def _remember(self, step: dict[str, Any], players: list[str]) -> dict[str, Any] | None:
+        """
+        Zustand der Lautsprecher vor dem Ton merken: ein oder aus, Lautstärke, Stummschaltung, Quelle, bei Sonos die ganze
+        Wiedergabe. Nie ein Hindernis: scheitert oder hängt das Merken, spielt der Ton ohne (Grenze SNAPSHOT_TIMEOUT je Aufruf).
+        """
+        if not self._restores_itself(step):
+            return None
+        try:
+            return {"snapshot": self._snapshot(players), "sonos": await self._sonos_snapshot(players)}
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - das Merken ist Zusatz: der Ton läuft in jedem Fall
+            _LOGGER.exception("%s: remembering the state of the speakers failed; the tone plays without it", self.entry.title)
+            return None
+
+    async def _put_back(self, remembered: dict[str, Any] | None) -> None:
+        """Lautsprecher nach dem Ton wieder so stellen, wie sie vorher waren (auch wieder ausschalten, wenn sie aus waren)."""
+        if remembered:
+            await self._restore(remembered)
 
     async def _set_volumes(self, step: dict[str, Any], players: list[str]) -> None:
         """
@@ -902,6 +938,7 @@ class WorkflowRunner:
             except NoURLAvailableError:
                 _LOGGER.error("%s: no Home Assistant URL for the arming tone; set it under Settings › System › Network", self.entry.title)
                 return
+        remembered = await self._remember(step, players)
         await self._set_volumes(step, players)
         # Ganze Wiederholungen in einer einzigen Datei (1.17.0): der Lautsprecher wird einmal gestartet
         length = ALL_SOUNDS[sound]
@@ -911,6 +948,7 @@ class WorkflowRunner:
             await self._sleep(total)
         finally:
             await self._call("media_player", "media_stop", {"entity_id": players})
+            await self._put_back(remembered)
 
     async def _bounded(self, coro: Any, label: str, timeout: float | None = None) -> None:
         """
@@ -1034,6 +1072,9 @@ class WorkflowRunner:
                     await self._call("media_player", "volume_set", {**data, "volume_level": attrs["volume_level"]})
                 if "is_volume_muted" in attrs:
                     await self._call("media_player", "volume_mute", {**data, "is_volume_muted": attrs["is_volume_muted"]})
+                if state == "off":
+                    # Er war vorher aus (der Ton hat ihn eingeschaltet): wieder ausschalten
+                    await self._call("media_player", "turn_off", data)
             elif domain == "cover":
                 if "current_position" in attrs:
                     await self._call("cover", "set_cover_position", {**data, "position": attrs["current_position"]})

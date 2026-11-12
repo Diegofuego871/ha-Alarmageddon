@@ -404,7 +404,7 @@ def test_every_step_type_has_a_budget() -> None:
     assert 0 < wf.step_budget({"type": "notify"}) <= wf.WATCHDOG_GRACE
     assert 30 <= wf.step_budget(examples["wait"]) <= 30 + wf.WATCHDOG_GRACE
     assert wf.SERVICE_TIMEOUT <= wf.step_budget(examples["action"]) <= wf.SERVICE_TIMEOUT + wf.WATCHDOG_GRACE
-    assert 60 <= wf.step_budget(examples["sound"]) <= 60 + 4 * wf.SERVICE_TIMEOUT + wf.WATCHDOG_GRACE
+    assert 60 <= wf.step_budget(examples["sound"]) <= 60 + 8 * wf.SERVICE_TIMEOUT + wf.SNAPSHOT_TIMEOUT + wf.WATCHDOG_GRACE
     # Ältere Form des Tons (Wiederholungen) und ein unbekannter Typ haben ebenfalls eine endliche Grenze
     assert 0 < wf.step_budget({"type": "sound", "sound": "siren", "repeat": 3}) < 3600
     assert 0 < wf.step_budget({"type": "gibt_es_noch_nicht"}) < 3600

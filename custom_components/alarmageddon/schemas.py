@@ -117,6 +117,8 @@ STEP_SCHEMAS = {
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
         vol.Optional("volumes"): PLAYER_VOLUMES,
         vol.Optional("duration", default=3): vol.All(vol.Coerce(int), vol.Range(min=1, max=CHIME_MAX_SECONDS)),
+        # Lautsprecher nach dem Ton wieder so stellen, wie sie vorher waren (1.26.0, Standard an)
+        vol.Optional("restore", default=True): bool,
         # So lange wie die laufende Verzögerung (1.18.0); nur in den Listen der Verzögerungen, sonst entfällt die Angabe (valid_step)
         vol.Optional("delay"): bool,
         vol.Optional("wait"): bool,
@@ -129,6 +131,7 @@ STEP_SCHEMAS = {
         vol.Optional("volume"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=1))),
         vol.Optional("volumes"): PLAYER_VOLUMES,
         vol.Optional("duration", default=20): vol.All(vol.Coerce(int), vol.Range(min=1, max=PREALARM_MAX_SECONDS)),
+        vol.Optional("restore", default=True): bool,
         vol.Optional("delay"): bool,
         vol.Optional("wait"): bool,
     }),
@@ -181,7 +184,7 @@ def valid_after_step(value: Any) -> dict[str, Any]:
         raise vol.Invalid("this step is not possible after the alarm")
     if step["type"] == "sound" and step.get("duration") in (0, None):
         raise vol.Invalid("a sound after the alarm needs a duration")
-    if "restore" in step:
+    if step["type"] == "action":
         step["restore"] = False
     return step
 
@@ -191,7 +194,7 @@ def valid_armed_step(value: Any) -> dict[str, Any]:
     step = valid_step(value)
     if step["type"] not in ARMED_STEP_TYPES:
         raise vol.Invalid("this step is not possible when arming")
-    if "restore" in step:
+    if step["type"] == "action":
         step["restore"] = False
     return step
 
@@ -200,7 +203,7 @@ def _valid_delay_step(value: Any, types: tuple[str, ...]) -> dict[str, Any]:
     step = valid_step(value, delay=True)
     if step["type"] not in types:
         raise vol.Invalid("this step is not possible during a delay")
-    if "restore" in step:
+    if step["type"] == "action":
         step["restore"] = False
     return step
 

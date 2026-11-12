@@ -7,7 +7,24 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.26.0] - 2026-11-12
+
+Every tone puts the speaker back afterwards.
+
+### Added
+
+- **"Put the speaker back afterwards" for every kind of tone.** Arming tone, pre-alarm and the alarm sound in the lists outside the alarm flow (when arming, during the delays, after acknowledging) remember before they start how the speaker was: on or off, volume, mute, and for Sonos the whole playback with source and group. They play at the chosen volume and afterwards put the speaker back, also switch it off again if it was off. **On by default**, and every step can switch it off (switch in the step). Steps saved before 1.26.0 without the setting also put the speaker back.
+- **Also when someone disarms in the middle of the tone**, and for a pre-alarm in the alarm flow, which now also returns with the other devices when disarming.
+
+### Changed
+
+- **A speaker that was off is switched off again** when the alarm sound is put back on disarm (before, it stayed on after the sound).
+- **Safe as before.** Remembering and putting back are never an obstacle: if a speaker does not answer, the tone, the flow and the siren go on after the time limits (tests with hanging and failing speakers, and in the mutation check).
+- Alarm sounds in the lists outside the alarm flow that were saved before with "undo" off keep that value; switch it on in the step if you want it.
+
 ## [1.25.1] - 2026-11-12
+
+Not released; included in 1.26.0.
 
 Same naming for the actions of the push notification.
 
@@ -1195,7 +1212,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.25.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.1
+[1.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.26.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0

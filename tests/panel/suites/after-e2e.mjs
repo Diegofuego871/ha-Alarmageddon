@@ -48,7 +48,7 @@ for (const lang of ["de", "en"]) {
     await s.waitFor("return r.getElementById('ag-step').open");
     await s.tap('#ag-step [data-wf="kind"][data-kind="sound"]');
     await s.waitFor("return !!r.querySelector('#ag-step .ag-tone')");
-    check(`${tag}: Ton danach: kein "bis zum Deaktivieren", kein "${t.restore}"`, await dlg("return !d.querySelector('[data-wf=\"until\"]') && !d.querySelector('[data-wf=\"restore\"]') && !!d.querySelector('[data-wf=\"waitend\"]')"));
+    check(`${tag}: Ton danach: kein "bis zum Deaktivieren", dafür "Lautsprecher danach zurückstellen" (an, 1.26.0)`, await dlg("return !d.querySelector('[data-wf=\"until\"]') && d.querySelector('[data-wf=\"restore\"]')?.getAttribute('aria-checked') === 'true' && !!d.querySelector('[data-wf=\"waitend\"]')"));
     await s.ev("const i=r.querySelector('#ag-step .ag-combo input, #ag-step input[type=\"search\"], #ag-step input'); i.focus(); i.value='Sonos'; i.dispatchEvent(new Event('input', { bubbles: true })); return 1");
     await s.waitFor("return !!r.querySelector('#ag-step [data-wf=\"pick\"]')");
     await s.ev("r.querySelector('#ag-step [data-wf=\"pick\"]').click(); return 1");
@@ -56,7 +56,7 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-step [data-wf="apply"]');
     await s.waitFor("return !r.getElementById('ag-step').open && r.querySelectorAll('.ag-wf-after .ag-wf-step').length === 2");
     const second = (await after())[1];
-    check(`${tag}: Ton mit Dauer und "wait": true; die Karte trägt die Pille "${t.waits}"`, second?.type === "sound" && second.duration > 0 && second.wait === true && second.restore === false && (await s.ev("return r.querySelectorAll('.ag-wf-after .ag-wf-step')[1].querySelector('.ag-waitpill')?.textContent.trim()")) === t.waits, JSON.stringify(second));
+    check(`${tag}: Ton mit Dauer und "wait": true; die Karte trägt die Pille "${t.waits}"`, second?.type === "sound" && second.duration > 0 && second.wait === true && second.restore === true && (await s.ev("return r.querySelectorAll('.ag-wf-after .ag-wf-step')[1].querySelector('.ag-waitpill')?.textContent.trim()")) === t.waits, JSON.stringify(second));
 
     // Verschieben mit der Tastatur bleibt in der Liste; Bearbeiten und Löschen treffen die richtige Liste
     await s.ev("const g=r.querySelector('.ag-wf-after [data-wf=\"grab\"][data-index=\"1\"]'); g.focus(); g.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, composed: true })); return 1");

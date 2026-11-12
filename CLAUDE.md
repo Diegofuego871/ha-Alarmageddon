@@ -123,6 +123,10 @@ Umsetzung:
   zählt ab dem ersten Start des Schritts, auch über Neuladen und Neustart (`workflow._remaining`). Die Grenzen des Wächters
   begrenzen nur Antwortzeiten und liegen immer über der eingestellten Zeit. Jede Änderung an Schritten mit Dauer braucht einen
   Test in `tests/test_duration.py`.
+- Töne stellen den Lautsprecher nach dem Ende selbst zurück (seit 1.26.0, Standard an, je Schritt `restore`): Merken vorher
+  (`workflow._remember`) und Zurückstellen danach (`_put_back`, auch wieder aus, wenn er aus war) sind nie ein Hindernis: jeder Aufruf
+  steht unter den Grenzen, `step_budget` rechnet sie ein. Tests in `tests/test_tone_restore.py` (auch hängend und scheiternd), Zeilen
+  in `scripts/mutation_check.py`.
 - Deaktivieren per Push-Aktion ist standardmässig aus.
 - Scharfschalten per Push-Knopf (seit 1.18.0, Meldung "Scharfschalten nicht möglich": "Erneut versuchen", "Trotzdem scharf
   schalten") ist standardmässig an (Entscheid des Nutzers, 2026-11-12). Die Knöpfe wirken nur bei deaktivierter Anlage, eine

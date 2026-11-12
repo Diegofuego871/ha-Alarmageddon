@@ -7,7 +7,24 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.26.0] - 2026-11-12
+
+Jeder Ton stellt den Lautsprecher danach zurück.
+
+### Hinzugefügt
+
+- **"Lautsprecher danach zurückstellen" bei jeder Art von Ton.** Aktivierungston, Voralarm und der Alarmton in den Listen ausserhalb des Alarmablaufs (beim Scharfschalten, während der Verzögerungen, nach dem Quittieren) merken sich vor dem Start, wie der Lautsprecher war: ein oder aus, Lautstärke, Stummschaltung, bei Sonos die ganze Wiedergabe mit Quelle und Gruppe. Sie spielen in der gewählten Lautstärke und stellen den Lautsprecher danach zurück, schalten ihn auch wieder aus, wenn er aus war. **Standardmässig an**, und jeder Schritt kann es abschalten (Schalter im Schritt). Auch Schritte, die vor 1.26.0 ohne diese Angabe gespeichert wurden, stellen zurück.
+- **Auch wenn mitten im Ton deaktiviert wird**, und für einen Voralarm im Alarmablauf, der nun beim Deaktivieren ebenfalls mit den anderen Geräten zurückkehrt.
+
+### Geändert
+
+- **Ein Lautsprecher, der aus war, wird wieder ausgeschaltet**, wenn der Alarmton beim Deaktivieren zurückgestellt wird (vorher blieb er nach dem Ton an).
+- **Sicher wie bisher.** Merken und Zurückstellen sind nie ein Hindernis: Antwortet ein Lautsprecher nicht, gehen Ton, Ablauf und Sirene nach den Zeitgrenzen weiter (Tests mit hängenden und scheiternden Lautsprechern, dazu in der Mutationsprobe).
+- Alarmtöne in den Listen ausserhalb des Alarmablaufs, die früher mit "Rückgängig" aus gespeichert wurden, behalten diesen Wert; im Schritt lässt er sich einschalten.
+
 ## [1.25.1] - 2026-11-12
+
+Nicht veröffentlicht; enthalten in 1.26.0.
 
 Einheitliche Benennung der Aktionen der Push-Meldung.
 
@@ -1195,7 +1212,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.25.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.1
+[1.26.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.26.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0

@@ -111,10 +111,10 @@ function fromStepBase(step) {
   if (step.type === "acknowledge") return { ...f, kind: "acknowledge" };
   if (isToneType(step.type)) Object.assign(f, { perVolume: Object.keys(step.volumes || {}).length > 0, volumes: { ...(step.volumes || {}) } });
   if (step.type === "chime") {
-    return { ...f, delay: !!step.delay, kind: "chime", targets: [...(step.players || [])], sound: step.sound || "tone_pip", setVolume: step.volume != null, volume: step.volume ?? 0.5, until: false, playSeconds: step.duration || 3, restore: false };
+    return { ...f, delay: !!step.delay, kind: "chime", targets: [...(step.players || [])], sound: step.sound || "tone_pip", setVolume: step.volume != null, volume: step.volume ?? 0.5, until: false, playSeconds: step.duration || 3, restore: step.restore !== false };
   }
   if (step.type === "prealarm") {
-    return { ...f, delay: !!step.delay, kind: "prealarm", targets: [...(step.players || [])], sound: step.sound || "pre_beep", setVolume: step.volume != null, volume: step.volume ?? 0.3, until: false, playSeconds: step.duration || 20, restore: false };
+    return { ...f, delay: !!step.delay, kind: "prealarm", targets: [...(step.players || [])], sound: step.sound || "pre_beep", setVolume: step.volume != null, volume: step.volume ?? 0.3, until: false, playSeconds: step.duration || 20, restore: step.restore !== false };
   }
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
@@ -153,8 +153,9 @@ export function toStep(f, zone = "main") {
     step.wait = false;
   }
   if (zone !== "main") {
-    // Nach dem Quittieren: nichts kehrt mehr zurück, und ein Ton braucht eine Dauer (niemand deaktiviert danach)
-    if ("restore" in step) step.restore = false;
+    // Nach dem Quittieren: kein Gerät kehrt mehr zurück, und ein Ton braucht eine Dauer (niemand deaktiviert danach). Bei Tönen
+    // heisst "restore" hier: der Lautsprecher wird nach dem Ton zurückgestellt (1.26.0)
+    if (step.type === "action") step.restore = false;
     if (step.type === "sound" && step.duration === 0) step.duration = Math.min(3600, Math.max(1, Math.round(Number(f.playSeconds) || 30)));
   }
   return step;
@@ -184,10 +185,10 @@ function toStepBase(f) {
   if (f.kind === "acknowledge") return { type: "acknowledge" };
   if (f.kind === "wait") return { type: "wait", seconds: Math.max(0, Math.round(Number(f.seconds) || 0)) };
   if (f.kind === "prealarm") {
-    return { type: "prealarm", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: Math.min(600, Math.max(1, Math.round(Number(f.playSeconds) || 20))) };
+    return { type: "prealarm", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: Math.min(600, Math.max(1, Math.round(Number(f.playSeconds) || 20))), restore: f.restore !== false };
   }
   if (f.kind === "chime") {
-    return { type: "chime", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: Math.min(300, Math.max(1, Math.round(Number(f.playSeconds) || 3))) };
+    return { type: "chime", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: Math.min(300, Math.max(1, Math.round(Number(f.playSeconds) || 3))), restore: f.restore !== false };
   }
   if (f.kind === "sound") {
     return { type: "sound", players: f.targets, sound: f.sound, volume: f.setVolume ? Number(f.volume) : null, duration: f.until ? 0 : Math.min(3600, Math.max(1, Math.round(Number(f.playSeconds) || 1))), restore: !!f.restore };
@@ -801,7 +802,13 @@ export class ActionsUi {
 
   // "Rückgängig" gibt es nur im Ablauf beim Alarm: nach dem Quittieren folgt nichts mehr, das etwas zurückstellen könnte
   _restoreRow(f) {
-    const row = (this.edit?.zone || "main") !== "main" || isShortTone(f.kind) ? "" : `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestore"))}</b><small>${esc(this._t(f.kind === "sound" ? "fldRestoreSoundHint" : "fldRestoreHint"))}</small></div>${this._toggle('data-wf="restore"', f.restore, "fldRestore")}</div>`;
+    const zone = this.edit?.zone || "main";
+    // Töne ausserhalb des Alarmablaufs (Aktivierungston, Voralarm, Alarmton nach dem Quittieren oder beim Scharfschalten) stellen den
+    // Lautsprecher nach dem Ton selbst zurück; Standard an, je Schritt abschaltbar (1.26.0)
+    if (isShortTone(f.kind) || (f.kind === "sound" && zone !== "main")) {
+      return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestoreTone"))}</b><small>${esc(this._t("fldRestoreToneHint"))}</small></div>${this._toggle('data-wf="restore"', f.restore, "fldRestoreTone")}</div>${this._waitRow(f)}`;
+    }
+    const row = zone !== "main" ? "" : `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldRestore"))}</b><small>${esc(this._t(f.kind === "sound" ? "fldRestoreSoundHint" : "fldRestoreHint"))}</small></div>${this._toggle('data-wf="restore"', f.restore, "fldRestore")}</div>`;
     return `${row}${this._waitRow(f)}`;
   }
 
@@ -1467,7 +1474,7 @@ export class ActionsUi {
     if (act === "add") this.openPicker(Number(el.dataset.at), zone);
     else if (act === "kind") {
       const k = KINDS.find((x) => x.kind === el.dataset.kind);
-      this.openEditor({ ...blank(), kind: k.kind, restore: k.kind === "sound" && (this.edit?.zone || "main") === "main", ...(k.kind === "chime" ? { sound: "tone_pip", playSeconds: 3, until: false, volume: 0.5 } : {}), ...(k.kind === "prealarm" ? { sound: "pre_beep", playSeconds: 20, until: false, setVolume: true, volume: 0.3, wait: true } : {}),
+      this.openEditor({ ...blank(), kind: k.kind, restore: ["sound", "chime", "prealarm"].includes(k.kind), ...(k.kind === "chime" ? { sound: "tone_pip", playSeconds: 3, until: false, volume: 0.5 } : {}), ...(k.kind === "prealarm" ? { sound: "pre_beep", playSeconds: 20, until: false, setVolume: true, volume: 0.3, wait: true } : {}),
         // Töne in den Listen der Verzögerungen folgen standardmässig der Verzögerung (1.19.0)
         ...(DELAY_ZONES.includes(this.edit?.zone) && (k.kind === "chime" || k.kind === "prealarm") ? { delay: true, wait: false } : {}) }); // Alarmton beim Alarm: standardmässig zurückstellen; Aktivierungston: Piepsen, 3 Sekunden
     } else if (act === "edit") {
