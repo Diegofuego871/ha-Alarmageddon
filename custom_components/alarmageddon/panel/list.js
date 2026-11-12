@@ -418,7 +418,7 @@ export class ListUi {
   }
 
   viewDialogHtml() {
-    const seg = (key, items) => `<div class="ag-seg small" data-seg="view-${key}">${items.map(([v, label]) => `<button data-list="vset" data-key="${key}" data-value="${v}" class="${this.view[key] === v ? "on" : ""}">${esc(this._t(label))}</button>`).join("")}</div>`;
+    const seg = (key, items) => `<div class="ag-seg small" data-seg="view-${key}">${items.map(([v, label, icon]) => `<button data-list="vset" data-key="${key}" data-value="${v}" class="${this.view[key] === v ? "on" : ""}">${icon ? ic(icon, 20) : ""}<span>${esc(this._t(label))}</span></button>`).join("")}</div>`;
     // Spalten und Angaben: Schalter und Pfeile zum Umordnen, je Gerät (Handy, Desktop) eigene Einstellung
     const rows = (set) => this.view[set].map(([k, on], i, all) => `<div class="ag-colrow"><span>${esc(this._t(COL_LABEL[k]))}</span>
         <button class="ag-iconbtn" data-list="mv" data-set="${set}" data-key="${k}" data-dir="-1" ${i === 0 ? "disabled" : ""} aria-label="${esc(this._t("stepUp"))}">${ic("arrowUp", 18)}</button>
@@ -426,10 +426,10 @@ export class ListUi {
         <button class="ag-toggle ${on ? "on" : ""}" data-list="col" data-set="${set}" data-key="${k}" role="switch" aria-checked="${on}" aria-label="${esc(this._t(COL_LABEL[k]))}"></button></div>`).join("");
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
       <div class="ag-t2 ag-small">${esc(this._t(this.kind === "mobile" ? "viewForMobile" : "viewForDesktop"))}</div>
-      <div class="ag-label">${esc(this._t("viewLayout"))}</div>${seg("layout", [["list", "layoutList"], ["cards", "layoutCards"]])}
-      <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea"], ["type", "groupType"], ["system", "groupSystem"], ["none", "groupNone"]])}
+      <div class="ag-label">${esc(this._t("viewLayout"))}</div>${seg("layout", [["list", "layoutList", "groups"], ["cards", "layoutCards", "grid"]])}
+      <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea", "area"], ["type", "groupType", "sensor"], ["system", "groupSystem", "shield"], ["none", "groupNone", "minus"]])}
       <div class="ag-label">${esc(this._t("viewSort"))}</div><select class="ag-input" data-list="vsort" aria-label="${esc(this._t("viewSort"))}">${["name", ...COLUMNS].map((k) => `<option value="${k}" ${this.view.sort === k ? "selected" : ""}>${esc(this._t(k === "name" ? "colName" : COL_LABEL[k]))}</option>`).join("")}</select>
-      <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc"], ["desc", "dirDesc"]])}</div>
+      <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc", "orderUp"], ["desc", "dirDesc", "orderDown"]])}</div>
       <div class="ag-label">${esc(this._t("viewColumns"))}</div><div class="ag-colist">${rows("cols")}</div>
       <div class="ag-label">${esc(this._t("viewFields"))}</div><div class="ag-colist">${rows("fields")}</div>
       ${this._namesHtml()}

@@ -7,7 +7,17 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.23.0] - 2026-11-12
+
+Symbole in allen Auswahlknöpfen der Ansicht.
+
+### Geändert
+
+- **"Ansicht": jeder Auswahlknopf hat ein Symbol.** Im Fenster "Ansicht" der Sensorliste tragen "Liste" und "Karten" dieselben Symbole wie der Umschalter in der Werkzeugleiste, "Bereich", "Sensorart", "Anlage" und "Keine" (Gruppieren) sowie "Aufsteigend" und "Absteigend" je ein eigenes. Am Computer stehen die vier Gruppierknöpfe jetzt wie auf dem Handy in zwei Zeilen, damit nichts abgeschnitten wird.
+
 ## [1.22.0] - 2026-11-12
+
+Nicht veröffentlicht; enthalten in 1.23.0.
 
 Schritte per Ziehen zwischen den Listen verschieben.
 
@@ -1157,7 +1167,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.22.0
+[1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1

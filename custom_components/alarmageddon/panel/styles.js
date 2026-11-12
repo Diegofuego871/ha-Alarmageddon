@@ -783,6 +783,7 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 :host([narrow]) .ag-seg > button { min-height: 44px; padding: 0 4px; }
 :host([narrow]) .ag-dlg-body > select.ag-input { height: 50px; min-height: 50px; }
 :host([narrow]) .ag-tabs > button { flex-direction: column; gap: 2px; font-size: 12px; min-height: 52px; }
+#ag-view .ag-seg.small:has(> button:nth-child(4)):not(:has(> button:nth-child(5))),
 :host([narrow]) .ag-seg.small:not(.ag-subs):has(> button:nth-child(4)):not(:has(> button:nth-child(5))) { display: grid; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 389px) { :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

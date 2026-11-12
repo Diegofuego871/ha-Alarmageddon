@@ -7,7 +7,17 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.23.0] - 2026-11-12
+
+Symbols in all selection buttons of the view.
+
+### Changed
+
+- **"View": every selection button has a symbol.** In the window "View" of the sensor list, "List" and "Cards" carry the same symbols as the switch in the toolbar, "Area", "Sensor type", "Alarm system" and "None" (grouping) and "Ascending" and "Descending" each have their own. On wide screens the four grouping buttons now sit in two rows, as on the phone, so that nothing is cut off.
+
 ## [1.22.0] - 2026-11-12
+
+Not released; included in 1.23.0.
 
 Move steps between the lists by dragging.
 
@@ -1157,7 +1167,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.22.0
+[1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
