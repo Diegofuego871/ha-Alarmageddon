@@ -23,6 +23,11 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: in der Mitte und ganz im Bild`, Math.abs(motion.cx - motion.vw / 2) <= 2 && Math.abs(motion.cy - motion.vh / 2) <= 2 && motion.inside, JSON.stringify(motion));
       const size = await s.ev("const b=r.querySelector('.ag-egg-pop').getBoundingClientRect(); return { w: Math.round(b.width), h: Math.round(b.height), vw: innerWidth, vh: innerHeight, radius: getComputedStyle(r.querySelector('.ag-egg-pop')).borderRadius }");
       check(`${tag}: ${mobile ? "auf dem Handy bildfüllend" : "am Computer als Karte"}`, mobile ? size.w === size.vw && size.h === size.vh && size.radius === "0px" : size.w < size.vw / 2 && size.h < size.vh, JSON.stringify(size));
+      // Das Schild ist ein dicker Körper: viele Ebenen in der Tiefe, und von der Seite (90 Grad) hat es sichtbare Breite
+      const body = await s.ev("const l=[...r.querySelectorAll('.ag-egg-l')]; const zs=l.map((e) => e.style.transform.match(/translateZ\\((-?[\\d.]+)px/)?.[1]).filter(Boolean).map(Number); return { n: l.length, front: !!r.querySelector('.ag-egg-l.front'), back: !!r.querySelector('.ag-egg-l.back'), shine: !!r.querySelector('.ag-egg-l.shine'), depth: Math.max(...zs) - Math.min(...zs) }");
+      check(`${tag}: Körper aus mindestens 20 Ebenen mit Vorder-, Rückseite und Glanz, Tiefe über 15 px`, body.n >= 20 && body.front && body.back && body.shine && body.depth > 15, JSON.stringify(body));
+      const edge = await s.ev("const a=r.querySelector('.ag-egg-logo').getAnimations().find((x) => x.animationName === 'ag-egg-y'); a.pause(); const t=a.effect.getComputedTiming().duration; a.currentTime = t / 4; const rs=[...r.querySelectorAll('.ag-egg-l')].map((e) => e.getBoundingClientRect()); const w=Math.max(...rs.map((b) => b.right)) - Math.min(...rs.map((b) => b.left)); a.play(); return Math.round(w)");
+      check(`${tag}: von der Seite sichtbar dick (Breite über 18 px, nicht wie Papier)`, edge > 18, String(edge));
       const a1 = await s.ev("return getComputedStyle(r.querySelector('.ag-egg-logo')).transform");
       await s.page.waitForTimeout(400);
       const a2 = await s.ev("return getComputedStyle(r.querySelector('.ag-egg-logo')).transform");

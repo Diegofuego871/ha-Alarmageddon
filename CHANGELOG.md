@@ -7,7 +7,17 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.25.0] - 2026-11-12
+
+The badge of the easter egg is a solid 3D body.
+
+### Changed
+
+- **Easter egg: the badge is thick, like a real badge.** The shield is built from many layers in depth, so it has a visible thickness when it turns and no longer looks like paper. Front and back have a rounded ridge with a highlight, the side wall is a darker shade of the same colours, and a soft shadow lies on the floor. The light comes from the top left: the brightness of every surface follows the rotation, and a glint runs over the front. The colours stay as they were.
+
 ## [1.24.0] - 2026-11-12
+
+Not released; included in 1.25.0.
 
 Dragging steps: the page scrolls along.
 
@@ -1177,7 +1187,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.24.0
+[1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0

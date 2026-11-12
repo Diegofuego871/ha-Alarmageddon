@@ -7,7 +7,17 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.25.0] - 2026-11-12
+
+Das Abzeichen im Easter Egg ist ein massiver 3D-Körper.
+
+### Geändert
+
+- **Easter Egg: das Abzeichen ist dick, wie ein echtes Abzeichen.** Das Schild besteht aus vielen Ebenen in der Tiefe, hat beim Drehen sichtbare Dicke und sieht nicht mehr aus wie Papier. Vorder- und Rückseite haben einen runden Wulst mit Glanzlicht, die Seitenwand ist ein dunklerer Ton derselben Farben, und am Boden liegt ein weicher Schatten. Das Licht kommt von links oben: Die Helligkeit jeder Fläche folgt der Drehung, und ein Glanzstreifen läuft über die Vorderseite. Die Farben bleiben wie bisher.
+
 ## [1.24.0] - 2026-11-12
+
+Nicht veröffentlicht; enthalten in 1.25.0.
 
 Schritte ziehen: die Seite scrollt mit.
 
@@ -1177,7 +1187,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.24.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.24.0
+[1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0

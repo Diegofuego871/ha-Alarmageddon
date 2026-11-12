@@ -939,16 +939,36 @@ class AlarmageddonPanel extends HTMLElement {
   // Sirenenleuchte. Die Einstellung "Bewegung reduzieren" gilt hier bewusst nicht (Vorgabe des Nutzers, 2026-11-12).
   _openEgg(logo) {
     if (this._root.querySelector(".ag-egg")) return;
-    const shield = `<svg viewBox="22 22 212 212" aria-hidden="true"><defs><linearGradient id="ag-egg-g" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#E5304A"/></linearGradient></defs><path d="M128 36 L204 64 V122 C204 170 172 204 128 222 C84 204 52 170 52 122 V64 Z" fill="none" stroke="url(#ag-egg-g)" stroke-width="22" stroke-linejoin="round"/><path d="M94 164 L128 92 L162 164" fill="none" stroke="url(#ag-egg-g)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><path d="M110 138 H146" fill="none" stroke="url(#ag-egg-g)" stroke-width="16" stroke-linecap="round"/></svg>`;
+    // Schild als Körper: dieselbe Form in 22 Ebenen hintereinander (je 1,2 px), vorn und hinten mit Wulst und Glanz. Die Seitenwand
+    // ist dunkler und aus demselben Farbverlauf; so entsteht die Dicke beim Drehen.
+    const shape = (stroke, grow = 0, extra = "") => `<path d="M128 36 L204 64 V122 C204 170 172 204 128 222 C84 204 52 170 52 122 V64 Z" fill="none" stroke="${stroke}" stroke-width="${22 + grow}" stroke-linejoin="round" ${extra}/><path d="M94 164 L128 92 L162 164" fill="none" stroke="${stroke}" stroke-width="${18 + grow}" stroke-linecap="round" stroke-linejoin="round" ${extra}/><path d="M110 138 H146" fill="none" stroke="${stroke}" stroke-width="${16 + grow}" stroke-linecap="round" ${extra}/>`;
+    const svg = (inner) => `<svg viewBox="22 22 212 212" aria-hidden="true">${inner}</svg>`;
+    const defs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+      <linearGradient id="ag-egg-g" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#E5304A"/></linearGradient>
+      <linearGradient id="ag-egg-s" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#C8642B"/><stop offset=".5" stop-color="#A63A24"/><stop offset="1" stop-color="#7C1830"/></linearGradient>
+      <linearGradient id="ag-egg-e" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E08A3C"/><stop offset=".5" stop-color="#C9482B"/><stop offset="1" stop-color="#9A2036"/></linearGradient>
+      <linearGradient id="ag-egg-hi" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset=".55" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <linearGradient id="ag-egg-sh" x1="20" y1="60" x2="240" y2="190" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset=".58" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    </defs></svg>`;
+    // Vorder- und Rückseite: dunkle Kante, Farbfläche, heller Wulst in der Mitte (rund wie ein Rohr)
+    const face = shape("url(#ag-egg-e)", 2) + shape("url(#ag-egg-g)", -3) + shape("url(#ag-egg-hi)", -14);
+    const LAYERS = 22, DEPTH = 26;
+    const z = (i) => -DEPTH / 2 + (i * DEPTH) / (LAYERS - 1);
+    let body = "";
+    for (let i = 1; i < LAYERS - 1; i += 1) body += `<div class="ag-egg-l side" data-z="${z(i)}">${svg(shape("url(#ag-egg-s)"))}</div>`;
+    const layers = `<div class="ag-egg-l back" data-z="${-DEPTH / 2}" data-back="1">${svg(face)}</div>${body}<div class="ag-egg-l front" data-z="${DEPTH / 2}">${svg(face)}</div><div class="ag-egg-l shine" data-z="${DEPTH / 2 + 0.6}">${svg(shape("url(#ag-egg-sh)", -3))}</div>`;
     const egg = this.ownerDocument.createElement("div");
     egg.className = this.hasAttribute("narrow") ? "ag-egg full" : "ag-egg"; // auf dem Handy bildfüllend
     egg.setAttribute("role", "dialog");
     egg.setAttribute("aria-modal", "true");
     egg.setAttribute("aria-label", "Alarmageddon");
     const version = this._data?.version;
-    egg.innerHTML = `<div class="ag-egg-scrim"></div><div class="ag-egg-pop" tabindex="-1"><div class="ag-egg-stage"><div class="ag-egg-beam"></div><div class="ag-egg-glow"></div><div class="ag-egg-logo">${shield}</div></div><h2>Alarmageddon</h2>${version ? `<div class="ag-egg-v">${esc(this._t("eggVersion", { v: version }))}</div>` : ""}<span class="ag-egg-x">${esc(this._t("eggClose"))}</span></div>`;
+    egg.innerHTML = `${defs}<div class="ag-egg-scrim"></div><div class="ag-egg-pop" tabindex="-1"><div class="ag-egg-stage"><div class="ag-egg-beam"></div><div class="ag-egg-glow"></div><div class="ag-egg-tilt"><div class="ag-egg-logo">${layers}</div></div><div class="ag-egg-floor"></div></div><h2>Alarmageddon</h2>${version ? `<div class="ag-egg-v">${esc(this._t("eggVersion", { v: version }))}</div>` : ""}<span class="ag-egg-x">${esc(this._t("eggClose"))}</span></div>`;
     this._root.appendChild(egg);
     const pop = egg.querySelector(".ag-egg-pop");
+    // Tiefe der Ebenen in Pixel, passend zur Grösse der Bühne (200 px = 1)
+    const unit = (egg.querySelector(".ag-egg-stage").getBoundingClientRect().width || 200) / 200;
+    for (const l of egg.querySelectorAll(".ag-egg-l")) l.style.transform = `translateZ(${Number(l.dataset.z) * unit}px)${l.dataset.back ? " rotateY(180deg)" : ""}`;
     const scrim = egg.querySelector(".ag-egg-scrim");
     const a = logo.getBoundingClientRect();
     const b = pop.getBoundingClientRect();
