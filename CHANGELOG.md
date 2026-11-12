@@ -7,6 +7,23 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.19.0] - 2026-11-12
+
+Actions during the exit delay and during the entry delay.
+
+### Added
+
+- **Actions while the exit delay runs.** The actions page has a new fixed point "Arming begins" before "Alarm system armed". What you put there starts as soon as someone arms the system, for example an arming tone that tells everyone to leave. When the system is armed the actions end, a running tone falls silent, and the steps of "Alarm system armed" follow. Disarming stops them at once.
+- **Actions while the entry delay runs.** A new fixed point "Entry delay running" before "Alarm starts": steps that run while the time to disarm is running, for example a pre-alarm. They end when the alarm begins (the alarm actions take over) or when the system is disarmed.
+- **A tone that follows the delay.** For arming tone and pre-alarm in these two lists there is a switch "As long as the exit delay runs" (resp. "entry delay"), on for new steps. The tone then lasts exactly as long as the delay that is running: the value of the mode, or, if the sensor that started it has its own entry delay, its value. It follows the setting of the alarm system; the fixed duration only applies if the switch is off. The card of the step shows a blue pill instead of the seconds.
+- **Two chapters.** The page is divided into "When arming" and "On an alarm", the points in the order of time: arming begins, armed, entry delay running, alarm begins, alarm ends. In the tab "Always active" there is neither.
+- **Only where the delay exists.** "Arming begins" only shows in a mode whose exit delay is above 0, and "Entry delay running" only where an entry delay can run (an entry sensor in the zone, with a delay above 0). Saved steps are kept.
+- **Also in "Copy actions from" and in the backup.**
+
+### Changed
+
+- **The alarm never waits for these actions.** A device that hangs or fails during a delay holds up nothing: the alarm actions start at the moment the alarm begins, the end of the actions of the delay is awaited for 3 seconds at most. A reload or a restart in the middle of a delay continues only the tones for the remaining time; a device is not switched a second time.
+
 ## [1.18.1] - 2026-11-12
 
 Test button of a step becomes a stop button.
@@ -1113,6 +1130,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
 [1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0
 [1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12

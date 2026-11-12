@@ -50,7 +50,7 @@ const SCENE_DOMAINS = ["scene", "script"];
 // laufen standardmässig weiter, der nächste startet sofort; nur mit "wait" wartet der Ablauf. Ältere Abläufe ohne "wait" warteten,
 // ausser mit "detach". Ein Ton "bis zum Deaktivieren" (Dauer 0) endet nie von selbst: auf ihn lässt sich nicht warten.
 const endless = (step) => step?.type === "sound" && step.duration === 0;
-const waits = (step) => ["action", "sound", "chime", "prealarm"].includes(step?.type) && !endless(step) && ("wait" in step ? Boolean(step.wait) : step.type === "prealarm" || (step.type !== "chime" && !step.detach));
+const waits = (step) => ["action", "sound", "chime", "prealarm"].includes(step?.type) && !endless(step) && !step.delay && ("wait" in step ? Boolean(step.wait) : step.type === "prealarm" || (step.type !== "chime" && !step.detach));
 // Schritte, die nach dem Quittieren möglich sind (keine Alarmmeldung, kein Quittieren)
 const AFTER_KINDS = ["device", "sound", "chime", "wait", "scene", "custom"];
 // Schritte beim Scharfschalten (1.14.0): der Aktivierungston statt der Sirene, dazu Gerät, Warten, Szene und eigene Aktion
@@ -66,8 +66,13 @@ const ownVolumes = (f) => {
 };
 // Voralarm und Aktivierungston haben immer eine Dauer und stellen nichts zurück (anders als der Alarmton)
 const isShortTone = (kind) => kind === "chime" || kind === "prealarm";
-const ZONE_KEY = { main: "wf", after: "after", armed: "armed" };
-const ZONE_CLASS = { main: ".ag-wf-main", after: ".ag-wf-after", armed: ".ag-wf-armed" };
+// Aktionen während der Verzögerungen (1.19.0): "arming" (Scharfschalten beginnt, die Ausgangsverzögerung läuft) und "entry"
+// (Eingangsverzögerung läuft, Zeit zum Deaktivieren). Je Modus, nicht für "Immer aktiv" (dort gibt es keine Verzögerung).
+const ARMING_KINDS = ["chime", "device", "wait", "scene", "custom"];
+const ENTRY_KINDS = ["chime", "prealarm", "device", "wait", "scene", "custom"];
+const DELAY_ZONES = ["arming", "entry"];
+const ZONE_KEY = { main: "wf", after: "after", armed: "armed", arming: "arming", entry: "entry" };
+const ZONE_CLASS = { main: ".ag-wf-main", after: ".ag-wf-after", armed: ".ag-wf-armed", arming: ".ag-wf-arming", entry: ".ag-wf-entry" };
 
 export const KINDS = [
   { kind: "notify", icon: "bell", label: "stepNotify", hint: "stepNotifyHint" },
@@ -93,7 +98,7 @@ export function normEnd(value) {
 
 // ----- Schritt des Servers <-> Formular -----
 
-const blank = () => ({ kind: "custom", targets: [], ntTargets: null, restore: false, seconds: 30, wait: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
+const blank = () => ({ delay: false, kind: "custom", targets: [], ntTargets: null, restore: false, seconds: 30, wait: false, ntTitle: "", ntMessage: "", ntCritical: null, ntVolume: null, ntButtons: {}, ntClick: null, ntClickPath: "", until: false, playSeconds: 30, sound: "siren", setVolume: true, volume: 0.7, repeat: 3, action: "on", opts: {}, optsOn: {}, domain: "", service: "", data: {}, extra: {} });
 
 export function fromStep(step) {
   return { ...fromStepBase(step), wait: waits(step) };
@@ -106,10 +111,10 @@ function fromStepBase(step) {
   if (step.type === "acknowledge") return { ...f, kind: "acknowledge" };
   if (isToneType(step.type)) Object.assign(f, { perVolume: Object.keys(step.volumes || {}).length > 0, volumes: { ...(step.volumes || {}) } });
   if (step.type === "chime") {
-    return { ...f, kind: "chime", targets: [...(step.players || [])], sound: step.sound || "tone_pip", setVolume: step.volume != null, volume: step.volume ?? 0.5, until: false, playSeconds: step.duration || 3, restore: false };
+    return { ...f, delay: !!step.delay, kind: "chime", targets: [...(step.players || [])], sound: step.sound || "tone_pip", setVolume: step.volume != null, volume: step.volume ?? 0.5, until: false, playSeconds: step.duration || 3, restore: false };
   }
   if (step.type === "prealarm") {
-    return { ...f, kind: "prealarm", targets: [...(step.players || [])], sound: step.sound || "pre_beep", setVolume: step.volume != null, volume: step.volume ?? 0.3, until: false, playSeconds: step.duration || 20, restore: false };
+    return { ...f, delay: !!step.delay, kind: "prealarm", targets: [...(step.players || [])], sound: step.sound || "pre_beep", setVolume: step.volume != null, volume: step.volume ?? 0.3, until: false, playSeconds: step.duration || 20, restore: false };
   }
   if (step.type === "sound") {
     return { ...f, kind: "sound", targets: [...step.players], sound: step.sound, setVolume: step.volume != null, volume: step.volume ?? 0.7, repeat: step.repeat || 1, until: step.duration === 0, playSeconds: step.duration ? step.duration : Math.max(5, (step.repeat || 1) * (SOUND_LEN[step.sound] || 4)), restore: step.restore !== false };
@@ -142,6 +147,11 @@ export function toStep(f, zone = "main") {
   // (nie bei einem Ton bis zum Deaktivieren). Das Panel schreibt die Angabe immer mit: so ist ein neuer Schritt von einem älteren
   // ohne Angabe (der wartete) zu unterscheiden.
   if (step.type === "action" || step.type === "sound" || step.type === "chime" || step.type === "prealarm") step.wait = Boolean(f.wait) && !(f.kind === "sound" && f.until);
+  if (DELAY_ZONES.includes(zone) && f.delay && (step.type === "chime" || step.type === "prealarm")) {
+    // So lange wie die laufende Verzögerung (1.19.0): die Dauer ist die Restzeit, der Ablauf wartet nie auf diesen Ton
+    step.delay = true;
+    step.wait = false;
+  }
   if (zone !== "main") {
     // Nach dem Quittieren: nichts kehrt mehr zurück, und ein Ton braucht eine Dauer (niemand deaktiviert danach)
     if ("restore" in step) step.restore = false;
@@ -287,12 +297,14 @@ export class ActionsUi {
       const end = { ...(s.workflow_end || {}) };
       const after = JSON.parse(JSON.stringify(s.workflows_after || {})); // Aktionen nach dem Quittieren, je Auslöser wie wf
       const armed = JSON.parse(JSON.stringify(s.workflows_armed || {})); // Aktionen beim Scharfschalten, je Modus (nicht für "Immer aktiv")
+      const arming = JSON.parse(JSON.stringify(s.workflows_arming || {})); // Aktionen während der Ausgangsverzögerung (1.19.0)
+      const entry = JSON.parse(JSON.stringify(s.workflows_entry || {})); // Aktionen während der Eingangsverzögerung (1.19.0)
       // Ohne gespeicherte Wahl: an, wenn sich die Abläufe der Modi (oder "Immer aktiv") unterscheiden
       const keys = this.triggers(s);
       const modes = keys.filter((t) => t !== "always");
       const sig = (t) => [canon(wf[t]), canonEnd(end[t]), canon(after[t], "after")].join("|");
-      const sigArmed = (t) => canon(armed[t], "armed");
-      this.draft = { entry: s.entry_id, wf, end, after, armed, perMode: keys.some((t) => sig(t) !== sig(keys[0])) || modes.some((t) => sigArmed(t) !== sigArmed(modes[0])) };
+      const sigArmed = (t) => [canon(armed[t], "armed"), canon(arming[t], "arming"), canon(entry[t], "entry")].join("|");
+      this.draft = { entry: s.entry_id, wf, end, after, armed, arming, entrySteps: entry, perMode: keys.some((t) => sig(t) !== sig(keys[0])) || modes.some((t) => sigArmed(t) !== sigArmed(modes[0])) };
     }
     if (!this.triggers(s).includes(this.trigger)) this.trigger = "away";
     // Schalter aus: ein Ablauf für alles, bearbeitet wird der des ersten Reiters
@@ -302,19 +314,25 @@ export class ActionsUi {
 
   // Der Stand, der gespeichert würde: ohne "Einstellungen pro Modus" gilt der erste Ablauf für alle Modi und "Immer aktiv"
   _effective(d, s = this.system) {
-    if (d.perMode) return { wf: d.wf, end: d.end || {}, after: d.after || {}, armed: d.armed || {} };
+    if (d.perMode) return { wf: d.wf, end: d.end || {}, after: d.after || {}, armed: d.armed || {}, arming: d.arming || {}, entry: d.entrySteps || {} };
     const keys = this.triggers(s);
     const wf = {};
     const end = {};
     const after = {};
     const armed = {};
+    const arming = {};
+    const entry = {};
     for (const t of keys) {
       wf[t] = JSON.parse(JSON.stringify(d.wf[keys[0]] || []));
       end[t] = JSON.parse(JSON.stringify(normEnd(d.end?.[keys[0]])));
       after[t] = JSON.parse(JSON.stringify(d.after?.[keys[0]] || []));
-      if (t !== "always") armed[t] = JSON.parse(JSON.stringify(d.armed?.[keys[0]] || []));
+      if (t !== "always") {
+        armed[t] = JSON.parse(JSON.stringify(d.armed?.[keys[0]] || []));
+        arming[t] = JSON.parse(JSON.stringify(d.arming?.[keys[0]] || []));
+        entry[t] = JSON.parse(JSON.stringify(d.entrySteps?.[keys[0]] || []));
+      }
     }
-    return { wf, end, after, armed };
+    return { wf, end, after, armed, arming, entry };
   }
 
   reset() {
@@ -326,12 +344,17 @@ export class ActionsUi {
   // Schritte des gewählten Auslösers: der Ablauf beim Alarm ("main"), die Aktionen nach dem Quittieren ("after") oder die beim
   // Scharfschalten ("armed")
   steps(zone = "main") {
-    return this.ensureDraft()?.[ZONE_KEY[zone] || "wf"]?.[this.trigger] || [];
+    return this.ensureDraft()?.[this._draftKey(zone)]?.[this.trigger] || [];
+  }
+
+  // Schlüssel der Liste im Entwurf ("entry" ist schon die Anlage des Entwurfs, darum entrySteps)
+  _draftKey(zone) {
+    return zone === "entry" ? "entrySteps" : ZONE_KEY[zone] || "wf";
   }
 
   _setSteps(list, zone = "main") {
     const d = this.ensureDraft();
-    const key = ZONE_KEY[zone] || "wf";
+    const key = this._draftKey(zone);
     d[key] = { ...(d[key] || {}), [this.trigger]: list };
   }
 
@@ -341,9 +364,17 @@ export class ActionsUi {
     const d = this.draft;
     if (!s || !d || d.entry !== s.entry_id) return [];
     const eff = this._effective(d, s);
-    const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(eff.wf), ...Object.keys(s.workflows_after || {}), ...Object.keys(eff.after || {})]);
-    return [...all].filter((k) => canon((s.workflows || {})[k]) !== canon(eff.wf[k]) || canonEnd((s.workflow_end || {})[k]) !== canonEnd((eff.end || {})[k]) || canon((s.workflows_after || {})[k], "after") !== canon((eff.after || {})[k], "after") || canon((s.workflows_armed || {})[k], "armed") !== canon((eff.armed || {})[k], "armed"))
-      .map((k) => ["data-trigger", k]);
+    return this._changedTriggers(s, eff).map((k) => ["data-trigger", k]);
+  }
+
+  // Auslöser (Reiter), deren Entwurf vom gespeicherten Stand abweicht: Ablauf, "Alarm endet", Aktionen danach, beim Scharfschalten
+  // und während der beiden Verzögerungen
+  _changedTriggers(s, eff) {
+    const keys = new Set([...Object.keys(s.workflows || {}), ...Object.keys(eff.wf), ...Object.keys(s.workflows_after || {}), ...Object.keys(eff.after || {}),
+      ...Object.keys(s.workflows_arming || {}), ...Object.keys(eff.arming || {}), ...Object.keys(s.workflows_entry || {}), ...Object.keys(eff.entry || {})]);
+    return [...keys].filter((k) => canon((s.workflows || {})[k]) !== canon(eff.wf[k]) || canonEnd((s.workflow_end || {})[k]) !== canonEnd((eff.end || {})[k])
+      || canon((s.workflows_after || {})[k], "after") !== canon((eff.after || {})[k], "after") || canon((s.workflows_armed || {})[k], "armed") !== canon((eff.armed || {})[k], "armed")
+      || canon((s.workflows_arming || {})[k], "arming") !== canon((eff.arming || {})[k], "arming") || canon((s.workflows_entry || {})[k], "entry") !== canon((eff.entry || {})[k], "entry"));
   }
 
   // Ein Entwurf, den die Abfrage nicht verwerfen darf, auch wenn kein Inhalt abweicht: der Nutzer hat "Einstellungen pro Modus"
@@ -357,13 +388,7 @@ export class ActionsUi {
     const s = this.system;
     const d = this.draft;
     if (!s || !d || d.entry !== s.entry_id) return 0;
-    const eff = this._effective(d, s);
-    const all = new Set([...Object.keys(s.workflows || {}), ...Object.keys(eff.wf), ...Object.keys(s.workflows_after || {}), ...Object.keys(eff.after || {})]);
-    let n = 0;
-    for (const k of all) {
-      if (canon((s.workflows || {})[k]) !== canon(eff.wf[k]) || canonEnd((s.workflow_end || {})[k]) !== canonEnd((eff.end || {})[k]) || canon((s.workflows_after || {})[k], "after") !== canon((eff.after || {})[k], "after") || canon((s.workflows_armed || {})[k], "armed") !== canon((eff.armed || {})[k], "armed")) n += 1;
-    }
-    return n;
+    return this._changedTriggers(s, this._effective(d, s)).length;
   }
 
   html() {
@@ -391,7 +416,11 @@ export class ActionsUi {
     // Verbindungen sehen gleich aus; ob ein Schritt den nächsten aufhält, sagt die Pille "Wartet …" auf dem Schritt.
     const plus = (i) => `<div class="ag-wf-plus"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfAdd"))}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span></div>`;
     const cards = steps.map((step, i) => this._card(step, i, running)).map((c, i) => c + plus(i + 1)).join("");
-    h._setHtml(body, `${this._armedHtml(running)}<div class="ag-wf-line ag-wf-main">
+    const arm = this._armedHtml(running);
+    const entry = this._delayHtml("entry", running);
+    // Zwei Kapitel (1.19.0): "Beim Scharfschalten" und "Bei einem Alarm"; im Reiter "Immer aktiv" (nie scharf geschaltet) ohne Titel
+    const chap = (title, hint) => (this.trigger === "always" ? "" : `<div class="ag-wf-chap"><h3 class="ag-chap-t">${esc(this._t(title))}</h3><p class="ag-chap-h">${esc(this._t(hint))}</p></div>`);
+    h._setHtml(body, `${chap("wfChapArm", "wfChapArmHint")}${arm}${chap("wfChapAlarm", "wfChapAlarmHint")}${entry}<div class="ag-wf-line ag-wf-main">
         <div class="ag-wf-start"><span class="ag-mini err alarm">${ic("alert", 20)}</span>${esc(this._fixedTitle("wfStart"))}</div>${plus(0)}
         ${steps.length ? cards : `<div class="ag-card ag-empty ag-wf-empty"><span class="ag-t2">${esc(this._t("wfEmpty"))}</span><button class="ag-btn primary" data-wf="add" data-at="0">${ic("plus", 18)}${esc(this._t("wfAdd"))}</button></div>`}
       </div>${this._endHtml()}${this._afterHtml(running)}`);
@@ -419,6 +448,32 @@ export class ActionsUi {
   // für den Aktivierungston. Je Modus wie die Alarmaktionen; im Reiter "Immer aktiv" gibt es ihn nicht (dort wird nie scharf geschaltet).
   _armedHtml(running) {
     if (this.trigger === "always") return "";
+    return this._delayHtml("arming", running) + this._armedPointHtml(running);
+  }
+
+  // Zeit der Verzögerung, die ein Punkt zeigt: die des Reiters, ohne getrennte Modi die längste aller Modi (der Ablauf gilt für alle)
+  _delaySeconds(zone) {
+    const s = this.system;
+    const modes = this.draft?.perMode ? [this.trigger] : (s?.modes || []);
+    const values = modes.map((m) => (zone === "arming" ? Number(s?.mode_settings?.[m]?.exit_delay) : Number(s?.entry_delay_max?.[m])) || 0);
+    return Math.max(0, ...values);
+  }
+
+  // Die Punkte zu den Verzögerungen stehen nur da, wo es die Verzögerung gibt: bei 0 liefe nie etwas, und ein Punkt, der immer sofort
+  // endet, wäre irreführend (Vorgabe des Nutzers, 2026-11-12). Gespeicherte Schritte bleiben dabei erhalten.
+  _delayHtml(zone, running) {
+    if (this.trigger === "always") return "";
+    const seconds = this._delaySeconds(zone);
+    if (!seconds) return "";
+    const steps = this.steps(zone);
+    const cap = zone === "arming" ? "Arming" : "Entry";
+    const add = this._t(`wf${cap}Add`);
+    const plus = (i) => `<div class="ag-wf-plus ${i === steps.length ? "last" : ""}"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(add)}" title="${esc(add)}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span>${i === steps.length ? `<small class="ag-wf-plushint ag-t2 ag-small">${esc(this._t(steps.length ? `wf${cap}More` : `wf${cap}Hint`))}</small>` : ""}</div>`;
+    const sub = `<small class="ag-t2 ag-wf-sub">${esc(this._t(`wf${cap}Sub`, { n: seconds }))}</small>`;
+    return `<div class="ag-wf-line ag-wf-${zone}" data-zone="${zone}"><div class="ag-wf-start"><span class="ag-mini warn">${ic("timer", 20)}</span><span>${esc(this._fixedTitle(`wf${cap}`))}${sub}</span></div>${plus(0)}${steps.map((step, i) => this._card(step, i, running, zone) + plus(i + 1)).join("")}</div>`;
+  }
+
+  _armedPointHtml(running) {
     const steps = this.steps("armed");
     const plus = (i) => `<div class="ag-wf-plus ${i === steps.length ? "last" : ""}"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(this._t("wfArmedAdd"))}" title="${esc(this._t("wfArmedAdd"))}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span>${i === steps.length ? `<small class="ag-wf-plushint ag-t2 ag-small">${esc(this._t(steps.length ? "wfArmedMore" : "wfArmedHint"))}</small>` : ""}</div>`;
     return `<div class="ag-wf-line ag-wf-armed" data-zone="armed"><div class="ag-wf-start"><span class="ag-mini arm">${ic("shield", 20)}</span>${esc(this._fixedTitle("wfArmed"))}</div>${plus(0)}${steps.map((step, i) => this._card(step, i, running, "armed") + plus(i + 1)).join("")}</div>`;
@@ -488,7 +543,7 @@ export class ActionsUi {
     if (f.kind === "notify") return f.ntTitle || f.ntMessage ? [f.ntTitle, f.ntMessage].filter(Boolean).join(" – ") : this._t("stepNotifyHint");
     if (f.kind === "acknowledge") return this._t("stepAckHint");
     if (f.kind === "wait") return this._t("stepWaitSummary", { seconds: f.seconds });
-    if (isTone(f.kind)) return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${this._volumeText(f)}` : ""} · ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`;
+    if (isTone(f.kind)) return `${this._t(SOUND_KEY[f.sound] || "sndSiren")} · ${names}${f.setVolume ? ` · ${this._volumeText(f)}` : ""}${f.delay ? "" : ` · ${f.until ? this._t("fldPlayUntilShort") : this._t("durS", { n: f.playSeconds })}`}`;
     if (f.kind === "scene") return names;
     if (f.kind === "device") {
       const domains = new Set(f.targets.map((e) => e.split(".")[0]));
@@ -515,7 +570,7 @@ export class ActionsUi {
     return `<div class="ag-card ag-wf-step" data-index="${i}">
       <button class="ag-handle" data-wf="grab" data-index="${i}" aria-label="${esc(this._t("stepGrab"))}" title="${esc(this._t("stepGrab"))}">${ic("grip", 20)}</button>
       <span class="ag-wf-icon k-${f.kind}">${ic(k.icon, 20)}</span>
-      <div class="ag-wf-text"><b>${esc(title)}</b> ${restore}<div class="ag-t2 ag-small">${esc(this._summary(f))}</div>${this._waitPill(f)}</div>
+      <div class="ag-wf-text"><b>${esc(title)}</b> ${restore}<div class="ag-t2 ag-small">${esc(this._summary(f))}</div>${f.delay ? this._delayPill(zone) : this._waitPill(f)}</div>
       <div class="ag-wf-btns">${this._stepTestBtn(i, zone, running)}
         <button class="ag-iconbtn" data-wf="edit" data-index="${i}" aria-label="${esc(this._t("stepEdit"))}">${ic("pencil", 18)}</button>
         <button class="ag-iconbtn" data-wf="delete" data-index="${i}" aria-label="${esc(this._t("stepDelete"))}">${ic("trash", 18)}</button></div></div>`;
@@ -527,6 +582,11 @@ export class ActionsUi {
     if (!own) return `${Math.round(f.volume * 100)} %`;
     const values = Object.values(own).map((v) => Math.round(v * 100));
     return `${Math.min(...values)}–${Math.max(...values)} %`;
+  }
+
+  // Pille "Solange die Verzögerung läuft" statt der Sekunden (1.19.0)
+  _delayPill(zone) {
+    return `<span class="ag-waitpill ag-delaypill">${ic("timer", 14)}<span>${esc(this._t(zone === "arming" ? "wfDelayPillArming" : "wfDelayPillEntry"))}</span></span>`;
   }
 
   // Pille auf dem Schritt, wenn der Ablauf auf sein Ende wartet (die Ausnahme; standardmässig läuft alles weiter). Eingestellt wird
@@ -692,7 +752,7 @@ export class ActionsUi {
   openPicker(at, zone = "main") {
     this.edit = { insert: at, index: null, form: null, q: "", error: "", open: false, zone };
     // Je Liste nur, was dort Sinn hat: beim Alarm die Sirene (kein Aktivierungston), beim Scharfschalten der Aktivierungston (keine Sirene)
-    const allowed = zone === "after" ? AFTER_KINDS : zone === "armed" ? ARMED_KINDS : null;
+    const allowed = zone === "after" ? AFTER_KINDS : zone === "armed" ? ARMED_KINDS : zone === "arming" ? ARMING_KINDS : zone === "entry" ? ENTRY_KINDS : null;
     const kinds = allowed ? allowed.map((kind) => KINDS.find((k) => k.kind === kind)) : KINDS.filter((k) => k.kind !== "chime");
     const dlg = this._dlg();
     this.host._setHtml(dlg, `<div class="ag-dlg-body"><h3>${esc(this._t("stepPick"))}</h3><div class="ag-kinds">${kinds.map((k) => `<button class="ag-kind" data-wf="kind" data-kind="${k.kind}"><span class="ag-wf-icon k-${k.kind}">${ic(k.icon, 22)}</span><b>${esc(this._t(k.label))}</b><small>${esc(this._t(k.hint))}</small></button>`).join("")}</div>
@@ -730,8 +790,8 @@ export class ActionsUi {
   // "Warten, bis die Aktion beendet ist": aus ist der Standard (der nächste Schritt startet sofort)
   _waitRow(f) {
     if (!["device", "sound", "chime", "prealarm", "scene", "custom"].includes(f.kind)) return "";
-    const fixed = f.kind === "sound" && f.until;
-    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldWait"))}</b><small>${esc(this._t(fixed ? "wfFlowUntil" : "fldWaitHint"))}</small></div>${this._toggle(`data-wf="waitend"${fixed ? " disabled" : ""}`, f.wait && !fixed, "fldWait")}</div>`;
+    const fixed = (f.kind === "sound" && f.until) || ((f.kind === "chime" || f.kind === "prealarm") && f.delay);
+    return `<div class="ag-ef ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldWait"))}</b><small>${esc(this._t(fixed ? ((f.kind === "chime" || f.kind === "prealarm") && f.delay ? "wfFlowDelay" : "wfFlowUntil") : "fldWaitHint"))}</small></div>${this._toggle(`data-wf="waitend"${fixed ? " disabled" : ""}`, f.wait && !fixed, "fldWait")}</div>`;
   }
 
   // "Rückgängig" gibt es nur im Ablauf beim Alarm: nach dem Quittieren folgt nichts mehr, das etwas zurückstellen könnte
@@ -798,12 +858,24 @@ export class ActionsUi {
     return this._field("fldPlayers", this._combo(["media_player"], f, "fldSearchPlayer"))
       + this._field("fldTone", tone)
       + this._field("fldVolume", volume)
-      + this._field("fldPlayFor", this._playFor(f) + (f.kind === "chime" ? `<div class="ag-pv-note">${ic("info", 14)} ${esc(this._t("fldChimeFor"))}</div>` : ""))
+      + this._field("fldPlayFor", this._playFor(f) + (f.kind === "chime" && !f.delay ? `<div class="ag-pv-note">${ic("info", 14)} ${esc(this._t("fldChimeFor"))}</div>` : ""))
       + this._restoreRow(f);
   }
 
   // Dauer des Alarmtons: Sekunden oder "bis zum Deaktivieren"
   _playFor(f) {
+    const zone = this.edit?.zone;
+    if (DELAY_ZONES.includes(zone) && isShortTone(f.kind)) {
+      // So lange wie die Verzögerung (1.19.0): ein Schalter; die feste Dauer gilt nur, wenn er aus ist
+      const cap = zone === "arming" ? "Arming" : "Entry";
+      const follow = `<div class="ag-ef-row ag-delayfollow"><div class="ag-settx"><b>${esc(this._t(`fldDelay${cap}`))}</b><small>${esc(this._t(`fldDelay${cap}Hint`, { n: this._delaySeconds(zone) }))}</small></div>${this._toggle('data-wf="delay"', f.delay, `fldDelay${cap}`)}</div>`;
+      if (f.delay) return `${follow}<div class="ag-delayfixed"><span class="ag-num"><input type="number" disabled value="${esc(this._delaySeconds(zone))}" aria-label="${esc(this._t("fldPlayFor"))}"><span class="ag-t2">s</span></span></div><div class="ag-ef-h">${esc(this._t("fldDelayFixedHint"))}</div>`;
+      return follow + this._playForFixed(f);
+    }
+    return this._playForFixed(f);
+  }
+
+  _playForFixed(f) {
     // Nach dem Quittieren gibt es "bis zum Deaktivieren" nicht: niemand deaktiviert danach, der Ton braucht eine Dauer
     const until = this.edit?.zone === "after" || isShortTone(f.kind) ? "" : `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldPlayUntil"))}</b><small>${esc(this._t("fldPlayUntilHint"))}</small></div>${this._toggle('data-wf="until"', f.until, "fldPlayUntil")}</div>`;
     if (f.until) return until;
@@ -1081,7 +1153,13 @@ export class ActionsUi {
       const end = Object.fromEntries(this.triggers(s).map((t) => [t, normEnd(eff.end[t])]));
       const after = Object.fromEntries(this.triggers(s).map((t) => [t, eff.after?.[t] || []]));
       const armed = Object.fromEntries(this.triggers(s).filter((t) => t !== "always").map((t) => [t, eff.armed?.[t] || []]));
-      const saved = await h._hass.callWS({ type: "alarmageddon/save_workflows", entry_id: s.entry_id, workflows: wf, workflow_end: end, workflows_after: after, workflows_armed: armed });
+      const modeOnly = (map) => Object.fromEntries(this.triggers(s).filter((t) => t !== "always").map((t) => [t, map?.[t] || []]));
+      const arming = modeOnly(eff.arming);
+      const entrySteps = modeOnly(eff.entry);
+      const saved = await h._hass.callWS({ type: "alarmageddon/save_workflows", entry_id: s.entry_id, workflows: wf, workflow_end: end, workflows_after: after, workflows_armed: armed, workflows_arming: arming, workflows_entry: entrySteps });
+      const keepNonEmpty = (map) => JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(map).filter(([, v]) => v.length))));
+      s.workflows_arming = keepNonEmpty(arming);
+      s.workflows_entry = keepNonEmpty(entrySteps);
       s.workflows_armed = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(armed).filter(([, v]) => v.length))));
       s.workflows_after = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(after).filter(([, v]) => v.length))));
       s.workflow_end = Object.fromEntries(Object.entries(end).filter(([, v]) => v.notify));
@@ -1283,7 +1361,9 @@ export class ActionsUi {
     if (act === "add") this.openPicker(Number(el.dataset.at), zone);
     else if (act === "kind") {
       const k = KINDS.find((x) => x.kind === el.dataset.kind);
-      this.openEditor({ ...blank(), kind: k.kind, restore: k.kind === "sound" && (this.edit?.zone || "main") === "main", ...(k.kind === "chime" ? { sound: "tone_pip", playSeconds: 3, until: false, volume: 0.5 } : {}), ...(k.kind === "prealarm" ? { sound: "pre_beep", playSeconds: 20, until: false, setVolume: true, volume: 0.3, wait: true } : {}) }); // Alarmton beim Alarm: standardmässig zurückstellen; Aktivierungston: Piepsen, 3 Sekunden
+      this.openEditor({ ...blank(), kind: k.kind, restore: k.kind === "sound" && (this.edit?.zone || "main") === "main", ...(k.kind === "chime" ? { sound: "tone_pip", playSeconds: 3, until: false, volume: 0.5 } : {}), ...(k.kind === "prealarm" ? { sound: "pre_beep", playSeconds: 20, until: false, setVolume: true, volume: 0.3, wait: true } : {}),
+        // Töne in den Listen der Verzögerungen folgen standardmässig der Verzögerung (1.19.0)
+        ...(DELAY_ZONES.includes(this.edit?.zone) && (k.kind === "chime" || k.kind === "prealarm") ? { delay: true, wait: false } : {}) }); // Alarmton beim Alarm: standardmässig zurückstellen; Aktivierungston: Piepsen, 3 Sekunden
     } else if (act === "edit") {
       this.edit = { index: i, insert: null, form: fromStep(list[i]), q: "", error: "", open: false, zone };
       this.renderEditor();
@@ -1347,6 +1427,10 @@ export class ActionsUi {
     } else if (act === "nt-default") {
       form.ntTitle = "";
       form.ntMessage = "";
+      this.renderEditor();
+    } else if (act === "delay") {
+      form.delay = !form.delay;
+      if (form.delay) form.wait = false; // endet erst mit der Verzögerung: darauf lässt sich nicht warten
       this.renderEditor();
     } else if (act === "until") {
       form.until = !form.until;
@@ -1430,7 +1514,11 @@ export class ActionsUi {
     d.end = { ...(d.end || {}), [to]: end };
     d.after = { ...(d.after || {}), [to]: after };
     // Die Aktionen beim Scharfschalten gehen mit, wenn beide Reiter Modi sind ("Immer aktiv" hat keine)
-    if (from !== "always" && to !== "always") d.armed = { ...(d.armed || {}), [to]: JSON.parse(JSON.stringify(d.armed?.[from] || [])) };
+    if (from !== "always" && to !== "always") {
+      d.armed = { ...(d.armed || {}), [to]: JSON.parse(JSON.stringify(d.armed?.[from] || [])) };
+      d.arming = { ...(d.arming || {}), [to]: JSON.parse(JSON.stringify(d.arming?.[from] || [])) };
+      d.entrySteps = { ...(d.entrySteps || {}), [to]: JSON.parse(JSON.stringify(d.entrySteps?.[from] || [])) };
+    }
     this.saveState = null;
     this.render();
     this.host._renderDots();

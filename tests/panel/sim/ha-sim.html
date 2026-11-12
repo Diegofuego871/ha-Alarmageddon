@@ -64,6 +64,7 @@
       schedules: [{ id: "s_nacht", enabled: true, action: "night", time: "22:30", days: [0, 1, 2, 3, 4, 5, 6] }, { id: "s_morgen", enabled: true, action: "off", time: "06:45", days: [0, 1, 2, 3, 4] }],
       night_enabled: true, sensor_options: { "binary_sensor.terrassentuer": { offline_alarm: true }, "binary_sensor.rauchmelder_flur": { always: true } },
       workflow_running: null, workflow_test: false,
+      entry_delay_max: { home: 30, away: 30, night: 30 },
       workflows: { away: [
         { type: "notify" },
         { type: "action", action: "cover.open_cover", target: ["cover.rollladen_wohnzimmer", "cover.rollladen_kueche"], data: {}, restore: false },
@@ -77,7 +78,7 @@
       zones: { home: ["binary_sensor.garagentor"], away: ["binary_sensor.garagentor", "binary_sensor.bewegung_garage"] },
       sensors: params.get("sensors") === "few" ? [] : Object.keys(SENSORS),
       entry_sensors: [],
-      mode_settings: { home: { exit_delay: 0, entry_delay: 30, confirm_window: 60 }, away: { exit_delay: 0, entry_delay: 30, confirm_window: 60 } }, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [],
+      entry_delay_max: { home: 0, away: 0 }, mode_settings: { home: { exit_delay: 0, entry_delay: 30, confirm_window: 60 }, away: { exit_delay: 0, entry_delay: 30, confirm_window: 60 } }, has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [],
       night_enabled: false, sensor_options: {}, workflows: {}, workflow_running: null, workflow_test: false,
       events: [ { t: iso(20 * 60e3), state: "disarmed", mode: null, by: "Automation" } ] },
   ];
@@ -340,13 +341,16 @@
         return out;
       };
       const keep = (flows) => Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(flows))).filter(([, v]) => v.length).map(([k, v]) => [k, v.map(norm)]));
-      const before = JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}]);
+      const state = () => JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}, sys.workflows_arming || {}, sys.workflows_entry || {}]);
+      const before = state();
       sys.workflows = keep(msg.workflows);
       if (msg.workflows_armed) sys.workflows_armed = keep(msg.workflows_armed);
       if (msg.workflows_after) sys.workflows_after = keep(msg.workflows_after);
+      if (msg.workflows_arming) sys.workflows_arming = keep(msg.workflows_arming);
+      if (msg.workflows_entry) sys.workflows_entry = keep(msg.workflows_entry);
       if (msg.workflow_end) sys.workflow_end = Object.fromEntries(Object.entries(msg.workflow_end).filter(([, v]) => v !== "restore_marked" && Object.keys(v || {}).length));
       // Home Assistant lädt die Anlage nur neu, wenn sich etwas geändert hat
-      const reload = before !== JSON.stringify([sys.workflows, sys.workflows_armed || {}, sys.workflows_after || {}, sys.workflow_end || {}]);
+      const reload = before !== state();
       if (reload) reloadNow();
       return { ok: true, reload };
     }

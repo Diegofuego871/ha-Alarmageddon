@@ -7,6 +7,23 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.19.0] - 2026-11-12
+
+Aktionen während der Ausgangs- und der Eingangsverzögerung.
+
+### Hinzugefügt
+
+- **Aktionen, solange die Ausgangsverzögerung läuft.** Die Aktionen-Seite hat vor "Anlage scharf geschaltet" einen neuen festen Punkt "Scharfschalten beginnt". Was du dort ablegst, startet, sobald jemand die Anlage scharf schaltet, zum Beispiel ein Aktivierungston, der alle zum Gehen auffordert. Ist die Anlage scharf, enden die Aktionen, ein laufender Ton verstummt, und die Schritte von "Anlage scharf geschaltet" folgen. Deaktivieren stoppt sie sofort.
+- **Aktionen, solange die Eingangsverzögerung läuft.** Ein neuer fester Punkt "Eingangsverzögerung läuft" vor "Alarm beginnt": Schritte, die laufen, solange die Zeit zum Deaktivieren läuft, zum Beispiel ein Voralarm. Sie enden, wenn der Alarm beginnt (die Alarmaktionen übernehmen) oder die Anlage deaktiviert wird.
+- **Ein Ton, der der Verzögerung folgt.** Bei Aktivierungston und Voralarm in diesen beiden Listen gibt es den Schalter "Solange die Ausgangsverzögerung läuft" (bzw. "Eingangsverzögerung"), bei neuen Schritten an. Der Ton dauert dann genau so lange wie die Verzögerung, die gerade läuft: der Wert des Modus, oder, hat der Sensor, der sie gestartet hat, eine eigene Eingangsverzögerung, deren Wert. Er folgt der Einstellung der Anlage; die feste Dauer gilt nur, wenn der Schalter aus ist. Die Karte des Schritts zeigt statt der Sekunden eine blaue Pille.
+- **Zwei Kapitel.** Die Seite ist in "Beim Scharfschalten" und "Bei einem Alarm" gegliedert, die Punkte in der Reihenfolge der Zeit: Scharfschalten beginnt, scharf, Eingangsverzögerung läuft, Alarm beginnt, Alarm endet. Im Reiter "Immer aktiv" gibt es keines von beiden.
+- **Nur wo es die Verzögerung gibt.** "Scharfschalten beginnt" steht nur in einem Modus, dessen Ausgangsverzögerung grösser als 0 ist, und "Eingangsverzögerung läuft" nur dort, wo eine Eingangsverzögerung laufen kann (ein Eingangssensor in der Zone, mit einer Verzögerung über 0). Gespeicherte Schritte bleiben erhalten.
+- **Auch bei "Aktionen übernehmen von" und in der Sicherung.**
+
+### Geändert
+
+- **Der Alarm wartet nie auf diese Aktionen.** Ein Gerät, das während einer Verzögerung hängt oder scheitert, hält nichts auf: die Alarmaktionen starten in dem Moment, in dem der Alarm beginnt, das Ende der Aktionen der Verzögerung wird höchstens 3 Sekunden abgewartet. Ein Neuladen oder ein Neustart mitten in einer Verzögerung setzt nur die Töne für die Restzeit fort; ein Gerät wird nicht ein zweites Mal geschaltet.
+
 ## [1.18.1] - 2026-11-12
 
 Der Testknopf eines Schritts wird zum Stopp-Knopf.
@@ -1113,6 +1130,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
 [1.18.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.0
 [1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12

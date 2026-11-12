@@ -377,6 +377,14 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-wf-start .ag-mini { background-color: var(--ag-bg); }
 .ag-wf-start .ag-mini.err { background-image: linear-gradient(var(--ag-error-soft), var(--ag-error-soft)); }
 .ag-wf-start .ag-mini.ok { background-image: linear-gradient(var(--ag-success-soft), var(--ag-success-soft)); }
+/* Punkte der Verzögerungen (1.19.0): gelbe Uhr; Kapitel der Aktionen-Seite */
+.ag-wf-start .ag-mini.warn { background-image: linear-gradient(var(--ag-warning-soft), var(--ag-warning-soft)); color: var(--ag-warning-text); }
+.ag-wf-sub { display: block; font-weight: 400; font-size: 13px; margin-top: 1px; }
+.ag-wf-chap { margin: 26px 0 10px; }
+.ag-wf-chap:first-child { margin-top: 4px; }
+.ag-wf-chap .ag-chap-h { margin-bottom: 0; }
+.ag-delaypill { background: var(--ag-primary-soft); color: var(--ag-primary); }
+.ag-delayfixed { opacity: .5; margin-top: 12px; }
 .ag-wf-start { display: flex; align-items: center; gap: 10px; padding: 6px 20px 0 calc(var(--wf-x) - 14px); font-weight: 500; }
 .ag-wf-plus { display: flex; flex-direction: column; align-items: center; width: 28px; margin-left: calc(var(--wf-x) - 14px); }
 .ag-wf-seg { flex: none; width: 2px; height: 16px; background: var(--ag-divider); }
