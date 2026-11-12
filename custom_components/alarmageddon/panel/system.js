@@ -9,6 +9,7 @@ const MAX = 3600;
 const DEFAULTS = { exit_delay: 0, entry_delay: 30, confirm_window: 60 };
 const WINDOW = [5, 600];
 const ALL_MODES = ["home", "away", "night"];
+const MODE_HINT = { home: "sysModeHomeHint", away: "sysModeAwayHint", night: "sysModeNightHint" };
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class SystemUi {
@@ -121,10 +122,13 @@ export class SystemUi {
     const switchRow = `<div class="ag-pmbar"><div class="ag-pmsw"><button class="ag-toggle ${d.perMode ? "on" : ""}" data-sys="permode" role="switch" aria-checked="${d.perMode}" aria-label="${esc(this._t("sysPerMode"))}"></button>
       <div class="ag-settx"><b>${esc(this._t("sysPerMode"))}</b><small>${esc(this._t(d.perMode ? "sysPerModeOn" : "sysPerModeHint"))}</small></div></div>${scopeSeg}</div>`;
     const card = (rows) => `<div class="ag-card ag-setlist">${rows}</div>`;
-    const modesRow = `<div class="ag-setrow"><div class="ag-settx"><div class="ag-zline">${ALL_MODES.map((m) => `<button class="ag-chip ${d.modes[m] ? "on" : ""}" data-sys="mode" data-mode="${m}" aria-pressed="${d.modes[m]}">${ic(MODE_ICON[m], 16)}${esc(this._t(MODE_KEY[m]))}</button>`).join("")}</div>
-          <div class="ag-zline" style="margin-top:10px"><button class="ag-chip ${d.always ? "on" : ""}" data-sys="always" aria-pressed="${d.always}">${ic("flash", 16)}${esc(this._t("wfAlways"))}</button></div>
-          ${d.always ? "" : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("sysAlwaysOff"))}</small>`}
-          ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div></div>`;
+    // Je Modus ein Schalter (1.17.12, wie die übrigen Einstellungen: Schalter links, Symbol, Titel und Beschreibung), dazu "Immer aktiv"
+    const modeRow = (attr, on, icon, title, hint) => `<div class="ag-orow ag-moderow"><span class="ag-oav ${on ? "on" : ""}">${ic(icon, 18)}</span><div class="ag-otx"><b>${esc(title)}</b><small>${esc(hint)}</small></div>
+        <button class="ag-toggle ${on ? "on" : ""}" ${attr} role="switch" aria-checked="${on}" aria-label="${esc(title)}"></button></div>`;
+    const modesRow = ALL_MODES.map((m) => modeRow(`data-sys="mode" data-mode="${m}"`, d.modes[m], MODE_ICON[m], this._t(MODE_KEY[m]), this._t(MODE_HINT[m]))).join("")
+      + modeRow('data-sys="always"', d.always, "flash", this._t("wfAlways"), this._t("sysModeAlwaysHint"))
+      + (d.always && !bad.has("modes") ? "" : `<div class="ag-modenote">${d.always ? "" : `<small class="ag-warntext">${ic("alert", 14)} ${esc(this._t("sysAlwaysOff"))}</small>`}
+          ${bad.has("modes") ? `<small class="ag-err">${esc(this._t("sysModesNone"))}</small>` : ""}</div>`);
     const row = (title, hint, control) => `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t(title))}</b>${hint ? `<small>${esc(this._t(hint))}</small>` : ""}</div>${control}</div>`;
     const timesRows = row("sysExitDelay", "sysExitDelayHint", num("exit_delay", v.exit_delay)) + row("sysEntryDelay", "sysEntryDelayHint", num("entry_delay", v.entry_delay));
     const behaviourRows = row("sysConfirm", "sysConfirmHint", num("confirm_window", v.confirm_window, WINDOW[0], WINDOW[1]));

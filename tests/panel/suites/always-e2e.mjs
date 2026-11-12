@@ -59,9 +59,9 @@ for (const lang of ["de", "en"]) {
 
     // Anlage › Modi: Pille neben den Modi, Standard an
     await s.tap('[data-sub="system"]');
-    check(`${tag}: Pille "Immer aktiv" bei den Modi, standardmässig an`, await s.waitFor(`const b=r.querySelector('${pill}'); return !!b && b.getAttribute('aria-pressed') === 'true' && !r.querySelector('.ag-warntext')`));
+    check(`${tag}: Schalter "Immer aktiv" bei den Modi, standardmässig an`, await s.waitFor(`const b=r.querySelector('${pill}'); return !!b && b.getAttribute('aria-checked') === 'true' && !r.querySelector('.ag-warntext')`));
     await s.tap(pill);
-    check(`${tag}: ausgeschaltet: Warnung, Änderung zählt`, await s.waitFor(`return r.querySelector('${pill}').getAttribute('aria-pressed') === 'false' && !!r.querySelector('.ag-warntext') && !r.querySelector('.ag-foot [data-sys="save"]').disabled`));
+    check(`${tag}: ausgeschaltet: Warnung, Änderung zählt`, await s.waitFor(`return r.querySelector('${pill}').getAttribute('aria-checked') === 'false' && !!r.querySelector('.ag-warntext') && !r.querySelector('.ag-foot [data-sys="save"]').disabled`));
     await s.tap('.ag-foot [data-sys="save"]');
     check(`${tag}: gespeichert`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${saved}')`));
     const sent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
@@ -88,7 +88,7 @@ for (const lang of ["de", "en"]) {
     const t = await open(browser, { mobile, lang, tab: "config" });
     await t.tap('[data-sub="system"]');
     await t.waitFor(`return !!r.querySelector('${pill}')`);
-    check(`${tag}: im Neustart des Nachbaus ist sie wieder an`, await t.ev(`return r.querySelector('${pill}').getAttribute('aria-pressed') === 'true'`));
+    check(`${tag}: im Neustart des Nachbaus ist sie wieder an`, await t.ev(`return r.querySelector('${pill}').getAttribute('aria-checked') === 'true'`));
     await t.ctx.close();
   }
 }

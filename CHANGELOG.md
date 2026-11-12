@@ -7,6 +7,18 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.12] - 2026-11-12
+
+The orange dot goes away after saving, and the modes are switches.
+
+### Changed
+
+- **System: one switch for each mode.** Under Configuration › System the modes Home, Away, Night and "Always active" are no longer pills but rows like the other settings: switch on the left, symbol, name and a short description.
+
+### Fixed
+
+- **System: "1 change" and the orange dot stayed after saving.** Whoever changed the exit delay or the entry delay while a mode was switched off (for example Night) saw "1 change" again right after saving, and saving again did not help. The panel saves the times of all modes, also of a mode that is switched off (it keeps its values), but the server did not report the values of such a mode back; the panel took the saved state for changed. The server now reports the times of all modes. The other tabs save and read back identically (checked with tests).
+
 ## [1.17.11] - 2026-11-11
 
 The charts for signal and battery no longer stay empty.
@@ -1083,6 +1095,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.17.12]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.12
 [1.17.11]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.11
 [1.17.10]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.10
 [1.17.9]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.17.9

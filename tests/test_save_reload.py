@@ -97,3 +97,72 @@ async def test_volumes_are_validated(hass: HomeAssistant, hass_ws_client, volume
     assert result["success"] is ok
     if ok:
         assert entry.options["workflows_armed"]["home"][0].get("volumes") == kept
+
+
+# ----- Was das Panel speichert, bekommt es genau so zurück (1.17.12) -----
+# Das Panel zeigt den gespeicherten Stand sofort an und vergleicht ihn mit den Daten, die nach dem Neuladen vom Server kommen.
+# Weicht der Server davon ab (er liess die Zeiten abgeschalteter Modi weg), hält das Panel den Stand für geändert: unten steht
+# "1 Änderung", der orange Punkt bleibt, und Speichern ändert nichts daran (Fehlerbericht des Nutzers, 2026-11-12).
+
+
+def _same(a: Any, b: Any) -> bool:
+    """Wie das Panel vergleicht: Inhalt und Reihenfolge der Felder (JSON.stringify)."""
+    import json
+
+    return json.dumps(a) == json.dumps(b)
+
+
+async def _data(client) -> dict:
+    await client.send_json_auto_id({"type": "alarmageddon/data"})
+    return (await client.receive_json())["result"]["systems"][0]
+
+
+@pytest.mark.parametrize("night", [False, True], ids=["Nacht abgeschaltet", "Nacht eingeschaltet"])
+async def test_system_settings_come_back_exactly_as_the_panel_saved_them(hass: HomeAssistant, hass_ws_client, night: bool) -> None:
+    """Reiter "Anlage": Zeiten aller Modi (auch der abgeschalteten: sie behalten ihre Werte), Schalter, Modi, "Immer aktiv", Zeitplan."""
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    # So sendet das Panel: ohne "Einstellungen pro Modus" dieselben Werte für alle drei Modi, auch für einen abgeschalteten
+    times = {"exit_delay": 5, "entry_delay": 25, "confirm_window": 90}
+    payload = {
+        "mode_settings": {mode: dict(times) for mode in ("home", "away", "night")},
+        "per_mode_settings": False, "home_enabled": True, "away_enabled": True, "night_enabled": night, "always_enabled": False,
+        "schedules": [{"id": "k3j2h1g0", "enabled": True, "action": "away", "time": "08:00", "days": [0, 1, 2, 3, 4]},
+                      {"id": "a1b2c3d4", "enabled": False, "action": "off", "time": "17:30", "days": [5, 6]}],
+    }
+    await client.send_json_auto_id({"type": "alarmageddon/save_system", "entry_id": entry.entry_id, **payload})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    system = await _data(client)
+    assert _same(system["mode_settings"], payload["mode_settings"]), system["mode_settings"]
+    assert system["per_mode_settings"] is False and system["always_enabled"] is False and system["night_enabled"] is night
+    assert system["modes"] == ["home", "away", *(["night"] if night else [])]
+    assert _same(system["schedules"], payload["schedules"]), system["schedules"]
+    # Noch einmal dasselbe gespeichert: nichts lädt neu, die Daten bleiben gleich
+    await client.send_json_auto_id({"type": "alarmageddon/save_system", "entry_id": entry.entry_id, **payload})
+    assert (await client.receive_json())["result"] == {"ok": True, "reload": False}
+    assert _same((await _data(client))["mode_settings"], payload["mode_settings"])
+
+
+async def test_sensor_settings_come_back_exactly_as_the_panel_saved_them(hass: HomeAssistant, hass_ws_client) -> None:
+    """Reiter "Sensoren": Zonen der eingeschalteten Modi, Eingangssensoren, Liste, eigene Werte je Sensor und je Modus, Schalter."""
+    entry = await setup_alarm(hass)
+    client = await hass_ws_client(hass)
+    motion = "binary_sensor.bewegung_flur"
+    payload = {
+        "zones": {"home": [FRONT_DOOR, WINDOW], "away": [FRONT_DOOR, WINDOW, motion], "night": [WINDOW]},
+        "entry_sensors": [FRONT_DOOR], "sensors": sorted([FRONT_DOOR, WINDOW, motion]), "per_mode_sensors": True,
+        "sensor_options": {FRONT_DOOR: {"entry_delay": 45}, WINDOW: {"report_only": True}},
+        "sensor_modes": {"away": {motion: {"open_ok": True}}, "always": {WINDOW: {"report_only": False}}},
+    }
+    await client.send_json_auto_id({"type": "alarmageddon/save_zones", "entry_id": entry.entry_id, **payload})
+    result = await client.receive_json()
+    assert result["success"], result
+    await hass.async_block_till_done()
+    system = await _data(client)
+    for mode in system["modes"]:
+        assert system["zones"][mode] == payload["zones"][mode]
+    assert system["entry_sensors"] == payload["entry_sensors"] and system["sensors"] == payload["sensors"]
+    assert system["per_mode_sensors"] is True
+    assert system["sensor_options"] == payload["sensor_options"], system["sensor_options"]
+    assert system["sensor_modes"] == payload["sensor_modes"], system["sensor_modes"]

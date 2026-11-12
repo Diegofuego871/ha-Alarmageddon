@@ -347,6 +347,9 @@ dialog.ag-wide { width: min(880px, calc(100vw - 32px)); }
 dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-ptable th.z { white-space: normal; font-size: 11px; line-height: 1.25; width: 120px; }
 .ag-setlist { padding: 4px 18px; }
+/* Modi als Schalter (1.17.12): Zeilen wie im Sensor-Blatt; Hinweis und Fehler darunter */
+.ag-moderow .ag-otx small { font-size: 12.5px; }
+.ag-modenote { padding: 10px 0 12px; display: flex; flex-direction: column; gap: 6px; }
 .ag-setrow { display: flex; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--ag-divider); flex-wrap: wrap; }
 .ag-setrow:last-child { border-bottom: 0; }
 .ag-settx { flex: 1; min-width: 220px; }

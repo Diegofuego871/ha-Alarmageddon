@@ -215,10 +215,11 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "zones": zones,
                 "entry_sensors": sorted(ctl.entry_sensors),
                 "sensors": list(entry.options.get(CONF_SENSORS) or []),
-                # Einstellungen je Modus (0.10.0); "always": Alarm durch einen immer aktiven Sensor bei deaktivierter Anlage
+                # Einstellungen je Modus (0.10.0), für alle Modi, auch die abgeschalteten (1.17.12): sie behalten ihre Werte, und das
+                # Panel speichert sie mit. Fehlten sie hier, hielte das Panel den gespeicherten Stand für geändert ("1 Änderung").
                 "mode_settings": {
                     **{mode: {"exit_delay": ctl.exit_delay(mode), "entry_delay": ctl.entry_delay_for(mode),
-                              "confirm_window": ctl.confirm_window_for(mode)} for mode in ctl.modes},
+                              "confirm_window": ctl.confirm_window_for(mode)} for mode in MODES},
                 },
                 "night_enabled": ctl.night_enabled,
                 "always_enabled": ctl.always_enabled,

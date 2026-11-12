@@ -14,7 +14,10 @@ for (const lang of ["de", "en"]) {
     const s = await open(browser, { mobile, lang, tab: "config" });
     await s.tap('[data-sub="system"]');
     check(`${tag}: Modi sichtbar`, await s.waitFor("return r.querySelectorAll('[data-sys=\"mode\"]').length === 3"));
-    check(`${tag}: alle drei an (Haus)`, await s.ev("return [...r.querySelectorAll('[data-sys=\"mode\"]')].every((b) => b.getAttribute('aria-pressed') === 'true')"));
+    check(`${tag}: alle drei an (Haus)`, await s.ev("return [...r.querySelectorAll('[data-sys=\"mode\"]')].every((b) => b.getAttribute('aria-checked') === 'true')"));
+    // 1.17.12: je Modus ein Schalter (wie die übrigen Einstellungen), links vom Text, mit Symbol und Beschreibung; dazu "Immer aktiv"
+    const sw = await s.ev("return [...r.querySelectorAll('[data-sys=\"mode\"], [data-sys=\"always\"]')].map((b) => { const row=b.closest('.ag-orow'); const tx=row?.querySelector('.ag-otx'); return { toggle: b.classList.contains('ag-toggle') && b.getAttribute('role') === 'switch', left: !!tx && b.getBoundingClientRect().right <= tx.getBoundingClientRect().left, title: tx?.querySelector('b')?.textContent.trim() || '', hint: (tx?.querySelector('small')?.textContent.trim().length || 0) > 10, icon: !!row?.querySelector('.ag-oav svg') }; })");
+    check(`${tag}: Modi als Schalter: vier Zeilen (drei Modi und "Immer aktiv"), Schalter links, Symbol, Titel und Beschreibung`, sw.length === 4 && sw.every((x) => x.toggle && x.left && x.title && x.hint && x.icon) && !(await s.ev("return !!r.querySelector('.ag-sys-form .ag-chip[data-sys]')")), JSON.stringify(sw));
 
     // Abwesend ist gerade scharf: Abschalten lehnt der Server ab
     await s.tap('[data-sys="mode"][data-mode="away"]');
@@ -22,6 +25,19 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-sys="save"]');
     check(`${tag}: aktiver Modus abgelehnt`, await s.waitFor(`return r.querySelector('.ag-foot .ag-err')?.textContent.includes('${t.active}')`));
     await s.tap('[data-sys="cancel"]');
+
+    // 1.17.12: eine Zeit geändert und gespeichert: danach ist nichts mehr offen (der orange Punkt blieb, wenn ein Modus abgeschaltet war)
+    await s.tap('[data-sys="mode"][data-mode="night"]');
+    await s.ev("const i=r.querySelector('[data-sys=\"num\"][data-field=\"entry_delay\"]'); i.value = String(Number(i.value) + 3); i.dispatchEvent(new Event('input', { bubbles: true })); return 1");
+    check(`${tag}: Nacht abgeschaltet und Eingangsverzögerung geändert: Änderungen offen, Punkt am Reiter`, await s.waitFor("return r.host.systemUi.dirtyCount() >= 2 && r.querySelector('[data-sub=\"system\"]').classList.contains('has-edit')"));
+    await s.tap('[data-sys="save"]');
+    check(`${tag}: gespeichert: der Punkt ist weg und bleibt weg, auch nach dem Neuladen der Daten`, await s.waitFor("return r.host.systemUi.dirtyCount() === 0 && !r.querySelector('[data-sub=\"system\"]').classList.contains('has-edit') && !r.host._wait", 30000));
+    await s.ev("return r.host._fetch().then(() => 1)");
+    await s.page.waitForTimeout(300);
+    check(`${tag}: nach einer weiteren Abfrage steht unten "Keine Änderungen"`, await s.ev("return r.host.systemUi.dirtyCount() === 0 && r.querySelector('.ag-foot [data-sys=\"save\"]').disabled && !r.querySelector('[data-sub=\"system\"]').classList.contains('has-edit')"));
+    await s.tap('[data-sys="mode"][data-mode="night"]');
+    await s.tap('[data-sys="save"]');
+    await s.waitFor("return r.host.systemUi.dirtyCount() === 0 && !r.host._wait", 30000);
 
     // Keiner gewählt: gesperrt
     for (const m of ["home", "away", "night"]) await s.tap(`[data-sys="mode"][data-mode="${m}"]`);
