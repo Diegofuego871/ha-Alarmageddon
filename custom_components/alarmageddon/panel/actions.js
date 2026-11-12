@@ -749,11 +749,16 @@ export class ActionsUi {
     return this.host._root.getElementById("ag-step");
   }
 
+  // Schrittarten, die in einer Liste Sinn haben (beim Alarm alle ausser dem Aktivierungston)
+  _zoneKinds(zone) {
+    const allowed = zone === "after" ? AFTER_KINDS : zone === "armed" ? ARMED_KINDS : zone === "arming" ? ARMING_KINDS : zone === "entry" ? ENTRY_KINDS : null;
+    return allowed || KINDS.filter((k) => k.kind !== "chime").map((k) => k.kind);
+  }
+
   openPicker(at, zone = "main") {
     this.edit = { insert: at, index: null, form: null, q: "", error: "", open: false, zone };
     // Je Liste nur, was dort Sinn hat: beim Alarm die Sirene (kein Aktivierungston), beim Scharfschalten der Aktivierungston (keine Sirene)
-    const allowed = zone === "after" ? AFTER_KINDS : zone === "armed" ? ARMED_KINDS : zone === "arming" ? ARMING_KINDS : zone === "entry" ? ENTRY_KINDS : null;
-    const kinds = allowed ? allowed.map((kind) => KINDS.find((k) => k.kind === kind)) : KINDS.filter((k) => k.kind !== "chime");
+    const kinds = this._zoneKinds(zone).map((kind) => KINDS.find((k) => k.kind === kind));
     const dlg = this._dlg();
     this.host._setHtml(dlg, `<div class="ag-dlg-body"><h3>${esc(this._t("stepPick"))}</h3><div class="ag-kinds">${kinds.map((k) => `<button class="ag-kind" data-wf="kind" data-kind="${k.kind}"><span class="ag-wf-icon k-${k.kind}">${ic(k.icon, 22)}</span><b>${esc(this._t(k.label))}</b><small>${esc(this._t(k.hint))}</small></button>`).join("")}</div>
       <div class="ag-dlg-btns"><button class="ag-btn" data-wf="close">${esc(this._t("cancel"))}</button></div></div>`);
@@ -1214,11 +1219,15 @@ export class ActionsUi {
     const line = grab.closest(".ag-wf-line") || root;
     const cards = [...line.querySelectorAll(".ag-wf-step")];
     const from = Number(grab.dataset.index);
-    if (!cards[from] || cards.length < 2) return;
+    if (!cards[from]) return;
     ev.preventDefault();
     const rects = cards.map((c) => c.getBoundingClientRect());
     const slot = (rects[from + 1] ? rects[from + 1].top : rects[from].bottom + 40) - rects[from].top;
-    this.drag = { from, to: from, startY: ev.clientY, cards, rects, slot, moved: false, zone: line.dataset?.zone || "main" };
+    // Alle Listen, die gerade sichtbar sind: ein Schritt lässt sich auch in eine andere Liste ziehen (1.22.0), auch in eine leere
+    const zone = line.dataset?.zone || "main";
+    const kind = fromStep(this.steps(zone)[from] || {}).kind;
+    const lines = [...root.querySelectorAll(".ag-wf-line")].map((el) => ({ el, zone: el.dataset?.zone || "main" })).filter((l) => l.zone !== zone && this._zoneKinds(l.zone).includes(kind));
+    this.drag = { from, to: from, startY: ev.clientY, cards, rects, slot, moved: false, zone, lines, target: null };
     cards[from].classList.add("dragging");
     root.classList.add("ag-dragging");
   }
@@ -1236,10 +1245,23 @@ export class ActionsUi {
       if (i !== d.from && r.top + r.height / 2 < center) to += 1;
     });
     d.to = to;
+    // Über einer anderen Liste, die den Schritt aufnimmt: sie leuchtet auf, die Karte landet beim Loslassen dort
+    d.target = null;
+    for (const l of d.lines) {
+      const r = l.el.getBoundingClientRect();
+      const hit = ev.clientY >= r.top && ev.clientY <= r.bottom;
+      l.el.classList.toggle("ag-drop", hit);
+      if (hit) {
+        const cards = [...l.el.querySelectorAll(".ag-wf-step")];
+        d.target = { zone: l.zone, at: cards.filter((c) => { const b = c.getBoundingClientRect(); return b.top + b.height / 2 < ev.clientY; }).length };
+      }
+    }
+    if (d.target) d.to = d.from;
     d.cards.forEach((c, i) => {
       if (i === d.from) return;
       let shift = 0;
-      if (d.from < d.to && i > d.from && i <= d.to) shift = -d.slot;
+      if (d.target) shift = 0;
+      else if (d.from < d.to && i > d.from && i <= d.to) shift = -d.slot;
       else if (d.from > d.to && i < d.from && i >= d.to) shift = d.slot;
       c.style.transform = shift ? `translateY(${shift}px)` : "";
     });
@@ -1259,7 +1281,28 @@ export class ActionsUi {
       c.style.transform = "";
       c.classList.remove("dragging");
     });
-    if (d.moved && d.to !== d.from) this._move(d.from, d.to, d.zone);
+    for (const l of d.lines || []) l.el.classList.remove("ag-drop");
+    if (d.moved && d.target) this._moveAcross(d.from, d.zone, d.target.zone, d.target.at);
+    else if (d.moved && d.to !== d.from) this._move(d.from, d.to, d.zone);
+  }
+
+  // Schritt in eine andere Liste legen (1.22.0). Er wird dabei für die neue Liste umgerechnet: nach dem Quittieren kehrt nichts
+  // zurück, ein Ton in den Listen der Verzögerungen folgt standardmässig der Verzögerung (wie ein neuer Schritt dort).
+  _moveAcross(from, src, dst, at) {
+    const step = this.steps(src)[from];
+    if (!step) return;
+    const f = fromStep(step);
+    if (!this._zoneKinds(dst).includes(f.kind)) return;
+    if (DELAY_ZONES.includes(dst) && isShortTone(f.kind)) Object.assign(f, { delay: true, wait: false });
+    this._setSteps(this.steps(src).filter((_s, k) => k !== from), src);
+    const list = [...this.steps(dst)];
+    list.splice(Math.min(at, list.length), 0, toStep(f, dst));
+    this._setSteps(list, dst);
+    this.saveState = null;
+    this.render();
+    // Die Karte ist hochgesprungen: dorthin scrollen, falls sie ausser Sicht ist
+    const el = this.host._view.querySelector(`${ZONE_CLASS[dst] || ".ag-wf-main"} .ag-wf-step[data-index="${Math.min(at, list.length - 1)}"]`);
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   _move(from, to, zone = "main") {
@@ -1279,7 +1322,20 @@ export class ActionsUi {
     const j = ev.key === "ArrowUp" ? i - 1 : i + 1;
     ev.preventDefault();
     const zone = grab.closest("[data-zone]")?.dataset.zone || "main";
-    if (j < 0 || j >= this.steps(zone).length) return true;
+    if (j < 0 || j >= this.steps(zone).length) {
+      // Über den Rand hinaus: in die nächste Liste, die den Schritt aufnimmt (der Tastatur-Ersatz fürs Ziehen dorthin)
+      const kind = fromStep(this.steps(zone)[i] || {}).kind;
+      const zones = [...this.host._view.querySelectorAll(".ag-wf-line")].map((el) => el.dataset?.zone || "main");
+      const at = zones.indexOf(zone);
+      const next = (j < 0 ? zones.slice(0, at).reverse() : zones.slice(at + 1)).find((z) => this._zoneKinds(z).includes(kind));
+      if (next) {
+        const target = this.steps(next).length;
+        this._moveAcross(i, zone, next, j < 0 ? target : 0);
+        const to = j < 0 ? this.steps(next).length - 1 : 0;
+        this.host._view.querySelector(`${ZONE_CLASS[next] || ".ag-wf-main"} [data-wf="grab"][data-index="${to}"]`)?.focus();
+      }
+      return true;
+    }
     this._move(i, j, zone);
     this.host._view.querySelector(`${ZONE_CLASS[zone] || ".ag-wf-main"} [data-wf="grab"][data-index="${j}"]`)?.focus();
     return true;

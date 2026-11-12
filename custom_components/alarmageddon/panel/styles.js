@@ -433,6 +433,8 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-handle:hover, .ag-handle:focus-visible { background: var(--ag-hover); color: var(--ag-text2); }
 .ag-wf-step.dragging { z-index: 5; box-shadow: 0 10px 28px rgba(0,0,0,.28); cursor: grabbing; transition: none; }
 .ag-wf-step { transition: transform .15s ease; }
+/* Liste, in die der gezogene Schritt beim Loslassen fällt (1.22.0) */
+.ag-wf-line.ag-drop { outline: 2px dashed var(--ag-primary); outline-offset: 8px; border-radius: 18px; background: var(--ag-primary-soft); }
 .ag-dragging, .ag-dragging * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
 .ag-ef { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
 .ag-ef-l { font-weight: 500; }

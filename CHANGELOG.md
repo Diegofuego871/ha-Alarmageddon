@@ -7,7 +7,18 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.22.0] - 2026-11-12
+
+Move steps between the lists by dragging.
+
+### Added
+
+- **Drag a step into another list.** On the actions page you can now drag a step by its handle onto another list, also onto an empty one (onto its plus or its area). The list lights up with a dashed frame, and when you let go the step jumps there. This works between "Arming begins", "Alarm system armed", "Entry delay running", "Alarm starts" and "After acknowledging", but only into lists that take this kind of step: the siren (alarm tone) does not go into a delay, a pre-alarm not into "Arming begins", a notification only into the alarm flow.
+- **The step is converted for the new list.** An arming tone or pre-alarm that you move into a delay follows that delay (switch on, like a new step there); moved out again, it has its fixed duration. After acknowledging nothing is restored any more, as before.
+- **Keyboard instead of dragging.** Arrow up on the first step or arrow down on the last step of a list moves it into the next list that takes it; the focus follows.
 ## [1.21.0] - 2026-11-12
+
+Not released; included in 1.22.0.
 
 The loading animation ignores "Reduce motion".
 
@@ -1146,7 +1157,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
-[1.21.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.21.0
+[1.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.22.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1

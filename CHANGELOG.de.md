@@ -7,7 +7,18 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.22.0] - 2026-11-12
+
+Schritte per Ziehen zwischen den Listen verschieben.
+
+### Hinzugefügt
+
+- **Einen Schritt in eine andere Liste ziehen.** Auf der Seite "Aktionen" lässt sich ein Schritt am Griff jetzt auch auf eine andere Liste ziehen, auch auf eine leere (auf ihr Plus oder ihre Fläche). Die Liste leuchtet mit gestricheltem Rahmen auf, und beim Loslassen springt der Schritt dorthin. Das geht zwischen "Scharfschalten beginnt", "Anlage scharf geschaltet", "Eingangsverzögerung läuft", "Alarm beginnt" und "Nach dem Quittieren", aber nur in Listen, die diese Art von Schritt aufnehmen: die Sirene (Alarmton) geht nicht in eine Verzögerung, ein Voralarm nicht in "Scharfschalten beginnt", eine Meldung nur in den Alarmablauf.
+- **Der Schritt wird für die neue Liste umgerechnet.** Ein Aktivierungston oder Voralarm, den man in eine Verzögerung zieht, folgt dieser Verzögerung (Schalter an, wie ein neuer Schritt dort); wieder herausgezogen hat er seine feste Dauer. Nach dem Quittieren kehrt nichts mehr zurück, wie bisher.
+- **Tastatur statt Ziehen.** Pfeil nach oben beim ersten oder Pfeil nach unten beim letzten Schritt einer Liste verschiebt ihn in die nächste Liste, die ihn aufnimmt; der Fokus folgt.
 ## [1.21.0] - 2026-11-12
+
+Nicht veröffentlicht; enthalten in 1.22.0.
 
 Die Ladeanimation ignoriert "Bewegung reduzieren".
 
@@ -1146,7 +1157,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
-[1.21.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.21.0
+[1.22.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.22.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
 [1.19.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.19.0
 [1.18.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.18.1
