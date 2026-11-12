@@ -304,6 +304,10 @@ for (const lang of ["de", "en"]) {
     const arm = () => s.ev("return [...r.querySelectorAll('.ag-nt [data-nt=\"armbtn\"]')].map((b) => ({ key: b.dataset.key, on: b.getAttribute('aria-checked') === 'true', inType: !!b.closest('.ag-mt')?.querySelector('[data-nt=\"enabled\"][data-kind=\"arm_failed\"]'), hint: (b.parentElement.querySelector('small')?.textContent.length || 0) > 20 }))");
     const arm0 = await arm();
     check(`${tag}: "Scharfschalten nicht möglich" hat zwei Schalter für die Knöpfe der Meldung, beide an, mit Beschreibung`, arm0.length === 2 && arm0[0].key === "retry" && arm0[1].key === "force" && arm0.every((x) => x.on && x.inType && x.hint), JSON.stringify(arm0));
+    // 1.25.1: Benennung wie bei den anderen Aktionen der Push-Meldung: Aktion "…" (Englisch Action "…"), Beschreibung "Knopf unter der Meldung: …"
+    const names = await s.ev("return [...r.querySelectorAll('.ag-nt [data-nt=\"armbtn\"]')].map((b) => [b.parentElement.querySelector('span').childNodes[0].textContent.trim(), b.parentElement.querySelector('small').textContent.trim().slice(0, 40)])");
+    const word = lang === "de" ? "Aktion" : "Action", lead = lang === "de" ? "Knopf unter der Meldung:" : "Button under the message:";
+    check(`${tag}: die Knöpfe heissen ${word} "…" und beginnen die Beschreibung mit "${lead}"`, names.length === 2 && names.every(([n, h]) => n.startsWith(`${word} "`) && h.startsWith(lead)), JSON.stringify(names));
     await s.ev("r.querySelector('.ag-nt [data-nt=\"armbtn\"][data-key=\"force\"]').click(); return 1");
     check(`${tag}: ausgeschaltet zählt als Änderung (Punkt am Reiter)`, await s.waitFor("return r.host.notify.dirtyCount() === 1 && r.querySelector('[data-sub=\"notify\"]').classList.contains('has-edit') && r.querySelector('.ag-nt [data-nt=\"armbtn\"][data-key=\"force\"]').getAttribute('aria-checked') === 'false'"));
     await s.tap('.ag-foot [data-nt="save"]');

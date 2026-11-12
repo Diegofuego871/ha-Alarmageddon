@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.25.1] - 2026-11-12
+
+Same naming for the actions of the push notification.
+
+### Changed
+
+- **Notifications › "Arming not possible": the two buttons are named like the other actions of the push notification.** "Button "Try again"" and "Button "Arm anyway"" are now "Action "Try again"" and "Action "Arm anyway"", and their descriptions start with "Button under the message:", as for "Open", "Acknowledge" and "Disarm".
+
 ## [1.25.0] - 2026-11-12
 
 The badge of the easter egg is a solid 3D body.
@@ -1187,6 +1195,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.25.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.1
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0

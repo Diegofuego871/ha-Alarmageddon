@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.25.1] - 2026-11-12
+
+Einheitliche Benennung der Aktionen der Push-Meldung.
+
+### Geändert
+
+- **Benachrichtigungen › "Scharfschalten nicht möglich": die beiden Knöpfe heissen wie die anderen Aktionen der Push-Meldung.** Aus Knopf "Erneut versuchen" und Knopf "Trotzdem scharf schalten" wird Aktion "Erneut versuchen" und Aktion "Trotzdem scharf schalten", und ihre Beschreibung beginnt mit "Knopf unter der Meldung:", wie bei "Öffnen", "Quittieren" und "Deaktivieren".
+
 ## [1.25.0] - 2026-11-12
 
 Das Abzeichen im Easter Egg ist ein massiver 3D-Körper.
@@ -1187,6 +1195,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.25.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.1
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0
 [1.20.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.20.0
