@@ -860,8 +860,9 @@ export class ActionsUi {
     const play = Boolean(this.previewing && current && this.previewing === current.url);
     const tone = `<div class="ag-tone"><select class="ag-input" data-wf="f" data-key="sound" aria-label="${esc(this._t("fldTone"))}">${sounds.map((s) => `<option value="${s.id}" ${s.id === f.sound ? "selected" : ""}>${esc(this._t(SOUND_KEY[s.id] || s.id))}</option>`).join("")}</select>
         <div class="ag-pv" role="group" aria-label="${esc(this._t("pvNote"))}">
-          <button class="ag-iconbtn ${play ? "on" : ""}" data-wf="pv-play" data-url="${esc(current?.url || "")}" aria-label="${esc(this._t("pvPlay"))}" title="${esc(this._t("pvPlay"))}">${ic("play", 18)}</button>
-          <button class="ag-iconbtn" data-wf="pv-pause" ${play ? "" : "disabled"} aria-label="${esc(this._t("pvPause"))}" title="${esc(this._t("pvPause"))}">${ic("pause", 18)}</button></div></div>
+          ${play
+            ? `<button class="ag-iconbtn on" data-wf="pv-stop" aria-label="${esc(this._t("pvStop"))}" title="${esc(this._t("pvStop"))}">${ic("stop", 18)}</button>`
+            : `<button class="ag-iconbtn" data-wf="pv-play" data-url="${esc(current?.url || "")}" aria-label="${esc(this._t("pvPlay"))}" title="${esc(this._t("pvPlay"))}">${ic("play", 18)}</button>`}</div></div>
       <div class="ag-pv-note">${ic("info", 14)} ${esc(this._t("pvNote"))}</div>`;
     const volume = `<div class="ag-ef-row"><div class="ag-settx"><b>${esc(this._t("fldVolumeSet"))}</b>${f.setVolume ? "" : `<small>${esc(this._t("fldVolumeKeep"))}</small>`}</div>${this._toggle('data-wf="setvol"', f.setVolume, "fldVolumeSet")}</div>
       ${f.setVolume && !(f.perVolume && f.targets.length > 1) ? this._rangeRow('data-wf="volume"', this._t("fldVolume"), Math.round(f.volume * 100), 0, 100, 5, `${Math.round(f.volume * 100)} %`) : ""}
@@ -1584,7 +1585,7 @@ export class ActionsUi {
     } else if (act === "pv-play") {
       if (el.dataset.url) this._play(el.dataset.url);
       this.renderEditor();
-    } else if (act === "pv-pause") {
+    } else if (act === "pv-stop") {
       this._stopPreview();
       this.renderEditor();
     } else if (act === "eq-clear") {

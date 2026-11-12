@@ -22,6 +22,7 @@ Jeder Ton stellt den Lautsprecher danach zurück.
 - **Sicher wie bisher.** Merken und Zurückstellen sind nie ein Hindernis: Antwortet ein Lautsprecher nicht, gehen Ton, Ablauf und Sirene nach den Zeitgrenzen weiter (Tests mit hängenden und scheiternden Lautsprechern, dazu in der Mutationsprobe).
 - **Aktionen: kein Hinweisfeld mehr in einem leeren Ablauf.** Unter "Alarm beginnt" genügt das Plus; das Feld "Noch keine Aktionen. Füge einen ersten Schritt hinzu …" mit eigenem Knopf entfällt und nimmt keinen Platz mehr weg.
 - **Aktionen: das Feld unter "Alarm endet" heisst nur noch "Abschlussmeldung".** Die lange Beschreibung entfällt; nur wenn noch keine eigene Meldung geschrieben ist, steht dort "Standard: "Alarm beendet"".
+- **Aktionen: die Vorschau eines Tons ist ein einziger Knopf, wie bei den Testknöpfen.** Er beginnt als Play-Zeichen und wird beim Abspielen zum Stopp-Zeichen; der getrennte Pause-Knopf entfällt. Die gelbe Umrandung bleibt, weil sie auf den Hinweis verweist, dass die Vorschau auf diesem Handy oder Computer spielt und nicht auf der echten Anlage.
 - Alarmtöne in den Listen ausserhalb des Alarmablaufs, die früher mit "Rückgängig" aus gespeichert wurden, behalten diesen Wert; im Schritt lässt er sich einschalten.
 
 ## [1.25.1] - 2026-11-12
