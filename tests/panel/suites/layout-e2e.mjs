@@ -153,7 +153,7 @@ for (const lang of ["de", "en"]) {
       await s.tap('#ag-step [data-wf="nt-tgt-own"]');
       await (await s.el('#ag-step [data-wf="nt-tgt-add"]')).selectOption("notify.mobile_app_partnerin");
       await s.tap('#ag-step [data-wf="apply"]');
-      check(`${tag}: Wahl ist ein Entwurf (Punkt am Reiter, Karte zeigt eigene Meldung)`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit') && r.querySelector('.ag-wf-endcard').textContent.includes('Eigene') || r.querySelector('.ag-wf-endcard').textContent.includes('Own')"));
+      check(`${tag}: Wahl ist ein Entwurf (Punkt am Reiter, Karte ohne den Standardhinweis)`, await s.waitFor("return !r.getElementById('ag-step').open && r.querySelector('[data-sub=\"actions\"]').classList.contains('has-edit') && r.host.actions.draft?.end && Object.keys(r.host.actions.draft.end).length > 0 && !r.querySelector('.ag-wf-endcard small')"));
       await s.tap('[data-wf="save"]');
       await s.waitFor("return r.querySelector('.ag-foot').innerText.includes('Gespeichert') || r.querySelector('.ag-foot').innerText.includes('Saved')");
       const wfSent = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_workflows').at(-1)");
