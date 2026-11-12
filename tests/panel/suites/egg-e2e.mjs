@@ -21,6 +21,8 @@ for (const lang of ["de", "en"]) {
       const motion = await s.ev("const q=(c)=>getComputedStyle(r.querySelector(c)).animationName; const b=r.querySelector('.ag-egg-pop').getBoundingClientRect(); return { logo:q('.ag-egg-logo'), beam:q('.ag-egg-beam'), glow:q('.ag-egg-glow'), cx: Math.round(b.left+b.width/2), cy: Math.round(b.top+b.height/2), vw: innerWidth, vh: innerHeight, inside: b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight }");
       check(`${tag}: Schild dreht, Lichtkegel kreist, A pulsiert (auch mit "Bewegung reduzieren")`, motion.logo === "ag-egg-y" && motion.beam === "ag-egg-z" && motion.glow === "ag-egg-pulse", JSON.stringify(motion));
       check(`${tag}: in der Mitte und ganz im Bild`, Math.abs(motion.cx - motion.vw / 2) <= 2 && Math.abs(motion.cy - motion.vh / 2) <= 2 && motion.inside, JSON.stringify(motion));
+      const size = await s.ev("const b=r.querySelector('.ag-egg-pop').getBoundingClientRect(); return { w: Math.round(b.width), h: Math.round(b.height), vw: innerWidth, vh: innerHeight, radius: getComputedStyle(r.querySelector('.ag-egg-pop')).borderRadius }");
+      check(`${tag}: ${mobile ? "auf dem Handy bildfüllend" : "am Computer als Karte"}`, mobile ? size.w === size.vw && size.h === size.vh && size.radius === "0px" : size.w < size.vw / 2 && size.h < size.vh, JSON.stringify(size));
       const a1 = await s.ev("return getComputedStyle(r.querySelector('.ag-egg-logo')).transform");
       await s.page.waitForTimeout(400);
       const a2 = await s.ev("return getComputedStyle(r.querySelector('.ag-egg-logo')).transform");

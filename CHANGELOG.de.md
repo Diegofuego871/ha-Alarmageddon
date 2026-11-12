@@ -13,7 +13,7 @@ Eine kleine Überraschung in der Kopfzeile.
 
 ### Hinzugefügt
 
-- **Easter Egg: Dreifachklick aufs Logo.** Tippt man das Logo oben links dreimal rasch hintereinander an, zoomt es in die Bildmitte und wird zum Pop-up: Das Schild dreht sich um seine Achse, ein Lichtkegel kreist wie bei einer Sirenenleuchte, und das "A" pulsiert. Darunter steht die installierte Version. Ein Tipp irgendwohin oder Escape schliesst es. Die Animation läuft auch, wenn die Systemeinstellung "Bewegung reduzieren" an ist (Wunsch des Nutzers).
+- **Easter Egg: Dreifachklick aufs Logo.** Tippt man das Logo oben links dreimal rasch hintereinander an, zoomt es in die Bildmitte und wird zum Pop-up: Das Schild dreht sich um seine Achse, ein Lichtkegel kreist wie bei einer Sirenenleuchte, und das "A" pulsiert. Darunter steht die installierte Version. Ein Tipp irgendwohin oder Escape schliesst es. Auf dem Handy füllt es den ganzen Bildschirm. Die Animation läuft auch, wenn die Systemeinstellung "Bewegung reduzieren" an ist (Wunsch des Nutzers).
 
 ## [1.19.0] - 2026-11-12
 

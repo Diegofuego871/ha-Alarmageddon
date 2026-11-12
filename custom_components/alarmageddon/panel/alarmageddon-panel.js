@@ -941,7 +941,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._root.querySelector(".ag-egg")) return;
     const shield = `<svg viewBox="22 22 212 212" aria-hidden="true"><defs><linearGradient id="ag-egg-g" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB45E"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#E5304A"/></linearGradient></defs><path d="M128 36 L204 64 V122 C204 170 172 204 128 222 C84 204 52 170 52 122 V64 Z" fill="none" stroke="url(#ag-egg-g)" stroke-width="22" stroke-linejoin="round"/><path d="M94 164 L128 92 L162 164" fill="none" stroke="url(#ag-egg-g)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><path d="M110 138 H146" fill="none" stroke="url(#ag-egg-g)" stroke-width="16" stroke-linecap="round"/></svg>`;
     const egg = this.ownerDocument.createElement("div");
-    egg.className = "ag-egg";
+    egg.className = this.hasAttribute("narrow") ? "ag-egg full" : "ag-egg"; // auf dem Handy bildfüllend
     egg.setAttribute("role", "dialog");
     egg.setAttribute("aria-modal", "true");
     egg.setAttribute("aria-label", "Alarmageddon");
