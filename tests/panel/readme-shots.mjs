@@ -101,5 +101,16 @@ for (const lang of ["en", "de"]) {
     await page.evaluate(() => window.__setState("alarm_control_panel.haus", "triggered", { arm_mode: "away", changed_by: "Marco", armed_by: "Marco", armed_at: new Date(Date.now() - 95 * 60e3).toISOString(), triggered_by: "binary_sensor.haustuer", deadline: null }));
   } });
 }
+// Dashboard-Karten (1.34.0): Bedienteil und Status nebeneinander in einem Dashboard (sim/card-sim.html)
+for (const lang of ["en", "de"]) {
+  const ctx = await browser.newContext({ viewport: { width: 780, height: 300 }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.goto(`http://127.0.0.1:${PORT}/card-sim.html?lang=${lang}&theme=light&status=warn`);
+  await page.waitForFunction(() => window.__ready);
+  await page.waitForTimeout(500);
+  await (await page.$("#dash")).screenshot({ path: `${out}cards-${lang}.png` });
+  console.log(`cards-${lang}.png`);
+  await ctx.close();
+}
 await browser.close();
 server.close();

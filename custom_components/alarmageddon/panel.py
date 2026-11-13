@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 
 from homeassistant.components import frontend
@@ -11,6 +12,7 @@ from homeassistant.core import HomeAssistant
 
 from . import sound_loop
 from .const import (
+    DATA_CARDS,
     DATA_PANEL,
     DATA_PANEL_LOCK,
     DATA_ICON,
@@ -27,7 +29,9 @@ from .const import (
     PANEL_VERSION,
 )
 
+_LOGGER = logging.getLogger(__name__)
 PANEL_PAGE_URL = f"{PANEL_STATIC_URL_PATH}/{PANEL_HTML_FILE}?v={PANEL_VERSION}"
+CARD_URL = f"{PANEL_STATIC_URL_PATH}/card.js?v={PANEL_VERSION}"
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
@@ -73,6 +77,21 @@ async def _register(hass: HomeAssistant) -> None:
         require_admin=True,
     )
     hass.data[DATA_PANEL] = True
+    _register_cards(hass)
+
+
+def _register_cards(hass: HomeAssistant) -> None:
+    """
+    Dashboard-Karten (1.34.0): ein Modul für die Oberfläche von HA, das "Bedienteil" und "Status" als Karten anmeldet. Zusatz zur Anlage:
+    scheitert es, steht es im Log, Alarm und Panel laufen weiter.
+    """
+    if hass.data.get(DATA_CARDS):
+        return
+    try:
+        frontend.add_extra_js_url(hass, CARD_URL)
+        hass.data[DATA_CARDS] = True
+    except Exception:  # noqa: BLE001 - die Karten sind Zusatz
+        _LOGGER.exception("The dashboard cards could not be registered; the alarm system and the panel run without them")
 
 
 def async_remove_panel(hass: HomeAssistant) -> None:

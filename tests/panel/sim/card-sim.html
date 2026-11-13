@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HA-Nachbau Dashboard-Karten</title>
+<style>
+  :root { --primary-background-color: #f4f6f9; --card-background-color: #fff; --primary-text-color: #1f2328; --secondary-text-color: #6b7280;
+    --disabled-text-color: #a3a9b3; --divider-color: rgba(15,23,42,.09); --primary-color: #03a9f4; --success-color: #2e9e4f; --warning-color: #f59e0b; --error-color: #e5484d; color-scheme: light; }
+  :root.dark { --primary-background-color: #111111; --card-background-color: #1c1c1c; --primary-text-color: #e6e6e6; --secondary-text-color: #9ba1a8;
+    --disabled-text-color: #666b72; --divider-color: rgba(255,255,255,.08); --error-color: #ef5350; --success-color: #4caf50; color-scheme: dark; }
+  html, body { margin: 0; min-height: 100%; font-family: Roboto, system-ui, sans-serif; background: var(--primary-background-color); color: var(--primary-text-color); }
+  /* Dashboard: Karten im Raster, wie die Ansicht "Bereiche" von HA */
+  #dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; padding: 16px; align-items: start; }
+  @media (max-width: 600px) { #dash { grid-template-columns: 1fr; padding: 12px; gap: 12px; } }
+</style>
+</head>
+<body>
+<div id="dash"></div>
+<script type="module">
+  // Erfundene Daten (CLAUDE.md). ?lang=de|en, ?theme=dark, ?admin=0, ?code=1 (Code zum Deaktivieren), ?arm=1 (auch zum Scharfschalten),
+  // ?ack=1 (auch zum Quittieren), ?night=1 (Nachtmodus), ?status=ok|warn
+  const params = new URLSearchParams(location.search);
+  if (params.get("theme") === "dark") document.documentElement.classList.add("dark");
+  const lang = params.get("lang") || "en";
+  const ALARM = "alarm_control_panel.wohnung";
+  const now = Date.now();
+  const iso = (offset = 0) => new Date(now + offset).toISOString();
+  const states = {};
+  const set = (id, state, attributes = {}) => { states[id] = { entity_id: id, state, attributes, last_changed: iso(-26 * 60e3), last_updated: iso(-26 * 60e3) }; };
+  const code = params.get("code") === "1";
+  set(ALARM, "disarmed", {
+    friendly_name: "Alarmanlage Wohnung", supported_features: params.get("night") === "1" ? 7 : 3, code_format: code ? "number" : null,
+    code_arm_required: params.get("arm") === "1", code_ack_required: params.get("ack") === "1", arm_mode: null, changed_by: "Marco", triggered_by: null, deadline: null, armed_at: null, armed_by: null,
+  });
+  set("binary_sensor.wohnung_ready_to_arm_home", "on", { blocking_sensors: [] });
+  set("binary_sensor.wohnung_ready_to_arm_away", "on", { blocking_sensors: [] });
+  set("binary_sensor.wohnung_ready_to_arm_night", "on", { blocking_sensors: [] });
+  const statusAttrs = params.get("status") === "warn"
+    ? { alarm: false, offline: ["binary_sensor.fenster_bad"], low_battery: [{ entity_id: "binary_sensor.haustuer", battery: 12 }], battery_threshold: 20 }
+    : { alarm: false, offline: [], low_battery: [], battery_threshold: 20 };
+  set("sensor.wohnung_status", params.get("status") === "warn" ? "2" : "0", statusAttrs);
+  set("binary_sensor.fenster_bad", "unavailable", { friendly_name: "Fenster Bad" });
+  set("binary_sensor.haustuer", "off", { friendly_name: "Haustür" });
+  set("binary_sensor.garagentor", "on", { friendly_name: "Garagentor" });
+  const entities = {
+    [ALARM]: { entity_id: ALARM, device_id: "dev_wohnung", platform: "alarmageddon" },
+    "binary_sensor.wohnung_ready_to_arm_home": { entity_id: "binary_sensor.wohnung_ready_to_arm_home", device_id: "dev_wohnung", platform: "alarmageddon", translation_key: "ready_home" },
+    "binary_sensor.wohnung_ready_to_arm_away": { entity_id: "binary_sensor.wohnung_ready_to_arm_away", device_id: "dev_wohnung", platform: "alarmageddon", translation_key: "ready_away" },
+    "binary_sensor.wohnung_ready_to_arm_night": { entity_id: "binary_sensor.wohnung_ready_to_arm_night", device_id: "dev_wohnung", platform: "alarmageddon", translation_key: "ready_night" },
+    "sensor.wohnung_status": { entity_id: "sensor.wohnung_status", device_id: "dev_wohnung", platform: "alarmageddon", translation_key: "status" },
+  };
+  window.__calls = [];
+  const STATE = { alarm_arm_home: "armed_home", alarm_arm_away: "armed_away", alarm_arm_night: "armed_night", alarm_disarm: "disarmed" };
+  const hass = () => ({
+    states: { ...states }, entities, language: lang, locale: { language: lang }, user: { name: "Marco", is_admin: params.get("admin") !== "0" },
+    callService: async (domain, service, data) => {
+      window.__calls.push({ domain, service, data: JSON.parse(JSON.stringify(data)) });
+      if (window.__fail) { const f = window.__fail; window.__fail = null; throw f; }
+      const cur = states[ALARM];
+      const needs = (service === "alarm_disarm" && cur.attributes.code_format) || (STATE[service] && service !== "alarm_disarm" && cur.attributes.code_arm_required && cur.attributes.code_format)
+        || (service === "acknowledge" && cur.attributes.code_ack_required);
+      if (needs && data.code !== "1234") throw Object.assign(new Error(lang === "de" ? "Falscher Code." : "Wrong code."), { code: "service_validation_error", translation_key: "invalid_code" });
+      if (service === "acknowledge") { window.__setState(ALARM, "armed_away", { arm_mode: "away", triggered_by: null }); return; }
+      if (STATE[service]) window.__setState(ALARM, STATE[service], { arm_mode: service === "alarm_disarm" ? null : STATE[service].replace("armed_", ""), changed_by: "Marco" });
+    },
+  });
+  const cards = [];
+  window.__setState = (id, state, attrs = {}) => {
+    const old = states[id] || { attributes: {} };
+    states[id] = { ...old, entity_id: id, state, attributes: { ...old.attributes, ...attrs }, last_changed: iso(), last_updated: iso() };
+    cards.forEach((c) => (c.hass = hass()));
+  };
+  window.__push = () => cards.forEach((c) => (c.hass = hass()));
+  window.__states = states;
+  await import(`/alarmageddon_panel/card.js?v=t`);
+  const make = (tag, config) => {
+    const el = document.createElement(tag);
+    el.setConfig(config);
+    el.hass = hass();
+    document.getElementById("dash").appendChild(el);
+    cards.push(el);
+    return el;
+  };
+  make("alarmageddon-card", { entity: ALARM, show_ready: true, show_alarm_band: true, open_panel: true });
+  make("alarmageddon-status-card", { entity: ALARM });
+  if (params.get("missing") === "1") make("alarmageddon-card", { entity: "alarm_control_panel.gibtsnicht" });
+  window.__ready = true;
+</script>
+</body>
+</html>

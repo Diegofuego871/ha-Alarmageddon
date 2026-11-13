@@ -637,3 +637,15 @@ herstellt (dann ist der Entwurf sauber und "Abbrechen" gesperrt).
 ## Tabellenkopf klebt auch auf dem Handy
 
 `position: sticky` am Tabellenkopf wirkt nur, wenn kein Vorfahre bis zum scrollenden Container `overflow` ausser `visible`/`clip` hat. Ein Umschlag mit `overflow-x: auto` (damit eine breite Tabelle seitlich wischt) macht ihn zum Rollbereich, und der Kopf scrollt mit. Auf dem Handy darum `overflow: clip` und die Tabelle so kompakt bauen, dass sie in die Breite passt (Symbole statt Namen, Zellen dürfen umbrechen, Nebensächliches ins Blatt). Die Filter darüber scrollen dort weg, sonst bleibt für die Zeilen zu wenig Platz. Im Test nach dem Scrollen warten (sanftes Scrollen) und bedenken, dass eine kurze Seite nicht weit genug scrollt.
+
+## Dashboard-Karten (1.34.0)
+
+- Die Karte liest nur Entitäten (`hass.states`, `hass.entities` für Gerät und `translation_key` der "Bereit"-Entitäten) und ruft Dienste;
+  kein WebSocket-Befehl des Panels (der wäre nur für Administratoren). Den Code prüft HA (`ServiceValidationError`).
+- `card.js` liegt im Panel-Ordner (gleiche `?v=`-Zahl `PANEL_VERSION`) und wird mit `frontend.add_extra_js_url` geladen. In Tests fehlt
+  `hass.data["frontend_extra_js_url"]` ohne die Integration `frontend`: dort ersetzen, sonst `KeyError`. Ein scheiternder Eintrag darf
+  die Anlage nie mitnehmen (`_register_cards` fängt ab, Test).
+- Entitätsdienst im Test aufrufen: `blocking=True` und den Zustandsautomaten nicht aus demselben Task erneut abwarten; Code-Prüfung und
+  Zustandsprüfung danach (Wettlauf, wenn der Alarm während der Code-Prüfung endet) stehen in `controller.async_acknowledge`.
+- Der Code steht nur im Eingabefeld des Fensters und wird beim Schliessen geleert (`_wipe`), wie in den Fenstern des Panels.
+- Statistik der Status-Entität schreibt nur bei Änderung (`StatusSensor`), sonst füllt jeder Sensorwechsel den Verlauf.

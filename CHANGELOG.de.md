@@ -7,6 +7,24 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.34.0] - 2026-11-13
+
+Zwei Dashboard-Karten: das Bedienteil und die Info-Kachel des Seitenpanels, für jedes Dashboard und jede Person.
+
+### Hinzugefügt
+
+- **Karte "Alarmageddon":** das Bedienteil des Seitenpanels als Dashboard-Karte. Sie zeigt den Zustand, die Modi zum Scharfschalten, "Bereit für" und bei einem Alarm das Alarmband mit "Quittieren" und "Deaktivieren". Sie sieht aus wie das Seitenpanel (hell und dunkel, Deutsch und Englisch).
+- **Karte "Alarmageddon Status":** die Info-Kachel als Karte: Alarm, nicht erreichbare Sensoren und schwache Batterien, mit den Namen der Sensoren.
+- **Karten hinzufügen:** beide Karten stehen in der Kartenauswahl ("Karte hinzufügen" › "Alarmageddon") und werden von der Integration selbst registriert, ohne Eintrag bei den Ressourcen. Der Karteneditor bietet die Alarmanlage, einen Namen und die Auswahl der angezeigten Teile.
+- **Dienst `alarmageddon.acknowledge`:** stellt einen laufenden Alarm für jede Person ab, die die Karte benutzen darf, nicht nur für Administratoren. Ohne laufenden Alarm wird er abgelehnt.
+- **Einstellung "Quittieren verlangt den Code":** in Konfiguration › Anlage (und im Optionsdialog von Home Assistant). Standardmässig aus; ist sie an, fragt "Quittieren" nach einem Code. Braucht einen programmierten Code; sie wird zurückgesetzt, wenn der Code entfernt wird.
+- **Status-Entität je Alarmanlage** (`sensor.<name>_status`): die Zahl der offenen Probleme (Alarm, nicht erreichbare Sensoren, schwache Batterien); die Attribute nennen die Sensoren. Die Status-Karte liest sie.
+
+### Geändert
+
+- **Codes auf der Karte:** ist ein Code programmiert, fragt die Karte beim Deaktivieren danach (und beim Scharfschalten, wenn dafür der Code nötig ist), genau wie die Entität. Der Code bleibt nach dem Schliessen des Fensters nirgends in der Seite.
+- **Das Seitenpanel bleibt nur für Administratoren.** Die Karten kann man jeder Person geben; sie nutzen nur Entitäten und Dienste von Home Assistant.
+
 ## [1.33.1] - 2026-11-13
 
 Eine vollständige Code-Prüfung von allem, was zuletzt entstanden ist: eine Sicherheitskorrektur im Zustandsautomaten, ein robusterer Start und Stopp und Aufräumen, das für dich nichts ändert.
@@ -1321,6 +1339,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0
 [1.33.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.1
 [1.33.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.0
 [1.32.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.32.0

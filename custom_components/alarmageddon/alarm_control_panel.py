@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelEntity,
     AlarmControlPanelEntityFeature,
@@ -13,6 +15,7 @@ from homeassistant.components.alarm_control_panel import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import ExtraStoredData, RestoreEntity
 
@@ -31,6 +34,11 @@ class AlarmRestoreData(ExtraStoredData):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     async_add_entities([AlarmageddonAlarm(entry, entry.runtime_data.controller)])
+    # Quittieren für jeden Nutzer (Dashboard-Karte): ein Entitätsdienst, den HA nur für diese Entitäten annimmt. Das Panel braucht
+    # Administratorrechte, dieser Dienst nicht; ob ein Code nötig ist, bestimmt der Administrator (Einstellung der Anlage).
+    entity_platform.async_get_current_platform().async_register_entity_service(
+        "acknowledge", {vol.Optional("code"): cv.string}, "async_acknowledge_alarm"
+    )
 
 
 class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEntity):
@@ -81,6 +89,8 @@ class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEnti
             # Seit wann und von wem scharf (bleibt während Eingangsverzögerung und Alarm stehen)
             "armed_at": self._ctl.armed_at.isoformat() if self._ctl.armed_at else None,
             "armed_by": self._ctl.armed_by,
+            # Fragt das Quittieren nach dem Code? Die Dashboard-Karte zeigt dann ihr Fenster (die Prüfung macht der Dienst)
+            "code_ack_required": self._ctl.code_ack_required,
         }
 
     @property
@@ -103,6 +113,9 @@ class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEnti
             return person
         user = await self.hass.auth.async_get_user(self._context.user_id)
         return user.name if user else None
+
+    async def async_acknowledge_alarm(self, code: str | None = None) -> None:
+        await self._ctl.async_acknowledge(code, await self._user_name())
 
     async def async_alarm_disarm(self, code: str | None = None) -> None:
         await self._ctl.async_disarm(code, await self._user_name())

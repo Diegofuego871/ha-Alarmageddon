@@ -67,11 +67,13 @@
             "description": "Modes and arming.",
             "data": {
               "night_enabled": "Night mode",
-              "code_arm_required": "Code required to arm"
+              "code_arm_required": "Code required to arm",
+              "code_ack_required": "Code required to acknowledge"
             },
             "data_description": {
               "night_enabled": "Adds the mode \"Night\" with its own zone. Off by default.",
-              "code_arm_required": "Arming also asks for the code. Only possible with a code."
+              "code_arm_required": "Arming also asks for the code. Only possible with a code.",
+              "code_ack_required": "Acknowledging an alarm also asks for the code (for example from the dashboard card). Only possible with a code. Off by default."
             }
           },
           "code_section": {
@@ -116,6 +118,11 @@
       "ready_night": {
         "name": "Ready to arm night"
       }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status"
+      }
     }
   },
   "exceptions": {
@@ -133,6 +140,21 @@
     },
     "mode_not_enabled": {
       "message": "The mode \"{mode}\" is not enabled for this alarm system."
+    },
+    "not_triggered": {
+      "message": "There is no running alarm."
+    }
+  },
+  "services": {
+    "acknowledge": {
+      "name": "Acknowledge alarm",
+      "description": "Ends a running alarm; the alarm system stays armed. Needs the code if the administrator has switched that on.",
+      "fields": {
+        "code": {
+          "name": "Code",
+          "description": "Needed only if the alarm system asks for a code to acknowledge."
+        }
+      }
     }
   }
 }

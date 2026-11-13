@@ -29,6 +29,8 @@ CONF_ENTRY_DELAY: Final = "entry_delay"
 CONF_TRIGGER_TIME: Final = "trigger_time"  # Dauer des Alarms in Sekunden, 0 = bis zum Deaktivieren
 CONF_OPEN_SENSORS: Final = "open_sensors"  # Verhalten bei offenem Sensor beim Scharfschalten
 CONF_CODE_ARM_REQUIRED: Final = "code_arm_required"
+# Quittieren verlangt den Code (1.34.0): nur wirksam mit einem Code; Standard aus (Quittieren schaltet nichts ab)
+CONF_CODE_ACK_REQUIRED: Final = "code_ack_required"
 CONF_CODE_HASH: Final = "code_hash"
 CONF_CODE_SALT: Final = "code_salt"
 # Weitere Codes, je einer Person zugeordnet (0.5.0): [{"id", "name", "user_id", "hash", "salt"}].
@@ -58,13 +60,14 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 137  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 138  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
 PANEL_HTML_FILE: Final = "panel.html"
 PANEL_TITLE: Final = "Alarmageddon"
 PANEL_ICON: Final = "mdi:shield-home"
+DATA_CARDS: Final = f"{DOMAIN}_cards"
 DATA_PANEL: Final = f"{DOMAIN}_panel_registered"
 DATA_PANEL_LOCK: Final = "alarmageddon_panel_lock"
 DATA_STATIC: Final = f"{DOMAIN}_static_registered"

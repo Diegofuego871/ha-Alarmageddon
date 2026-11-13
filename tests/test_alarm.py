@@ -58,6 +58,7 @@ async def test_device_and_entities(hass: HomeAssistant) -> None:
         "binary_sensor.haus_zone_away",
         "binary_sensor.haus_ready_to_arm_home",
         "binary_sensor.haus_ready_to_arm_away",
+        "sensor.haus_status",
     }
     assert all(e.device_id == device.id for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id))
     assert state(hass) == AlarmControlPanelState.DISARMED

@@ -3,7 +3,7 @@
 Entwurf einer Karte, die mit der Integration mitkommt und sich in **jedes Dashboard** von Home Assistant einfügen lässt ("Karte
 hinzufügen", ohne Einrichtung). Sie zeigt das **Bedienteil** und die **Infokarte** des Panels, genau so wie dort. Die Karten in den
 Bildern sind die echten Kacheln des Panels (HA-Nachbau, dunkel), eingesetzt in ein nachgebautes Dashboard; erfundene Daten.
-Desktop 1440 px, Handy 390 px. **Noch nicht entschieden, noch nicht umgesetzt.**
+Desktop 1440 px, Handy 390 px. **Entschieden (2026-11-13) und umgesetzt in 1.34.0.**
 
 ## Wie es technisch gedacht ist
 
@@ -30,10 +30,13 @@ im Alarmrot und die Infokarte mit der Warnung.
 `6a-auswahl-dialog-desktop.png`: so erscheinen die Karten im Dialog "Karte hinzufügen". `6b-editor-desktop.png`: der Editor der Karte
 (Anlage wählen, Titel, Umschalter für "Bereit für", Alarmband, Kompakt, Pfeil).
 
-## Offene Fragen
+## Entscheide des Nutzers (2026-11-13)
 
-1. A, B oder C (oder A und B zugleich: die Infokarte zugleich einzeln und als Zeile)?
-2. "Quittieren" in der Karte: nur für Administratoren, oder ein eigener Dienst für alle Nutzer mit Code?
-3. Soll "Deaktivieren" in der Karte einen Code abfragen (wie im Panel), wenn die Anlage einen verlangt?
+1. **Variante A:** zwei einzelne Karten, "Bedienteil" und "Status".
+2. **Quittieren darf jede Person**, die die Karte benutzt (eigener Dienst `alarmageddon.acknowledge`). Der Administrator bestimmt mit der
+   neuen Einstellung "Quittieren verlangt den Code" (Konfiguration › Anlage, Standard aus), ob dafür ein Code nötig ist.
+3. **Deaktivieren (und Scharfschalten, wenn dafür ein Code nötig ist) fragt nach dem Code**, sobald einer programmiert ist.
+4. Das Panel bleibt nur für Administratoren; die Karten kann man jeder Person geben.
+5. Die Daten der Status-Karte kommen aus einer **neuen Status-Entität je Anlage** (`sensor.<anlage>_status`).
 
 Quelle der Bilder: `src/mock.mjs` (`node docs/mockups/dashboard-karte-v1/src/mock.mjs`).

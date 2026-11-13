@@ -1,0 +1,11 @@
+acknowledge:
+  target:
+    entity:
+      integration: alarmageddon
+      domain: alarm_control_panel
+  fields:
+    code:
+      required: false
+      selector:
+        text:
+          type: password

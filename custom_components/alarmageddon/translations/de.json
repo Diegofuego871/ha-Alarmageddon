@@ -67,11 +67,13 @@
             "description": "Modi und Scharfschalten.",
             "data": {
               "night_enabled": "Modus \"Nacht\"",
-              "code_arm_required": "Code zum Scharfschalten"
+              "code_arm_required": "Code zum Scharfschalten",
+              "code_ack_required": "Code zum Quittieren"
             },
             "data_description": {
               "night_enabled": "Ergänzt den Modus \"Nacht\" mit eigener Zone. Standardmässig aus.",
-              "code_arm_required": "Auch das Scharfschalten verlangt den Code. Nur mit Code möglich."
+              "code_arm_required": "Auch das Scharfschalten verlangt den Code. Nur mit Code möglich.",
+              "code_ack_required": "Das Quittieren eines Alarms verlangt auch den Code (zum Beispiel aus der Dashboard-Karte). Nur mit einem Code möglich. Standardmässig aus."
             }
           },
           "code_section": {
@@ -116,6 +118,11 @@
       "ready_night": {
         "name": "Bereit für Nacht"
       }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status"
+      }
     }
   },
   "exceptions": {
@@ -133,6 +140,21 @@
     },
     "mode_not_enabled": {
       "message": "Der Modus \"{mode}\" ist für diese Alarmanlage nicht eingeschaltet."
+    },
+    "not_triggered": {
+      "message": "Es läuft kein Alarm."
+    }
+  },
+  "services": {
+    "acknowledge": {
+      "name": "Alarm quittieren",
+      "description": "Beendet einen laufenden Alarm; die Alarmanlage bleibt scharf. Braucht den Code, wenn der Administrator das eingeschaltet hat.",
+      "fields": {
+        "code": {
+          "name": "Code",
+          "description": "Nur nötig, wenn die Alarmanlage zum Quittieren einen Code verlangt."
+        }
+      }
     }
   }
 }

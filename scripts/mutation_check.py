@@ -371,6 +371,24 @@ MUTATIONS = [
      '    if runner.running and runner.running.get("test"):\n', "    if False:\n", "tests/test_workflow_failsafes.py -k new_test_replaces"),
     ("Ein neuer Test ersetzt auch einen echten Alarm", "websocket_api.py",
      '    if runner.running and runner.running.get("test"):\n', "    if runner.running:\n", "tests/test_workflow_failsafes.py -k new_test_replaces"),
+    # Dashboard-Karten (1.34.0): Quittieren für jeden Nutzer, mit Code, wenn der Administrator es verlangt
+    ("Quittieren verlangt den Code nicht, obwohl der Administrator es eingeschaltet hat", "controller.py",
+     "        if self.code_ack_required:\n            changed_by = await self._async_check_code(code) or changed_by\n", "        if False:\n            changed_by = await self._async_check_code(code) or changed_by\n",
+     "tests/test_dashboard_card.py -k asks_for_the_code"),
+    ("Quittieren verlangt einen Code, obwohl es keinen gibt (Einstellung ohne Code wirksam)", "controller.py",
+     "        return self.has_code and bool(self.options.get(CONF_CODE_ACK_REQUIRED, False))\n", "        return bool(self.options.get(CONF_CODE_ACK_REQUIRED, False))\n",
+     "tests/test_dashboard_card.py -k needs_a_code_to_take_effect"),
+    ("Quittieren ohne Alarm wird angenommen", "controller.py",
+     '        if self.state != AlarmControlPanelState.TRIGGERED:\n            raise _error("not_triggered")\n        if self.code_ack_required:',
+     "        if self.code_ack_required:", "tests/test_dashboard_card.py -k without_alarm_is_refused"),
+    ("Quittieren prüft den Zustand nach der Code-Prüfung nicht noch einmal", "controller.py",
+     '            if self.state != AlarmControlPanelState.TRIGGERED:\n                raise _error("not_triggered")\n        self.acknowledge(changed_by)',
+     "        self.acknowledge(changed_by)", "tests/test_dashboard_card.py -k ended_during_the_code_check"),
+    ("Einstellung \"Quittieren verlangt den Code\" wird ohne Code gespeichert", "websocket_api.py",
+     '        if msg["code_ack_required"] and not entry.runtime_data.controller.has_code:', "        if False:", "tests/test_dashboard_card.py -k websocket_saves_the_setting"),
+    ("Code entfernen lässt \"Quittieren verlangt den Code\" stehen", "websocket_api.py",
+     "        options[CONF_CODE_ACK_REQUIRED] = False\n    changed = hass.config_entries.async_update_entry(entry, options=options)", "    changed = hass.config_entries.async_update_entry(entry, options=options)",
+     "tests/test_dashboard_card.py -k websocket_saves_the_setting"),
 ]
 
 

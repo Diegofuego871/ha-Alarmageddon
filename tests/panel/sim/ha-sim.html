@@ -451,6 +451,11 @@
       }
       if (typeof msg.per_mode_settings === "boolean") sys.per_mode_settings = msg.per_mode_settings;
       if (typeof msg.always_enabled === "boolean") sys.always_enabled = msg.always_enabled;
+      if (typeof msg.code_ack_required === "boolean") {
+        if (msg.code_ack_required && !sys.has_code) throw err("code_missing");
+        sys.code_ack_required = msg.code_ack_required;
+        window.__ackRequired = msg.code_ack_required;
+      }
       if (msg.schedules) sys.schedules = JSON.parse(JSON.stringify(msg.schedules));
       const enabled = { home: sys.modes.includes("home"), away: sys.modes.includes("away"), night: sys.modes.includes("night") };
       for (const m of ["home", "away", "night"]) if (`${m}_enabled` in msg) enabled[m] = msg[`${m}_enabled`];

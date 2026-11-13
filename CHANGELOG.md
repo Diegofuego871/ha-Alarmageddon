@@ -7,6 +7,24 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.34.0] - 2026-11-13
+
+Two dashboard cards: the control tile and the status tile of the side panel, for any dashboard and any user.
+
+### Added
+
+- **Card "Alarmageddon":** the control tile of the side panel as a dashboard card. It shows the state, the modes to arm, "Ready for" and, during an alarm, the alarm band with "Acknowledge" and "Disarm". It looks like the side panel (light and dark, English and German).
+- **Card "Alarmageddon status":** the info tile as a card: alarm, sensors that are not reachable and weak batteries, with the names of the sensors.
+- **Adding the cards:** both cards appear in the card picker ("Add card" › "Alarmageddon") and are registered by the integration itself, without a resource entry. The card editor offers the alarm system, a name and which parts are shown.
+- **Service `alarmageddon.acknowledge`:** silences a running alarm for any user who can use the card, not only for administrators. Without a running alarm it is refused.
+- **Setting "Acknowledging needs the code":** in Configuration › Alarm system (and in the Home Assistant options dialog). Off by default; when on, "Acknowledge" asks for a code. Needs a programmed code; it is reset when the code is removed.
+- **Status entity per alarm system** (`sensor.<name>_status`): the number of open problems (alarm, unreachable sensors, weak batteries); the attributes name the sensors. The status card reads it.
+
+### Changed
+
+- **Codes on the card:** when a code is programmed, the card asks for it to disarm (and to arm if arming needs the code), exactly like the entity. The code is never kept in the page after the dialog closes.
+- **The side panel stays for administrators only.** The cards can be given to any user; they only use the entities and services of Home Assistant.
+
 ## [1.33.1] - 2026-11-13
 
 A full code review of everything built recently: one safety fix in the state machine, a more robust start and stop, and tidying that changes nothing for you.
@@ -1321,6 +1339,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0
 [1.33.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.1
 [1.33.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.0
 [1.32.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.32.0

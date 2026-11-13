@@ -21,6 +21,7 @@ from homeassistant.helpers import selector
 from .code import hash_code
 from .const import (
     CODE_PATTERN,
+    CONF_CODE_ACK_REQUIRED,
     CONF_CODE_ARM_REQUIRED,
     CONF_CODE_HASH,
     CONF_CODE_SALT,
@@ -62,6 +63,7 @@ def default_options() -> dict[str, Any]:
         CONF_ENTRY_SENSORS: [],
         CONF_ENTRY_DELAY: DEFAULT_ENTRY_DELAY,
         CONF_CODE_ARM_REQUIRED: False,
+        CONF_CODE_ACK_REQUIRED: False,
     }
     return options
 
@@ -134,6 +136,7 @@ class AlarmageddonOptionsFlow(OptionsFlow):
                         options[f"{key}_{scope}"] = options[key]
             options[CONF_NIGHT_ENABLED] = bool(behaviour.get(CONF_NIGHT_ENABLED, False))
             options[CONF_CODE_ARM_REQUIRED] = bool(behaviour.get(CONF_CODE_ARM_REQUIRED, False))
+            options[CONF_CODE_ACK_REQUIRED] = bool(behaviour.get(CONF_CODE_ACK_REQUIRED, False))
 
             # Aktive Modi wie im Panel: Anwesend und Abwesend lassen sich dort abschalten, Nacht hier
             active = [m for m in MODES if bool(options.get(MODE_ENABLED_KEY[m], MODE_ENABLED_DEFAULT[m]))]
@@ -153,7 +156,7 @@ class AlarmageddonOptionsFlow(OptionsFlow):
                     options[CONF_CODE_HASH], options[CONF_CODE_SALT] = await self.hass.async_add_executor_job(
                         hash_code, new_code
                     )
-                if options[CONF_CODE_ARM_REQUIRED] and not options.get(CONF_CODE_HASH) and not options.get(CONF_CODES):
+                if (options[CONF_CODE_ARM_REQUIRED] or options[CONF_CODE_ACK_REQUIRED]) and not options.get(CONF_CODE_HASH) and not options.get(CONF_CODES):
                     errors["base"] = "code_missing"
                 else:
                     return self.async_create_entry(data=options)
@@ -177,6 +180,7 @@ class AlarmageddonOptionsFlow(OptionsFlow):
             {
                 vol.Required(CONF_NIGHT_ENABLED, default=o[CONF_NIGHT_ENABLED]): selector.BooleanSelector(),
                 vol.Required(CONF_CODE_ARM_REQUIRED, default=o[CONF_CODE_ARM_REQUIRED]): selector.BooleanSelector(),
+                vol.Required(CONF_CODE_ACK_REQUIRED, default=o.get(CONF_CODE_ACK_REQUIRED, False)): selector.BooleanSelector(),
             }
         )
         code = vol.Schema(

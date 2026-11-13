@@ -26,7 +26,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import BACKUPS_STORE_KEY, CONF_CODE_ARM_REQUIRED, DOMAIN, MAX_BACKUPS
+from .const import BACKUPS_STORE_KEY, CONF_CODE_ACK_REQUIRED, CONF_CODE_ARM_REQUIRED, DOMAIN, MAX_BACKUPS
 from .schemas import SYSTEM_OPTIONS_SCHEMA
 from .settings import async_get_settings, valid_notify, valid_presets
 from .systems import async_create_system, new_system_name
@@ -169,6 +169,8 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any], mapping: li
         ctl = entry.runtime_data.controller
         if options.get(CONF_CODE_ARM_REQUIRED) and not ctl.has_code:
             options[CONF_CODE_ARM_REQUIRED] = False
+        if options.get(CONF_CODE_ACK_REQUIRED) and not ctl.has_code:
+            options[CONF_CODE_ACK_REQUIRED] = False
         if hass.config_entries.async_update_entry(entry, options=options):
             reloading.add(entry.entry_id)
     if presets_changed:

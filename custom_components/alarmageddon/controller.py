@@ -56,6 +56,7 @@ from .const import (
     OPT_OPEN_OK,
     CODE_LOCKOUT_SECONDS,
     CODE_MAX_ATTEMPTS,
+    CONF_CODE_ACK_REQUIRED,
     CONF_CODE_ARM_REQUIRED,
     CONF_CODE_HASH,
     CONF_CODES,
@@ -255,6 +256,11 @@ class AlarmController:
     @property
     def code_arm_required(self) -> bool:
         return self.has_code and bool(self.options.get(CONF_CODE_ARM_REQUIRED, False))
+
+    @property
+    def code_ack_required(self) -> bool:
+        """Quittieren verlangt den Code (1.34.0): nur mit einem Code, vom Administrator eingeschaltet."""
+        return self.has_code and bool(self.options.get(CONF_CODE_ACK_REQUIRED, False))
 
     # ----- Optionen pro Sensor -----
 
@@ -702,6 +708,20 @@ class AlarmController:
         self.alarm_flows = []
         self.changed_by = changed_by
         self._set(AlarmControlPanelState.DISARMED)
+
+    async def async_acknowledge(self, code: str | None, changed_by: str | None = None) -> None:
+        """
+        Alarm quittieren für jeden Nutzer (Dienst alarmageddon.acknowledge, Dashboard-Karte). Nur im Alarm; verlangt der Administrator
+        den Code, wird er geprüft wie beim Deaktivieren (falscher Code, Sperre nach fünf Fehlversuchen).
+        """
+        if self.state != AlarmControlPanelState.TRIGGERED:
+            raise _error("not_triggered")
+        if self.code_ack_required:
+            changed_by = await self._async_check_code(code) or changed_by
+            # Die Prüfung läuft im Hintergrund: währenddessen kann der Alarm vorbei sein
+            if self.state != AlarmControlPanelState.TRIGGERED:
+                raise _error("not_triggered")
+        self.acknowledge(changed_by)
 
     @callback
     def acknowledge(self, changed_by: str | None = None) -> bool:

@@ -46,6 +46,7 @@ export class SystemUi {
       modes: Object.fromEntries(ALL_MODES.map((m) => [m, (s.modes || ["home", "away"]).includes(m)])),
       schedules: JSON.parse(JSON.stringify(s.schedules || [])),
       always: s.always_enabled !== false, // "Immer aktiv" als Ganzes (Standard an)
+      ackCode: Boolean(s.code_ack_required) && Boolean(s.has_code), // Quittieren verlangt den Code (nur mit einem Code)
     };
   }
 
@@ -80,6 +81,7 @@ export class SystemUi {
     for (const scope of ALL_MODES) if (Object.keys(a.per[scope]).some((k) => a.per[scope][k] !== d.per[scope][k])) n += 1;
     for (const m of ALL_MODES) if (a.modes[m] !== d.modes[m]) n += 1;
     if (a.always !== d.always) n += 1;
+    if (a.ackCode !== d.ackCode) n += 1;
     if (JSON.stringify(a.schedules) !== JSON.stringify(d.schedules)) n += 1;
     return n;
   }
@@ -137,7 +139,7 @@ export class SystemUi {
         <div class="ag-subh">${esc(this._t("chapTimes"))}</div>${card(timesRows)}
         <div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}</div>`);
     const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint")) + perMode
-      + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml() + this._deleteHtml();
+      + this._schedulesHtml(modes) + this._codesHtml(d) + this._backupHtml() + this._deleteHtml();
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
     h._setHtml(form, html);
     h._placePills();
@@ -172,7 +174,7 @@ export class SystemUi {
 
   // ----- Codes pro Person (sofort gespeichert, nicht Teil des Entwurfs: ein Code soll nie im Panel liegen bleiben) -----
 
-  _codesHtml() {
+  _codesHtml(d) {
     const s = this.system;
     const users = this.host._data?.users || [];
     const userName = (id) => users.find((u) => u.id === id)?.name;
@@ -183,7 +185,16 @@ export class SystemUi {
         <button class="ag-btn" data-sys="code-add">${ic("plus", 18)}${esc(this._t("codeAdd"))}</button></div>
       ${rows}
       <div class="ag-coderow"><span class="ag-mini">${ic("lockClosed", 16)}</span><span class="ag-grow"><b>${esc(this._t("sysCodeMain"))}</b><small class="ag-t2">${esc(this._t(s.main_code ? "sysCodeMainSet" : "sysCodeMainNone"))}</small></span>
-        <button class="ag-btn" data-sys="code">${ic("cog", 18)}${esc(this._t("sysCodeOpen"))}</button></div></div>`);
+        <button class="ag-btn" data-sys="code">${ic("cog", 18)}${esc(this._t("sysCodeOpen"))}</button></div>
+      ${this._ackRow(d, Boolean(s.has_code))}</div>`);
+  }
+
+  // Quittieren verlangt den Code (1.34.0): gilt für den Dienst, den die Dashboard-Karten nutzen; das Panel selbst ist nur für
+  // Administratoren und fragt nie nach einem Code zum Quittieren. Ohne Code gesperrt.
+  _ackRow(d, hasCode) {
+    const on = Boolean(d?.ackCode) && hasCode;
+    return `<div class="ag-setrow"><div class="ag-settx"><b>${esc(this._t("sysAckCode"))}</b><small>${esc(this._t(hasCode ? "sysAckCodeHint" : "sysAckCodeNone"))}</small></div>
+      <button class="ag-toggle ${on ? "on" : ""}" data-sys="ackcode" role="switch" aria-checked="${on}" aria-label="${esc(this._t("sysAckCode"))}" ${hasCode ? "" : "disabled"}></button></div>`;
   }
 
   _backupHtml() {
@@ -551,8 +562,9 @@ export class SystemUi {
       // Alle Modi (auch abgeschaltete behalten ihre Werte)
       const mode_settings = Object.fromEntries(ALL_MODES.map((m) => [m, { ...d.per[m] }]));
       const saved = await h._hass.callWS({ type: "alarmageddon/save_system", entry_id: s.entry_id, mode_settings, per_mode_settings: d.perMode,
-        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, always_enabled: d.always, schedules: d.schedules });
-      Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, always_enabled: d.always, modes, schedules: JSON.parse(JSON.stringify(d.schedules)) });
+        home_enabled: d.modes.home, away_enabled: d.modes.away, night_enabled: d.modes.night, always_enabled: d.always, schedules: d.schedules,
+        ...(s.has_code || s.code_ack_required ? { code_ack_required: d.ackCode && Boolean(s.has_code) } : {}) });
+      Object.assign(s, { per_mode_settings: d.perMode, mode_settings: JSON.parse(JSON.stringify(mode_settings)), night_enabled: d.modes.night, always_enabled: d.always, modes, schedules: JSON.parse(JSON.stringify(d.schedules)), code_ack_required: d.ackCode && Boolean(s.has_code) });
       this.draft = null;
       this.saveState = "saved";
       this.host._markSaved(this); // Punkte "ungespeichert" verschwinden sofort
@@ -590,6 +602,10 @@ export class SystemUi {
         const first = ALL_MODES.find((m) => d.modes[m]) || "away";
         for (const m of ALL_MODES) d.per[m] = { ...d.per[first] };
       }
+      this.saveState = null;
+      this.render();
+    } else if (act === "ackcode") {
+      d.ackCode = !d.ackCode;
       this.saveState = null;
       this.render();
     } else if (act === "always") {

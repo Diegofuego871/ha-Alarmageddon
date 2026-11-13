@@ -93,6 +93,12 @@ Ein Alarm, wie er abläuft, mit erfundenen Daten (links das Handy, rechts der Co
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/log-de.png" alt="Protokoll mit der Zeitachse eines Alarms" width="100%"></p>
 
+### Dashboard-Karten
+
+Das Bedienteil und die Info-Kachel des Seitenpanels gibt es auch als Karten für jedes Dashboard: "Karte hinzufügen" › "Alarmageddon". Jede Person, die das Dashboard sehen darf, kann die Karte benutzen, nicht nur Administratoren. Wo ein Code programmiert ist, wird er verlangt; ob "Quittieren" ihn braucht, bestimmt der Administrator unter Konfiguration › Anlage.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/cards-de.png" alt="Die Karten Alarmageddon und Alarmageddon Status auf einem Dashboard" width="100%"></p>
+
 ### Mehr
 
 - **Zeitplan:** zu festen Zeiten an gewählten Wochentagen scharf schalten oder deaktivieren. Ein laufender Alarm wird vom Zeitplan nie deaktiviert.
@@ -113,13 +119,13 @@ Eine Alarmanlage muss funktionieren, wenn etwas anderes es nicht tut. Diese Mech
 | Im Zweifel alarmieren | Eine Eingangsverzögerung, die während eines Neustarts von Home Assistant abgelaufen ist, wird zum Alarm. Während Eingangsverzögerung und Alarm wird Scharfschalten abgelehnt: nur Deaktivieren führt heraus |
 | Sicher beim Neustart | Zustand, Verzögerungen und ein laufender Alarm gehen nach einem Neustart weiter; die Alarmaktionen setzen beim erreichten Schritt fort |
 | Codes | 4 bis 8 Ziffern, nur als Hash mit Salz gespeichert, nie angezeigt, nie in einer Sicherung oder im Log. Fünf falsche Codes sperren die Anlage für eine Minute, auch für den richtigen Code |
-| Nur Administratoren | Das Seitenpanel und jeder seiner Befehle verlangen Administratorrechte |
+| Nur Administratoren | Das Seitenpanel und jeder seiner Befehle verlangen Administratorrechte. Die Dashboard-Karten nutzen nur Entitäten und Dienste, mit den Codes, die Home Assistant prüft |
 | Knöpfe in der Alarmmeldung | "Deaktivieren" und "Alarmton stumm" sind standardmässig aus, "Quittieren" ist an. Sie wirken nur, solange der Alarm läuft, und nur vom Handy eines konfigurierten Alarm-Empfängers |
 | Nichts hält die Sirene auf | Ein Gerät, das nicht antwortet, wird nach 10 Sekunden übergangen, auf eine Push-Meldung wird nie gewartet, und ein scheiternder Schritt, ein scheiterndes Protokoll, eine scheiternde Aufzeichnung oder Meldung stoppt den Rest nie |
 | Wächter | Die Alarmaktionen stehen als Ganzes unter Aufsicht: der erste Schritt beginnt innert 8 Sekunden, kein Schritt verzögert den nächsten über seine Grenze hinaus, und ein abgebrochener Ablauf macht mit dem nächsten Schritt weiter. Eingriffe stehen in der Zeitachse des Alarms |
 | Du bestimmst, wie lange die Sirene läuft | Im Code steht keine feste Dauer. Du stellst sie im Ablauf ein ("Warten" zwischen Ein und Aus oder eine Dauer beim Ton, bis zu einer Stunde je Schritt). Sie gilt genau und zählt ab dem ersten Start, auch über einen Neustart hinweg |
 | Sensoren, die ausfallen | Ein Sensor, der im scharfen Zustand nicht mehr erreichbar ist, wird sofort gemeldet oder löst mit der Option "Ausfall gilt als Alarm" den Alarm aus. Schwache Batterien werden gemeldet, bevor sie leer sind |
-| Getestet | Über 880 automatische Tests gegen ein echtes Home Assistant, rund 3800 Prüfungen der Oberfläche auf Computer und Handy und eine Mutationsprobe, die jede von 149 Schutzmassnahmen ausbaut und verlangt, dass ein Test scheitert |
+| Getestet | Über 900 automatische Tests gegen ein echtes Home Assistant, rund 4000 Prüfungen der Oberfläche auf Computer und Handy und eine Mutationsprobe, die jede von 155 Schutzmassnahmen ausbaut und verlangt, dass ein Test scheitert |
 
 ### Grenzen
 
@@ -142,8 +148,11 @@ Alarmageddon ist keine zertifizierte Alarmanlage. Bitte beachte:
 | `alarm_control_panel.<name>` | Die Anlage. Attribute: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by` |
 | `binary_sensor.<name>_zone_<modus>` | An, wenn ein Sensor der Zone dieses Modus offen ist |
 | "Bereit zum Scharfschalten" je Modus | An, wenn kein offener Sensor das Scharfschalten in diesem Modus verhindert. Attribut: `blocking_sensors` |
+| `sensor.<name>_status` | Zahl der offenen Probleme: Alarm, nicht erreichbare Sensoren, schwache Batterien. Attribute: `alarm`, `offline`, `low_battery`, `battery_threshold` |
 
 Zonen- und "Bereit"-Entitäten gibt es nur für die eingeschalteten Modi.
+
+Dienst `alarmageddon.acknowledge` (Ziel: die Alarm-Entität, optional `code`): stellt einen laufenden Alarm ab; für jede Person nutzbar, von der Dashboard-Karte verwendet.
 
 ## Gut zu wissen
 

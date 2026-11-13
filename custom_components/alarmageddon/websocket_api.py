@@ -35,6 +35,7 @@ from .const import (
     MAX_BACKUPS,
     OFFLINE_MINUTES_RANGE,
     CODE_PATTERN,
+    CONF_CODE_ACK_REQUIRED,
     CONF_CODE_ARM_REQUIRED,
     CONF_CODE_HASH,
     CONF_CODE_SALT,
@@ -255,6 +256,7 @@ async def ws_data(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                 "codes": [{"id": c.get("id", ""), "name": c.get("name", ""), "user_id": c.get("user_id")} for c in ctl.codes],
                 "main_code": bool(entry.options.get(CONF_CODE_HASH)),
                 "code_arm_required": ctl.code_arm_required,
+                "code_ack_required": ctl.code_ack_required,
                 "events": entry.runtime_data.events.events[:20],
             }
         )
@@ -576,6 +578,7 @@ async def ws_save_presets(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         vol.Optional("schedules"): SCHEDULES,
         vol.Optional("open_sensors"): vol.In(OPEN_SENSOR_MODES),
         vol.Optional("confirm_window"): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
+        vol.Optional("code_ack_required"): bool,
     }
 )
 @websocket_api.require_admin
@@ -599,6 +602,12 @@ async def ws_save_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         options[CONF_PER_MODE_SETTINGS] = msg["per_mode_settings"]
     if "always_enabled" in msg:
         options[CONF_ALWAYS_ENABLED] = msg["always_enabled"]
+    if "code_ack_required" in msg:
+        # Ohne Code gibt es nichts zu verlangen
+        if msg["code_ack_required"] and not entry.runtime_data.controller.has_code:
+            connection.send_error(msg["id"], "code_missing", "Add a code first")
+            return
+        options[CONF_CODE_ACK_REQUIRED] = msg["code_ack_required"]
     if "night_enabled" in msg:
         options[CONF_NIGHT_ENABLED] = msg["night_enabled"]
     for scope, values in msg.get("mode_settings", {}).items():
@@ -912,6 +921,7 @@ async def ws_remove_code(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if not rest and not options.get(CONF_CODE_HASH):
         # Ohne Code kann "Code zum Scharfschalten" nicht gelten
         options[CONF_CODE_ARM_REQUIRED] = False
+        options[CONF_CODE_ACK_REQUIRED] = False
     changed = hass.config_entries.async_update_entry(entry, options=options)
     # "reload": lädt die Anlage neu? Home Assistant lädt nur neu, wenn sich die Optionen wirklich geändert haben. Ohne diese Angabe
     # wartete das Panel mit der Ladeanzeige 25 Sekunden auf eine neue Kennung, die nie kam.

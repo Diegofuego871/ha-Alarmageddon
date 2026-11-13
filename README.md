@@ -93,6 +93,12 @@ An alarm as it happens, with invented data (phone on the left, computer on the r
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/log-en.png" alt="Log with the timeline of an alarm" width="100%"></p>
 
+### Dashboard cards
+
+The control tile and the status tile of the side panel are also available as cards for any dashboard: "Add card" › "Alarmageddon". Anyone who may see the dashboard can use the card, not only administrators. A code is asked for wherever one is programmed; whether "Acknowledge" needs it, the administrator decides in Configuration › Alarm system.
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/cards-en.png" alt="The cards Alarmageddon and Alarmageddon status on a dashboard" width="100%"></p>
+
 ### More
 
 - **Schedule:** arm or disarm at set times on chosen weekdays. A running alarm is never disarmed by the schedule.
@@ -113,13 +119,13 @@ An alarm system has to work when something else does not. These mechanisms are b
 | When in doubt, alarm | An entry delay that ran out while Home Assistant restarted becomes an alarm. During an entry delay or an alarm, arming is refused: only disarming leads out |
 | Safe on restart | State, delays and a running alarm continue after a restart; the alarm actions go on at the step they had reached |
 | Codes | 4 to 8 digits, stored only as a salted hash, never shown, never in a backup or a log. Five wrong codes lock the alarm system for one minute, also for the right code |
-| Administrators only | The side panel and every one of its commands need administrator rights |
+| Administrators only | The side panel and every one of its commands need administrator rights. The dashboard cards use only entities and services, with the codes Home Assistant checks |
 | Buttons in the alarm notification | "Disarm" and "Silence alarm sound" are off by default, "Acknowledge" is on. They only work while the alarm is running and only from the phone of a configured alarm recipient |
 | Nothing holds up the siren | A device that does not answer is skipped after 10 seconds, a push notification is never waited for, and a failing step, log, recording or notification never stops the rest |
 | Watchdog | The alarm actions are supervised as a whole: the first step starts within 8 seconds, no step delays the next one beyond its limit, and a flow that breaks off goes on with the next step. Interventions appear in the timeline of the alarm |
 | You decide how long the siren sounds | There is no fixed duration in the code. You set it in the flow ("wait" between on and off, or a duration for a sound, up to an hour per step). It is kept exactly and counts from the first start, also across a restart |
 | Sensors that fail | A sensor that becomes unreachable while armed is reported at once, or triggers the alarm with the option "failure counts as alarm". Low batteries are reported before they are empty |
-| Tested | More than 880 automated tests against a real Home Assistant, about 3,800 checks of the interface on computer and phone, and a mutation check that removes each of 149 safeguards and requires a test to fail |
+| Tested | More than 900 automated tests against a real Home Assistant, about 4,000 checks of the interface on computer and phone, and a mutation check that removes each of 155 safeguards and requires a test to fail |
 
 ### Limits
 
@@ -142,8 +148,11 @@ Alarmageddon is not a certified alarm system. Please keep in mind:
 | `alarm_control_panel.<name>` | The alarm system. Attributes: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by` |
 | `binary_sensor.<name>_zone_<mode>` | On when a sensor of the zone of this mode is open |
 | "Ready to arm" per mode | On when no open sensor blocks arming in this mode. Attribute: `blocking_sensors` |
+| `sensor.<name>_status` | Number of open problems: alarm, unreachable sensors, weak batteries. Attributes: `alarm`, `offline`, `low_battery`, `battery_threshold` |
 
 Zone and "Ready" entities exist only for the modes that are switched on.
+
+Service `alarmageddon.acknowledge` (target: the alarm entity, optional `code`): silences a running alarm; usable by every user, used by the dashboard card.
 
 ## Good to know
 

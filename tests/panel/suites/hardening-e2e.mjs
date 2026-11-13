@@ -50,6 +50,17 @@ for (const lang of ["de", "en"]) {
     const sys = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)");
     check(`${tag}: confirm_window gesendet (Abwesend)`, sys?.mode_settings?.away?.confirm_window === 90 && sys.mode_settings.home.confirm_window === 60, JSON.stringify(sys));
 
+    // ----- Quittieren verlangt den Code (1.34.0): Schalter bei den Codes, Teil des Entwurfs, nur mit einem Code -----
+    const ack = '[data-sys="ackcode"]';
+    check(`${tag}: Schalter "Quittieren verlangt den Code" steht bei den Codes, aus und frei (die Anlage hat einen Code)`, await s.ev(`const b=r.querySelector('${ack}'); return !!b && !b.disabled && b.getAttribute('aria-checked') === 'false' && !!b.closest('.ag-codes')`));
+    await s.tap(ack);
+    check(`${tag}: Schalter an zählt als Änderung (Speichern frei)`, await s.waitFor(`return r.querySelector('${ack}').getAttribute('aria-checked') === 'true' && !r.querySelector('[data-sys="save"]').disabled`));
+    await s.tap('[data-sys="save"]');
+    check(`${tag}: gespeichert und mit code_ack_required gesendet`, await s.waitFor(`return r.querySelector('.ag-foot').innerText.includes('${t.saved}')`) && await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/save_system').at(-1)?.code_ack_required === true"));
+    await s.tap(ack);
+    await s.tap('[data-sys="save"]');
+    await s.waitFor(`return r.querySelector('${ack}').getAttribute('aria-checked') === 'false' && r.querySelector('[data-sys="save"]').disabled`);
+
     // ----- Codes pro Person -----
     check(`${tag}: Anna mit Benutzer`, await s.ev("const row=[...r.querySelectorAll('.ag-coderow')].find((x) => x.innerText.includes('Anna')); return !!row && row.querySelectorAll('small')[0].textContent === 'Anna'"));
     check(`${tag}: kein Code sichtbar`, await s.ev("return !r.querySelector('.ag-codes').innerText.includes('2468') && !r.querySelector('.ag-codes').innerText.includes('1234')"));
