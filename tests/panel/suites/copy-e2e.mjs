@@ -33,6 +33,15 @@ for (const lang of ["de", "en"]) {
     await s.tap('.ag-foot [data-wf="cancel"]');
     check(`${tag}: Abbrechen stellt den gespeicherten Stand her`, await s.waitFor(`return JSON.stringify(r.host.actions.draft?.wf?.home || []) === ${JSON.stringify(home)} || !r.host.actions.draft`));
 
+    // Nur ein Wert im Schritt weicht ab (Lautstärke), Aktionen und Reihenfolge gleich: wird trotzdem übernommen, auch in den anderen Listen
+    await s.ev("const a=r.host.actions; const d=a.ensureDraft(); a.trigger='home'; const base=[{type:'chime',players:['media_player.a','media_player.b'],sound:'tone_pip',duration:3,volumes:{'media_player.a':0.2,'media_player.b':0.4}}]; d.wf.home = JSON.parse(JSON.stringify(d.wf.away||[])); d.armed = {...d.armed, away: base, home: JSON.parse(JSON.stringify(base).replace('0.4','0.9'))}; a.render(); return 1");
+    await (await s.el(sel)).selectOption("away");
+    await s.waitFor("return r.getElementById('ag-confirm').open");
+    await s.tap('#ag-confirm [data-c="yes"]');
+    check(`${tag}: nur ein Wert im Schritt weicht ab (Lautstärke): wird übernommen`, await s.waitFor("const d=r.host.actions.draft; return d.armed.home[0].volumes['media_player.b'] === 0.4"));
+    await (await s.el(sel)).selectOption("away");
+    check(`${tag}: danach gleich: nichts mehr zu übernehmen, keine Rückfrage`, await s.ev("return !r.getElementById('ag-confirm').open"));
+
     // Ohne "Einstellungen pro Modus" gibt es die Auswahl nicht
     await s.tap('[data-wf="permode"]');
     check(`${tag}: Schalter aus: keine Auswahl`, await s.waitFor(`return !r.querySelector('${sel}')`));

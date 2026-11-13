@@ -1659,24 +1659,27 @@ export class ActionsUi {
     const to = this.trigger;
     if (!d?.perMode || !from || from === to || !this.triggers().includes(from)) return;
     const name = (t) => (t === "always" ? this._t("wfAlways") : this._t(MODE_KEY[t]));
-    const steps = JSON.parse(JSON.stringify(d.wf[from] || []));
-    const end = JSON.parse(JSON.stringify(normEnd(d.end?.[from])));
-    const after = JSON.parse(JSON.stringify(d.after?.[from] || [])); // auch die Aktionen nach dem Quittieren
-    const same = JSON.stringify([d.wf[to] || [], normEnd(d.end?.[to]), d.after?.[to] || []]) === JSON.stringify([steps, end, after]);
+    // Die Aktionen beim Scharfschalten, in den Verzögerungen und beim Deaktivieren gehen mit, wenn beide Reiter Modi sind ("Immer aktiv" hat keine)
+    const modes = from !== "always" && to !== "always";
+    const lists = (t) => [d.wf[t] || [], normEnd(d.end?.[t]), d.after?.[t] || [], ...(modes ? [d.armed?.[t] || [], d.arming?.[t] || [], d.entrySteps?.[t] || [], d.disarmed?.[t] || []] : [])];
+    // Verglichen wird der ganze Inhalt aller Listen (auch die Einstellungen im Schritt, etwa die Lautstärke eines Lautsprechers), nicht nur
+    // die Aktionen: sonst gälte "Anwesend" als gleich wie "Abwesend", obwohl nur ein Wert im Schritt abweicht
+    const copy = lists(from).map((x) => JSON.parse(JSON.stringify(x)));
+    const same = JSON.stringify(stable(lists(to))) === JSON.stringify(stable(copy));
     if (same) return;
     // Rückfrage nur, wenn der Entwurf dieses Reiters wirklich ersetzt würde
-    const hasOwn = (d.wf[to] || []).length > 0 || Object.keys(normEnd(d.end?.[to])).length > 0 || (d.after?.[to] || []).length > 0;
+    const hasOwn = lists(to).some((x) => (Array.isArray(x) ? x.length : Object.keys(x).length) > 0);
     if (hasOwn && !(await this.host._confirm(this._t("wfCopyTitle"), this._t("wfCopyText", { from: name(from), to: name(to) }), this._t("wfCopyOk")))) return;
     if (this.trigger !== to || this.draft !== d) return; // während der Rückfrage gewechselt
-    d.wf = { ...d.wf, [to]: steps };
+    const [wf, end, after, armed, arming, entry, disarmed] = copy;
+    d.wf = { ...d.wf, [to]: wf };
     d.end = { ...(d.end || {}), [to]: end };
     d.after = { ...(d.after || {}), [to]: after };
-    // Die Aktionen beim Scharfschalten gehen mit, wenn beide Reiter Modi sind ("Immer aktiv" hat keine)
-    if (from !== "always" && to !== "always") {
-      d.armed = { ...(d.armed || {}), [to]: JSON.parse(JSON.stringify(d.armed?.[from] || [])) };
-      d.arming = { ...(d.arming || {}), [to]: JSON.parse(JSON.stringify(d.arming?.[from] || [])) };
-      d.entrySteps = { ...(d.entrySteps || {}), [to]: JSON.parse(JSON.stringify(d.entrySteps?.[from] || [])) };
-      d.disarmed = { ...(d.disarmed || {}), [to]: JSON.parse(JSON.stringify(d.disarmed?.[from] || [])) };
+    if (modes) {
+      d.armed = { ...(d.armed || {}), [to]: armed };
+      d.arming = { ...(d.arming || {}), [to]: arming };
+      d.entrySteps = { ...(d.entrySteps || {}), [to]: entry };
+      d.disarmed = { ...(d.disarmed || {}), [to]: disarmed };
     }
     this.saveState = null;
     this.render();
