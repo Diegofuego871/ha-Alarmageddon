@@ -785,6 +785,10 @@ async def ws_test_workflow(hass: HomeAssistant, connection, msg: dict[str, Any])
     if (entry := _entry(hass, connection, msg)) is None:
         return
     runner = entry.runtime_data.workflow
+    if runner.running and runner.running.get("test"):
+        # Ein neuer Test beendet den laufenden (die Geräte kehren zurück): es läuft immer nur einer, und ein Test, der längst fertig ist
+        # und nur noch auf sein Zeitfenster wartet, sperrt keinen weiteren
+        await runner.async_stop()
     if runner.running:
         connection.send_error(msg["id"], "busy", "Alarm actions are already running")
         return

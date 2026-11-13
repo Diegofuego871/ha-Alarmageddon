@@ -41,6 +41,8 @@ Leichen, Leistung; was keine Wirkung auf Oberfläche oder Verhalten hat, sofort 
   (`_deleted` in `_fetch`/`_deleteSystem`); Anlagen-Auswahl in der Kopfzeile über `_setHtml` (`_fillHeadSys`); Empfängerlisten der
   Gruppen nur auf den Namen prüfen, ohne Obergrenze (`settings.NOTIFY_NAME`). Der Endpunkt `/alarmageddon_loop/...` bleibt bewusst
   wie er ist (ohne Anmeldung, rechnet jede verlangte Länge): erst absichern, wenn HA aus dem Internet erreichbar ist.
+- **Tests der Aktionen (1.33.1):** `ws_test_workflow` beendet einen laufenden Test (`runner.async_stop`) und startet den neuen; nur ein echter Alarm
+  gibt "busy". Panel: `actions.js _alarmBlocks()` sperrt die Play-Knöpfe nur bei einem echten Alarm.
 - **Bekannt, nicht geändert:** die Seite Konfiguration › Anlage zeichnet sich bei einem Zustandswechsel nicht neu; der Knopf "Anlage
   löschen" wird erst frei, wenn die Seite neu aufgebaut wird (Reiterwechsel).
 

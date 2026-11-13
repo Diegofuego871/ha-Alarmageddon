@@ -595,7 +595,7 @@ export class ActionsUi {
       <button class="ag-handle" data-wf="grab" data-index="${i}" aria-label="${esc(this._t("stepGrab"))}" title="${esc(this._t("stepGrab"))}">${ic("grip", 20)}</button>
       <span class="ag-wf-icon k-${f.kind}">${ic(k.icon, 20)}</span>
       <div class="ag-wf-text"><b>${esc(title)}</b> ${restore}<div class="ag-t2 ag-small">${esc(this._summary(f))}</div>${f.delay ? this._delayPill(zone) : this._waitPill(f)}</div>
-      <div class="ag-wf-btns">${this._stepTestBtn(i, zone, running)}
+      <div class="ag-wf-btns">${this._stepTestBtn(i, zone)}
         <button class="ag-iconbtn" data-wf="edit" data-index="${i}" aria-label="${esc(this._t("stepEdit"))}">${ic("pencil", 18)}</button>
         <button class="ag-iconbtn" data-wf="delete" data-index="${i}" aria-label="${esc(this._t("stepDelete"))}">${ic("trash", 18)}</button></div></div>`;
   }
@@ -626,9 +626,17 @@ export class ActionsUi {
     return !!(this.system?.workflow_running && this.system.workflow_test && t?.kind === "step" && t.zone === zone && t.index === index);
   }
 
-  _stepTestBtn(i, zone, running) {
+  // Läuft ein echter Alarm, lässt sich nichts testen. Ein laufender Test sperrt nichts: ein neuer Test beendet ihn und startet (der Server
+  // stoppt den alten), so läuft immer nur einer und kein Knopf bleibt gesperrt, weil ein früherer Test noch "läuft".
+  _alarmBlocks() {
+    const s = this.system;
+    return !!(s?.workflow_running && !s.workflow_test);
+  }
+
+  _stepTestBtn(i, zone) {
     if (this._isStepTest(i, zone)) return `<button class="ag-iconbtn on" data-wf="test-step-stop" data-index="${i}" aria-label="${esc(this._t("stepTestStop"))}" title="${esc(this._t("stepTestStop"))}">${ic("stop", 18)}</button>`;
-    return `<button class="ag-iconbtn" data-wf="test-step" data-index="${i}" ${running ? "disabled" : ""} aria-label="${esc(this._t("stepTest"))}" title="${esc(running ? this._t("stepTestBusy") : this._t("stepTest"))}">${ic("play", 18)}</button>`;
+    const busy = this._alarmBlocks();
+    return `<button class="ag-iconbtn" data-wf="test-step" data-index="${i}" ${busy ? "disabled" : ""} aria-label="${esc(this._t("stepTest"))}" title="${esc(busy ? this._t("stepTestBusy") : this._t("stepTest"))}">${ic("play", 18)}</button>`;
   }
 
   // "Testen" steht unten bei den anderen Knöpfen (auf dem Handy nur das Symbol, damit alle drei Platz haben)
@@ -637,8 +645,8 @@ export class ActionsUi {
     const running = s?.workflow_running;
     const label = this._t(running && s.workflow_test ? "wfTestStop" : "wfTest");
     const text = this.host.hasAttribute("narrow") ? "" : esc(label);
-    // Läuft der Test eines einzelnen Schritts, hat dieser Schritt den Stopp-Knopf; unten bleibt "Test" gesperrt (1.18.1)
-    if (running && s.workflow_test && this.testSource?.kind === "step") return `<button class="ag-btn" data-wf="test" aria-label="${esc(this._t("wfTest"))}" disabled title="${esc(this._t("stepTestBusy"))}">${ic("play", 18)}${this.host.hasAttribute("narrow") ? "" : esc(this._t("wfTest"))}</button>`;
+    // Läuft der Test eines einzelnen Schritts, hat dieser Schritt den Stopp-Knopf; "Test" unten startet den ganzen Ablauf und ersetzt ihn
+    if (running && s.workflow_test && this.testSource?.kind === "step") return `<button class="ag-btn" data-wf="test" aria-label="${esc(this._t("wfTest"))}" ${dirty || !this.steps().length ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("wfTestHint"))}">${ic("play", 18)}${this.host.hasAttribute("narrow") ? "" : esc(this._t("wfTest"))}</button>`;
     if (running && s.workflow_test) return `<button class="ag-btn" data-wf="test-stop" aria-label="${esc(label)}">${ic("stop", 18)}${text}</button>`;
     return `<button class="ag-btn" data-wf="test" aria-label="${esc(label)}" ${dirty || running || !this.steps().length ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("wfTestHint"))}">${ic("play", 18)}${text}</button>`;
   }

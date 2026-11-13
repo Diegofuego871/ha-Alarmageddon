@@ -66,12 +66,17 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-confirm [data-c="yes"]');
     check(`${tag}: nur dieser Schritt gesendet`, await s.waitFor("return !!r.querySelector('.ag-wf-step [data-wf=\"test-step-stop\"]')") && await s.sim("const c=window.__calls.filter((x) => x.type === 'alarmageddon/test_workflow').at(-1); return c?.step?.type === 'wait' && c.trigger === 'away'"));
     // 1.18.1: beim Schritt-Test wird dessen Play-Knopf zum Stopp-Knopf (nur bei diesem Schritt); unten gibt es keinen Stopp, "Test" ist gesperrt
-    check(`${tag}: Stopp-Knopf nur am getesteten Schritt, die anderen Schritte gesperrt, unten kein Stopp`, await s.ev("const st=[...r.querySelectorAll('.ag-wf-main .ag-wf-step')]; return st[2].querySelector('[data-wf=\"test-step-stop\"]') && st.filter((c, k) => k !== 2).every((c) => c.querySelector('[data-wf=\"test-step\"]')?.disabled) && !r.querySelector('.ag-foot [data-wf=\"test-stop\"]') && r.querySelector('.ag-foot [data-wf=\"test\"]')?.disabled"));
-    await s.tap('.ag-wf-step[data-index="2"] [data-wf="test-step-stop"]');
+    check(`${tag}: Stopp-Knopf nur am getesteten Schritt, die anderen Schritte und "Test" unten bleiben frei (ein neuer Test ersetzt den laufenden), unten kein Stopp`, await s.ev("const st=[...r.querySelectorAll('.ag-wf-main .ag-wf-step')]; return st[2].querySelector('[data-wf=\"test-step-stop\"]') && st.filter((c, k) => k !== 2).every((c) => c.querySelector('[data-wf=\"test-step\"]') && !c.querySelector('[data-wf=\"test-step\"]').disabled) && !r.querySelector('.ag-foot [data-wf=\"test-stop\"]') && r.querySelector('.ag-foot [data-wf=\"test\"]') && !r.querySelector('.ag-foot [data-wf=\"test\"]').disabled"));
+    // Ein anderer Schritt lässt sich während des Tests testen: der neue Test ersetzt den laufenden, der Stopp-Knopf wandert
+    await s.tap('.ag-wf-step[data-index="0"] [data-wf="test-step"]');
+    await s.waitFor("return r.getElementById('ag-confirm').open");
+    await s.tap('#ag-confirm [data-c="yes"]');
+    check(`${tag}: anderer Schritt während eines Tests: der neue Test läuft, der Stopp-Knopf steht jetzt dort`, await s.waitFor("return !!r.querySelector('.ag-wf-step[data-index=\"0\"] [data-wf=\"test-step-stop\"]') && !r.querySelector('.ag-wf-step[data-index=\"2\"] [data-wf=\"test-step-stop\"]')") && await s.sim("const c=window.__calls.filter((x) => x.type === 'alarmageddon/test_workflow'); return c.length >= 2 && c.at(-1).step?.type === 'notify'"));
+    await s.tap('.ag-wf-step [data-wf="test-step-stop"]');
     check(`${tag}: Stopp am Schritt beendet den Test, alles wieder bedienbar`, await s.waitFor("return !r.querySelector('[data-wf=\"test-step-stop\"]') && !r.querySelector('.ag-wf-step [data-wf=\"test-step\"]').disabled") && await s.sim("return window.__calls.some((x) => x.type === 'alarmageddon/stop_workflow')"));
-    // Ganzer Ablauf: der Knopf unten wird zum Stopp, die Schritte bleiben gesperrt
+    // Ganzer Ablauf: der Knopf unten wird zum Stopp
     await s.tap('.ag-foot [data-wf="test"]');
-    check(`${tag}: Test des ganzen Ablaufs: unten Stopp, an den Schritten kein Stopp`, await s.waitFor("return !!r.querySelector('.ag-foot [data-wf=\"test-stop\"]') && !r.querySelector('[data-wf=\"test-step-stop\"]') && [...r.querySelectorAll('.ag-wf-main [data-wf=\"test-step\"]')].every((b) => b.disabled)"));
+    check(`${tag}: Test des ganzen Ablaufs: unten Stopp, an den Schritten kein Stopp`, await s.waitFor("return !!r.querySelector('.ag-foot [data-wf=\"test-stop\"]') && !r.querySelector('[data-wf=\"test-step-stop\"]') && [...r.querySelectorAll('.ag-wf-main [data-wf=\"test-step\"]')].every((b) => !b.disabled)"));
     await s.tap('.ag-foot [data-wf="test-stop"]');
     await s.waitFor("return !!r.querySelector('.ag-foot [data-wf=\"test\"]') && !r.querySelector('.ag-foot [data-wf=\"test\"]').disabled");
 

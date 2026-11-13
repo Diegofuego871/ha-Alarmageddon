@@ -367,6 +367,10 @@ MUTATIONS = [
      '        if left < 1:\n            return None\n', '        if left < 1:\n            return {**step, "duration": 1}\n', "tests/test_workflow_failsafes.py -k tone_that_follows_the_delay"),
     ("Empfänger der Gruppen werden nicht auf gültige Namen geprüft", "settings.py",
      "if isinstance(t, str) and NOTIFY_NAME.fullmatch(t)]\n", "if isinstance(t, str) and t.startswith(\"notify.\")]\n", "tests/test_review_fixes.py -k group_recipient"),
+    ("Ein neuer Test ersetzt den laufenden nicht (ein fertiger Test sperrt 60 Sekunden lang jeden weiteren)", "websocket_api.py",
+     '    if runner.running and runner.running.get("test"):\n', "    if False:\n", "tests/test_workflow_failsafes.py -k new_test_replaces"),
+    ("Ein neuer Test ersetzt auch einen echten Alarm", "websocket_api.py",
+     '    if runner.running and runner.running.get("test"):\n', "    if runner.running:\n", "tests/test_workflow_failsafes.py -k new_test_replaces"),
 ]
 
 

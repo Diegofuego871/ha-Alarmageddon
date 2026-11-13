@@ -238,3 +238,29 @@ async def test_a_late_task_with_an_error_is_marked_as_retrieved(hass: HomeAssist
         assert not messages, messages
     finally:
         loop.set_exception_handler(previous)
+
+
+async def test_a_new_test_replaces_a_running_test_but_never_a_real_alarm(hass: HomeAssistant, hass_ws_client) -> None:
+    """Ein Test, der noch auf sein Zeitfenster wartet, sperrt keinen weiteren: ein neuer Test beendet ihn. Ein echter Alarm bleibt unberührt."""
+    entry, on, _stopped = await _alarm(hass)
+    runner = entry.runtime_data.workflow
+    client = await hass_ws_client(hass)
+
+    async def start(**extra) -> dict:
+        await client.send_json_auto_id({"type": "alarmageddon/test_workflow", "entry_id": entry.entry_id, "trigger": "home", **extra})
+        return await client.receive_json()
+
+    assert (await start())["success"]
+    first = runner.running
+    assert first and first["test"]
+    assert (await start(step={"type": "wait", "seconds": 300}))["success"]
+    assert runner.running is not first and runner.running["test"], "der neue Test hat den alten ersetzt"
+    # Echter Alarm: nie ersetzt
+    await runner.async_stop()
+    await call(hass, "alarm_arm_home")
+    await open_sensor(hass, WINDOW)
+    alarm = runner.running
+    assert alarm and not alarm["test"]
+    answer = await start()
+    assert not answer["success"] and answer["error"]["code"] == "busy"
+    assert runner.running is alarm
