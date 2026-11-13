@@ -1,21 +1,21 @@
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/brand/logo.svg" alt="Alarmageddon" width="110"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/brand/logo.svg" alt="Alarmageddon" width="110"></p>
 
 # Alarmageddon
 
 <p align="center">
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases/latest"><img src="https://img.shields.io/github/v/release/Diegofuego871/ha-Alarmageddon?style=flat-square&label=version" alt="Version"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/tests.yml?branch=main&style=flat-square&label=tests" alt="Tests"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/validate.yml?branch=main&style=flat-square&label=HACS%20%2B%20hassfest" alt="HACS and hassfest"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases"><img src="https://img.shields.io/github/downloads/Diegofuego871/ha-Alarmageddon/total?style=flat-square&label=downloads" alt="Downloads"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Diegofuego871/ha-Alarmageddon?style=flat-square&label=license" alt="License"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/releases/latest"><img src="https://img.shields.io/github/v/release/Diegofuego871/ha-alarmageddon?style=flat-square&label=version" alt="Version"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-alarmageddon/tests.yml?branch=main&style=flat-square&label=tests" alt="Tests"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-alarmageddon/validate.yml?branch=main&style=flat-square&label=HACS%20%2B%20hassfest" alt="HACS and hassfest"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/releases"><img src="https://img.shields.io/github/downloads/Diegofuego871/ha-alarmageddon/total?style=flat-square&label=downloads" alt="Downloads"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Diegofuego871/ha-alarmageddon?style=flat-square&label=license" alt="License"></a>
 <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Integration-41BDF5?style=flat-square" alt="HACS"></a>
 </p>
 
-[Deutsch](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.de.md)
+[Deutsch](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/README.de.md)
 
 A complete alarm system for Home Assistant: without a single automation, with push notifications that come by themselves, and set up entirely in a graphical interface.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/overview-en.png" alt="Overview with two alarm systems, the status tile and the sensor list" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/overview-en.png" alt="Overview with two alarm systems, the status tile and the sensor list" width="100%"></p>
 
 ## Why Alarmageddon
 
@@ -30,7 +30,7 @@ A complete alarm system for Home Assistant: without a single automation, with pu
 
 ## Quick start
 
-1. **Install:** HACS → three dots → "Custom repositories" → `https://github.com/Diegofuego871/ha-Alarmageddon`, type "Integration". Install "Alarmageddon" and restart Home Assistant.
+1. **Install:** HACS → three dots → "Custom repositories" → `https://github.com/Diegofuego871/ha-alarmageddon`, type "Integration". Install "Alarmageddon" and restart Home Assistant.
 2. **Add an alarm system:** Settings → Devices & services → "Add integration" → "Alarmageddon". Give it a name and, if you like, a code. Once the panel is open, further alarm systems you add right there with "Add alarm system" (name and a preview of its entity ID; sensors, modes and code follow in the configuration). An alarm system you no longer need you delete at the bottom of Configuration › Alarm system (only while disarmed, after typing its name, with an optional backup first).
 3. **Choose the sensors:** open "Alarmageddon" in the sidebar (administrators only), then Configuration › Sensors › "Add sensors", and tick the zones "Home", "Away" and "Night".
 4. **Decide what happens on an alarm:** Configuration › Actions, for example "push notification, siren on, wait 3 minutes, siren off".
@@ -42,27 +42,27 @@ A complete alarm system for Home Assistant: without a single automation, with pu
 
 All alarm systems at a glance: arm and disarm, "Ready for" per mode with the sensors that still block arming, a status tile for warnings, and all sensors as a list or as cards (all the same height), with search, filters, sorting, a choice of columns and grouping by area, sensor type or alarm system. A tap on a sensor opens its view: what it did over the last hours or up to 30 days (with a chart for each kind of sensor and the list of events), how its battery and its signal are doing, and a button that opens it in Home Assistant. In the view you also choose how the sensors are called: "Device - Sensor" or only the name of the sensor, the same everywhere down to the push notification. The same on the phone:
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-en.png" alt="Overview on the phone" width="270"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/mobile-en.png" alt="Overview on the phone" width="270"></p>
 
 ### Sensor view
 
 A tap on a sensor shows what it did: a chart of its own for each kind of sensor over 3 hours up to 30 days (doors and windows as a timeline, motion as a grid of day and hour), below it the events with their duration and the state of the alarm system at that moment. The tiles "Battery" and "Signal" show their history, the battery with the warning threshold, battery replacements and a forecast.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensor-en.png" alt="Sensor view of a door: history over 7 days with key figures and the list of events" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/sensor-en.png" alt="Sensor view of a door: history over 7 days with key figures and the list of events" width="100%"></p>
 
 ### Sensors and zones
 
 One table for sensors and zones: tick where a sensor belongs, or drag across several boxes. Every sensor type has sensible defaults (a smoke detector is always active, a motion sensor may still report motion when arming), each sensor can have its own values, and the switch "Settings per mode" adds a tab per mode for those who want more.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensors-en.png" alt="Sensors and zones" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/sensors-en.png" alt="Sensors and zones" width="100%"></p>
 
 ### Alarm actions
 
 What happens on an alarm is a flow you build from steps, per mode if you like. Devices marked with the arrow return to their previous state when you disarm, and every step can be tested on the real devices with its play button.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-en.png" alt="Alarm actions as a flow: push notification, siren on, wait, siren off" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/actions-en.png" alt="Alarm actions as a flow: push notification, siren on, wait, siren off" width="100%"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-disarm-en.png" alt="The chapter When disarming at the bottom of the actions page, with a disarming tone" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/actions-disarm-en.png" alt="The chapter When disarming at the bottom of the actions page, with a disarming tone" width="100%"></p>
 
 | Step | Does |
 | --- | --- |
@@ -81,13 +81,13 @@ Recipients are chosen separately for alarms and for maintenance messages, and ev
 
 An alarm cannot be overlooked: a red band with the sensor that triggered and the buttons "Acknowledge" (the alarm ends, the system stays armed) and "Disarm". The tile of the alarm system says since when the alarm has been running, what triggered it and who armed the system when. The same buttons are in the push notification on the lock screen.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/alarm-en.png" alt="Alarm on the phone: red band with Acknowledge and Disarm, below it the tile of the alarm system" width="270"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/alarm-en.png" alt="Alarm on the phone: red band with Acknowledge and Disarm, below it the tile of the alarm system" width="270"></p>
 
 ### Log and alarm timeline
 
 Every alarm is recorded from the first trigger until someone acknowledges it: which sensor responded when, which steps ran, which notifications went out. All other events (armed, disarmed, schedule, sensor failures) are on the second tab, with a filter by period and a CSV export. Both are kept for a year; you can delete a single alarm.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/log-en.png" alt="Log with the timeline of an alarm" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/log-en.png" alt="Log with the timeline of an alarm" width="100%"></p>
 
 ### More
 
@@ -102,7 +102,7 @@ Every alarm is recorded from the first trigger until someone acknowledges it: wh
 
 An alarm system has to work when something else does not. These mechanisms are built in and checked by tests on every change.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/safety-en.svg" alt="What secures the alarm actions" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/safety-en.svg" alt="What secures the alarm actions" width="100%"></p>
 
 | Mechanism | What it guarantees |
 | --- | --- |
@@ -148,7 +148,7 @@ Details for those who want to know exactly. Click to open.
 <details>
 <summary><b>How an alarm runs</b></summary>
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/flow-en.svg" alt="States of an alarm system" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/flow-en.svg" alt="States of an alarm system" width="100%"></p>
 
 - Only a real change from closed to open triggers. A sensor that comes back from "unavailable" as open does not.
 - A sensor with entry delay (for example the front door) starts the entry delay; every other sensor triggers at once. An entry sensor can have its own delay (sensor options), otherwise the delay of the system applies. A second entry sensor does not extend the delay.
@@ -231,7 +231,7 @@ cd tests/panel && npm ci && node run.mjs   # interface tests (Playwright)
 ```
 
 - The images of this page come from the simulator: `node tests/panel/readme-shots.mjs`, then `python scripts/optimize_images.py`; the diagrams from `python scripts/make_diagrams.py`.
-- Concept and decisions: [docs/CONCEPT.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/docs/CONCEPT.md) (German). Changes: [CHANGELOG.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/CHANGELOG.md).
+- Concept and decisions: [docs/CONCEPT.md](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/docs/CONCEPT.md) (German). Changes: [CHANGELOG.md](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/CHANGELOG.md).
 
 </details>
 
@@ -241,4 +241,4 @@ The integration is in English and switches to German when Home Assistant runs in
 
 ## License
 
-See [LICENSE](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/LICENSE).
+See [LICENSE](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/LICENSE).

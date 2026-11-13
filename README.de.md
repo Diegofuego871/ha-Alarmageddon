@@ -1,21 +1,21 @@
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/brand/logo.svg" alt="Alarmageddon" width="110"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/brand/logo.svg" alt="Alarmageddon" width="110"></p>
 
 # Alarmageddon
 
 <p align="center">
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases/latest"><img src="https://img.shields.io/github/v/release/Diegofuego871/ha-Alarmageddon?style=flat-square&label=Version" alt="Version"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/tests.yml?branch=main&style=flat-square&label=Tests" alt="Tests"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-Alarmageddon/validate.yml?branch=main&style=flat-square&label=HACS%20%2B%20hassfest" alt="HACS and hassfest"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/releases"><img src="https://img.shields.io/github/downloads/Diegofuego871/ha-Alarmageddon/total?style=flat-square&label=Downloads" alt="Downloads"></a>
-<a href="https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Diegofuego871/ha-Alarmageddon?style=flat-square&label=Lizenz" alt="Lizenz"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/releases/latest"><img src="https://img.shields.io/github/v/release/Diegofuego871/ha-alarmageddon?style=flat-square&label=Version" alt="Version"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-alarmageddon/tests.yml?branch=main&style=flat-square&label=Tests" alt="Tests"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/Diegofuego871/ha-alarmageddon/validate.yml?branch=main&style=flat-square&label=HACS%20%2B%20hassfest" alt="HACS and hassfest"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/releases"><img src="https://img.shields.io/github/downloads/Diegofuego871/ha-alarmageddon/total?style=flat-square&label=Downloads" alt="Downloads"></a>
+<a href="https://github.com/Diegofuego871/ha-alarmageddon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Diegofuego871/ha-alarmageddon?style=flat-square&label=Lizenz" alt="Lizenz"></a>
 <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Integration-41BDF5?style=flat-square" alt="HACS"></a>
 </p>
 
-[English](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/README.md)
+[English](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/README.md)
 
 Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation, mit Push-Meldungen, die von selbst kommen, und ganz in einer grafischen Oberfläche eingerichtet.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/overview-de.png" alt="Übersicht mit zwei Anlagen, der Statuskachel und der Sensorliste" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/overview-de.png" alt="Übersicht mit zwei Anlagen, der Statuskachel und der Sensorliste" width="100%"></p>
 
 ## Warum Alarmageddon
 
@@ -30,7 +30,7 @@ Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation
 
 ## Schnellstart
 
-1. **Installieren:** HACS → drei Punkte → "Benutzerdefinierte Repositories" → `https://github.com/Diegofuego871/ha-Alarmageddon`, Typ "Integration". "Alarmageddon" installieren und Home Assistant neu starten.
+1. **Installieren:** HACS → drei Punkte → "Benutzerdefinierte Repositories" → `https://github.com/Diegofuego871/ha-alarmageddon`, Typ "Integration". "Alarmageddon" installieren und Home Assistant neu starten.
 2. **Anlage hinzufügen:** Einstellungen → Geräte & Dienste → "Integration hinzufügen" → "Alarmageddon". Name vergeben und, wenn du willst, einen Code. Weitere Alarmanlagen fügst du bei geöffnetem Panel gleich dort mit "Anlage hinzufügen" hinzu (Name und Vorschau der Entitäts-ID; Sensoren, Modi und Code folgen in der Konfiguration). Eine Alarmanlage, die du nicht mehr brauchst, löschst du ganz unten in Konfiguration › Anlage (nur deaktiviert, nach Eintippen ihres Namens, auf Wunsch mit vorheriger Sicherung).
 3. **Sensoren wählen:** "Alarmageddon" in der Seitenleiste öffnen (nur Administratoren), dann Konfiguration › Sensoren › "Sensoren hinzufügen", und die Zonen "Anwesend", "Abwesend" und "Nacht" ankreuzen.
 4. **Festlegen, was bei einem Alarm passiert:** Konfiguration › Aktionen, zum Beispiel "Push-Meldung, Sirene ein, 3 Minuten warten, Sirene aus".
@@ -42,27 +42,27 @@ Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation
 
 Alle Anlagen auf einen Blick: scharf schalten und deaktivieren, "Bereit für" je Modus mit den Sensoren, die das Scharfschalten noch verhindern, eine Statuskachel für Warnungen und alle Sensoren als Liste oder als Karten (alle gleich hoch), mit Suche, Filtern, Sortierung, wählbaren Spalten und Gruppierung nach Bereich, Sensorart oder Anlage. Ein Tipp auf einen Sensor öffnet seine Ansicht: was er in den letzten Stunden oder bis zu 30 Tagen getan hat (mit einer Grafik je Sensorart und der Liste der Ereignisse), wie es um Batterie und Empfang steht, und ein Knopf, der ihn in Home Assistant öffnet. In der Ansicht wählst du auch, wie die Sensoren heissen: "Gerät - Sensor" oder nur der Name des Sensors, überall gleich bis in die Push-Meldung. Dasselbe auf dem Handy:
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/mobile-de.png" alt="Übersicht auf dem Handy" width="270"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/mobile-de.png" alt="Übersicht auf dem Handy" width="270"></p>
 
 ### Sensoransicht
 
 Ein Tipp auf einen Sensor zeigt, was er getan hat: je Sensorart eine eigene Grafik über 3 Stunden bis 30 Tage (Türen und Fenster als Zeitleiste, Bewegung als Raster aus Tag und Stunde), darunter die Ereignisse mit Dauer und dem Zustand der Anlage in diesem Moment. Die Kacheln "Batterie" und "Empfang" zeigen deren Verlauf, die Batterie mit Warnschwelle, Batteriewechsel und Prognose.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensor-de.png" alt="Sensoransicht einer Tür: Verlauf über 7 Tage mit Kennzahlen und Ereignisliste" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/sensor-de.png" alt="Sensoransicht einer Tür: Verlauf über 7 Tage mit Kennzahlen und Ereignisliste" width="100%"></p>
 
 ### Sensoren und Zonen
 
 Eine Tabelle für Sensoren und Zonen: ankreuzen, wohin ein Sensor gehört, oder über mehrere Kästchen ziehen. Jede Sensorart hat sinnvolle Voreinstellungen (ein Rauchmelder ist immer aktiv, ein Bewegungsmelder darf beim Scharfschalten noch Bewegung melden), jeder Sensor kann eigene Werte haben, und der Schalter "Einstellungen pro Modus" bringt einen Reiter je Modus für alle, die mehr wollen.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/sensors-de.png" alt="Sensoren und Zonen" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/sensors-de.png" alt="Sensoren und Zonen" width="100%"></p>
 
 ### Alarmaktionen
 
 Was bei einem Alarm passiert, ist ein Ablauf aus Schritten, auf Wunsch je Modus. Geräte mit dem Pfeilsymbol kehren beim Deaktivieren in ihren vorherigen Zustand zurück, und jeder Schritt lässt sich mit seinem Abspielknopf an den echten Geräten testen.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-de.png" alt="Alarmaktionen als Ablauf: Push-Meldung, Sirene ein, Warten, Sirene aus" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/actions-de.png" alt="Alarmaktionen als Ablauf: Push-Meldung, Sirene ein, Warten, Sirene aus" width="100%"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-disarm-de.png" alt="Das Kapitel Beim Deaktivieren ganz unten auf der Seite Aktionen, mit einem Deaktivierungston" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/actions-disarm-de.png" alt="Das Kapitel Beim Deaktivieren ganz unten auf der Seite Aktionen, mit einem Deaktivierungston" width="100%"></p>
 
 | Schritt | Macht |
 | --- | --- |
@@ -81,13 +81,13 @@ Empfänger wählst du getrennt für Alarme und für Wartungsmeldungen, und jede 
 
 Ein Alarm ist nicht zu übersehen: ein rotes Band mit dem Sensor, der ausgelöst hat, und den Knöpfen "Quittieren" (der Alarm endet, die Anlage bleibt scharf) und "Deaktivieren". Die Kachel der Anlage nennt, seit wann der Alarm läuft, was ihn ausgelöst hat und wer wann scharf geschaltet hat. Dieselben Knöpfe stehen in der Push-Meldung auf dem Sperrbildschirm.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/alarm-de.png" alt="Alarm auf dem Handy: rotes Band mit Quittieren und Deaktivieren, darunter die Kachel der Anlage" width="270"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/alarm-de.png" alt="Alarm auf dem Handy: rotes Band mit Quittieren und Deaktivieren, darunter die Kachel der Anlage" width="270"></p>
 
 ### Protokoll und Zeitachse des Alarms
 
 Jeder Alarm wird vom ersten Auslösen bis zum Quittieren aufgezeichnet: welcher Sensor wann angesprochen hat, welche Schritte liefen, welche Meldungen hinausgingen. Alle anderen Ereignisse (scharf, deaktiviert, Zeitplan, Sensorausfälle) stehen im zweiten Reiter, mit Filter nach Zeitraum und CSV-Export. Beides bleibt ein Jahr; einen einzelnen Alarm kannst du löschen.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/log-de.png" alt="Protokoll mit der Zeitachse eines Alarms" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/log-de.png" alt="Protokoll mit der Zeitachse eines Alarms" width="100%"></p>
 
 ### Mehr
 
@@ -102,7 +102,7 @@ Jeder Alarm wird vom ersten Auslösen bis zum Quittieren aufgezeichnet: welcher 
 
 Eine Alarmanlage muss funktionieren, wenn etwas anderes es nicht tut. Diese Mechanismen sind eingebaut und werden bei jeder Änderung von Tests geprüft.
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/safety-de.svg" alt="Was die Alarmaktionen absichert" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/safety-de.svg" alt="Was die Alarmaktionen absichert" width="100%"></p>
 
 | Mechanismus | Was er sicherstellt |
 | --- | --- |
@@ -148,7 +148,7 @@ Details für alle, die es genau wissen wollen. Zum Öffnen anklicken.
 <details>
 <summary><b>So läuft ein Alarm ab</b></summary>
 
-<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/flow-de.svg" alt="Zustände einer Anlage" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/flow-de.svg" alt="Zustände einer Anlage" width="100%"></p>
 
 - Nur ein echter Wechsel von zu auf offen löst aus. Ein Sensor, der aus "nicht verfügbar" offen zurückkommt, löst nicht aus.
 - Ein Sensor mit Eingangsverzögerung (zum Beispiel die Haustür) startet die Eingangsverzögerung; jeder andere Sensor löst sofort aus. Ein Eingangssensor kann eine eigene Verzögerung haben (Sensor-Optionen), sonst gilt die der Anlage. Ein zweiter Eingangssensor verlängert die Verzögerung nicht.
@@ -231,7 +231,7 @@ cd tests/panel && npm ci && node run.mjs   # Tests der Oberfläche (Playwright)
 ```
 
 - Die Bilder dieser Seite stammen aus dem Nachbau: `node tests/panel/readme-shots.mjs`, danach `python scripts/optimize_images.py`; die Schaubilder aus `python scripts/make_diagrams.py`.
-- Konzept und Entscheide: [docs/CONCEPT.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/docs/CONCEPT.md). Änderungen: [CHANGELOG.de.md](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/CHANGELOG.de.md).
+- Konzept und Entscheide: [docs/CONCEPT.md](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/docs/CONCEPT.md). Änderungen: [CHANGELOG.de.md](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/CHANGELOG.de.md).
 
 </details>
 
@@ -241,4 +241,4 @@ Die Integration ist auf Englisch und wechselt auf Deutsch, wenn Home Assistant a
 
 ## Lizenz
 
-Siehe [LICENSE](https://github.com/Diegofuego871/ha-Alarmageddon/blob/main/LICENSE).
+Siehe [LICENSE](https://github.com/Diegofuego871/ha-alarmageddon/blob/main/LICENSE).

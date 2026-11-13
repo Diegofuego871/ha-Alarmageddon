@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO = "https://github.com/Diegofuego871/ha-Alarmageddon"
+REPO = "https://github.com/Diegofuego871/ha-alarmageddon"
 
 
 def _section_module():
