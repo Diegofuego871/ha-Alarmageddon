@@ -42,6 +42,21 @@ for (const lang of ["de", "en"]) {
     await (await s.el(sel)).selectOption("away");
     check(`${tag}: danach gleich: nichts mehr zu übernehmen, keine Rückfrage`, await s.ev("return !r.getElementById('ag-confirm').open"));
 
+    // Jede der sieben Listen für sich: weicht nur dort ein Detail ab (Wert im Schritt, "Alarm endet"), wird übernommen
+    for (const key of ["wf", "after", "armed", "arming", "entrySteps", "disarmed", "end"]) {
+      await s.ev(`const a=r.host.actions; a.draft=null; const d=a.ensureDraft(); a.trigger='home';
+        const same = [{type:'chime',players:['media_player.a'],sound:'tone_pip',duration:3,volume:0.5}];
+        for (const k of ['wf','after','armed','arming','entrySteps','disarmed']) { d[k] = {...(d[k]||{}), away: JSON.parse(JSON.stringify(same)), home: JSON.parse(JSON.stringify(same))}; }
+        d.end = {...(d.end||{}), away: {}, home: {}};
+        if ('${key}' === 'end') d.end.home = {notify: {enabled: true, title: 'x', message: '', critical: null, volume: null, click: 'log', click_path: ''}};
+        else d['${key}'].home[0].volume = 0.6;
+        a.render(); return 1`);
+      await (await s.el(sel)).selectOption("away");
+      check(`${tag}: nur "${key}" weicht ab (ein Wert): Rückfrage und Übernahme`, await s.waitFor("return r.getElementById('ag-confirm').open", 3000));
+      await s.tap('#ag-confirm [data-c="yes"]');
+      check(`${tag}: "${key}" übernommen`, await s.waitFor(`const d=r.host.actions.draft; return '${key}' === 'end' ? !d.end.home.notify : d['${key}'].home[0].volume === 0.5`));
+    }
+
     // Ohne "Einstellungen pro Modus" gibt es die Auswahl nicht
     await s.tap('[data-wf="permode"]');
     check(`${tag}: Schalter aus: keine Auswahl`, await s.waitFor(`return !r.querySelector('${sel}')`));
