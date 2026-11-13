@@ -17,10 +17,9 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
-from homeassistant.config_entries import SOURCE_USER, ConfigEntry, ConfigEntryState
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
@@ -30,6 +29,7 @@ from homeassistant.util import slugify
 
 from . import backup, last_change
 from .code import hash_code, match_code
+from .systems import async_create_system, new_system_name
 from .const import (
     BATTERY_THRESHOLD_RANGE,
     MAX_BACKUPS,
@@ -386,16 +386,6 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 
 
-def _new_system_name(hass: HomeAssistant, raw: str) -> tuple[str, str | None]:
-    """Name einer neuen Anlage ohne doppelte Leerzeichen und der Fehler dazu (leer, schon vergeben; Gross-/Kleinschreibung zählt nicht)."""
-    name = " ".join(raw.split())
-    if not name:
-        return name, "name_required"
-    if any(e.title.casefold() == name.casefold() for e in hass.config_entries.async_entries(DOMAIN)):
-        return name, "name_taken"
-    return name, None
-
-
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/preview_system", vol.Required("name"): vol.All(str, vol.Length(max=60))})
 @websocket_api.require_admin
 @callback
@@ -405,7 +395,7 @@ def ws_preview_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     Rechnet hier und nicht im Panel, damit Umlaute und belegte IDs ("_2") stimmen. Erzeugt nichts und meldet Fehler als Wert,
     damit das Panel beim Tippen nichts als Fehler anzeigen muss.
     """
-    name, error = _new_system_name(hass, msg["name"])
+    name, error = new_system_name(hass, msg["name"])
     alarm_id = None
     if error is None and (slug := slugify(name)):
         alarm_id = er.async_get(hass).async_generate_entity_id("alarm_control_panel", slug)
@@ -420,19 +410,15 @@ async def ws_create_system(hass: HomeAssistant, connection, msg: dict[str, Any])
     Legt eine neue Anlage an, über dieselbe Einrichtung wie in Home Assistant (Standardwerte: kein Code, Nacht aus, noch keine
     Sensoren). Alles Weitere stellt man danach in der Konfiguration ein; der Code wird nie hier eingegeben.
     """
-    name, error = _new_system_name(hass, msg["name"])
+    name, error = new_system_name(hass, msg["name"])
     if error:
         connection.send_error(msg["id"], error, "Name is empty" if error == "name_required" else "Name already used")
         return
-    flow = hass.config_entries.flow
-    result = await flow.async_init(DOMAIN, context={"source": SOURCE_USER})
-    if result["type"] is FlowResultType.FORM:
-        result = await flow.async_configure(result["flow_id"], {CONF_NAME: name})
-    if result["type"] is not FlowResultType.CREATE_ENTRY:
+    entry = await async_create_system(hass, name)
+    if entry is None:
         connection.send_error(msg["id"], "create_failed", "The alarm system could not be created")
         return
-    await hass.async_block_till_done()
-    connection.send_result(msg["id"], {"entry_id": result["result"].entry_id})
+    connection.send_result(msg["id"], {"entry_id": entry.entry_id})
 
 
 @websocket_api.websocket_command(
@@ -957,7 +943,15 @@ async def ws_export(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): f"{DOMAIN}/import", vol.Required("data"): dict, vol.Optional("dry_run", default=False): bool}
+    {
+        vol.Required("type"): f"{DOMAIN}/import",
+        vol.Required("data"): dict,
+        vol.Optional("dry_run", default=False): bool,
+        # Ziel je Anlage der Sicherung (1.33.0): eine bestehende Anlage (ihre Kennung), "new" (neu anlegen, mit "name") oder "skip";
+        # ohne Angabe gilt wie bisher der gleiche Name
+        vol.Optional("mapping"): [{vol.Required("index"): int, vol.Required("target"): str, vol.Optional("name", default=""): vol.All(str, vol.Length(max=60))}],
+        vol.Optional("restore_settings", default=True): bool,
+    }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -968,7 +962,14 @@ async def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     except vol.Invalid as err:
         connection.send_error(msg["id"], str(err.msg), "Invalid backup")
         return
-    result = backup.plan(hass, data) if msg["dry_run"] else await backup.async_restore(hass, data)
+    if msg["dry_run"]:
+        connection.send_result(msg["id"], backup.plan(hass, data))
+        return
+    try:
+        result = await backup.async_restore(hass, data, msg.get("mapping"), msg["restore_settings"])
+    except backup.RestoreError as err:
+        connection.send_error(msg["id"], err.code, "Invalid choice of alarm systems")
+        return
     connection.send_result(msg["id"], result)
 
 

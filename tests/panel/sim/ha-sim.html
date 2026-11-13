@@ -254,11 +254,32 @@
       const titles = new Map(window.__systems.map((s) => [s.title.toLowerCase(), s]));
       const found = (d.systems || []).filter((s) => titles.has(s.title.toLowerCase())).map((s) => s.title);
       const missing = (d.systems || []).filter((s) => !titles.has(s.title.toLowerCase())).map((s) => s.title);
-      if (!msg.dry_run) {
-        for (const s of d.systems || []) if (titles.has(s.title.toLowerCase()) && s.options?.workflows) titles.get(s.title.toLowerCase()).workflows = s.options.workflows;
-        window.__imported = true;
+      const items = (d.systems || []).map((s, index) => ({ index, title: s.title, default: titles.get(s.title.toLowerCase())?.entry_id || null }));
+      const targets = window.__systems.map((s) => ({ entry_id: s.entry_id, title: s.title })).sort((a, b) => a.title.localeCompare(b.title));
+      if (msg.dry_run) return { systems: found, missing, settings: !!d.settings, items, targets };
+      // 1.33.0: Wahl je Anlage der Sicherung (ohne Wahl wie bisher über den Namen)
+      window.__importCalls = (window.__importCalls || []).concat([JSON.parse(JSON.stringify({ mapping: msg.mapping ?? null, restore_settings: msg.restore_settings ?? true }))]);
+      const mapping = msg.mapping ?? items.filter((i) => i.default).map((i) => ({ index: i.index, target: i.default }));
+      const seen = new Set();
+      for (const m of mapping) {
+        if (m.index < 0 || m.index >= items.length) throw err("invalid_mapping", "bad index");
+        if (m.target !== "skip" && m.target !== "new") {
+          if (!window.__systems.some((s) => s.entry_id === m.target) || seen.has(m.target)) throw err("invalid_mapping", "bad target");
+          seen.add(m.target);
+        }
+        if (m.target === "new" && window.__systems.some((s) => s.title.toLowerCase() === String(m.name || "").trim().toLowerCase())) throw err("name_taken", "taken");
       }
-      return { systems: found, missing, settings: !!d.settings };
+      for (const m of mapping) {
+        const s = d.systems[m.index];
+        if (m.target === "skip") continue;
+        if (m.target === "new") {
+          const name = String(m.name || "").trim();
+          window.__systems.push({ ...JSON.parse(JSON.stringify(window.__systems.find((x) => x.entry_id === "e_garage"))), entry_id: `e_${name.toLowerCase()}`, title: name, entity_id: `alarm_control_panel.${name.toLowerCase()}`, workflows: s.options?.workflows || {} });
+          window.__created = (window.__created || []).concat([name]);
+        } else if (s.options?.workflows) window.__systems.find((x) => x.entry_id === m.target).workflows = s.options.workflows;
+      }
+      window.__imported = true;
+      return { systems: found, missing, settings: !!d.settings, items, targets, created: [] };
     }
     if (msg.type === "alarmageddon/delete_recording") {
       if (window.__failDelete) throw err("alarm_running", "A running alarm cannot be deleted");

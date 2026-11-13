@@ -214,7 +214,7 @@ Details für alle, die es genau wissen wollen. Zum Öffnen anklicken.
 <summary><b>Zeitplan, Sicherung und HomeKit im Detail</b></summary>
 
 - **Zeitplan:** offene Sensoren verhindern das Scharfschalten wie sonst; ein Code ist nicht nötig; Zeiten, die bei ausgeschaltetem Home Assistant verpasst wurden, werden nicht nachgeholt. Deaktivieren nach Zeitplan heisst: zu dieser Zeit ist die Anlage aus, egal wer zu Hause ist.
-- **Sicherung:** bis zu 10 Sicherungen in der Integration, dazu Export und Import als Datei. Der Import zeigt zuerst, was er ändern würde. Codes sind nie enthalten; die Sicherung von Home Assistant selbst enthält alles.
+- **Sicherung:** bis zu 10 Sicherungen in der Integration, dazu Export und Import als Datei. Beim Wiederherstellen wählst du für jede Anlage der Sicherung, worauf sie angewendet wird: eine bestehende Anlage (gleich wie sie heisst), eine neue oder keine; die gemeinsamen Einstellungen lassen sich weglassen. Codes sind nie enthalten; die Sicherung von Home Assistant selbst enthält alles.
 - **HomeKit, Ausgangsverzögerung:** Apple Home zeigt während der Ausgangsverzögerung "Aus" mit dem Ziel "Abwesend". Für "Anwesend" und "Nacht" keine Ausgangsverzögerung verwenden (Standard).
 - **HomeKit, Eingangsverzögerung:** Apple Home zeigt weiter "scharf" und wechselt auf "Alarm", wenn der Alarm beginnt.
 

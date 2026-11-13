@@ -342,31 +342,108 @@ export class SystemUi {
     }
   }
 
-  // Prüft eine Sicherung (Datei oder abgelegt) und zeigt, was wiederhergestellt würde
+  // Wiederherstellen (1.33.0): je Anlage der Sicherung wählt man das Ziel, der Name spielt keine Rolle. Vorgeschlagen: gleicher Name
+  // (ersetzt diese Anlage), sonst eine neue Anlage mit dem Namen aus der Sicherung. Der Server prüft alles noch einmal.
   async askRestore(data) {
     const plan = await this.host._hass.callWS({ type: "alarmageddon/import", data, dry_run: true });
     this._pendingBackup = data;
+    this._plan = plan;
+    this._choices = plan.items.map((i) => ({ index: i.index, title: i.title, target: i.default || "new", name: i.title, error: "" }));
+    this._restoreSettings = true;
     const dlg = this._codeDlg();
-    const ok = plan.systems.length || plan.settings;
     dlg.innerHTML = `<div class="ag-dlg-body"><h3>${esc(this._t("bkConfirmTitle"))}</h3>
-      ${plan.systems.length ? `<div>${esc(this._t("bkFound", { list: plan.systems.join(", ") }))}</div>` : `<div class="ag-t2">${esc(this._t("bkNoneFound"))}</div>`}
-      ${plan.missing.length ? `<div class="ag-t2">${esc(this._t("bkMissing", { list: plan.missing.join(", ") }))}</div>` : ""}
-      ${plan.settings ? `<div class="ag-t2">${esc(this._t("bkSettings"))}</div>` : ""}
+      <div class="ag-t2">${esc(this._t("bkMapIntro"))}</div>
+      <div class="ag-rmap">${this._restoreRows()}</div>
+      ${plan.settings ? `<label class="ag-orow ag-rename-ids"><div class="ag-otx"><b>${esc(this._t("bkSettingsSwitch"))}</b><small>${esc(this._t("bkSettingsHint"))}</small></div>
+        <button type="button" class="ag-toggle on" data-sys="rs" role="switch" aria-checked="true" aria-label="${esc(this._t("bkSettingsSwitch"))}"></button></label>` : ""}
+      <div class="ag-t2 ag-small">${esc(this._t("bkCodesStay"))}</div>
       <div class="ag-dlg-err" aria-live="polite"></div>
-      <div class="ag-dlg-btns"><button class="ag-btn" data-sys="code-close">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-sys="import-go" ${ok ? "" : "disabled"}>${esc(this._t("bkRestore"))}</button></div></div>`;
+      <div class="ag-dlg-btns"><button class="ag-btn" data-sys="code-close">${esc(this._t("cancel"))}</button><button class="ag-btn primary" data-sys="import-go" disabled>${esc(this._t("bkRestore"))}</button></div></div>`;
     dlg.showModal();
+    this._checkRestore();
+  }
+
+  _restoreRows() {
+    const targets = this._plan?.targets || [];
+    return this._choices.map((c, i) => {
+      const options = `<option value="skip" ${c.target === "skip" ? "selected" : ""}>${esc(this._t("bkTargetSkip"))}</option>
+        <option value="new" ${c.target === "new" ? "selected" : ""}>${esc(this._t("bkTargetNew"))}</option>
+        ${targets.length ? `<optgroup label="${esc(this._t("bkTargetGroup"))}">${targets.map((t) => `<option value="${esc(t.entry_id)}" ${c.target === t.entry_id ? "selected" : ""}>${esc(t.title)}</option>`).join("")}</optgroup>` : ""}`;
+      const target = targets.find((t) => t.entry_id === c.target);
+      const hint = c.target === "skip" ? this._t("bkHintSkip") : c.target === "new" ? this._t("bkHintNew") : this._t("bkHintReplace", { name: target?.title || "" });
+      return `<div class="ag-rrow" data-ri="${i}"><div class="ag-rfrom"><b>${esc(c.title)}</b><span class="ag-t2">${esc(this._t("bkFromBackup"))}</span></div>
+        <select class="ag-input" data-sys="rt" data-ri="${i}" aria-label="${esc(this._t("bkTargetLabel", { name: c.title }))}">${options}</select>
+        ${c.target === "new" ? `<input class="ag-input" data-sys="rn" data-ri="${i}" maxlength="60" value="${esc(c.name)}" placeholder="${esc(this._t("bkNewName"))}" aria-label="${esc(this._t("bkNewName"))}" autocomplete="off">` : ""}
+        <div class="ag-t2 ag-small ag-rhint ${c.error ? "ag-err" : ""}">${esc(c.error || hint)}</div></div>`;
+    }).join("");
+  }
+
+  // Wahl prüfen: gleiches Ziel zweimal, gleiche neue Namen, Namen leer oder vergeben (Antwort des Servers); erst dann ist "Wiederherstellen" frei
+  _checkRestore() {
+    const dlg = this._codeDlg();
+    const go = dlg.querySelector('[data-sys="import-go"]');
+    if (!go || !this._choices) return;
+    const seen = new Set();
+    const names = new Set();
+    for (const c of this._choices) {
+      c.error = "";
+      if (c.target === "skip") continue;
+      if (c.target === "new") {
+        const key = c.name.split(/\s+/).filter(Boolean).join(" ").toLowerCase();
+        if (names.has(key) && key) c.error = this._t("bkErrNewSame");
+        names.add(key);
+        if (c.nameError) c.error = c.error || this._t(c.nameError === "name_taken" ? "renameTaken" : "renameEmpty");
+      } else {
+        if (seen.has(c.target)) c.error = this._t("bkErrSameTarget");
+        seen.add(c.target);
+      }
+    }
+    const active = this._choices.some((c) => c.target !== "skip") || (this._plan?.settings && this._restoreSettings);
+    dlg.querySelectorAll(".ag-rrow").forEach((row, i) => {
+      const hint = row.querySelector(".ag-rhint");
+      const c = this._choices[i];
+      const base = c.target === "skip" ? this._t("bkHintSkip") : c.target === "new" ? this._t("bkHintNew") : this._t("bkHintReplace", { name: (this._plan.targets.find((t) => t.entry_id === c.target) || {}).title || "" });
+      hint.textContent = c.error || base;
+      hint.classList.toggle("ag-err", !!c.error);
+    });
+    const pendingName = this._choices.some((c) => c.target === "new" && c.nameChecking);
+    go.disabled = !active || this._choices.some((c) => c.error) || pendingName || this._choices.some((c) => c.target === "new" && !c.name.trim());
+  }
+
+  // Der Name einer neuen Anlage: der Server sagt, ob er frei ist (überholte Antworten verwerfen)
+  _checkNewName(i) {
+    const c = this._choices[i];
+    c.nameError = "";
+    c.nameChecking = true;
+    const seq = (c.seq = (c.seq || 0) + 1);
+    clearTimeout(c.timer);
+    this._checkRestore();
+    c.timer = setTimeout(async () => {
+      let res = null;
+      try {
+        res = await this.host._hass.callWS({ type: "alarmageddon/preview_system", name: c.name });
+      } catch {
+        res = null;
+      }
+      if (seq !== c.seq || !this._choices) return;
+      c.nameChecking = false;
+      c.nameError = res?.error || "";
+      this._checkRestore();
+    }, 200);
   }
 
   async importGo() {
+    const mapping = this._choices.map((c) => ({ index: c.index, target: c.target, ...(c.target === "new" ? { name: c.name } : {}) }));
     try {
-      await this.host._hass.callWS({ type: "alarmageddon/import", data: this._pendingBackup });
+      await this.host._hass.callWS({ type: "alarmageddon/import", data: this._pendingBackup, mapping, restore_settings: !!this._restoreSettings });
       this._pendingBackup = null;
+      this._choices = null;
       this._codeDlg().close();
       this.host._resetConfig?.();
       this.host._toast(this._t("bkDone"));
       this.host._fetch();
     } catch (err) {
-      this._codeError(this._backupErr(err));
+      this._codeError(err?.code === "name_taken" ? this._t("renameTaken") : err?.code === "name_required" ? this._t("renameEmpty") : err?.code === "invalid_mapping" ? this._t("bkErrMapping") : this._backupErr(err));
     }
   }
 
@@ -561,6 +638,11 @@ export class SystemUi {
       this.deleteBackup(el.dataset.id);
     } else if (act === "export") {
       this.exportBackup();
+    } else if (act === "rs") {
+      this._restoreSettings = !this._restoreSettings;
+      el.classList.toggle("on", this._restoreSettings);
+      el.setAttribute("aria-checked", String(this._restoreSettings));
+      this._checkRestore();
     } else if (act === "import-go") {
       this.importGo();
     } else if (act === "import") {
@@ -587,6 +669,22 @@ export class SystemUi {
   onInput(el) {
     if (el.dataset.sys === "import-file") {
       this.importFile(el);
+      return true;
+    }
+    if (el.dataset.sys === "rt" && this._choices) {
+      const c = this._choices[Number(el.dataset.ri)];
+      c.target = el.value;
+      c.nameError = "";
+      c.nameChecking = false;
+      c.seq = (c.seq || 0) + 1;
+      this._codeDlg().querySelector(".ag-rmap").innerHTML = this._restoreRows();
+      if (c.target === "new") this._checkNewName(Number(el.dataset.ri));
+      else this._checkRestore();
+      return true;
+    }
+    if (el.dataset.sys === "rn" && this._choices) {
+      this._choices[Number(el.dataset.ri)].name = el.value;
+      this._checkNewName(Number(el.dataset.ri));
       return true;
     }
     if (el.dataset.sys === "cf") {

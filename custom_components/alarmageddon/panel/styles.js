@@ -840,6 +840,15 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 #ag-delete .ag-dlg-body > *, #ag-add .ag-dlg-body > * { flex-shrink: 0; }
 /* eigener Hinweis (nicht .ag-warntext: den zählen andere Prüfungen als Warnung zu "Immer aktiv") */
 .ag-delnote { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }
+/* Wiederherstellen (1.33.0): je Anlage der Sicherung eine Karte mit Wahl des Ziels */
+.ag-rmap { display: flex; flex-direction: column; gap: 10px; }
+.ag-rrow { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--ag-subtle); border: 1px solid var(--ag-divider); }
+.ag-rfrom { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ag-rfrom b { overflow-wrap: anywhere; }
+.ag-rhint { min-height: 1.3em; }
+.ag-rrow > .ag-input { width: 100%; box-sizing: border-box; }
+:host([narrow]) .ag-rrow > select.ag-input { height: 50px; min-height: 50px; }
+#ag-codes .ag-dlg-body > * { flex-shrink: 0; }
 .ag-chap-danger .ag-chap-t::before { background: var(--ag-error); }
 .ag-btn-danger-text { background: transparent; border-color: color-mix(in srgb, var(--ag-error) 45%, var(--ag-divider)); color: var(--ag-error); }
 .ag-btn-danger-text:hover:not(:disabled) { background: color-mix(in srgb, var(--ag-error) 10%, var(--ag-card)); }

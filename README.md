@@ -214,7 +214,7 @@ Details for those who want to know exactly. Click to open.
 <summary><b>Schedule, backup and HomeKit in detail</b></summary>
 
 - **Schedule:** open sensors block arming as usual; no code is needed; times missed while Home Assistant was off are not made up. Disarming by schedule means the alarm system is off at that time, whoever is at home.
-- **Backup:** up to 10 backups in the integration, plus export and import as a file. Import shows first what it would change. Codes are never included; the backup of Home Assistant itself contains everything.
+- **Backup:** up to 10 backups in the integration, plus export and import as a file. When restoring you choose for each alarm system of the backup what it is applied to: an existing alarm system (whatever its name), a new one, or none; the shared settings can be left out. Codes are never included; the backup of Home Assistant itself contains everything.
 - **HomeKit, exit delay:** Apple Home shows "Off" with the target "Away" during the exit delay. Use no exit delay for "Home" and "Night" (default).
 - **HomeKit, entry delay:** Apple Home keeps showing "armed" and switches to "Alarm" when the alarm starts.
 

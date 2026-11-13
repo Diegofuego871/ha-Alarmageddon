@@ -7,6 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.33.0] - 2026-11-13
+
+Restore a backup onto any alarm system, whatever its name.
+
+### Changed
+
+- **Restoring chooses the target for each alarm system of the backup; the name does not matter any more.** Until now a backup could only be applied to an alarm system with the same name. The settings have nothing to do with the name, so the restore window now shows one card for each alarm system in the backup, with a choice: **apply to an existing alarm system** (any one, also one with another name), **add as a new alarm system** (with a name you can change; it is created without a code and gets the saved settings) or **do not restore**. The proposal stays the old one: the alarm system with the same name, and a new alarm system where there is none. An alarm system you deleted can therefore come back straight from its backup. "Restore" stays blocked while two alarm systems of the backup have the same target, a new name is empty, already used or used twice. A switch decides whether the **shared settings** (presets per sensor type, messages, how names are shown) are restored too; it is on by default as before. Codes are still never part of a backup and stay as they are. The server checks the whole choice before it changes anything.
+- **The warning when deleting an alarm system** no longer says that a backup cannot bring it back: with the backup you can restore its settings later, as a new alarm system or onto another one.
+
 ## [1.32.0] - 2026-11-13
 
 Delete an alarm system in the panel.
@@ -1282,6 +1291,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.33.0
 [1.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.32.0
 [1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0
 [1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0

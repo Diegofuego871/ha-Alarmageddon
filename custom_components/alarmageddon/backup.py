@@ -8,8 +8,10 @@ Codes. Ein Hash eines vier- bis achtstelligen Codes ist mit einer Datei in
 der Hand schnell durchprobiert; eine Sicherung soll gefahrlos herumliegen
 dürfen. Laufzeitdaten (Zustand, Ereignisse) gehören ebenfalls nicht dazu.
 
-Wiederherstellen ordnet Anlagen über den Namen zu. Die Codes der Zielanlage
-bleiben unverändert.
+Wiederherstellen: Je Anlage der Sicherung wählt man das Ziel (1.33.0): eine
+bestehende Anlage, eine neue oder keine. Die Einstellungen haben mit dem Namen
+nichts zu tun. Ohne Wahl gilt wie bisher der gleiche Name. Die Codes der
+Zielanlage bleiben unverändert.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from homeassistant.util import dt as dt_util
 from .const import BACKUPS_STORE_KEY, CONF_CODE_ARM_REQUIRED, DOMAIN, MAX_BACKUPS
 from .schemas import SYSTEM_OPTIONS_SCHEMA
 from .settings import async_get_settings, valid_notify, valid_presets
+from .systems import async_create_system, new_system_name
 
 FORMAT = "alarmageddon"
 VERSION = 1
@@ -79,30 +82,88 @@ def validate(data: Any) -> dict[str, Any]:
     }
 
 
+class RestoreError(Exception):
+    """Falsche Wahl beim Wiederherstellen; `code` ist der Fehlerschlüssel für das Panel."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
 def plan(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str, Any]:
-    """Was beim Wiederherstellen passiert: welche Anlagen gefunden werden und welche nicht."""
-    by_title = {e.title.casefold(): e for e in loaded_entries(hass)}
+    """
+    Was beim Wiederherstellen passiert und was man dabei wählen kann: `systems`/`missing` wie bisher (gleicher Name gefunden oder nicht),
+    dazu `items` (die Anlagen der Sicherung mit dem Vorschlag, der gleiche Name) und `targets` (die bestehenden Anlagen).
+    """
+    entries = sorted(loaded_entries(hass), key=lambda e: e.title.lower())
+    by_title = {e.title.casefold(): e for e in entries}
     found = [s["title"] for s in backup["systems"] if s["title"].casefold() in by_title]
     missing = [s["title"] for s in backup["systems"] if s["title"].casefold() not in by_title]
-    return {"systems": found, "missing": missing, "settings": any(backup.get(k) is not None for k in ("presets", "notify", "names_with_device"))}
+    items = [
+        {"index": i, "title": s["title"], "default": by_title[s["title"].casefold()].entry_id if s["title"].casefold() in by_title else None}
+        for i, s in enumerate(backup["systems"])
+    ]
+    targets = [{"entry_id": e.entry_id, "title": e.title} for e in entries]
+    return {"systems": found, "missing": missing, "settings": any(backup.get(k) is not None for k in ("presets", "notify", "names_with_device")), "items": items, "targets": targets}
 
 
-async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str, Any]:
+def _resolve(hass: HomeAssistant, backup: dict[str, Any], mapping: list[dict[str, Any]] | None) -> list[tuple[dict[str, Any], ConfigEntry | str]]:
+    """
+    Ziel je Anlage der Sicherung, vollständig geprüft, bevor irgendetwas geändert wird: eine geladene Anlage dieser Integration,
+    "new" mit freiem Namen oder nichts. Jede Anlage der Sicherung und jedes Ziel höchstens einmal.
+    """
+    loaded = {e.entry_id: e for e in loaded_entries(hass)}
+    if mapping is None:
+        by_title = {e.title.casefold(): e for e in loaded.values()}
+        return [(item, by_title[item["title"].casefold()]) for item in backup["systems"] if item["title"].casefold() in by_title]
+    seen_index: set[int] = set()
+    seen_target: set[str] = set()
+    new_names: set[str] = set()
+    out: list[tuple[dict[str, Any], ConfigEntry | str]] = []
+    for choice in mapping:
+        index, target = choice["index"], choice["target"]
+        if not 0 <= index < len(backup["systems"]) or index in seen_index:
+            raise RestoreError("invalid_mapping")
+        seen_index.add(index)
+        item = backup["systems"][index]
+        if target == "skip":
+            continue
+        if target == "new":
+            name, error = new_system_name(hass, choice.get("name", ""), new_names)
+            if error:
+                raise RestoreError(error)
+            new_names.add(name.casefold())
+            out.append((item, name))
+            continue
+        if target not in loaded or target in seen_target:
+            raise RestoreError("invalid_mapping")
+        seen_target.add(target)
+        out.append((item, loaded[target]))
+    return out
+
+
+async def async_restore(hass: HomeAssistant, backup: dict[str, Any], mapping: list[dict[str, Any]] | None = None, restore_settings: bool = True) -> dict[str, Any]:
     result = plan(hass, backup)
-    by_title = {e.title.casefold(): e for e in loaded_entries(hass)}
+    targets = _resolve(hass, backup, mapping)
     settings = await async_get_settings(hass)
-    if backup["notify"] is not None:
+    if restore_settings and backup["notify"] is not None:
         await settings.async_set_notify(backup["notify"])
-    if backup.get("names_with_device") is not None:
+    if restore_settings and backup.get("names_with_device") is not None:
         await settings.async_set_names_with_device(backup["names_with_device"])
     # Voreinstellungen zuerst und ohne Benachrichtigung: die Anlagen, deren Optionen sich gleich ändern, laden darüber neu
     # und sehen schon die neuen Voreinstellungen; die übrigen werden am Ende benachrichtigt. Jede Anlage lädt genau einmal.
-    presets_changed = backup["presets"] is not None and await settings.async_store_presets(backup["presets"])
+    presets_changed = restore_settings and backup["presets"] is not None and await settings.async_store_presets(backup["presets"])
     reloading: set[str] = set()
-    for item in backup["systems"]:
-        entry = by_title.get(item["title"].casefold())
-        if entry is None:
-            continue
+    created: list[str] = []
+    for item, target in targets:
+        if isinstance(target, str):
+            # Neue Anlage: über die Einrichtung von Home Assistant, dann gelten die gesicherten Einstellungen wie bei jeder anderen
+            entry = await async_create_system(hass, target)
+            if entry is None:
+                continue
+            created.append(entry.title)
+        else:
+            entry = target
         options = {**entry.options, **item["options"]}
         # Code zum Scharfschalten nur, wenn die Zielanlage überhaupt einen Code hat
         ctl = entry.runtime_data.controller
@@ -112,7 +173,7 @@ async def async_restore(hass: HomeAssistant, backup: dict[str, Any]) -> dict[str
             reloading.add(entry.entry_id)
     if presets_changed:
         settings.async_notify_listeners(skip=reloading)
-    return result
+    return {**result, "created": created}
 
 
 # ----- Sicherungen in der Integration (0.38.0): bis zu MAX_BACKUPS, neueste zuerst -----

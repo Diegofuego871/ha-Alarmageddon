@@ -53,7 +53,9 @@ async def test_round_trip(hass: HomeAssistant, hass_ws_client) -> None:
     exported["settings"]["notify"]["types"]["triggered"]["volume"] = 0.9
     exported["systems"].append({"title": "Ferienhaus", "options": {}})
     plan = await _ws(client, type="alarmageddon/import", data=exported, dry_run=True)
-    assert plan["result"] == {"systems": ["Haus"], "missing": ["Ferienhaus"], "settings": True}
+    # Die bisherigen Angaben bleiben (1.33.0 fügt "items" und "targets" für die Wahl des Ziels hinzu)
+    assert {k: plan["result"][k] for k in ("systems", "missing", "settings")} == {"systems": ["Haus"], "missing": ["Ferienhaus"], "settings": True}
+    assert [i["default"] for i in plan["result"]["items"]] == [entry.entry_id, None]
     assert entry.options["entry_delay"] == 5  # nur geprüft, nichts geändert
     result = await _ws(client, type="alarmageddon/import", data=exported)
     assert result["success"], result

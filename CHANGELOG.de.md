@@ -7,6 +7,15 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.33.0] - 2026-11-13
+
+Eine Sicherung auf jede Alarmanlage wiederherstellen, gleich wie sie heisst.
+
+### Geändert
+
+- **Beim Wiederherstellen wählst du für jede Anlage der Sicherung das Ziel; der Name spielt keine Rolle mehr.** Bisher liess sich eine Sicherung nur auf eine Alarmanlage mit demselben Namen anwenden. Die Einstellungen haben mit dem Namen nichts zu tun, darum zeigt das Fenster jetzt für jede Anlage der Sicherung eine Karte mit einer Wahl: **auf eine bestehende Anlage anwenden** (auf irgendeine, auch mit anderem Namen), **als neue Anlage hinzufügen** (mit einem Namen, den du ändern kannst; sie entsteht ohne Code und bekommt die gesicherten Einstellungen) oder **nicht wiederherstellen**. Vorgeschlagen bleibt das Bisherige: die Anlage mit demselben Namen, und eine neue Anlage, wo es keine gibt. Eine gelöschte Anlage kommt damit direkt aus ihrer Sicherung zurück. "Wiederherstellen" bleibt gesperrt, solange zwei Anlagen der Sicherung dasselbe Ziel haben oder ein neuer Name leer, schon vergeben oder doppelt ist. Ein Schalter bestimmt, ob auch die **gemeinsamen Einstellungen** (Voreinstellungen je Sensorart, Meldungen, Anzeige der Namen) wiederhergestellt werden; wie bisher ist er an. Codes sind weiterhin nie Teil einer Sicherung und bleiben, wie sie sind. Der Server prüft die ganze Wahl, bevor er etwas ändert.
+- **Die Warnung beim Löschen einer Anlage** sagt nicht mehr, dass eine Sicherung sie nicht zurückbringen kann: mit der Sicherung lassen sich ihre Einstellungen später wiederherstellen, als neue Anlage oder auf eine andere.
+
 ## [1.32.0] - 2026-11-13
 
 Alarmanlage im Panel löschen.
@@ -1282,6 +1291,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.33.0
 [1.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.32.0
 [1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0
 [1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
