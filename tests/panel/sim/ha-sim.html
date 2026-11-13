@@ -39,6 +39,12 @@
     "binary_sensor.bewegung_garage": { name: "Bewegung Garage", device_class: "motion", area: "Garage", platform: "zha", integration: "Zigbee Home Automation", battery: "sensor.bewegung_garage_batterie" },
     "binary_sensor.wasser_keller": { name: "Wassermelder Keller", device_class: "moisture", area: null, platform: "matter", integration: "Matter", battery: "sensor.wasser_keller_batterie" },
   };
+  // ?longnames=1: Namen wie bei echten Geräten (bis vier Zeilen), für den Test der gleich hohen Karten
+  if (params.get("longnames")) {
+    SENSORS["binary_sensor.fenster_bad"].name = "Aqara FP400 Anwesenheitssensor Wohnzimmer - Wohnzimmer Belegung";
+    SENSORS["binary_sensor.bewegung_flur"].name = "Hue motion Redut - Bewegung";
+    SENSORS["binary_sensor.terrassentuer"].name = "Aqara FP400 Anwesenheitssensor Wohnzimmer - Esstisch Terrassentür Nordseite mit sehr langem Namen, damit auch auf dem Handy mehr als drei Zeilen nötig sind";
+  }
   const TYPE = { door: "door", garage_door: "door", window: "window", motion: "motion", smoke: "environment", moisture: "environment" };
   const DEV = {
     matter: ["Alpenfunk", "Contact M2", "1.4.2"], shelly: ["Voltix", "Door Plus", "1.6.2"], esphome: ["Eigenbau", "mmWave", "2026.10.1"], zha: ["Nordlicht", "DW-10", "2.0.9"],

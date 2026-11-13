@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.29.0] - 2026-11-13
+
+Alle Sensorkarten sind gleich hoch.
+
+### Geändert
+
+- **Die Sensorkarten der Übersicht sind immer gleich hoch,** im Raster auf dem Desktop und untereinander auf dem Handy, gleich bei welchem Sensor. Bisher war eine Karte so hoch wie ihr Inhalt: ein langer Name, ein Netzgerät ohne Batterie oder ein fehlender Wert machten die Karten ungleich. Jetzt hat jede Karte Platz für **drei Zeilen Name**; ein längerer Name wird mit "…" gekürzt (voll steht er im Tooltip und in den Optionen des Sensors). Die Zeile mit Batterie, Prognose, Empfang und Firmware hat eine feste Höhe (ab drei Angaben zwei Zeilen), und jede Angabe, die du unter "Ansicht" einschaltest (Modell, Integration, Letzte Änderung), steht immer da, mit "–", wo es keinen Wert gibt. Schaltest du unter "Ansicht" Angaben ab, werden alle Karten gleichmässig niedriger.
+
 ## [1.28.0] - 2026-11-13
 
 Push-Meldungen, die sagen, was passiert ist: neue Platzhalter und passende Standardtexte.
@@ -1247,6 +1255,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0
 [1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0
 [1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0

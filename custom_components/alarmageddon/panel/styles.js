@@ -165,6 +165,15 @@ button { font: inherit; color: inherit; }
 .ag-foot .ag-err, .ag-settx .ag-err { color: var(--ag-error); }
 .ag-mcards { display: flex; flex-direction: column; gap: 8px; }
 .ag-mcards.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+/* Alle Karten gleich hoch (1.29.0): der Name hat immer Platz für drei Zeilen und wird danach mit "…" gekürzt (voll im Tooltip und im
+   Optionsfenster), alle weiteren Zeilen haben eine feste Höhe; fehlende Angaben stehen als "–" da */
+.ag-lname { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; line-height: 1.3; min-height: 3.9em; overflow-wrap: anywhere; }
+.ag-lsub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 1.4em; }
+.ag-lcard .ag-lz { min-height: 24px; }
+.ag-lcard .ag-lmeta { min-height: 30px; align-content: flex-start; }
+/* ab drei Angaben (Batterie, Prognose, Empfang, Firmware) bricht die Zeile um: immer Platz für zwei Zeilen */
+.ag-lcard .ag-lmeta.two { min-height: 60px; }
+.ag-lcard .ag-lfacts b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.3em; line-height: 1.3; }
 .ag-mcards.grid > .ag-group-label { grid-column: 1 / -1; margin-top: 8px; }
 .ag-lz { display: flex; flex-wrap: wrap; gap: 8px; }
 .ag-lfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 14px; padding-top: 10px; border-top: 1px solid var(--ag-divider); font-size: 12.5px; }

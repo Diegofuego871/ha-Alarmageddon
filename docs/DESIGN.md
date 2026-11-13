@@ -46,6 +46,7 @@ offline = `--ag-error`, keine Daten = `--ag-text3`.
 - Desktop: volle Breite nutzen. Kacheln im Raster mit `auto-fill`, das sich
   an die Breite anpasst; Editoren zweispaltig (Liste links, Bearbeitung
   rechts). Keine fest schmale Mittelspalte.
+- Sensorkarten: immer gleich hoch (1.29.0). Name drei Zeilen mit "…", feste Höhen für alle weiteren Zeilen, fehlende Angaben als "–".
 - Handy (Companion App): einspaltig, Trefferflächen mindestens 44 px,
   Antippen als Ersatz für Ziehen, Blätter von unten, Safe-Area beachten.
 - Breite < 600 px: Dialoge als Blatt von unten, Reiter mit Kurzbeschriftung.

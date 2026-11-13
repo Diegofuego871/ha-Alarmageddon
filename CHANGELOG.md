@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.29.0] - 2026-11-13
+
+All sensor cards are the same height.
+
+### Changed
+
+- **Sensor cards in the overview are always the same height,** in the grid on the desktop and one below the other on the phone, whatever the sensor. Until now a card was as tall as its content: a long name, a mains-powered device without a battery or a missing value made the cards uneven. Now every card has room for **three lines of name**; a longer name is cut with "…" (the full name is in the tooltip and in the options of the sensor). The row with battery, forecast, signal and firmware has a fixed height (two lines from three entries on), and every entry you switch on in "View" (model, integration, last change) is always there, with "–" where there is no value. If you switch entries off in "View", all cards become equally lower.
+
 ## [1.28.0] - 2026-11-13
 
 Push messages that name what happened: new placeholders and fitting default texts.
@@ -1247,6 +1255,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0
 [1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0
 [1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0

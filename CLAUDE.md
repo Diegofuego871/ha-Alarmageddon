@@ -228,6 +228,10 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   zentral im CSS für alle Zeilenarten (`order: -1` in `styles.js`); eine neue Zeilenart wird dort ergänzt. Ausnahme:
   Schalter in Tabellenzellen (die Spalte ist ihre Beschriftung). `tests/panel/suites/switches-e2e.mjs` prüft das ganze
   Panel samt allen Fenstern; jede neue Ansicht mit Schaltern kommt dort dazu.
+- **Sensorkarten gleich hoch (Vorgabe des Nutzers, 2026-11-13):** Alle Karten der Übersicht sind immer gleich hoch, im Raster und auf
+  dem Handy. Der Name hat immer Platz für drei Zeilen (danach "…", voll im Tooltip), die übrigen Zeilen haben feste Höhen, fehlende
+  Angaben stehen als "–" da. Eine neue Zeile oder Angabe auf der Karte bekommt eine feste Höhe; `tests/panel/suites/cardheight-e2e.mjs`
+  prüft das mit langen Namen, auf Desktop und Handy.
 - **Kapitel:** Einstellungen stehen in Kapiteln; jedes hat einen Titel mit
   einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte.
   Reiter der Konfiguration gleiten beim Wechsel seitlich herein.

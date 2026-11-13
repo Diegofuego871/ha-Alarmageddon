@@ -401,14 +401,16 @@ export class ListUi {
       const [icon] = DC[r.info.device_class] || ["sensor"];
       const meta = [this._batteryHtml(r), on("forecast") ? this._forecastHtml(r) : "", on("signal") ? this._signalHtml(r) : "",
         r.info.sw_version && on("firmware") ? `<span class="ag-t2">${ic("chip", 14)} ${esc(r.info.sw_version)}</span>` : ""].filter(Boolean).join("");
+      const metaCount = 1 + ["forecast", "signal", "firmware"].filter(on).length;
+      // Feste Zeilen (1.29.0): jede eingeschaltete Angabe steht immer da, fehlende als "–", damit alle Karten gleich hoch sind
       const facts = [
-        on("model") && (r.info.manufacturer || r.info.model) ? [this._t("colModel"), [r.info.manufacturer, r.info.model].filter(Boolean).join(" ")] : null,
-        on("integration") && r.info.integration ? [this._t("colIntegration"), r.info.integration] : null,
-        on("changed") && r.changed ? [this._t("colChanged"), this.host._fmtAgo(r.changed)] : null,
-      ].filter(Boolean).map(([k, v]) => `<div><span class="ag-t2">${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
+        on("model") ? [this._t("colModel"), [r.info.manufacturer, r.info.model].filter(Boolean).join(" ")] : null,
+        on("integration") ? [this._t("colIntegration"), r.info.integration] : null,
+        on("changed") ? [this._t("colChanged"), r.changed ? this.host._fmtAgo(r.changed) : ""] : null,
+      ].filter(Boolean).map(([k, v]) => `<div><span class="ag-t2">${esc(k)}</span><b title="${esc(v || "")}">${esc(v || "–")}</b></div>`).join("");
       return `<div class="ag-card ag-mcard ag-lcard ${!r.gone && (r.open || r.occupied) ? "act" : ""}" data-act="more" data-entity="${esc(r.id)}"><div class="ag-mcard-top"><span class="ag-av ${r.gone ? "missing" : r.open || r.occupied ? "open" : ""}">${ic(r.gone ? "offline" : icon, 18)}</span>
-        <div style="flex:1;min-width:0">${esc(r.name)}<div class="ag-t2 ag-small">${esc(this._typeLabel(r))} · ${esc(r.area)}</div></div>${this._stateHtml(r)}</div>
-        ${on("systems") ? `<div class="ag-lz">${this._cell("systems", r)}</div>` : ""}<div class="ag-lmeta">${meta}</div>${facts ? `<div class="ag-lfacts">${facts}</div>` : ""}</div>`;
+        <div style="flex:1;min-width:0"><div class="ag-lname" title="${esc(r.name)}">${esc(r.name)}</div><div class="ag-t2 ag-small ag-lsub">${esc(this._typeLabel(r))} · ${esc(r.area)}</div></div>${this._stateHtml(r)}</div>
+        ${on("systems") ? `<div class="ag-lz">${this._cell("systems", r)}</div>` : ""}<div class="ag-lmeta ${metaCount > 2 ? "two" : ""}">${meta}</div>${facts ? `<div class="ag-lfacts">${facts}</div>` : ""}</div>`;
     }).join("")}`).join("")}</div>`;
   }
 
