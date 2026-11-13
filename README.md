@@ -62,6 +62,8 @@ What happens on an alarm is a flow you build from steps, per mode if you like. D
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-en.png" alt="Alarm actions as a flow: push notification, siren on, wait, siren off" width="100%"></p>
 
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-disarm-en.png" alt="The chapter When disarming at the bottom of the actions page, with a disarming tone" width="100%"></p>
+
 | Step | Does |
 | --- | --- |
 | Push notification | Critical alarm notification to the alarm recipients, with your own title and text, optional buttons and, if you like, its own recipients (every title starts with an emoji) |

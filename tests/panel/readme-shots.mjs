@@ -23,6 +23,8 @@ const FLOW = [
 ];
 // Aktionen beim Scharfschalten (1.14.0): ein kurzer Aktivierungston
 const ARMED = [{ type: "chime", players: ["media_player.sonos_kueche"], sound: "tone_rise", duration: 3, volume: null, wait: false }];
+// Aktionen beim Deaktivieren (1.27.0): ein kurzer Deaktivierungston
+const DISARMED = [{ type: "dechime", players: ["media_player.sonos_kueche"], sound: "off_fall", duration: 3, volume: null, wait: false }];
 // Aktionen nach dem Quittieren: das Licht im Flur wieder aus
 const AFTER = [{ type: "action", action: "light.turn_off", target: ["light.flur"], data: {}, restore: false, wait: false }];
 
@@ -37,15 +39,16 @@ async function shot(lang, name, { mobile = false, tab = "overview", prepare, hei
   const frame = await frameEl.contentFrame();
   await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view")`), null, { timeout: 10000 });
   // Erfundene Namen und der Ablauf der README
-  await page.evaluate(([flow, after, armed]) => {
+  await page.evaluate(([flow, after, armed, disarmed]) => {
     const swap = (v) => (typeof v === "string" ? v.replaceAll("Diego", "Marco") : v);
     for (const s of window.__systems) {
       for (const e of s.events) e.by = swap(e.by);
       s.workflows = { home: flow, away: flow };
       s.workflows_after = { home: after, away: after };
       s.workflows_armed = { home: armed, away: armed };
+      s.workflows_disarmed = { home: disarmed, away: disarmed };
     }
-  }, [FLOW, AFTER, ARMED]);
+  }, [FLOW, AFTER, ARMED, DISARMED]);
   await frame.evaluate(() => document.querySelector("alarmageddon-panel")._fetch());
   await page.waitForTimeout(400);
   if (prepare) await prepare({ page, frame });
@@ -71,6 +74,18 @@ for (const lang of ["en", "de"]) {
   await shot(lang, "overview");
   await shot(lang, "sensors", { tab: "config" });
   await shot(lang, "actions", { tab: "config", prepare: click('[data-sub="actions"]'), height: 1800 });
+  // Das Kapitel "Beim Deaktivieren" liegt ganz unten: eigenes Bild, bis ans Ende der Seite gerollt
+  await shot(lang, "actions-disarm", { tab: "config", height: 800, prepare: async ({ page, frame }) => {
+    await click('[data-sub="actions"]')({ frame });
+    await page.waitForTimeout(800);
+    // Die Überschrift des letzten Kapitels knapp unter die feste Leiste rollen (sonst verdeckt sie die Leiste)
+    await frame.evaluate(() => {
+      const r = document.querySelector("alarmageddon-panel").shadowRoot;
+      const chap = [...r.querySelectorAll(".ag-wf-chap")].pop();
+      const bar = r.querySelector(".ag-cfg");
+      r.host._content.scrollTop += chap.getBoundingClientRect().top - (bar.getBoundingClientRect().bottom + 12);
+    });
+  } });
   // Beendete Alarme sind zugeklappt (1.17.9): fürs Bild den neuesten aufklappen
   await shot(lang, "log", { tab: "log", prepare: click(".ag-inc-head") });
   await shot(lang, "mobile", { mobile: true });

@@ -62,6 +62,8 @@ Was bei einem Alarm passiert, ist ein Ablauf aus Schritten, auf Wunsch je Modus.
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-de.png" alt="Alarmaktionen als Ablauf: Push-Meldung, Sirene ein, Warten, Sirene aus" width="100%"></p>
 
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-Alarmageddon/main/docs/img/actions-disarm-de.png" alt="Das Kapitel Beim Deaktivieren ganz unten auf der Seite Aktionen, mit einem Deaktivierungston" width="100%"></p>
+
 | Schritt | Macht |
 | --- | --- |
 | Push-Meldung | Kritische Alarmmeldung an die Alarm-Empfänger, mit eigenem Titel und Text, wählbaren Knöpfen und auf Wunsch eigenen Empfängern (jeder Titel beginnt mit einem Emoji) |
