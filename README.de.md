@@ -87,6 +87,10 @@ Ein Alarm ist nicht zu übersehen: ein rotes Band mit dem Sensor, der ausgelöst
 
 Jeder Alarm wird vom ersten Auslösen bis zum Quittieren aufgezeichnet: welcher Sensor wann angesprochen hat, welche Schritte liefen, welche Meldungen hinausgingen. Alle anderen Ereignisse (scharf, deaktiviert, Zeitplan, Sensorausfälle) stehen im zweiten Reiter, mit Filter nach Zeitraum und CSV-Export. Beides bleibt ein Jahr; einen einzelnen Alarm kannst du löschen.
 
+Ein Alarm, wie er abläuft, mit erfundenen Daten (links das Handy, rechts der Computer):
+
+<p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/alarm-live-handy-de.gif" alt="Ein Alarm live auf dem Handy: Eingangsverzögerung, Alarm, Quittieren" width="240"> <img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/alarm-live-desktop-de.gif" alt="Derselbe Alarm auf dem Computer: die Zeitachse füllt sich im Protokoll" width="520"></p>
+
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/log-de.png" alt="Protokoll mit der Zeitachse eines Alarms" width="100%"></p>
 
 ### Mehr
