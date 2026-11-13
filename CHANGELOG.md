@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.30.0] - 2026-11-13
+
+No more "+ Alarm system" button in the header.
+
+### Removed
+
+- **The button "+ Alarm system" at the top right of the overview on the desktop is gone.** It led to the same place as the button "Open integration in HA" next to it: Home Assistant's page of the integration, where you add an alarm system. The button "Open integration in HA" stays. On the phone the button was already absent. Only without any alarm system does the empty page still offer the button to set one up.
+
 ## [1.29.0] - 2026-11-13
 
 All sensor cards are the same height.
@@ -1255,6 +1263,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
 [1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0
 [1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0
 [1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0

@@ -416,10 +416,8 @@ class AlarmageddonPanel extends HTMLElement {
       ["log", this._t(narrow ? "tabLogShort" : "tabLog"), "groups"],
       ["config", this._t(narrow ? "tabConfigShort" : "tabConfig"), "cog"],
     ], this._tab, "data-tab", "ag-tabs");
-    let right = "";
-    if (this._tab === "overview" && !narrow) right = `<span class="ag-grow"></span><button class="ag-btn" data-act="add">${ic("plus")}${esc(this._t("addSystem"))}</button>`;
     this._lastHtml.delete(this._content);
-    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head ag-head-cfg"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()"><div class="ag-headsys"></div>${tabs}${right}</div><div class="ag-view"></div>`));
+    this._keepScroll(() => (this._content.innerHTML = `<div class="ag-head ag-head-cfg"><img class="ag-logo" src="/alarmageddon_icon.png" alt="" width="40" height="40" onerror="this.remove()"><div class="ag-headsys"></div>${tabs}</div><div class="ag-view"></div>`));
     this._view = this._content.querySelector(".ag-view");
     const logo = this._content.querySelector(".ag-logo");
     logo?.addEventListener("load", () => this._stickySync());

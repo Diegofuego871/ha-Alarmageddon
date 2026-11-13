@@ -113,6 +113,13 @@ for (const lang of ["de", "en"]) {
 // Ohne Anlage: Hinweis mit Knopf
 const s = await open(browser, { query: "&empty=1" });
 check("leer: Hinweis", (await s.ev("return r.querySelector('.ag-empty')?.innerText || ''")).includes("Noch keine Alarmanlage"));
+check("leer: Knopf zum Einrichten bleibt (einziger Weg, wenn es noch keine Anlage gibt)", await s.ev("return !!r.querySelector('.ag-empty [data-act=\"add\"]')"));
 await s.ctx.close();
+// 1.30.0: Kein Knopf "+ Alarmanlage" in der Kopfzeile (führt zum selben Ort wie die Integration in Home Assistant), auf Desktop und Handy
+for (const mobile of [false, true]) {
+  const m = await open(browser, { mobile });
+  check(`${mobile ? "Handy" : "Desktop"}: kein Knopf "+ Alarmanlage" in der Kopfzeile`, await m.ev("return !r.querySelector('.ag-head [data-act=\"add\"]') && ![...r.querySelectorAll('.ag-head .ag-btn')].some((b) => b.innerText.includes('Alarmanlage') || b.innerText.includes('Alarm system'))"));
+  await m.ctx.close();
+}
 await browser.close();
 done();

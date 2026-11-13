@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.30.0] - 2026-11-13
+
+Kein Knopf "+ Alarmanlage" mehr in der Kopfzeile.
+
+### Entfernt
+
+- **Der Knopf "+ Alarmanlage" oben rechts in der Übersicht auf dem Desktop ist weg.** Er führte an denselben Ort wie der Knopf "Integration in HA öffnen" daneben: zur Seite der Integration in Home Assistant, wo man eine Alarmanlage hinzufügt. Der Knopf "Integration in HA öffnen" bleibt. Auf dem Handy gab es den Knopf schon vorher nicht. Nur ohne jede Alarmanlage bietet die leere Seite weiterhin den Knopf zum Einrichten an.
+
 ## [1.29.0] - 2026-11-13
 
 Alle Sensorkarten sind gleich hoch.
@@ -1255,6 +1263,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
 [1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0
 [1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0
 [1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
