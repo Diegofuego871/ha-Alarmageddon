@@ -214,6 +214,12 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-dlg-btns { display: flex; gap: 10px; justify-content: flex-end; }
 .ag-code { height: 52px; border-radius: 14px; border: 1px solid var(--ag-divider); background: var(--ag-bg); color: var(--ag-text); font: inherit; font-size: 24px; letter-spacing: .3em; text-align: center; }
 .ag-dlg-err { color: var(--ag-error); font-size: 13.5px; min-height: 18px; }
+/* Vorschau der Identität im Dialog "Anlage hinzufügen": feste Mindesthöhe, damit der Dialog beim Tippen nicht springt */
+.ag-addprev { display: flex; flex-direction: column; gap: 6px; min-height: 138px; margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--ag-subtle); border: 1px solid var(--ag-divider); }
+.ag-addrow { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ag-addrow b { font-weight: 500; overflow-wrap: anywhere; }
+.ag-addhint { display: flex; align-items: flex-start; gap: 8px; }
+.ag-addhint .ag-ic { flex: none; margin-top: 2px; }
 .ag-toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); width: max-content; max-width: calc(100% - 32px); background: #323232; color: #fff; padding: 12px 18px; border-radius: 12px; box-shadow: var(--ag-shadow); z-index: 10; font-size: 14px; }
 .ag-root { position: relative; display: flex; flex-direction: column; height: 100%; }
 

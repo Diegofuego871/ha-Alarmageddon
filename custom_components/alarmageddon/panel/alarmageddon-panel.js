@@ -79,7 +79,7 @@ class AlarmageddonPanel extends HTMLElement {
 
   _init() {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
-      <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-rename"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
+      <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-rename"></dialog><dialog class="ag-dlg" id="ag-add"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog><dialog class="ag-dlg ag-wide ag-svdlg" id="ag-sensor"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
@@ -934,7 +934,10 @@ class AlarmageddonPanel extends HTMLElement {
       : `<h2 class="ag-systitle">${esc(cur.title)}</h2>`;
     const label = this._t("openInHa");
     const text = this.hasAttribute("narrow") ? "" : esc(label);
+    // Anlage hinzufügen (1.31.0): öffnet einen eigenen Dialog, nicht Home Assistant; am Computer mit Text, auf dem Handy nur das Plus
+    const add = this._t("addSystem");
     return `${title}<button class="ag-iconbtn" data-act="rename" title="${esc(this._t("renameTip"))}" aria-label="${esc(this._t("renameTip"))}">${ic("pencil", 22)}</button><span class="ag-grow"></span>
+      <button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="add" aria-label="${esc(add)}" title="${esc(add)}">${ic("plus", 18)}${text ? esc(add) : ""}</button>
       <button class="ag-btn ${text ? "" : "ag-btn-ic"}" data-act="open-ha" aria-label="${esc(label)}" title="${esc(label)}">${ic("external", 18)}${text}</button>`;
   }
 
@@ -1028,6 +1031,89 @@ class AlarmageddonPanel extends HTMLElement {
     await this._fetch();
     // Der Name steht in der Kopfzeile, die sonst nur beim Wechsel von Reiter oder Anlage neu aufgebaut wird
     if (this._tab === "config") this._renderView(true);
+  }
+
+  // Anlage hinzufügen (1.31.0): Name, Vorschau der Identität (Gerät und Alarm-Entität, vom Server gerechnet), Anlegen. Kein Code und keine
+  // Sensoren hier: das stellt man danach in der Konfiguration ein (der Code wird nie in einem Dialog beim Anlegen eingegeben).
+  _openAdd() {
+    const dlg = this._root.getElementById("ag-add");
+    dlg.innerHTML = `<form class="ag-dlg-body" data-form="add">
+      <h3>${esc(this._t("addTitle"))}</h3>
+      <div class="ag-t2">${esc(this._t("addText"))}</div>
+      <label class="ag-t2 ag-small" for="ag-add-input">${esc(this._t("addLabel"))}</label>
+      <input class="ag-input" id="ag-add-input" type="text" maxlength="60" required autocomplete="off" placeholder="${esc(this._t("addPlaceholder"))}" style="width:100%;box-sizing:border-box">
+      <div class="ag-addprev" id="ag-addprev" aria-live="polite">${this._addPreviewHtml(null)}</div>
+      <div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-dlg-btns"><button type="button" class="ag-btn" data-act="close-add">${esc(this._t("cancel"))}</button><button class="ag-btn primary" type="submit" disabled>${ic("plus", 18)}${esc(this._t("addCreate"))}</button></div></form>`;
+    this._addSeq = (this._addSeq || 0) + 1;
+    dlg.showModal();
+    dlg.querySelector("input").focus();
+  }
+
+  // Vorschau der Identität: Gerät und Alarm-Entität; ohne Name oder mit Fehler ein Hinweis statt der Werte
+  _addPreviewHtml(res) {
+    const row = (label, value, mono) => `<div class="ag-addrow"><span class="ag-t2">${esc(label)}</span><b class="${mono ? "ag-mono" : ""}">${esc(value)}</b></div>`;
+    if (!res) return `<div class="ag-addhint ag-t2">${ic("shield", 16)}<span>${esc(this._t("addPreviewEmpty"))}</span></div>`;
+    if (res.error) return `<div class="ag-addhint ag-warntext">${ic("alert", 16)}<span>${esc(this._t(res.error === "name_taken" ? "renameTaken" : "renameEmpty"))}</span></div>`;
+    return `${row(this._t("addPrevDevice"), res.name)}${row(this._t("addPrevEntity"), res.alarm_entity_id, true)}<div class="ag-t2 ag-small">${esc(this._t("addPrevMore"))}</div>`;
+  }
+
+  // Überholte Antworten verwerfen (LEARNINGS): nur die letzte Eingabe zählt; kurz warten, damit nicht jede Taste den Server fragt
+  _previewAdd(value) {
+    const dlg = this._root.getElementById("ag-add");
+    const prev = dlg?.querySelector("#ag-addprev");
+    const submit = dlg?.querySelector('button[type="submit"]');
+    if (!prev || !submit) return;
+    const seq = (this._addSeq = (this._addSeq || 0) + 1);
+    const err = dlg.querySelector(".ag-dlg-err");
+    if (err) err.textContent = "";
+    submit.disabled = true;
+    clearTimeout(this._addTimer);
+    if (!value.trim()) {
+      prev.innerHTML = this._addPreviewHtml(null);
+      return;
+    }
+    this._addTimer = setTimeout(async () => {
+      let res = null;
+      try {
+        res = await this._hass.callWS({ type: "alarmageddon/preview_system", name: value });
+      } catch {
+        res = null;
+      }
+      if (seq !== this._addSeq || !dlg.open) return;
+      prev.innerHTML = this._addPreviewHtml(res);
+      submit.disabled = !res || !!res.error;
+    }, 200);
+  }
+
+  async _createSystem(form) {
+    const dlg = this._root.getElementById("ag-add");
+    const err = dlg.querySelector(".ag-dlg-err");
+    const submit = form.querySelector('button[type="submit"]');
+    const name = form.querySelector("input").value.trim();
+    if (!name || submit.disabled) return;
+    submit.disabled = true;
+    let entryId;
+    try {
+      entryId = (await this._hass.callWS({ type: "alarmageddon/create_system", name })).entry_id;
+    } catch (e) {
+      err.textContent = e?.code === "name_taken" ? this._t("renameTaken") : e?.code === "name_required" ? this._t("renameEmpty") : this._t("addFailed", { message: errText(e) });
+      submit.disabled = false;
+      return;
+    }
+    this._closeDialog("ag-add");
+    await this._fetch();
+    // Zur neuen Anlage wechseln und gleich die Sensoren wählen lassen; offene Änderungen an der bisherigen Anlage fragen vorher nach
+    this._guard(() => {
+      this._sel = entryId;
+      this._savePref("system", entryId);
+      this._resetConfig();
+      this._tab = "config";
+      this._sub = "sensors";
+      this._savePref("tab", "config");
+      this._savePref("sub", "sensors");
+      this._render();
+    });
   }
 
   _resetConfig() {
@@ -1311,7 +1397,9 @@ class AlarmageddonPanel extends HTMLElement {
       if (el.dataset.entity.startsWith("binary_sensor.")) this.sensorView.open(el.dataset.entity);
       else this._moreInfo(el.dataset.entity);
     } else if (act === "add") {
-      this._navigate("/config/integrations/integration/alarmageddon");
+      this._openAdd();
+    } else if (act === "close-add") {
+      this._closeDialog("ag-add");
     } else if (act === "rename") {
       this._openRename();
     } else if (act === "rename-ids") {
@@ -1338,6 +1426,10 @@ class AlarmageddonPanel extends HTMLElement {
 
   _onInput(ev) {
     const el = ev.target;
+    if (el.id === "ag-add-input") {
+      this._previewAdd(el.value);
+      return;
+    }
     if (this.list.onInput(el)) return;
     if (this._tab === "config" && this._sub === "sensors" && this.sensors.onInput(el)) return;
     if (this._tab === "config" && this._sub === "system") this.systemUi.onInput(el);
@@ -1366,6 +1458,12 @@ class AlarmageddonPanel extends HTMLElement {
     if (bform) {
       ev.preventDefault();
       this.systemUi.createBackup(bform.querySelector("input").value);
+      return;
+    }
+    const aform = ev.target.closest('[data-form="add"]');
+    if (aform) {
+      ev.preventDefault();
+      this._createSystem(aform);
       return;
     }
     const rform = ev.target.closest('[data-form="rename"]');

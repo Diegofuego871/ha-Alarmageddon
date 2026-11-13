@@ -7,6 +7,15 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.31.0] - 2026-11-13
+
+Alarmanlage im Panel hinzufügen.
+
+### Hinzugefügt
+
+- **Der Knopf "Anlage hinzufügen" ist zurück in der Kopfzeile und öffnet jetzt einen eigenen Dialog im Panel** statt Home Assistant. Am Computer steht er als "+ Anlage hinzufügen" neben "Integration in HA öffnen"; auf dem Handy ist es nur ein kleines rundes Plus, gleich gross und gleich geformt wie der Knopf zu Home Assistant. Der Dialog hat einen kurzen Erklärungstext, ein Namensfeld und eine **Vorschau der Identität**: den Namen des Geräts und die Entitäts-ID, die Home Assistant der Alarm-Entität gibt (zum Beispiel `alarm_control_panel.garage_nord`, Umlaute und belegte IDs rechnet der Server). Ein leerer und ein schon vergebener Name (Gross-/Kleinschreibung zählt nicht) werden abgelehnt, bevor du "Hinzufügen" drückst. Danach wechselt das Panel zur neuen Alarmanlage, in Konfiguration › Sensoren, damit du gleich ihre Sensoren wählen kannst; offene Änderungen an der bisherigen Anlage werden vorher nachgefragt. Modi, Aktionen und den Code stellst du danach in der Konfiguration ein; der Code wird nie in diesem Dialog eingegeben. Die leere Seite ohne jede Alarmanlage nutzt denselben Dialog. Das Hinzufügen in Home Assistant funktioniert weiter wie bisher.
+- **Zwei neue Befehle für Administratoren:** `create_system` und `preview_system`. Ohne Administratorrechte lässt sich weder eine Anlage hinzufügen noch die Vorschau abfragen.
+
 ## [1.30.0] - 2026-11-13
 
 Kein Knopf "+ Alarmanlage" mehr in der Kopfzeile.
@@ -1263,6 +1272,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0
 [1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
 [1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0
 [1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0

@@ -31,7 +31,7 @@ A complete alarm system for Home Assistant: without a single automation, with pu
 ## Quick start
 
 1. **Install:** HACS → three dots → "Custom repositories" → `https://github.com/Diegofuego871/ha-Alarmageddon`, type "Integration". Install "Alarmageddon" and restart Home Assistant.
-2. **Add an alarm system:** Settings → Devices & services → "Add integration" → "Alarmageddon". Give it a name and, if you like, a code.
+2. **Add an alarm system:** Settings → Devices & services → "Add integration" → "Alarmageddon". Give it a name and, if you like, a code. Once the panel is open, further alarm systems you add right there with "Add alarm system" (name and a preview of its entity ID; sensors, modes and code follow in the configuration).
 3. **Choose the sensors:** open "Alarmageddon" in the sidebar (administrators only), then Configuration › Sensors › "Add sensors", and tick the zones "Home", "Away" and "Night".
 4. **Decide what happens on an alarm:** Configuration › Actions, for example "push notification, siren on, wait 3 minutes, siren off".
 5. **Choose who is notified:** Configuration › Notifications. "Send test message" and the play button of a step let you try everything without an alarm.

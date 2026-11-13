@@ -31,7 +31,7 @@ Eine vollständige Alarmanlage für Home Assistant: ohne eine einzige Automation
 ## Schnellstart
 
 1. **Installieren:** HACS → drei Punkte → "Benutzerdefinierte Repositories" → `https://github.com/Diegofuego871/ha-Alarmageddon`, Typ "Integration". "Alarmageddon" installieren und Home Assistant neu starten.
-2. **Anlage hinzufügen:** Einstellungen → Geräte & Dienste → "Integration hinzufügen" → "Alarmageddon". Name vergeben und, wenn du willst, einen Code.
+2. **Anlage hinzufügen:** Einstellungen → Geräte & Dienste → "Integration hinzufügen" → "Alarmageddon". Name vergeben und, wenn du willst, einen Code. Weitere Alarmanlagen fügst du bei geöffnetem Panel gleich dort mit "Anlage hinzufügen" hinzu (Name und Vorschau der Entitäts-ID; Sensoren, Modi und Code folgen in der Konfiguration).
 3. **Sensoren wählen:** "Alarmageddon" in der Seitenleiste öffnen (nur Administratoren), dann Konfiguration › Sensoren › "Sensoren hinzufügen", und die Zonen "Anwesend", "Abwesend" und "Nacht" ankreuzen.
 4. **Festlegen, was bei einem Alarm passiert:** Konfiguration › Aktionen, zum Beispiel "Push-Meldung, Sirene ein, 3 Minuten warten, Sirene aus".
 5. **Wählen, wer benachrichtigt wird:** Konfiguration › Benachrichtigungen. Mit "Testmeldung senden" und dem Abspielknopf eines Schritts probierst du alles ohne Alarm aus.

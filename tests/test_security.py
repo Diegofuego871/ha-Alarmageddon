@@ -53,6 +53,8 @@ COMMANDS: dict[str, dict[str, Any]] = {
     "save_zones": {"entry_id": "ENTRY", "zones": {}, "entry_sensors": []},
     "arm": {"entry_id": "ENTRY", "mode": "off"},
     "rename": {"entry_id": "ENTRY", "name": "Neuer Name"},
+    "create_system": {"name": "Neue Anlage"},
+    "preview_system": {"name": "Neue Anlage"},
     "save_presets": {"presets": {}},
     "save_system": {"entry_id": "ENTRY"},
     "save_notify": {"notify": {}},
@@ -101,6 +103,8 @@ async def test_every_websocket_command_is_admin_only(hass: HomeAssistant, hass_w
     assert result["success"] is False and result["error"]["code"] == "unauthorized", result
     assert state(hass) == AlarmControlPanelState.DISARMED
     assert entry.title == "Haus" and not entry.options.get("codes")
+    # Auch das Anlegen einer Anlage bleibt dem Administrator vorbehalten: ohne Rechte entsteht nichts
+    assert [e.title for e in hass.config_entries.async_entries(DOMAIN)] == ["Haus"]
 
 
 @pytest.mark.parametrize("command", sorted(name for name, payload in COMMANDS.items() if "entry_id" in payload))

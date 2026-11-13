@@ -17,9 +17,10 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.components.alarm_control_panel import AlarmControlPanelState
-from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.config_entries import SOURCE_USER, ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
@@ -100,6 +101,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_zones)
     websocket_api.async_register_command(hass, ws_arm)
     websocket_api.async_register_command(hass, ws_rename)
+    websocket_api.async_register_command(hass, ws_create_system)
+    websocket_api.async_register_command(hass, ws_preview_system)
     websocket_api.async_register_command(hass, ws_save_presets)
     websocket_api.async_register_command(hass, ws_save_system)
     websocket_api.async_register_command(hass, ws_save_notify)
@@ -380,6 +383,55 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         return
     connection.send_result(msg["id"], {"ok": True})
 
+
+
+def _new_system_name(hass: HomeAssistant, raw: str) -> tuple[str, str | None]:
+    """Name einer neuen Anlage ohne doppelte Leerzeichen und der Fehler dazu (leer, schon vergeben; Gross-/Kleinschreibung zählt nicht)."""
+    name = " ".join(raw.split())
+    if not name:
+        return name, "name_required"
+    if any(e.title.casefold() == name.casefold() for e in hass.config_entries.async_entries(DOMAIN)):
+        return name, "name_taken"
+    return name, None
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/preview_system", vol.Required("name"): vol.All(str, vol.Length(max=60))})
+@websocket_api.require_admin
+@callback
+def ws_preview_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Vorschau für den Dialog "Anlage hinzufügen": der Name und die Entitäts-ID, die Home Assistant der neuen Anlage geben würde.
+    Rechnet hier und nicht im Panel, damit Umlaute und belegte IDs ("_2") stimmen. Erzeugt nichts und meldet Fehler als Wert,
+    damit das Panel beim Tippen nichts als Fehler anzeigen muss.
+    """
+    name, error = _new_system_name(hass, msg["name"])
+    alarm_id = None
+    if error is None and (slug := slugify(name)):
+        alarm_id = er.async_get(hass).async_generate_entity_id("alarm_control_panel", slug)
+    connection.send_result(msg["id"], {"name": name, "error": error, "alarm_entity_id": alarm_id})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/create_system", vol.Required("name"): vol.All(str, vol.Length(max=60))})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_create_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Legt eine neue Anlage an, über dieselbe Einrichtung wie in Home Assistant (Standardwerte: kein Code, Nacht aus, noch keine
+    Sensoren). Alles Weitere stellt man danach in der Konfiguration ein; der Code wird nie hier eingegeben.
+    """
+    name, error = _new_system_name(hass, msg["name"])
+    if error:
+        connection.send_error(msg["id"], error, "Name is empty" if error == "name_required" else "Name already used")
+        return
+    flow = hass.config_entries.flow
+    result = await flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    if result["type"] is FlowResultType.FORM:
+        result = await flow.async_configure(result["flow_id"], {CONF_NAME: name})
+    if result["type"] is not FlowResultType.CREATE_ENTRY:
+        connection.send_error(msg["id"], "create_failed", "The alarm system could not be created")
+        return
+    await hass.async_block_till_done()
+    connection.send_result(msg["id"], {"entry_id": result["result"].entry_id})
 
 
 @websocket_api.websocket_command(

@@ -7,6 +7,15 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.31.0] - 2026-11-13
+
+Add an alarm system in the panel.
+
+### Added
+
+- **The button "Add alarm system" is back in the header, and it now opens a dialog of its own in the panel** instead of Home Assistant. On the desktop it reads "+ Add alarm system" next to "Open integration in HA"; on the phone it is only a small round plus, the same size and shape as the button to Home Assistant. The dialog has a short explanation, a field for the name and a **preview of the identity**: the name of the device and the entity ID that Home Assistant will give the alarm entity (for example `alarm_control_panel.garage_nord`, with umlauts and taken IDs worked out by the server). An empty name and a name that is already used (capitals do not matter) are refused before you press "Add". Afterwards the panel jumps to the new alarm system, to Configuration › Sensors, so you can choose its sensors right away; unsaved changes on the current alarm system are asked about first. Modes, actions and the code you set up afterwards in the configuration; the code is never entered in this dialog. The empty page without any alarm system uses the same dialog. Adding an alarm system in Home Assistant still works as before.
+- **Two new commands for administrators:** `create_system` and `preview_system`. Anyone without administrator rights can neither add an alarm system nor ask for the preview.
+
 ## [1.30.0] - 2026-11-13
 
 No more "+ Alarm system" button in the header.
@@ -1263,6 +1272,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0
 [1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
 [1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0
 [1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0

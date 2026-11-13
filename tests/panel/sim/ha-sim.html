@@ -320,6 +320,37 @@
       }
       return { presets: window.__presets, reset };
     }
+    // 1.31.0: Anlage hinzufügen (Vorschau rechnet wie der Server: Umlaute vereinfacht, belegte IDs bekommen "_2")
+    const newName = (raw) => {
+      const name = String(raw || "").split(/\s+/).filter(Boolean).join(" ");
+      if (!name) return [name, "name_required"];
+      if (window.__systems.some((x) => x.title.toLowerCase() === name.toLowerCase())) return [name, "name_taken"];
+      return [name, null];
+    };
+    if (msg.type === "alarmageddon/preview_system") {
+      const [name, error] = newName(msg.name);
+      const slug = name.toLowerCase().replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      let id = `alarm_control_panel.${slug}`;
+      for (let n = 2; window.__systems.some((x) => x.entity_id === id); n += 1) id = `alarm_control_panel.${slug}_${n}`;
+      window.__previews = (window.__previews || 0) + 1;
+      return { name, error, alarm_entity_id: error ? null : id };
+    }
+    if (msg.type === "alarmageddon/create_system") {
+      const [name, error] = newName(msg.name);
+      if (error) throw err(error, error);
+      if (window.__createFail) throw err("create_failed", "The alarm system could not be created");
+      const slug = name.toLowerCase().replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      const created = { entry_id: `e_${slug}`, title: name, entity_id: `alarm_control_panel.${slug}`, modes: ["home", "away"], zones: { home: [], away: [] },
+        sensors: Object.keys(SENSORS), entry_sensors: [], entry_delay_max: { home: 0, away: 0 },
+        mode_settings: { home: { exit_delay: 0, entry_delay: 30, confirm_window: 60 }, away: { exit_delay: 60, entry_delay: 30, confirm_window: 60 } },
+        has_code: false, code_arm_required: false, main_code: false, codes: [], pcodes: {}, schedules: [], night_enabled: false, sensor_options: {},
+        workflows: {}, workflow_running: null, workflow_test: false, events: [] };
+      window.__systems.push(created);
+      window.__systems.sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
+      window.__setState(created.entity_id, "disarmed", { arm_mode: null, changed_by: null, deadline: null, triggered_by: null, friendly_name: name });
+      window.__created = (window.__created || []).concat([name]);
+      return { entry_id: created.entry_id };
+    }
     const sys = window.__systems.find((s) => s.entry_id === msg.entry_id);
     if (!sys) throw err("not_found");
     const reloadNow = () => {
