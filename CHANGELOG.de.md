@@ -7,6 +7,16 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.32.0] - 2026-11-13
+
+Alarmanlage im Panel löschen.
+
+### Hinzugefügt
+
+- **Eine Alarmanlage löschen.** Ganz unten in Konfiguration › Anlage, unter den Sicherungen, steht ein neues Kapitel "Anlage löschen" mit einem roten Textknopf. Er öffnet einen Warn-Dialog, der sagt, was verschwindet (das Gerät und alle seine Entitäten, ihre Sensoren, Aktionen, Zeitpläne und Codes, ihr Protokoll und ihre Aufzeichnungen) und was bleibt (die anderen Alarmanlagen, die Voreinstellungen je Sensorart, die Empfänger der Meldungen, Sicherungen), und der daran erinnert, dass Automationen, Szenen, Dashboards und Apple Home, die die Alarm-Entität nutzen, du selbst anpassen musst. "Endgültig löschen" wird erst frei, wenn du den genauen Namen der Alarmanlage eingetippt hast. Ein Schalter "Vorher eine Sicherung anlegen" ist standardmässig an; er belegt einen der 10 Sicherungsplätze. Eine Sicherung bringt eine gelöschte Alarmanlage nicht von selbst zurück, aber legst du eine Alarmanlage mit demselben Namen neu an und stellst die Sicherung wieder her, sind ihre Einstellungen zurück.
+- **Nur im deaktivierten Zustand.** Eine scharfe Alarmanlage, eine in der Ausgangs- oder Eingangsverzögerung und eine im Alarm lässt sich nicht löschen; der Knopf ist gesperrt und sagt es, und auch der Server lehnt es ab (sie verschwindet nie still, während sie das Haus schützt). Ein Code wird nicht verlangt.
+- **Neuer Befehl für Administratoren:** `delete_system`. Ohne Administratorrechte lässt sich keine Alarmanlage löschen. Er prüft Zustand und eingetippten Namen auf dem Server, nicht nur im Panel, und legt die Sicherung nur an, wenn beides stimmt.
+
 ## [1.31.0] - 2026-11-13
 
 Alarmanlage im Panel hinzufügen.
@@ -1272,6 +1282,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.32.0
 [1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0
 [1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
 [1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0

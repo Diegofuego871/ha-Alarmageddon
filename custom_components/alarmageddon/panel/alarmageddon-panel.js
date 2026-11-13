@@ -79,7 +79,7 @@ class AlarmageddonPanel extends HTMLElement {
 
   _init() {
     this._root.innerHTML = `<style>${CSS}</style><div class="ag-root"><div class="ag-content"></div>
-      <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-rename"></dialog><dialog class="ag-dlg" id="ag-add"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
+      <dialog class="ag-dlg" id="ag-code"></dialog><dialog class="ag-dlg" id="ag-rename"></dialog><dialog class="ag-dlg" id="ag-add"></dialog><dialog class="ag-dlg" id="ag-delete"></dialog><dialog class="ag-dlg" id="ag-discard"></dialog><dialog class="ag-dlg" id="ag-view"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-presets"></dialog><dialog class="ag-dlg ag-sheetdlg" id="ag-sheet"></dialog>
       <dialog class="ag-dlg ag-wide" id="ag-step"></dialog><dialog class="ag-dlg" id="ag-codes"></dialog><dialog class="ag-dlg" id="ag-confirm"></dialog><dialog class="ag-dlg ag-wide" id="ag-pick"></dialog><dialog class="ag-dlg ag-wide ag-svdlg" id="ag-sensor"></dialog></div>`;
     this._content = this._root.querySelector(".ag-content");
@@ -1033,6 +1033,66 @@ class AlarmageddonPanel extends HTMLElement {
     if (this._tab === "config") this._renderView(true);
   }
 
+  // Anlage löschen (1.32.0): Warnung mit dem, was verschwindet und was bleibt; der Knopf wird erst frei, wenn der Name der Anlage
+  // eingetippt ist. Nur bei deaktivierter Anlage (der Server lehnt sonst ab). Eine Sicherung vorher ist ein Schalter, standardmässig an.
+  _openDelete() {
+    const s = this._system();
+    if (!s) return;
+    const dlg = this._root.getElementById("ag-delete");
+    if (this._state(s.entity_id)?.state !== "disarmed") {
+      this._toast(this._t("delNotDisarmed"));
+      return;
+    }
+    const li = (key) => `<li>${esc(this._t(key))}</li>`;
+    dlg.innerHTML = `<form class="ag-dlg-body" data-form="delete" data-entry="${esc(s.entry_id)}" data-name="${esc(s.title)}">
+      <h3 class="ag-deltitle">${ic("alert", 22)}<span>${esc(this._t("delDialogTitle", { name: s.title }))}</span></h3>
+      <div class="ag-delwarn">${esc(this._t("delIrreversible"))}</div>
+      <div class="ag-delbox"><b>${esc(this._t("delGoes"))}</b><ul>${li("delGoes1")}${li("delGoes2")}${li("delGoes3")}</ul>
+        <b>${esc(this._t("delStays"))}</b><ul>${li("delStays1")}${li("delStays2")}</ul></div>
+      <div class="ag-t2 ag-small">${esc(this._t("delOutside", { entity: s.entity_id }))}</div>
+      <label class="ag-orow ag-rename-ids"><div class="ag-otx"><b>${esc(this._t("delBackup"))}</b><small>${esc(this._t("delBackupHint"))}</small></div>
+        <button type="button" class="ag-toggle on" data-act="delete-backup" role="switch" aria-checked="true" aria-label="${esc(this._t("delBackup"))}"></button></label>
+      <label class="ag-t2 ag-small" for="ag-del-input" style="margin-top:14px;display:block">${esc(this._t("delConfirmLabel"))} <b class="ag-delname">${esc(s.title)}</b></label>
+      <input class="ag-input" id="ag-del-input" type="text" maxlength="60" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(this._t("delConfirmPlaceholder"))}" style="width:100%;box-sizing:border-box">
+      <div class="ag-dlg-err" aria-live="polite"></div>
+      <div class="ag-dlg-btns"><button type="button" class="ag-btn" data-act="close-delete">${esc(this._t("cancel"))}</button><button class="ag-btn danger" type="submit" disabled>${ic("trash", 18)}${esc(this._t("delConfirm"))}</button></div></form>`;
+    dlg.showModal();
+    dlg.querySelector("input").focus();
+  }
+
+  // Frei erst, wenn der Name genau stimmt (Gross-/Kleinschreibung zählt, mehrere Leerzeichen nicht)
+  _checkDelete(input) {
+    const form = input.closest("form");
+    const norm = (v) => v.split(/\s+/).filter(Boolean).join(" ");
+    const ok = norm(input.value) === norm(form.dataset.name);
+    form.querySelector('button[type="submit"]').disabled = !ok;
+    form.querySelector(".ag-dlg-err").textContent = "";
+  }
+
+  async _deleteSystem(form) {
+    const dlg = this._root.getElementById("ag-delete");
+    const err = dlg.querySelector(".ag-dlg-err");
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit.disabled) return;
+    const name = form.querySelector("input").value;
+    const backup = form.querySelector('[data-act="delete-backup"]').classList.contains("on");
+    submit.disabled = true;
+    try {
+      await this._hass.callWS({ type: "alarmageddon/delete_system", entry_id: form.dataset.entry, name, ...(backup ? { backup_name: this._t("delBackupName", { name: form.dataset.name }).slice(0, 60) } : {}) });
+    } catch (e) {
+      err.textContent = e?.code === "not_disarmed" ? this._t("delNotDisarmed") : e?.code === "name_mismatch" ? this._t("delMismatch") : this._t("delFailed", { message: errText(e) });
+      submit.disabled = false;
+      return;
+    }
+    this._closeDialog("ag-delete");
+    // Zur ersten übrigen Anlage (oder zur leeren Seite); Entwürfe der gelöschten Anlage sind gegenstandslos
+    this._sel = null;
+    this._resetConfig();
+    this.systemUi.backups = null;
+    await this._fetch();
+    this._render();
+  }
+
   // Anlage hinzufügen (1.31.0): Name, Vorschau der Identität (Gerät und Alarm-Entität, vom Server gerechnet), Anlegen. Kein Code und keine
   // Sensoren hier: das stellt man danach in der Konfiguration ein (der Code wird nie in einem Dialog beim Anlegen eingegeben).
   _openAdd() {
@@ -1400,6 +1460,12 @@ class AlarmageddonPanel extends HTMLElement {
       this._openAdd();
     } else if (act === "close-add") {
       this._closeDialog("ag-add");
+    } else if (act === "close-delete") {
+      this._closeDialog("ag-delete");
+    } else if (act === "delete-backup") {
+      const on = !el.classList.contains("on");
+      el.classList.toggle("on", on);
+      el.setAttribute("aria-checked", String(on));
     } else if (act === "rename") {
       this._openRename();
     } else if (act === "rename-ids") {
@@ -1430,6 +1496,10 @@ class AlarmageddonPanel extends HTMLElement {
       this._previewAdd(el.value);
       return;
     }
+    if (el.id === "ag-del-input") {
+      this._checkDelete(el);
+      return;
+    }
     if (this.list.onInput(el)) return;
     if (this._tab === "config" && this._sub === "sensors" && this.sensors.onInput(el)) return;
     if (this._tab === "config" && this._sub === "system") this.systemUi.onInput(el);
@@ -1458,6 +1528,12 @@ class AlarmageddonPanel extends HTMLElement {
     if (bform) {
       ev.preventDefault();
       this.systemUi.createBackup(bform.querySelector("input").value);
+      return;
+    }
+    const dform = ev.target.closest('[data-form="delete"]');
+    if (dform) {
+      ev.preventDefault();
+      this._deleteSystem(dform);
       return;
     }
     const aform = ev.target.closest('[data-form="add"]');

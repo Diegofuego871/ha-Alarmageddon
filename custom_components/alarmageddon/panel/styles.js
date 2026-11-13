@@ -835,6 +835,22 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 .ag-systitle { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -.3px; overflow-wrap: anywhere; }
 :host([narrow]) .ag-systitle { font-size: 22px; }
 :host([narrow]) select.ag-select[data-act="system"] { font-size: 20px; height: 44px; min-width: 0; flex: 1 1 auto; max-width: 100%; }
+/* Anlage löschen (1.32.0): roter Strich am Kapitel, roter Textknopf ohne Füllung, Warnkasten im Dialog */
+/* Lange Dialoge scrollen, ihre Felder werden nie zusammengedrückt (auf dem Handy sonst ein halbhohes Eingabefeld) */
+#ag-delete .ag-dlg-body > *, #ag-add .ag-dlg-body > * { flex-shrink: 0; }
+/* eigener Hinweis (nicht .ag-warntext: den zählen andere Prüfungen als Warnung zu "Immer aktiv") */
+.ag-delnote { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }
+.ag-chap-danger .ag-chap-t::before { background: var(--ag-error); }
+.ag-btn-danger-text { background: transparent; border-color: color-mix(in srgb, var(--ag-error) 45%, var(--ag-divider)); color: var(--ag-error); }
+.ag-btn-danger-text:hover:not(:disabled) { background: color-mix(in srgb, var(--ag-error) 10%, var(--ag-card)); }
+.ag-btn-danger-text:disabled { opacity: .45; cursor: not-allowed; }
+.ag-deltitle { display: flex; align-items: flex-start; gap: 10px; color: var(--ag-error); }
+.ag-deltitle .ag-ic { flex: none; margin-top: 2px; }
+.ag-delwarn { color: var(--ag-error); font-weight: 600; margin: 2px 0 10px; }
+.ag-delbox { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--ag-error) 7%, var(--ag-card)); border: 1px solid color-mix(in srgb, var(--ag-error) 30%, var(--ag-divider)); font-size: 13.5px; }
+.ag-delbox ul { margin: 0 0 8px; padding-left: 20px; }
+.ag-delbox ul:last-child { margin-bottom: 0; }
+.ag-delname { color: var(--ag-text); overflow-wrap: anywhere; }
 .ag-rename-ids { border-bottom: 0; margin-top: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
 /* Sensoren auf dem Handy: dieselbe Tabelle mit Kästchen, kompakt */
 :host([narrow]) .ag-table th { padding: 8px 4px; font-size: 11px; }

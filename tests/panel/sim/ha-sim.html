@@ -442,6 +442,18 @@
       sys.night_enabled = enabled.night;
       return { ok: true };
     }
+    // 1.32.0: Anlage löschen (nur deaktiviert, der Name muss genau stimmen, auf Wunsch mit Sicherung)
+    if (msg.type === "alarmageddon/delete_system") {
+      if (states[sys.entity_id]?.state !== "disarmed") throw err("not_disarmed", "Disarm the alarm system first");
+      if (String(msg.name || "").split(/\s+/).filter(Boolean).join(" ") !== sys.title.split(/\s+/).filter(Boolean).join(" ")) throw err("name_mismatch", "The name does not match");
+      if (window.__deleteFail) throw err("delete_failed", "Deleting failed");
+      window.__deletedSystems = (window.__deletedSystems || []).concat([{ title: sys.title, backup_name: msg.backup_name || "" }]);
+      if (msg.backup_name) window.__backupMade = (window.__backupMade || []).concat([msg.backup_name]);
+      window.__systems.splice(window.__systems.findIndex((x) => x.entry_id === sys.entry_id), 1);
+      delete states[sys.entity_id];
+      publish();
+      return { ok: true };
+    }
     if (msg.type === "alarmageddon/rename") {
       const name = String(msg.name || "").trim();
       if (!name) throw err("name_required", "empty");

@@ -54,6 +54,7 @@ COMMANDS: dict[str, dict[str, Any]] = {
     "arm": {"entry_id": "ENTRY", "mode": "off"},
     "rename": {"entry_id": "ENTRY", "name": "Neuer Name"},
     "create_system": {"name": "Neue Anlage"},
+    "delete_system": {"entry_id": "ENTRY", "name": "Haus"},
     "preview_system": {"name": "Neue Anlage"},
     "save_presets": {"presets": {}},
     "save_system": {"entry_id": "ENTRY"},

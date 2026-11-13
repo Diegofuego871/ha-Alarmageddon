@@ -7,6 +7,16 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.32.0] - 2026-11-13
+
+Delete an alarm system in the panel.
+
+### Added
+
+- **Delete an alarm system.** At the very bottom of Configuration › Alarm system, below the backups, there is a new chapter "Delete alarm system" with a red text button. It opens a warning dialog that says what goes away (the device and all its entities, its sensors, actions, schedules and codes, its log and recordings) and what stays (the other alarm systems, the presets per sensor type, the recipients of the messages, backups), and reminds you that automations, scenes, dashboards and Apple Home that use the alarm entity have to be adjusted by yourself. "Delete for good" is only released once you have typed the exact name of the alarm system. A switch "Make a backup first" is on by default; it uses one of the 10 backup places. A backup does not bring a deleted alarm system back by itself, but if you add an alarm system with the same name and restore the backup, its settings return.
+- **Only when disarmed.** An armed alarm system, one in the exit or entry delay and one in an alarm cannot be deleted; the button is blocked and says so, and the server refuses it too (it never disappears silently while it protects the house). Codes are not asked for.
+- **New command for administrators:** `delete_system`. Anyone without administrator rights cannot delete an alarm system. It checks the state and the typed name on the server, not only in the panel, and makes the backup only if both are right.
+
 ## [1.31.0] - 2026-11-13
 
 Add an alarm system in the panel.
@@ -1272,6 +1282,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.32.0
 [1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0
 [1.30.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.30.0
 [1.29.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.29.0

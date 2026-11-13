@@ -137,7 +137,7 @@ export class SystemUi {
         <div class="ag-subh">${esc(this._t("chapTimes"))}</div>${card(timesRows)}
         <div class="ag-subh">${esc(this._t("chapBehaviour"))}</div>${card(behaviourRows)}</div>`);
     const html = chapter(this._t("sysModes"), card(modesRow), this._t("sysModesHint")) + perMode
-      + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml();
+      + this._schedulesHtml(modes) + this._codesHtml() + this._backupHtml() + this._deleteHtml();
     // Beim Tippen nie neu aufbauen (Cursor bliebe nicht stehen), nur bei Schaltern und Auswahl
     h._setHtml(form, html);
     h._placePills();
@@ -193,6 +193,16 @@ export class SystemUi {
         <button class="ag-btn" data-sys="export">${ic("arrowDown", 18)}${esc(this._t("bkExport"))}</button>
         <button class="ag-btn" data-sys="import">${ic("arrowUp", 18)}${esc(this._t("bkImport"))}</button><input type="file" accept="application/json,.json" data-sys="import-file" hidden></div></div></div>
       <div class="ag-bkbody">${this._bkBody()}</div>`);
+  }
+
+  // Anlage löschen (1.32.0): ganz unten, roter Textknopf; die Warnung kommt im Dialog. Nur bei deaktivierter Anlage (der Server prüft es auch).
+  _deleteHtml() {
+    const sys = this.host._system();
+    if (!sys) return "";
+    const disarmed = this.host._state(sys.entity_id)?.state === "disarmed";
+    return chapter(this._t("delTitle"), `<div class="ag-card ag-setlist ag-codes"><div class="ag-setrow"><div class="ag-settx"><small>${esc(this._t("delHint", { name: sys.title }))}</small>
+      ${disarmed ? "" : `<small class="ag-delnote">${ic("alert", 14)} ${esc(this._t("delNotDisarmed"))}</small>`}</div>
+      <div class="ag-btnrow"><button class="ag-btn ag-btn-danger-text" data-sys="delete" ${disarmed ? "" : "disabled"}>${ic("trash", 18)}${esc(this._t("delButton", { name: sys.title }))}</button></div></div></div>`, "", "ag-chap-danger");
   }
 
   // Liste der Sicherungen als Tabelle: Datum, Anlagen, Herunterladen, Wiederherstellen, Löschen
@@ -490,6 +500,10 @@ export class SystemUi {
     }
     const act = el?.dataset.sys;
     if (!act) return false;
+    if (act === "delete") {
+      this.host._openDelete();
+      return true;
+    }
     const d = this.ensureDraft();
     const i = Number(el.dataset.index);
     if (act === "permode") {

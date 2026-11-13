@@ -103,6 +103,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_rename)
     websocket_api.async_register_command(hass, ws_create_system)
     websocket_api.async_register_command(hass, ws_preview_system)
+    websocket_api.async_register_command(hass, ws_delete_system)
     websocket_api.async_register_command(hass, ws_save_presets)
     websocket_api.async_register_command(hass, ws_save_system)
     websocket_api.async_register_command(hass, ws_save_notify)
@@ -432,6 +433,40 @@ async def ws_create_system(hass: HomeAssistant, connection, msg: dict[str, Any])
         return
     await hass.async_block_till_done()
     connection.send_result(msg["id"], {"entry_id": result["result"].entry_id})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/delete_system",
+        vol.Required("entry_id"): str,
+        vol.Required("name"): vol.All(str, vol.Length(max=60)),
+        vol.Optional("backup_name", default=""): vol.All(str, vol.Length(max=60)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_delete_system(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """
+    Löscht eine Anlage samt Gerät, Entitäten, Protokoll und Aufzeichnungen (nicht rückgängig zu machen).
+
+    Zwei Sperren, beide hier und nicht nur im Panel: Die Anlage muss deaktiviert sein (eine scharfe, eine in der Verzögerung und
+    eine im Alarm verschwindet nie still), und der Name muss genau so mitkommen, wie der Nutzer ihn eingetippt hat. Mit `backup_name`
+    legt der Server vor dem Löschen eine Sicherung an: sie erzeugt die Anlage nicht neu, bringt aber ihre Einstellungen zurück, wenn
+    man eine Anlage gleichen Namens anlegt und die Sicherung wiederherstellt.
+    """
+    if (entry := _entry(hass, connection, msg)) is None:
+        return
+    if entry.runtime_data.controller.state != AlarmControlPanelState.DISARMED:
+        connection.send_error(msg["id"], "not_disarmed", "Disarm the alarm system first")
+        return
+    if " ".join(msg["name"].split()) != " ".join(entry.title.split()):
+        connection.send_error(msg["id"], "name_mismatch", "The name does not match")
+        return
+    if msg["backup_name"].strip():
+        await backup.async_create_backup(hass, entry.runtime_data.version, " ".join(msg["backup_name"].split()))
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    connection.send_result(msg["id"], {"ok": True})
 
 
 @websocket_api.websocket_command(
