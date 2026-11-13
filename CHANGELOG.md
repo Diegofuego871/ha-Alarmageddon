@@ -7,6 +7,31 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.33.1] - 2026-11-13
+
+A full code review of everything built recently: one safety fix in the state machine, a more robust start and stop, and tidying that changes nothing for you.
+
+### Removed
+
+- **Leftovers without a function:** five unused constants and one unused method in the integration; unused style rules, three unused texts, a few unused variables and a click branch that nothing triggered in the panel. Nothing changes for you.
+
+### Fixed
+
+- **A pending timer could fire a second time (safety).** When a second sensor tripped during the entry delay, or smoke, water, gas or "Panic" went off during the entry or the exit delay, the alarm started at once, but the timer of the running delay was not cancelled, and "Disarm" did not find it. So after disarming, the old timer could trigger an alarm on a disarmed alarm system, and at the end of an exit delay an alarm that was already running turned silently into "armed". Every change of state now cancels the pending timer. If you acknowledge an alarm that began in the exit delay (the alarm system was never armed), the tile now also shows since when it is armed.
+- **A fault in the statistics could have held up the alarm.** The hourly counters of the sensor view and the "last change" of the list were written before the alarm logic ran; if that failed, the alarm logic did not run. Now it always runs, and the fault is written to the log.
+- **A failing extra part no longer takes the alarm system with it.** If loading the statistics, the event log or the alarm recordings, starting the alarm actions or starting the maintenance check fails (for example an unreadable file), the alarm system still starts, listens to its sensors and notifies; the fault is written to the log. When unloading, a failure while saving the event log, the recordings or the actions no longer leaves the alarm system without its entity until Home Assistant restarts.
+- **Damaged code entries:** a main code without a salt, or a salt that is not hex text, no longer makes arming and disarming fail with every code. The entry is skipped and the other codes keep working.
+- **Delete an alarm system:** the state is checked again after the backup was made. If the alarm system was armed or in an alarm in the meantime, it is not deleted.
+- **Placeholders in texts:** `{name}`, `{sensor}` and the others are replaced in one pass. Before, a value that itself contained a placeholder (an alarm system named "House {sensor}") was replaced a second time, in the notification and in the preview of the panel.
+- **Two alarm systems starting together** could lose a few hourly counters of the sensor view at startup: the second one worked with statistics that were not loaded yet.
+- **Steps of the alarm actions** shared one empty default value for "data" and for the targets; every step now has its own (no known effect, changed as a precaution).
+- **CSV export of the log:** cells that begin with a tab or a line break are quoted like cells that begin with a formula sign (recommendation of OWASP).
+- **Tests:** new tests for the pending timers (`tests/test_stale_timers.py`), the bookkeeping, the start and the stop, damaged codes, the delete race, the placeholders and the panel; the mutation check has new lines for each of these safeguards.
+
+### Security
+
+- **A typed code never stays in a closed dialog.** The code fields of "Add code" and of the dialog for arming and disarming are emptied as soon as the dialog closes, however it closes. Before, the typed code stayed in the hidden dialog of the page until the next time it opened.
+
 ## [1.33.0] - 2026-11-13
 
 Restore a backup onto any alarm system, whatever its name.
@@ -1291,6 +1316,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.33.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.33.1
 [1.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.33.0
 [1.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.32.0
 [1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0

@@ -117,7 +117,7 @@ for (const lang of ["de", "en"]) {
       // Scrollposition bleibt beim Markieren (kein Sprung nach oben)
       await s.page.setViewportSize(mobile ? { width: 390, height: 500 } : { width: 1400, height: 430 });
       await s.page.waitForTimeout(200);
-      const zoneSel = '.ag-gbody [data-box][data-mode="home"], .ag-gbody [data-sen="zone"][data-mode="home"]';
+      const zoneSel = '.ag-gbody [data-box][data-mode="home"]';
       const lastZone = `([...r.querySelectorAll('${zoneSel}')].at(-1))`;
       const scrolled = await s.ev("const c=r.querySelector('.ag-content'); c.scrollTop = c.scrollHeight; return c.scrollTop");
       const before = scrolled;

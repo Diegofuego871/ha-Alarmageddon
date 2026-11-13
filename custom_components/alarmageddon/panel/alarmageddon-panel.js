@@ -1239,6 +1239,9 @@ class AlarmageddonPanel extends HTMLElement {
         if (a && a !== dlg && dlg.contains(a) && a.matches("input:not([type=range]):not([type=checkbox]), textarea, select")) dlg.focus({ preventScroll: true });
       };
       dlg.addEventListener("close", () => {
+        // Ein getippter Code bleibt nie in einem geschlossenen Fenster stehen, egal wie es schloss (Sicherheitsregel: Alarmcode nirgends
+        // liegen lassen). Beim nächsten Öffnen wird der Inhalt ohnehin neu aufgebaut.
+        for (const input of dlg.querySelectorAll('input[type="password"]')) input.value = "";
         const c = this._content;
         const top = this._dlgScroll;
         if (!c || top === undefined || dlg.id === "ag-confirm") return;

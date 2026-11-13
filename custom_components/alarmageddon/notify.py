@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Any
 
 from homeassistant.components import persistent_notification
@@ -214,6 +215,10 @@ ALARM_KINDS = {
 }
 # Arten mit eigenem Standardtext
 SPECIAL_KINDS = ("fire", "heat", "water", "gas")
+
+
+# Platzhalter eigener Texte (Schritt "Push-Meldung", "Alarm endet"); alles andere in geschweiften Klammern bleibt wie geschrieben
+PLACEHOLDER = re.compile(r"\{(?:name|sensor|type|area|time|mode|alarm)\}")
 
 
 def alarm_kind(device_class: str) -> str:
@@ -587,9 +592,8 @@ class Notifier:
             "{area}": area,
             "{alarm}": self._t(f"alarm_{alarm_kind(device_class)}"),
         }
-        for key, value in values.items():
-            template = template.replace(key, value)
-        return template.strip()
+        # In einem Durchgang: ein eingesetzter Wert (Name der Anlage, Name eines Sensors) wird nie selbst noch einmal ersetzt
+        return PLACEHOLDER.sub(lambda match: values[match.group(0)], template).strip()
 
     def _type(self, device_class: str) -> str:
         """Sensorart in Worten (Rauchmelder, Fenster …); unbekannte Klassen leer, nicht erfunden."""

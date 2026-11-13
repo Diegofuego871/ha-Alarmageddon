@@ -7,6 +7,31 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.33.1] - 2026-11-13
+
+Eine vollständige Code-Prüfung von allem, was zuletzt entstanden ist: eine Sicherheitskorrektur im Zustandsautomaten, ein robusterer Start und Stopp und Aufräumen, das für dich nichts ändert.
+
+### Entfernt
+
+- **Reste ohne Funktion:** fünf ungenutzte Konstanten und eine ungenutzte Methode der Integration; ungenutzte Stilregeln, drei ungenutzte Texte, einige ungenutzte Variablen und ein Klick-Zweig, den nichts auslöste, im Panel. Für dich ändert sich nichts.
+
+### Behoben
+
+- **Ein wartender Zeitgeber konnte ein zweites Mal auslösen (Sicherheit).** Löste ein zweiter Sensor in der Eingangsverzögerung aus, oder schlugen Rauch, Wasser, Gas oder "Panik" in der Eingangs- oder Ausgangsverzögerung an, begann der Alarm sofort, aber der Zeitgeber der laufenden Verzögerung wurde nicht abgebrochen, und "Deaktivieren" fand ihn nicht. So konnte der alte Zeitgeber nach dem Deaktivieren bei einer deaktivierten Alarmanlage Alarm auslösen, und am Ende einer Ausgangsverzögerung wurde ein schon laufender Alarm still zu "scharf". Jeder Wechsel des Zustands bricht jetzt den wartenden Zeitgeber ab. Quittierst du einen Alarm, der in der Ausgangsverzögerung begann (die Alarmanlage war nie scharf), zeigt die Kachel danach auch, seit wann sie scharf ist.
+- **Ein Fehler in der Statistik hätte den Alarm aufhalten können.** Die Stundenzähler der Sensoransicht und die "Letzte Änderung" der Liste wurden vor der Alarmlogik geschrieben; scheiterte das, lief die Alarmlogik nicht. Jetzt läuft sie immer, und der Fehler steht im Log.
+- **Ein scheiternder Zusatz nimmt die Alarmanlage nicht mehr mit.** Scheitert das Laden der Statistik, des Ereignisprotokolls oder der Alarmaufzeichnungen, der Start der Alarmaktionen oder der Start der Wartungsprüfung (zum Beispiel eine unlesbare Datei), startet die Alarmanlage trotzdem, hört auf ihre Sensoren und meldet; der Fehler steht im Log. Beim Entladen lässt ein Fehler beim Speichern des Ereignisprotokolls, der Aufzeichnungen oder der Aktionen die Alarmanlage nicht mehr ohne ihre Entität zurück, bis Home Assistant neu startet.
+- **Beschädigte Code-Einträge:** ein Hauptcode ohne Salz oder ein Salz, das kein Hex-Text ist, lässt das Scharf- und Deaktivieren nicht mehr mit jedem Code scheitern. Der Eintrag wird übersprungen, die anderen Codes funktionieren weiter.
+- **Alarmanlage löschen:** der Zustand wird nach dem Anlegen der Sicherung noch einmal geprüft. Wurde die Alarmanlage inzwischen scharf geschaltet oder löste aus, wird sie nicht gelöscht.
+- **Platzhalter in Texten:** `{name}`, `{sensor}` und die übrigen werden in einem Durchgang ersetzt. Bisher wurde ein Wert, der selbst einen Platzhalter enthielt (eine Alarmanlage namens "Haus {sensor}"), ein zweites Mal ersetzt, in der Meldung und in der Vorschau des Panels.
+- **Zwei Alarmanlagen, die zusammen starten,** konnten beim Start einige Stundenzähler der Sensoransicht verlieren: die zweite arbeitete mit einer Statistik, die noch nicht geladen war.
+- **Schritte der Alarmaktionen** teilten sich einen leeren Standardwert für "data" und für die Ziele; jetzt hat jeder Schritt seinen eigenen (keine bekannte Wirkung, vorsorglich geändert).
+- **CSV-Export des Protokolls:** Zellen, die mit einem Tabulator oder Zeilenumbruch beginnen, werden wie Zellen mit einem Formelzeichen am Anfang entschärft (Empfehlung von OWASP).
+- **Tests:** neue Tests für die wartenden Zeitgeber (`tests/test_stale_timers.py`), das Mitschreiben, Start und Stopp, beschädigte Codes, das Rennen beim Löschen, die Platzhalter und das Panel; die Mutationsprobe hat für jede dieser Schutzmassnahmen neue Zeilen.
+
+### Sicherheit
+
+- **Ein getippter Code bleibt nie in einem geschlossenen Fenster stehen.** Die Code-Felder von "Code hinzufügen" und des Fensters zum Scharf- und Deaktivieren werden geleert, sobald das Fenster schliesst, egal wie. Bisher blieb der getippte Code im versteckten Fenster der Seite stehen, bis es das nächste Mal öffnete.
+
 ## [1.33.0] - 2026-11-13
 
 Eine Sicherung auf jede Alarmanlage wiederherstellen, gleich wie sie heisst.
@@ -1291,6 +1316,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.33.1]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.33.1
 [1.33.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.33.0
 [1.32.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.32.0
 [1.31.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.31.0

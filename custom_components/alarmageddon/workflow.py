@@ -626,11 +626,6 @@ class WorkflowRunner:
             return None
         return next((flow for flow in plan if flow != trigger and self.steps(flow)), None)
 
-    @property
-    def _position(self) -> int:
-        """Schritt, an dem der Hauptablauf steht."""
-        return self._positions.get((self._run or {}).get("trigger", ""), 0)
-
     @staticmethod
     def _state(run: dict[str, Any], lane: str | None) -> dict[str, Any]:
         """Gespeicherter Stand eines Ablaufs: der Lauf selbst für den Hauptablauf, `run["also"]` für den zweiten."""

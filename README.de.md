@@ -115,7 +115,7 @@ Eine Alarmanlage muss funktionieren, wenn etwas anderes es nicht tut. Diese Mech
 | Wächter | Die Alarmaktionen stehen als Ganzes unter Aufsicht: der erste Schritt beginnt innert 8 Sekunden, kein Schritt verzögert den nächsten über seine Grenze hinaus, und ein abgebrochener Ablauf macht mit dem nächsten Schritt weiter. Eingriffe stehen in der Zeitachse des Alarms |
 | Du bestimmst, wie lange die Sirene läuft | Im Code steht keine feste Dauer. Du stellst sie im Ablauf ein ("Warten" zwischen Ein und Aus oder eine Dauer beim Ton, bis zu einer Stunde je Schritt). Sie gilt genau und zählt ab dem ersten Start, auch über einen Neustart hinweg |
 | Sensoren, die ausfallen | Ein Sensor, der im scharfen Zustand nicht mehr erreichbar ist, wird sofort gemeldet oder löst mit der Option "Ausfall gilt als Alarm" den Alarm aus. Schwache Batterien werden gemeldet, bevor sie leer sind |
-| Getestet | Über 450 automatische Tests gegen ein echtes Home Assistant, rund 1700 Prüfungen der Oberfläche auf Computer und Handy und eine Mutationsprobe, die jede von 29 Schutzmassnahmen ausbaut und verlangt, dass ein Test scheitert |
+| Getestet | Über 880 automatische Tests gegen ein echtes Home Assistant, rund 3800 Prüfungen der Oberfläche auf Computer und Handy und eine Mutationsprobe, die jede von 146 Schutzmassnahmen ausbaut und verlangt, dass ein Test scheitert |
 
 ### Grenzen
 

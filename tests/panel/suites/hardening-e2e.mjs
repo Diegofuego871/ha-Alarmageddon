@@ -72,6 +72,7 @@ for (const lang of ["de", "en"]) {
     check(`${tag}: Code hinzugefügt`, await s.waitFor("return !r.getElementById('ag-codes').open && [...r.querySelectorAll('.ag-coderow')].some((x) => x.innerText.includes('Gast'))"));
     const added = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/add_code').at(-1)");
     check(`${tag}: add_code gesendet`, added?.name === "Gast" && added?.user_id === "u_gast" && added?.code === "1357", JSON.stringify(added));
+    check(`${tag}: der Code bleibt nach dem Schliessen nicht im Fenster stehen`, await s.waitFor("return [...r.querySelectorAll('#ag-codes input[type=\"password\"]')].length === 2 && [...r.querySelectorAll('#ag-codes input[type=\"password\"]')].every((i) => i.value === '')"));
     await s.page.screenshot({ path: `${outDir}system-${lang}-${mobile ? "mobile" : "desktop"}.png`, fullPage: true });
     // Entfernen mit Rückfrage
     await s.tap('[data-sys="code-del"][data-id="c_anna"]');

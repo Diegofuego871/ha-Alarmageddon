@@ -46,8 +46,6 @@ OPEN_SENSOR_MODES: Final = (OPEN_BLOCK, OPEN_BYPASS)
 
 DEFAULT_EXIT_DELAY: Final = {MODE_HOME: 0, MODE_AWAY: 60, MODE_NIGHT: 0}
 DEFAULT_ENTRY_DELAY: Final = 30
-DEFAULT_TRIGGER_TIME: Final = 180
-DEFAULT_OPEN_SENSORS: Final = OPEN_BLOCK
 MAX_DELAY: Final = 3600
 
 # Code: 4 bis 8 Ziffern wie bei üblichen Bedienteilen
@@ -60,7 +58,7 @@ CODE_LOCKOUT_SECONDS: Final = 60
 MANUFACTURER: Final = "Alarmageddon"
 
 # Panel (eingebautes iframe-Panel, siehe LEARNINGS)
-PANEL_VERSION: Final = 133  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
+PANEL_VERSION: Final = 134  # Cache-Buster: bei jeder Änderung unter panel/ erhöhen
 PANEL_URL_PATH: Final = "alarmageddon"
 PANEL_STATIC_URL_PATH: Final = "/alarmageddon_panel"
 PANEL_DIR: Final = "panel"
@@ -124,7 +122,6 @@ CONF_CONFIRM_WINDOW: Final = "confirm_window"
 # Einstellungen je Modus (0.10.0): Schlüssel "<name>_<modus>" (entry_delay_away …), "always" für Alarme durch immer aktive Sensoren
 # bei deaktivierter Anlage (nur Alarmdauer). Fehlt der Wert, gilt der alte gemeinsame Schlüssel ohne Modus, dann die Grundeinstellung.
 SCOPE_ALWAYS: Final = "always"
-PER_MODE_FIELDS: Final = ("entry_delay", "confirm_window")
 DEFAULT_CONFIRM_WINDOW: Final = 60
 MAX_CONFIRM_WINDOW: Final = 600
 # Zeit nach dem Schliessen, bevor "scharf, sobald geschlossen" greift: eine zufallende Tür prellt (wie Alarmo: Kontakt-Prellen)
@@ -201,7 +198,6 @@ DEFAULT_NOTIFY: Final = {
     "battery_threshold": 20,
     "offline_minutes": 60,
 }
-NOTIFY_EVENTS: Final = tuple(NOTIFY_TYPES)
 BATTERY_THRESHOLD_RANGE: Final = (5, 50)
 OFFLINE_MINUTES_RANGE: Final = (5, 1440)
 # Wartung: Prüfung alle 15 Minuten, die erste 5 Minuten nach dem Start (Geräte verbinden sich erst)
@@ -255,7 +251,6 @@ CONF_WORKFLOWS_DISARMED: Final = "workflows_disarmed"
 DISARMED_STEP_TYPES: Final = ("action", "dechime", "wait")
 WORKFLOW_ALWAYS: Final = "always"  # Alarm durch einen "immer aktiven" Sensor bei deaktivierter Anlage
 WORKFLOW_TRIGGERS: Final = ("home", "away", "night", WORKFLOW_ALWAYS)
-STEP_TYPES: Final = ("notify", "action", "wait", "sound")
 WORKFLOW_STORE_KEY: Final = f"{DOMAIN}.workflow"
 BACKUPS_STORE_KEY: Final = f"{DOMAIN}.backups"
 MAX_BACKUPS: Final = 10  # Sicherungen in der Integration; die älteste fällt weg

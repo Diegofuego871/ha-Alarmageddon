@@ -147,7 +147,7 @@ button { font: inherit; color: inherit; }
 .ag-av.missing { background: var(--ag-error-soft); color: var(--ag-error); }
 .ag-box { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--ag-text3); display: grid; place-items: center; margin: auto; color: #fff; background: transparent; cursor: pointer; padding: 0; touch-action: none; }
 .ag-box.on { background: var(--ag-primary); border-color: var(--ag-primary); }
-.ag-box:focus-visible, .ag-toggle:focus-visible, .ag-zbtn:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 2px; }
+.ag-box:focus-visible, .ag-toggle:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 2px; }
 .ag-toggle { width: 40px; height: 22px; border-radius: 999px; border: 0; background: color-mix(in srgb, var(--ag-text) 25%, transparent); position: relative; cursor: pointer; padding: 0; flex: none; display: block; margin: auto; }
 .ag-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .18s; }
 .ag-toggle.on { background: var(--ag-primary); }
@@ -158,7 +158,6 @@ button { font: inherit; color: inherit; }
 .ag-orow > .ag-toggle, .ag-ef-row > .ag-toggle, .ag-setrow > .ag-toggle, .ag-colrow > .ag-toggle, .ag-schrow > .ag-toggle { order: -1; }
 .ag-batt { font-variant-numeric: tabular-nums; color: var(--ag-text2); }
 .ag-batt.low { color: var(--ag-error); font-weight: 500; }
-.ag-entry { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ag-warning-text); background: var(--ag-warning-soft); padding: 2px 7px; border-radius: 999px; }
 .ag-foot { position: sticky; bottom: calc(-32px - env(safe-area-inset-bottom, 0px)); margin: auto calc(-1 * var(--ag-px)) calc(-32px - env(safe-area-inset-bottom, 0px)); padding: 12px var(--ag-px) calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: var(--ag-card); border-top: 1px solid var(--ag-divider); z-index: 30; }
 .ag-foot > span:first-child { min-width: 0; font-size: 13.5px; }
 .ag-foot .ag-saved { color: var(--ag-success); font-weight: 500; }
@@ -182,11 +181,6 @@ button { font: inherit; color: inherit; }
 .ag-lchips { display: flex; flex-wrap: wrap; gap: 10px; }
 .ag-mcard { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .ag-mcard-top { display: flex; gap: 10px; align-items: center; }
-.ag-zbtns { display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
-.ag-zbtn { min-height: 44px; border-radius: 12px; border: 1px solid var(--ag-divider); background: var(--ag-card); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--ag-text2); cursor: pointer; padding: 0 4px; }
-.ag-zbtn.on { background: var(--ag-primary); border-color: var(--ag-primary); color: #fff; }
-.ag-mentry { display: flex; align-items: center; gap: 10px; font-size: 13px; min-height: 44px; }
-.ag-mentry .ag-toggle { margin: 0; }
 .ag-group-label { font-size: 12px; color: var(--ag-text2); margin: 6px 2px 0; font-weight: 500; }
 /* Karten der Übersicht: Titel einer Gruppe (Bereich, Sensorart, Anlage) mit Anzahl, über die ganze Breite, mit Linie darunter */
 .ag-group-head { display: flex; align-items: center; gap: 8px; margin: 14px 2px 0; padding-bottom: 8px; border-bottom: 1px solid var(--ag-divider); font-size: 15px; color: var(--ag-text); }
@@ -353,7 +347,6 @@ th.cur, td.cur { background: color-mix(in srgb, var(--ag-primary) 9%, transparen
 th.cur { box-shadow: inset 0 3px 0 var(--ag-primary); }
 /* Die Spalte des gewählten Modus: Titel zusätzlich fett */
 .ag-table th.cur { font-weight: 700; color: var(--ag-text); }
-.ag-zbtn.cur { box-shadow: 0 0 0 2px var(--ag-primary); }
 .ag-block { display: block; margin-top: 2px; font-size: 12px; }
 .ag-origin { display: inline-flex; gap: 4px; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--ag-text2); border: 0; background: transparent; padding: 0; font-family: inherit; }
 .ag-origin.own { color: var(--ag-primary); font-weight: 500; cursor: pointer; }
@@ -378,8 +371,6 @@ dialog.ag-sheetdlg .ag-side-head { padding-top: 10px; }
 .ag-num { display: inline-flex; align-items: center; gap: 6px; }
 .ag-num input { width: 84px; height: 38px; border-radius: 10px; border: 1px solid var(--ag-divider); background: var(--ag-bg); color: var(--ag-text); font: inherit; padding: 0 10px; font-variant-numeric: tabular-nums; }
 .ag-num.bad input { border-color: var(--ag-error); }
-.ag-numgrid { display: flex; gap: 12px; flex-wrap: wrap; }
-.ag-numlabel { display: flex; flex-direction: column; gap: 4px; }
 .ag-cfg { margin-top: 0; }
 :host([narrow]) .ag-sen-layout.open { grid-template-columns: 1fr; }
 /* Tablet (unter 1300 px): die Optionen eines Sensors als Fenster in der Mitte, wie auf dem Handy mit eigenem Scrollen */
@@ -432,7 +423,7 @@ dialog.ag-sheetdlg > .ag-side-body:focus, .ag-sheet > .ag-side-body:focus { outl
 /* Voralarm: Warnfarbe (leiser Vorbote), Aktivierungston: die Farbe des Panels (freundlich); der Alarmton bleibt rot */
 .ag-wf-icon.k-prealarm { background: var(--ag-warning-soft); color: var(--ag-warning-text); }
 .ag-wf-icon.k-wait { background: var(--ag-subtle); color: var(--ag-text2); }
-.ag-wf-icon.k-open, .ag-wf-icon.k-close, .ag-wf-icon.k-end { background: var(--ag-success-soft); color: var(--ag-success); }
+.ag-wf-icon.k-end { background: var(--ag-success-soft); color: var(--ag-success); }
 .ag-wf-text { flex: 1; min-width: 0; }
 .ag-wf-text b { font-weight: 500; }
 .ag-wf-text .ag-small { overflow-wrap: anywhere; }
@@ -449,8 +440,6 @@ dialog.ag-sheetdlg > .ag-side-body:focus, .ag-sheet > .ag-side-body:focus { outl
 .ag-wf-endcard { margin: 8px 0 0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
 .ag-wf-endcard .ag-wf-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ag-wf-line > .ag-card { position: relative; z-index: 1; }
-.ag-wf-info { display: flex; gap: 8px; align-items: center; margin: 16px 8px 0; line-height: 1.4; }
-.ag-wf-info .ag-ic { display: inline-block; }
 /* contents: sonst klebt die Leiste nur innerhalb dieses Blocks und scrollt mit weg */
 .ag-wf-head { display: contents; }
 .ag-wf-head > .ag-tools { margin-bottom: 12px; }
@@ -597,15 +586,11 @@ dialog.ag-sheetdlg > .ag-side-body:focus, .ag-sheet > .ag-side-body:focus { outl
 .ag-erow .ag-box { margin: 0; width: 24px; height: 24px; pointer-events: none; }
 .ag-erow small { display: block; font-size: 11.5px; }
 .ag-erow.on { background: var(--ag-primary-soft); }
-.ag-sounds { display: flex; flex-wrap: wrap; gap: 6px; }
-.ag-sound { display: inline-flex; align-items: center; }
-.ag-sound .ag-iconbtn { width: 32px; height: 32px; }
 .ag-fld { display: flex; flex-direction: column; gap: 6px; }
 .ag-fld input[type="range"], .ag-range { width: 100%; max-width: 320px; accent-color: var(--ag-primary); }
 .ag-input { height: 40px; border-radius: 10px; border: 1px solid var(--ag-divider); background: var(--ag-bg); color: var(--ag-text); font: inherit; padding: 0 12px; }
 textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ag-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
-.ag-evgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: 24px; margin-top: 6px; }
 .ag-warntext { color: var(--ag-warning-text) !important; display: flex !important; gap: 8px; margin-top: 4px !important; align-items: center; }
 :host([narrow]) .ag-wf-step { flex-wrap: wrap; }
 :host([narrow]) .ag-wf-btns { width: 100%; justify-content: flex-end; gap: 14px; margin-top: 4px; }
@@ -636,20 +621,11 @@ textarea.ag-input { height: auto; padding: 10px 12px; resize: vertical; }
 :host([narrow]) .ag-schrow > .ag-schwarn { order: 4; }
 .ag-btnrow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 :host([narrow]) .ag-codes .ag-btnrow { justify-content: flex-start; }
-/* Lange Texte in der Auswahl "Offener Sensor" auf dem Handy: volle Breite, Text darf umbrechen statt abgeschnitten zu werden */
-:host([narrow]) [data-seg="sys-open"] { display: flex; width: 100%; }
-:host([narrow]) [data-seg="sys-open"] > button { flex: 1 1 0; min-width: 0; white-space: normal; line-height: 1.25; text-align: center; }
 
 #ag-codes .ag-dlg-body { gap: 14px; }
 #ag-codes .ag-fld small { font-size: 12.5px; }
 
-/* Fünf Unterreiter auf dem Handy: volle Breite, gleich breit, kleinere Schrift (kein Abschneiden) */
-.ag-btn.icon { width: 38px; padding: 0; }
-.ag-btn.warn { background: var(--ag-warning); border-color: var(--ag-warning); color: #fff; }
 button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px; padding: 0 6px; border: 0; background: none; color: var(--ag-primary); font: inherit; font-size: 13px; cursor: pointer; text-decoration: none; white-space: nowrap; }
-.ag-spin { flex: none; box-sizing: border-box; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; border-radius: 50%; animation: ag-spin .8s linear infinite; }
-@keyframes ag-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .ag-spin { animation: none; } }
 .ag-seg > button.has-dot { position: relative; }
 .ag-seg > button.has-dot::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ag-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ag-text) 7%, var(--ag-card)); }
 
@@ -686,10 +662,8 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 .ag-mt { padding: 12px 16px; border-top: 1px solid var(--ag-divider); }
 .ag-mt:first-child { border-top: 0; }
 .ag-mt.group { padding-bottom: 4px; }
-.ag-mt-subs { margin: 6px 0 4px 40px; border-left: 2px solid var(--ag-divider); }
 .ag-mt.sub { border-top: 0; padding: 10px 0 10px 14px; }
 .ag-mt.sub .ag-mt-body { margin-left: 0; }
-:host([narrow]) .ag-mt-subs { margin-left: 8px; }
 /* Schalter stehen links, der Text wächst nach rechts (1.17.7): so ist klar, welcher Schalter zu welcher Option gehört */
 .ag-mt-head { display: flex; align-items: flex-start; gap: 12px; }
 .ag-mt-head > .ag-toggle { margin-top: 3px; }
@@ -710,7 +684,6 @@ button.ag-link, a.ag-link { display: inline-flex; align-items: center; gap: 5px;
 :host([narrow]) .ag-mt-opt.vol .ag-range { flex-basis: 100%; max-width: none; }
 
 /* 0.10.0: Einstellungen je Modus */
-.ag-scopebar { margin: 0 0 12px; overflow-x: auto; }
 
 /* Tabellenkopf der Sensorliste: abgehoben (Grundfläche, kräftigere Schrift, Linie darunter), Spalten sortierbar */
 .ag-table.ag-ltable th { background: color-mix(in srgb, var(--ag-text) 6%, var(--ag-card)); color: var(--ag-text); font-weight: 600; font-size: 12px; padding: 0; border-bottom: 2px solid var(--ag-divider); }

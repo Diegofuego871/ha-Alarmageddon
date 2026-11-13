@@ -60,6 +60,26 @@ zuoberst.
   Zwischenspeicher; die Antwort der "GitHub"-Attrappe muss vorher stehen.
 - **Kein Fehlalarm nach Neustart:** Sensoren kommen beim Start als "nicht verfügbar" und dann mit ihrem Zustand.
   Nur `off` → `on` zählt als Auslösung (`controller._on_sensor`), Tests in `test_alarm.py` und `test_restore.py`.
+- **Zeitgeber und direkter Zustandswechsel (Code-Review 1.33.1):** Wird ein Zustand auch direkt gerufen (zweiter Sensor in der
+  Eingangsverzögerung, Panik, "Immer aktiv" mitten in einer Verzögerung), muss der wartende Zeitgeber der Verzögerung
+  abgebrochen werden; setzt man nur den Verweis auf `None`, schlägt er später noch einmal zu (Alarm bei deaktivierter
+  Anlage, ein laufender Alarm wird still "scharf"). `controller._timer_spent(now)`: ohne Zeit (direkter Aufruf) abbrechen,
+  mit Zeit (der Zeitgeber selbst) nur den Verweis löschen. Wer einen neuen Weg in einen Zustand baut, fragt: welcher Zeitgeber
+  läuft noch, und wer bricht ihn ab? Tests in `tests/test_stale_timers.py`.
+- **Mutationsprobe: ein Muster, eine Stelle:** `replace(old, new, 1)` trifft bei mehreren Treffern die erste, nicht
+  unbedingt die gemeinte. Die Probe meldet jetzt "MEHRDEUTIG", wenn ein Muster mehrfach vorkommt (ausser die Zeile steht in
+  `ALL_PLACES`); ein Zeilenanfang (`"\n    if ..."`) macht ein Muster oft eindeutig. Nach einem Umbau meldet "FEHLT", dass das
+  Muster nachzuführen ist; nie die Zeile löschen.
+- **Tote Stellen findet man mit Werkzeugen, nicht beim Lesen:** ESLint mit `no-unused-vars` (`eslint -c <Konfiguration ausserhalb
+  des Repos> panel/*.js`), ein Skript über den AST für Python (Namen ohne Verweis im Paket, Hooks von HA ausnehmen), ein Skript
+  für CSS-Klassen, IDs und Attribute sowie für Panel-Texte; Schlüssel, die der Code aus Teilen bildet (`ntT_${kind}`,
+  `${key}Short`, `wf${part}Add`), nie nur nach dem Wortlaut beurteilen.
+- **Platzhalter in einem Durchgang:** Aufeinanderfolgendes `replace` ersetzt auch Platzhalter, die ein eingesetzter Wert
+  selbst enthält (Anlage "Haus {sensor}"). Server (`notify.PLACEHOLDER`) und Vorschau im Panel (`actions.js _ntPreview`)
+  ersetzen mit einem regulären Ausdruck in einem Durchgang; die Prüfung im Panel steht in `actions-e2e.mjs`.
+- **Ein getippter Code bleibt nie im Fenster stehen:** Passwortfelder werden im gemeinsamen `close`-Zuhörer aller Fenster
+  geleert (`alarmageddon-panel.js _initDialogs`), egal wie das Fenster schliesst. Prüfungen in `hardening-e2e.mjs` (Code
+  hinzufügen) und `overview-e2e.mjs` (Code zum Scharf- und Deaktivieren).
 
 ## Aus ha-device-panel und unifi_dynamic
 

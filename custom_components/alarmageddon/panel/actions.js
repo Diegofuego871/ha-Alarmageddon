@@ -60,7 +60,6 @@ const ARMED_KINDS = ["chime", "device", "wait", "scene", "custom"];
 const DISARMED_KINDS = ["dechime", "device", "wait", "scene", "custom"];
 // Alarmton und Aktivierungston teilen sich die Felder (Lautsprecher, Ton, Lautstärke, Dauer)
 const isTone = (kind) => kind === "sound" || kind === "chime" || kind === "dechime" || kind === "prealarm";
-const isToneType = isTone; // die Schrittarten des Servers heissen gleich
 // Lautstärke je Medienplayer (1.16.0): eigene Werte nur, wenn eingeschaltet, mehr als ein Lautsprecher gewählt ist und sie sich unterscheiden
 const ownVolumes = (f) => {
   if (!f.setVolume || !f.perVolume || f.targets.length < 2) return null;
@@ -113,7 +112,7 @@ function fromStepBase(step) {
   if (step.type === "notify") return { ...f, kind: "notify", ntTitle: step.title || "", ntMessage: step.message || "", ntCritical: step.critical ?? null, ntVolume: step.volume ?? null, ntButtons: { ...(step.buttons || {}) }, ntClick: step.click ?? null, ntClickPath: step.click_path || "", ntTargets: step.targets?.length ? [...step.targets] : null };
   if (step.type === "wait") return { ...f, kind: "wait", seconds: step.seconds };
   if (step.type === "acknowledge") return { ...f, kind: "acknowledge" };
-  if (isToneType(step.type)) Object.assign(f, { perVolume: Object.keys(step.volumes || {}).length > 0, volumes: { ...(step.volumes || {}) } });
+  if (isTone(step.type)) Object.assign(f, { perVolume: Object.keys(step.volumes || {}).length > 0, volumes: { ...(step.volumes || {}) } });
   if (step.type === "chime") {
     return { ...f, delay: !!step.delay, kind: "chime", targets: [...(step.players || [])], sound: step.sound || "tone_pip", setVolume: step.volume != null, volume: step.volume ?? 0.5, until: false, playSeconds: step.duration || 3, restore: step.restore !== false };
   }
@@ -487,11 +486,11 @@ export class ActionsUi {
     const seconds = this._delaySeconds(zone);
     if (!seconds) return "";
     const steps = this.steps(zone);
-    const cap = zone === "arming" ? "Arming" : "Entry";
-    const add = this._t(`wf${cap}Add`);
-    const plus = (i) => `<div class="ag-wf-plus ${i === steps.length ? "last" : ""}"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(add)}" title="${esc(add)}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span>${i === steps.length ? `<small class="ag-wf-plushint ag-t2 ag-small">${esc(this._t(steps.length ? `wf${cap}More` : `wf${cap}Hint`))}</small>` : ""}</div>`;
-    const sub = `<small class="ag-t2 ag-wf-sub">${esc(this._t(`wf${cap}Sub`, { n: seconds }))}</small>`;
-    return `<div class="ag-wf-line ag-wf-${zone}" data-zone="${zone}"><div class="ag-wf-start"><span class="ag-mini warn">${ic("timer", 20)}</span><span>${esc(this._fixedTitle(`wf${cap}`))}${sub}</span></div>${plus(0)}${steps.map((step, i) => this._card(step, i, running, zone) + plus(i + 1)).join("")}</div>`;
+    const part = zone === "arming" ? "Arming" : "Entry";
+    const add = this._t(`wf${part}Add`);
+    const plus = (i) => `<div class="ag-wf-plus ${i === steps.length ? "last" : ""}"><span class="ag-wf-seg"></span><button class="ag-wf-add" data-wf="add" data-at="${i}" aria-label="${esc(add)}" title="${esc(add)}">${ic("plus", 18)}</button><span class="ag-wf-seg"></span>${i === steps.length ? `<small class="ag-wf-plushint ag-t2 ag-small">${esc(this._t(steps.length ? `wf${part}More` : `wf${part}Hint`))}</small>` : ""}</div>`;
+    const sub = `<small class="ag-t2 ag-wf-sub">${esc(this._t(`wf${part}Sub`, { n: seconds }))}</small>`;
+    return `<div class="ag-wf-line ag-wf-${zone}" data-zone="${zone}"><div class="ag-wf-start"><span class="ag-mini warn">${ic("timer", 20)}</span><span>${esc(this._fixedTitle(`wf${part}`))}${sub}</span></div>${plus(0)}${steps.map((step, i) => this._card(step, i, running, zone) + plus(i + 1)).join("")}</div>`;
   }
 
   _armedPointHtml(running) {
@@ -564,11 +563,6 @@ export class ActionsUi {
 
   // Kurzfassung eines Schritts für die Karte
   _summary(f) {
-    const text = this._summaryBase(f);
-    return text;
-  }
-
-  _summaryBase(f) {
     const names = f.targets.map((id) => this.host._name(id)).join(", ") || this._t("stepNoTargets");
     if (f.kind === "notify") return f.ntTitle || f.ntMessage ? [f.ntTitle, f.ntMessage].filter(Boolean).join(" – ") : this._t("stepNotifyHint");
     if (f.kind === "acknowledge") return this._t("stepAckHint");
@@ -909,8 +903,8 @@ export class ActionsUi {
     const zone = this.edit?.zone;
     if (DELAY_ZONES.includes(zone) && isShortTone(f.kind)) {
       // So lange wie die Verzögerung (1.19.0): ein Schalter; die feste Dauer gilt nur, wenn er aus ist
-      const cap = zone === "arming" ? "Arming" : "Entry";
-      const follow = `<div class="ag-ef-row ag-delayfollow"><div class="ag-settx"><b>${esc(this._t(`fldDelay${cap}`))}</b><small>${esc(this._t(`fldDelay${cap}Hint`, { n: this._delaySeconds(zone) }))}</small></div>${this._toggle('data-wf="delay"', f.delay, `fldDelay${cap}`)}</div>`;
+      const part = zone === "arming" ? "Arming" : "Entry";
+      const follow = `<div class="ag-ef-row ag-delayfollow"><div class="ag-settx"><b>${esc(this._t(`fldDelay${part}`))}</b><small>${esc(this._t(`fldDelay${part}Hint`, { n: this._delaySeconds(zone) }))}</small></div>${this._toggle('data-wf="delay"', f.delay, `fldDelay${part}`)}</div>`;
       if (f.delay) return `${follow}<div class="ag-delayfixed"><span class="ag-num"><input type="number" disabled value="${esc(this._delaySeconds(zone))}" aria-label="${esc(this._t("fldPlayFor"))}"><span class="ag-t2">s</span></span></div><div class="ag-ef-h">${esc(this._t("fldDelayFixedHint"))}</div>`;
       return follow + this._playForFixed(f);
     }
@@ -997,14 +991,18 @@ export class ActionsUi {
     const info = sensorId ? this.host._sensor(sensorId) || {} : {};
     const dc = info.device_class || "";
     const typeKey = `ntType_${dc}`;
-    const fill = (text) => text
-      .replaceAll("{name}", s?.title || "")
-      .replaceAll("{sensor}", sensorId ? this.host._name(sensorId) : "")
-      .replaceAll("{type}", this._t(typeKey) === typeKey ? "" : this._t(typeKey))
-      .replaceAll("{area}", info.area || "")
-      .replaceAll("{time}", new Date().toLocaleTimeString(this.host._hass?.locale?.language || this.host._lang, { hour: "2-digit", minute: "2-digit" }))
-      .replaceAll("{mode}", this._t(MODE_KEY[this.trigger] || "modeAway"))
-      .replaceAll("{alarm}", this._t(`ntAlarm_${ALARM_KINDS[dc] || "alarm"}`));
+    // In einem Durchgang wie auf dem Server (notify.py PLACEHOLDER): ein eingesetzter Wert, etwa der Name einer Anlage, wird nie selbst
+    // noch einmal ersetzt. Alles andere in geschweiften Klammern bleibt wie geschrieben.
+    const values = {
+      "{name}": s?.title || "",
+      "{sensor}": sensorId ? this.host._name(sensorId) : "",
+      "{type}": this._t(typeKey) === typeKey ? "" : this._t(typeKey),
+      "{area}": info.area || "",
+      "{time}": new Date().toLocaleTimeString(this.host._hass?.locale?.language || this.host._lang, { hour: "2-digit", minute: "2-digit" }),
+      "{mode}": this._t(MODE_KEY[this.trigger] || "modeAway"),
+      "{alarm}": this._t(`ntAlarm_${ALARM_KINDS[dc] || "alarm"}`),
+    };
+    const fill = (text) => text.replace(/\{(?:name|sensor|type|area|time|mode|alarm)\}/g, (token) => values[token]);
     const [dt, dm] = this._ntDefaults(f);
     const title = fill(f.ntTitle || dt).trim();
     const message = fill(f.ntMessage || dm).trim();

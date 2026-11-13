@@ -14,6 +14,7 @@ Die Auswertung steht hier und nicht im Panel: so ist sie an einer Stelle und mit
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from functools import partial
 import logging
@@ -31,6 +32,7 @@ from .last_change import _item
 _LOGGER = logging.getLogger(__name__)
 
 DATA_STATS = f"{DOMAIN}_sensor_stats"
+DATA_STATS_LOCK = f"{DOMAIN}_sensor_stats_lock"
 STATS_STORE_KEY = f"{DOMAIN}.sensor_stats"
 STATS_KEEP_HOURS = 30 * 24
 EVENTS_MAX = 300  # Zeilen der Liste je Abfrage (neueste zuerst)
@@ -171,12 +173,19 @@ class SensorStats:
 
 
 async def async_get_stats(hass: HomeAssistant) -> SensorStats:
-    """Eine Instanz für alle Anlagen (ein Sensor kann in mehreren stehen); die erste Anlage lädt, die anderen warten kurz darauf."""
+    """
+    Eine Instanz für alle Anlagen (ein Sensor kann in mehreren stehen). Beim Start laden alle Anlagen zugleich: unter einer Sperre
+    und erst nach dem Laden eingetragen (wie die Einstellungen), sonst sähe die zweite Anlage eine noch leere Instanz, und das Laden
+    überschriebe, was sie inzwischen mitgeschrieben hat. Scheitert das Laden, bleibt nichts Halbfertiges eingetragen: der nächste Start versucht es neu.
+    """
     if (stats := hass.data.get(DATA_STATS)) is not None:
         return stats
-    stats = SensorStats(hass)
-    hass.data[DATA_STATS] = stats  # sofort eintragen: es gibt nichts abzuwarten, bevor die Instanz bekannt ist
-    await stats.async_load()
+    lock = hass.data.setdefault(DATA_STATS_LOCK, asyncio.Lock())
+    async with lock:
+        if (stats := hass.data.get(DATA_STATS)) is None:
+            stats = SensorStats(hass)
+            await stats.async_load()
+            hass.data[DATA_STATS] = stats
     return stats
 
 

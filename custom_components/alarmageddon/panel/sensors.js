@@ -281,11 +281,9 @@ export class SensorsUi {
     const body = view?.querySelector(".ag-gbody");
     if (!body || !this.ensureDraft()) return;
     const rows = this.rows();
-    const narrow = this.host.hasAttribute("narrow");
     // Nach dem Speichern sofort ohne Markierung (die neuen Daten kommen erst mit dem Neuladen der Anlage)
     const changed = this.host._isSaved(this) ? new Set() : this.changedIds();
     this.renderModeBar();
-    const mode = this.activeMode();
     if (!rows.length) {
       const none = !this.draft.sensors.size;
       this.host._setHtml(body, `<div class="ag-card ag-empty"><span class="ag-t2">${esc(this._t(none ? "noSensorsChosen" : "noSensors"))}</span>${none ? `<button class="ag-btn primary" data-sen="add">${ic("plus", 18)}${esc(this._t("addSensors"))}</button>` : ""}</div>`);
@@ -431,7 +429,6 @@ export class SensorsUi {
     const d = this.draft;
     const r = { id, name: h._name(id) };
     const meta = [this._t(label), info.area, info.integration].filter(Boolean).join(" · ");
-    const pm = Boolean(this.draft?.perMode);
     const entryRow = `<div class="ag-orow"><span class="ag-oav ${d.entrySensors.has(id) ? "on" : ""}">${ic("timer", 18)}</span><div class="ag-otx"><b>${esc(this._t("colEntry"))}</b><small>${esc(this._t("optEntryHint"))}</small></div>${this._entryToggle(r)}</div>`;
     const mode = this.sheetMode(id);
     const delayRow = d.entrySensors.has(id) && mode !== "always" ? this._delayRow(id, mode) : "";
@@ -746,9 +743,6 @@ export class SensorsUi {
       const mode = el.dataset.mode;
       const value = !rows.every((r) => this.draft.zones[mode].has(r.id));
       rows.forEach((r) => this.setZone(r.id, mode, value));
-      this.render();
-    } else if (act === "zone") {
-      this.setZone(id, el.dataset.mode, !this.draft.zones[el.dataset.mode].has(id));
       this.render();
     } else if (act === "entry") {
       const d = this.ensureDraft();

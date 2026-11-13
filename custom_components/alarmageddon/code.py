@@ -33,6 +33,12 @@ def match_code(code: str, candidates: list[tuple[str, str]]) -> int | None:
 
 
 def verify_code(code: str, code_hash: str, salt: str) -> bool:
-    """Vergleich in konstanter Zeit, damit die Antwortzeit nichts über den Code verrät."""
-    digest, _ = hash_code(code, salt)
-    return hmac.compare_digest(digest, code_hash)
+    """
+    Vergleich in konstanter Zeit, damit die Antwortzeit nichts über den Code verrät. Ein beschädigter Eintrag (Salz kein Hex, Hash
+    kein Text) passt nie und stört die anderen nicht: sonst liesse sich mit keinem Code mehr deaktivieren.
+    """
+    try:
+        digest, _ = hash_code(code, salt)
+        return hmac.compare_digest(digest, code_hash)
+    except (TypeError, ValueError):
+        return False

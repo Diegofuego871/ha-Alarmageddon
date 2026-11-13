@@ -385,7 +385,6 @@ async def ws_arm(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     connection.send_result(msg["id"], {"ok": True})
 
 
-
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/preview_system", vol.Required("name"): vol.All(str, vol.Length(max=60))})
 @websocket_api.require_admin
 @callback
@@ -450,6 +449,10 @@ async def ws_delete_system(hass: HomeAssistant, connection, msg: dict[str, Any])
         return
     if msg["backup_name"].strip():
         await backup.async_create_backup(hass, entry.runtime_data.version, " ".join(msg["backup_name"].split()))
+        # Die Sicherung wartet auf die Ablage: wurde die Anlage inzwischen scharf geschaltet oder löste aus, bleibt sie bestehen
+        if entry.runtime_data.controller.state != AlarmControlPanelState.DISARMED:
+            connection.send_error(msg["id"], "not_disarmed", "Disarm the alarm system first")
+            return
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     connection.send_result(msg["id"], {"ok": True})
@@ -685,8 +688,6 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     connection.send_result(msg["id"], {"targets": targets})
 
 
-
-
 def _clean_end(value: dict[str, Any]) -> dict[str, Any]:
     """Nur speichern, was eingeschaltet ist: die eigene Meldung beim Alarmende."""
     out: dict[str, Any] = {}
@@ -875,7 +876,7 @@ async def ws_add_code(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
         connection.send_error(msg["id"], "user_taken", "User unknown or already linked")
         return
     existing = [(c["hash"], c["salt"]) for c in ctl.codes]
-    if entry.options.get(CONF_CODE_HASH):
+    if entry.options.get(CONF_CODE_HASH) and entry.options.get(CONF_CODE_SALT):
         existing.append((entry.options[CONF_CODE_HASH], entry.options[CONF_CODE_SALT]))
     if await hass.async_add_executor_job(match_code, code, existing) is not None:
         connection.send_error(msg["id"], "code_taken", "Code already used")

@@ -198,7 +198,8 @@ class AlarmController:
         Längste Eingangsverzögerung, die in diesem Modus laufen kann: die der Eingangssensoren seiner Zone (eigener Wert des
         Sensors oder der des Modus). 0: in diesem Modus läuft nie eine Eingangsverzögerung, die Aktionen dazu kämen nie zum Zug.
         """
-        return max((self.sensor_entry_delay(entity, mode) for entity in self.zone(mode) if entity in self.entry_sensors), default=0)
+        entry_sensors = self.entry_sensors
+        return max((self.sensor_entry_delay(entity, mode) for entity in self.zone(mode) if entity in entry_sensors), default=0)
 
     def delay_left(self) -> float | None:
         """Restzeit der Verzögerung, die gerade läuft (Ausgang oder Eingang), in Sekunden; sonst None."""
@@ -245,7 +246,8 @@ class AlarmController:
 
     def _candidates(self) -> list[tuple[tuple[str, str], str | None]]:
         out: list[tuple[tuple[str, str], str | None]] = []
-        if self.options.get(CONF_CODE_HASH):
+        # Ein Hauptcode ohne Salz (beschädigte Ablage) wird übersprungen, statt die Prüfung für alle Codes zu stören
+        if self.options.get(CONF_CODE_HASH) and self.options.get(CONF_CODE_SALT):
             out.append(((self.options[CONF_CODE_HASH], self.options[CONF_CODE_SALT]), None))
         out.extend(((c["hash"], c["salt"]), c.get("name")) for c in self.codes)
         return out
@@ -462,8 +464,21 @@ class AlarmController:
         self._notify()
 
     @callback
+    def _timer_spent(self, fired_at: Any) -> None:
+        """
+        Der Zeitgeber, der den Übergang auslöst, ist erledigt. Ruft ihn der Zeitgeber selbst (er übergibt die Zeit), ist er
+        verbraucht; ruft ihn ein anderer Anlass direkt (Sensor, Panik, "Immer aktiv" mitten in der Verzögerung), läuft der Zeitgeber der
+        Verzögerung noch und muss abgebrochen werden: sonst schlüge er später noch einmal zu (nach dem Deaktivieren wieder Alarm,
+        am Ende der Ausgangsverzögerung "scharf" mitten im Alarm).
+        """
+        if fired_at is None:
+            self._cancel_timer()
+        else:
+            self._unsub_timer = None
+
+    @callback
     def _go_armed(self, _now: Any = None) -> None:
-        self._unsub_timer = None
+        self._timer_spent(_now)
         self.deadline = None
         self._arming_deadline = None
         self.triggered_by = None
@@ -471,15 +486,16 @@ class AlarmController:
             # Alarm von Hand aus "deaktiviert" ausgelöst: danach wieder deaktiviert
             self._set(AlarmControlPanelState.DISARMED)
             return
-        # Nach einem quittierten Alarm und beim Wiederherstellen nach einem Neustart bleibt die Angabe: die Anlage war durchgehend scharf
-        if self.state != AlarmControlPanelState.TRIGGERED and not self._restoring:
+        # Nach einem quittierten Alarm und beim Wiederherstellen nach einem Neustart bleibt die Angabe: die Anlage war durchgehend scharf.
+        # Fehlt sie (Alarm mitten in der Ausgangsverzögerung, die Anlage war noch nie scharf), gilt jetzt.
+        if (self.state != AlarmControlPanelState.TRIGGERED or self.armed_at is None) and not self._restoring:
             self.armed_at = dt_util.utcnow()
             self.armed_by = self.changed_by
         self._set(ARMED_STATE[self.mode])
 
     @callback
     def _go_triggered(self, _now: Any = None) -> None:
-        self._unsub_timer = None
+        self._timer_spent(_now)
         self.deadline = None
         self._set(AlarmControlPanelState.TRIGGERED)
 
@@ -494,12 +510,17 @@ class AlarmController:
         if old is None or new is None:
             return
         entity = event.data["entity_id"]
-        # Stundenwerte der Sensoransicht (Anzahl Auslösungen, Zeit offen): jeder Wechsel eines überwachten Sensors
-        if self.stats is not None:
-            self.stats.note(entity, old.state, new.state, new.last_changed)
-        # "Letzte Änderung" der Liste: nur ein Wechsel offen <-> zu, nicht der Neustart von Home Assistant
-        if self.settings is not None and is_real_change(old.state, new.state):
-            self.settings.note_change(entity, new.last_changed.isoformat())
+        # Mitschreiben für die Anzeige. Es steht vor der Alarmlogik, darum nie ohne Schutz: ein Fehler dort darf den Alarm nicht verhindern
+        # (Sicherheitsregel: im Zweifel alarmieren)
+        try:
+            # Stundenwerte der Sensoransicht (Anzahl Auslösungen, Zeit offen): jeder Wechsel eines überwachten Sensors
+            if self.stats is not None:
+                self.stats.note(entity, old.state, new.state, new.last_changed)
+            # "Letzte Änderung" der Liste: nur ein Wechsel offen <-> zu, nicht der Neustart von Home Assistant
+            if self.settings is not None and is_real_change(old.state, new.state):
+                self.settings.note_change(entity, new.last_changed.isoformat())
+        except Exception:  # noqa: BLE001 - die Anzeige hält den Alarm nie auf
+            _LOGGER.exception("%s: recording the sensor change of %s failed, the alarm logic still runs", self.entry.title, entity)
         # Nur ein echter Wechsel von "zu" auf "offen" zählt. "nicht verfügbar" -> "offen" kommt nach jedem
         # Neustart und jeder Neuverbindung vor und wäre ein Fehlalarm.
         went_on = old.state == STATE_OFF and new.state == STATE_ON

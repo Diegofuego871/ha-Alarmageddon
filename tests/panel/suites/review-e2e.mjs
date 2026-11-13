@@ -212,13 +212,14 @@ for (const lang of ["de", "en"]) {
       check(`${tag}: erste Abfrage ohne Stand, die nächste mit dem Stand der Antwort`, sent[0] === null && typeof sent[sent.length - 1] === "string" && sent[sent.length - 1].length > 0, JSON.stringify(sent));
       check(`${tag}: Antwort "unverändert": Ereignisse und Alarme bleiben stehen`, (await rows()) === n && n > 0 && (await alarms()) > 0, `${await rows()} / ${n}`);
       // Neues Ereignis (mit einer Person, deren Name wie eine Formel beginnt): der Stand ändert sich, die Liste wächst
-      await s.sim(`window.__systems[0].events.unshift({ t: new Date().toISOString(), state: "disarmed", mode: null, by: '=HYPERLINK("http://boese.example";"Klick")' })`);
+      await s.sim(`window.__systems[0].events.unshift({ t: new Date().toISOString(), state: "disarmed", mode: null, by: '=HYPERLINK("http://boese.example";"Klick")', sensor: "\t=2+2" })`);
       await reload();
       check(`${tag}: neues Ereignis erscheint (neuer Stand, ganze Antwort)`, (await rows()) === n + 1, `${await rows()} / ${n + 1}`);
       const [csv] = await Promise.all([s.page.waitForEvent("download", { timeout: 5000 }), s.tap('[data-log="export-csv"]')]);
       const text = readFileSync(await csv.path(), "utf8");
       check(`${tag}: CSV: die Formelzelle beginnt mit einem Hochkomma`, text.includes(`"'=HYPERLINK(`), text.slice(0, 300));
-      check(`${tag}: CSV: keine Zelle beginnt mit = + - oder @`, !/(^|;)"[=+\-@]/m.test(text.replace(/^\ufeff/, "")));
+      check(`${tag}: CSV: auch eine Zelle mit führendem Tabulator bekommt das Hochkomma`, text.includes('"\'\t=2+2"'), JSON.stringify(text.slice(0, 400)));
+      check(`${tag}: CSV: keine Zelle beginnt mit = + - @ Tabulator oder Zeilenumbruch`, !/(^|;)"[=+\-@\t\r]/m.test(text.replace(/^\ufeff/, "")));
       check(`${tag}: Protokoll ohne Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
       await s.ctx.close();
     }

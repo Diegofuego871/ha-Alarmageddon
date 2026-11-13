@@ -8,7 +8,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import async_mock_service
 
-from custom_components.alarmageddon.notify import ALARM_KINDS, SPECIAL_KINDS, TEXTS, alarm_kind
+from custom_components.alarmageddon.notify import ALARM_KINDS, PLACEHOLDER, SPECIAL_KINDS, TEXTS, alarm_kind
 
 from .conftest import WINDOW, setup_alarm
 from .test_actions import _notify_settings
@@ -169,7 +169,11 @@ def test_panel_and_server_agree() -> None:
     block = block[:block.index("};")]
     assert dict(re.findall(r"(\w+): \"(\w+)\"", block)) == ALARM_KINDS
     tokens = re.search(r"NOTIFY_TOKENS = \[(.*?)\]", actions).group(1)
-    assert re.findall(r"\{(\w+)\}", tokens) == ["name", "sensor", "type", "area", "time", "mode", "alarm"]
+    names = ["name", "sensor", "type", "area", "time", "mode", "alarm"]
+    assert re.findall(r"\{(\w+)\}", tokens) == names
+    # Server und Vorschau ersetzen genau diese sieben, in einem Durchgang (ein eingesetzter Wert wird nie noch einmal ersetzt)
+    assert re.search(r"\(\?:([a-z|]+)\)", PLACEHOLDER.pattern).group(1).split("|") == names
+    assert re.search(r"text\.replace\(/\\\{\(\?:([a-z|]+)\)\\\}/g", actions).group(1).split("|") == names
     strings = (panel / "strings.js").read_text(encoding="utf-8")
     en, de = strings.split("\n  de: {", 1)
     for lang, part in (("en", en), ("de", de)):

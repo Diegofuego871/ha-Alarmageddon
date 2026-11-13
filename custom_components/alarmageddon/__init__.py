@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+from collections.abc import Awaitable
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import Platform
@@ -85,17 +88,32 @@ def _migrate_open_sensors(hass: HomeAssistant, entry: ConfigEntry) -> None:
     hass.config_entries.async_update_entry(entry, options=options)
 
 
+async def _isolated(entry: ConfigEntry, awaitable: Awaitable[Any], what: str) -> Any:
+    """
+    Etwas Zusätzliches (Protokoll, Aufzeichnung, Statistik, Aktionen, Wartung) vorbereiten, ohne dass sein Scheitern die Anlage mitnimmt.
+    Sicherheitsregel: im Zweifel alarmieren. Ein Lesefehler einer Ablage oder ein Fehler beim Start der Aktionen darf nie
+    verhindern, dass die Anlage auf ihre Sensoren hört; es steht im Log, die Anlage läuft ohne dieses Teil weiter.
+    """
+    try:
+        return await awaitable
+    except asyncio.CancelledError:
+        raise
+    except Exception:  # noqa: BLE001 - nur dieses Teil fällt aus
+        _LOGGER.exception("%s: %s failed; the alarm system runs without it", entry.title, what)
+        return None
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> bool:
     # Vor dem Controller und vor dem Update-Listener: die Änderung der Optionen löst so kein zusätzliches Neuladen aus
     _migrate_open_sensors(hass, entry)
     integration = await async_get_integration(hass, DOMAIN)
     settings = await async_get_settings(hass)
     controller = AlarmController(hass, entry, settings)
-    controller.stats = await async_get_stats(hass)
+    controller.stats = await _isolated(entry, async_get_stats(hass), "loading the sensor statistics")
     events = EventLog(hass, entry.entry_id, controller)
-    await events.async_load()
+    await _isolated(entry, events.async_load(), "loading the event log")
     recorder = AlarmRecorder(hass, entry.entry_id, controller)
-    await recorder.async_load()
+    await _isolated(entry, recorder.async_load(), "loading the alarm recordings")
     notifier = Notifier(hass, entry, controller, settings)
     workflow = WorkflowRunner(hass, entry, controller, notifier)
     notifier.workflow_has_notify = workflow.has_notify
@@ -103,17 +121,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
     entry.runtime_data = RuntimeData(controller, events, str(integration.version) if integration.version else None, notifier, workflow, recorder)
     _remove_unused_zones(hass, entry, controller)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    # Erst nach dem Wiederherstellen des Zustands (in der Entität) auf Sensoren hören und protokollieren
+    # Erst nach dem Wiederherstellen des Zustands (in der Entität) auf Sensoren hören und protokollieren. Jedes Teil wird sofort
+    # zum Abmelden vorgemerkt: scheitert ein späteres, bleibt nichts hängen, das weiter auf Sensoren hört.
     controller.async_start()
+    entry.async_on_unload(controller.async_stop)
     events.async_start()
     recorder.async_start()
     notifier.async_start()
-    await workflow.async_start()
+    entry.async_on_unload(notifier.async_stop)
+    # Die Aktionen sind Zusatz zur Anlage selbst: scheitert ihr Start (Ablage), hört die Anlage trotzdem auf ihre Sensoren und meldet
+    await _isolated(entry, workflow.async_start(), "starting the alarm actions")
     scheduler = Scheduler(hass, entry, controller)
     scheduler.async_start()
     entry.async_on_unload(scheduler.async_stop)
-    entry.async_on_unload(controller.async_stop)
-    entry.async_on_unload(notifier.async_stop)
     # Zonen, Modi und Verzögerungen bestimmen, welche Entitäten es gibt und wem zugehört wird: neu laden.
     # Der Zustand (scharf, Verzögerung, Alarm) übersteht das über die Wiederherstellung der Entität.
     entry.async_on_unload(entry.add_update_listener(_async_reload))
@@ -125,7 +145,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry)
         await async_register_panel(hass)
     except Exception:  # noqa: BLE001
         _LOGGER.exception("%s: the panel could not be registered; the alarm system runs without it", entry.title)
-    await async_start_maintenance(hass, settings)
+    await _isolated(entry, async_start_maintenance(hass, settings), "starting the maintenance check")
     # Reste der früheren Update-Prüfung (bis 0.27.0): die Meldung unter "Reparaturen" verschwindet mit der Funktion
     ir.async_delete_issue(hass, DOMAIN, "update_available")
     return True
@@ -149,18 +169,23 @@ async def _async_reload(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> 
 async def async_unload_entry(hass: HomeAssistant, entry: AlarmageddonConfigEntry) -> bool:
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
-    await entry.runtime_data.events.async_stop()
-    if entry.runtime_data.recorder:
-        await entry.runtime_data.recorder.async_stop()
-    if entry.runtime_data.workflow:
-        await entry.runtime_data.workflow.async_unload()
+    # Ab hier sind die Entitäten weg: scheitert eines der folgenden Teile (Ablage nicht beschreibbar), muss das Entladen trotzdem
+    # zu Ende gehen. Sonst bliebe die Anlage ohne Entität zurück und liesse sich nicht neu laden (Zustand "Entladen fehlgeschlagen").
+    runtime = entry.runtime_data
+    for what, stop in (
+        ("saving the event log", runtime.events.async_stop),
+        ("saving the alarm recordings", runtime.recorder.async_stop if runtime.recorder else None),
+        ("stopping the alarm actions", runtime.workflow.async_unload if runtime.workflow else None),
+    ):
+        if stop is not None:
+            await _isolated(entry, stop(), what)
     others = [
         e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id and e.state is ConfigEntryState.LOADED
     ]
     # Das Panel bleibt auch beim Neuladen einer Anlage stehen (Sensoren speichern lädt sie neu): würde es kurz entfernt, vergässe die
     # Oberfläche die Anlage und hinge. Es verschwindet erst, wenn die letzte Anlage entfernt wird (async_remove_entry).
     if not others:
-        await async_stop_maintenance(hass)
+        await _isolated(entry, async_stop_maintenance(hass), "stopping the maintenance check")
     return True
 
 

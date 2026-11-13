@@ -6,8 +6,8 @@ läuft, aber niemand prüft ihre Wirkung). Jede Zeile der Liste unten steht für
 heisst: diese Zusage ist nicht mehr durch einen Test gesichert.
 
 Aufruf im Wurzelverzeichnis: `python scripts/mutation_check.py` (rund eine halbe Minute). Endet mit Fehler, wenn eine
-Mutation übersehen wird oder ihr Muster im Code nicht mehr vorkommt (dann wurde die Stelle umgebaut: Muster nachführen,
-nicht löschen). Die Dateien werden nach jeder Probe zurückgesetzt, auch bei einem Abbruch.
+Mutation übersehen wird oder ihr Muster im Code nicht mehr oder mehrfach vorkommt (dann wurde die Stelle umgebaut: Muster
+nachführen, nicht löschen). Die Dateien werden nach jeder Probe zurückgesetzt, auch bei einem Abbruch.
 
 Pflege: Neue Schutzmassnahme (Prüfung einer Berechtigung, eines Zustands, einer Eingabe) -> neue Zeile mit dem Test, der
 sie sichert. Regel aus CLAUDE.md, Abschnitt "Sicherheitstests".
@@ -58,7 +58,7 @@ MUTATIONS = [
      '        vol.Optional("backup_name", default=""): vol.All(str, vol.Length(max=60)),\n    }\n)\n@websocket_api.require_admin\n',
      '        vol.Optional("backup_name", default=""): vol.All(str, vol.Length(max=60)),\n    }\n)\n', "tests/test_security.py -k admin_only"),
     ("Anlage wird auch gelöscht, wenn sie scharf, in der Verzögerung oder im Alarm ist", "websocket_api.py",
-     "if entry.runtime_data.controller.state != AlarmControlPanelState.DISARMED:", "if False:", "tests/test_delete_system.py -k refused_unless_disarmed"),
+     "\n    if entry.runtime_data.controller.state != AlarmControlPanelState.DISARMED:", "\n    if False:", "tests/test_delete_system.py -k refused_unless_disarmed"),
     ("Anlage wird gelöscht, ohne dass der Name stimmt", "websocket_api.py",
      'if " ".join(msg["name"].split()) != " ".join(entry.title.split()):', "if False:", "tests/test_delete_system.py -k exact_name"),
     ("Sicherung vor dem Löschen wird nicht angelegt", "websocket_api.py",
@@ -76,6 +76,26 @@ MUTATIONS = [
      'if not 0 <= index < len(backup["systems"]) or index in seen_index:', "if False:", "tests/test_restore_mapping.py -k invalid_mapping"),
     ("Wiederherstellen: gemeinsame Einstellungen werden trotz Abwahl wiederhergestellt", "backup.py",
      'if restore_settings and backup["notify"] is not None:', 'if backup["notify"] is not None:', "tests/test_restore_mapping.py -k settings_can_be_left_out"),
+    ("Zeitgeber der Verzögerung läuft nach einem direkten Wechsel in den Alarm weiter", "controller.py",
+     "        if fired_at is None:\n            self._cancel_timer()\n        else:\n            self._unsub_timer = None",
+     "        self._unsub_timer = None", "tests/test_stale_timers.py"),
+    ("Ein Fehler beim Mitschreiben der Sensorwechsel verhindert den Alarm", "controller.py",
+     "        except Exception:  # noqa: BLE001 - die Anzeige hält den Alarm nie auf", "        except KeyError:  # noqa: BLE001 - die Anzeige hält den Alarm nie auf",
+     "tests/test_sensor_bookkeeping.py"),
+    ("Ein ausgefallenes Zusatzteil nimmt beim Laden oder Entladen die ganze Anlage mit", "__init__.py",
+     "    except Exception:  # noqa: BLE001 - nur dieses Teil fällt aus", "    except KeyError:  # noqa: BLE001 - nur dieses Teil fällt aus", "tests/test_review_fixes.py"),
+    ("Ein beschädigter Code verhindert die Prüfung aller Codes", "code.py",
+     "    except (TypeError, ValueError):\n        return False", "    except KeyError:\n        return False", "tests/test_review_fixes.py -k damaged"),
+    ("Hauptcode ohne Salz stört die Prüfung der übrigen Codes", "controller.py",
+     "        if self.options.get(CONF_CODE_HASH) and self.options.get(CONF_CODE_SALT):\n            out.append(", "        if self.options.get(CONF_CODE_HASH):\n            out.append(", "tests/test_review_fixes.py -k damaged"),
+    ("Anlage wird gelöscht, obwohl sie während der Sicherung scharf wurde", "websocket_api.py",
+     "        if entry.runtime_data.controller.state != AlarmControlPanelState.DISARMED:\n            connection.send_error(msg[\"id\"], \"not_disarmed\", \"Disarm the alarm system first\")\n            return\n    await hass.config_entries.async_remove",
+     "        if False:\n            connection.send_error(msg[\"id\"], \"not_disarmed\", \"Disarm the alarm system first\")\n            return\n    await hass.config_entries.async_remove", "tests/test_review_fixes.py -k delete"),
+    ("Eingesetzte Werte eigener Texte werden noch einmal ersetzt", "notify.py",
+     "PLACEHOLDER.sub(lambda match: values[match.group(0)], template).strip()",
+     "__import__(\"functools\").reduce(lambda text, item: text.replace(item[0], item[1]), values.items(), template).strip()", "tests/test_review_fixes.py -k one_pass"),
+    ("Geprüfte Schritte teilen sich ihre Standardwerte", "schemas.py",
+     "        vol.Optional(\"data\", default=dict): dict,", "        vol.Optional(\"data\", default={}): dict,", "tests/test_review_fixes.py -k share"),
     ("Eigene Empfänger einer Meldung werden ignoriert", "notify.py", "async_send(self.hass, targets or self._targets(kind, mode), build_payload(", "async_send(self.hass, self._targets(kind, mode), build_payload(",
      "tests/test_push_targets.py -k 'replaces or several or alarm_end'"),
     ("Knöpfe nur von den globalen Empfängern, nicht von den eigenen des Schritts", "notify.py", "recipient_users(self.hass, self._alarm_recipients())", 'recipient_users(self.hass, self.cfg["alarm_targets"])',
@@ -233,7 +253,11 @@ MUTATIONS = [
     ("Sirene oder Alarmmeldung beim Scharfschalten erlaubt", "schemas.py",
      '    if step["type"] not in ARMED_STEP_TYPES:\n        raise vol.Invalid("this step is not possible when arming")\n', "", "tests/test_armed_actions.py -k invalid_arming"),
     ("Kachel: wer scharf geschaltet hat, geht beim Quittieren verloren", "controller.py",
-     "        if self.state != AlarmControlPanelState.TRIGGERED and not self._restoring:\n", "        if True:\n", "tests/test_armed_since.py -k acknowledg"),
+     "        if (self.state != AlarmControlPanelState.TRIGGERED or self.armed_at is None) and not self._restoring:\n",
+     "        if not self._restoring:\n", "tests/test_armed_since.py -k acknowledg"),
+    ("Kachel: nach einem Alarm in der Ausgangsverzögerung fehlt die Zeit des Scharfschaltens", "controller.py",
+     "        if (self.state != AlarmControlPanelState.TRIGGERED or self.armed_at is None) and not self._restoring:\n",
+     "        if self.state != AlarmControlPanelState.TRIGGERED and not self._restoring:\n", "tests/test_stale_timers.py -k acknowledged_alarm_in_the_exit_delay"),
     ("Absenderprüfung der Push-Knöpfe entfernt", "notify.py",
      'if not user_id or user_id not in recipient_users(self.hass, self._alarm_recipients()):', "if False:", "tests/test_security.py tests/test_hardening.py -k recipient"),
     ("Push-Knöpfe auch ausserhalb des Alarms", "notify.py",
@@ -316,7 +340,37 @@ MUTATIONS = [
     ("Rückkehr aus \"nicht verfügbar\" zählt als Auslösung", "sensor_history.py", "            if old == STATE_OFF:\n                self._bucket(entity_id, _hour(when))[0] += 1\n",
      "            self._bucket(entity_id, _hour(when))[0] += 1\n", "tests/test_sensor_history.py -k duplicates"),
     ("Jeder Wechsel auf offen löst aus", "controller.py", "went_on = old.state == STATE_OFF and new.state == STATE_ON", "went_on = new.state == STATE_ON", "tests/test_security.py -k real_change"),
+    # Ausfallsicherungen im Ablauf der Alarmaktionen (Code-Review 1.33.1): Zweige, die nur bei einem Fehler oder einer Berührung zweier Läufe laufen
+    ("Stopp eines Nebenlaufs beendet auch einen echten Alarm", "workflow.py",
+     '        run = self._run\n        if run is None or not run.get("after"):\n            return\n        await self._end_test()\n',
+     '        run = self._run\n        if run is None:\n            return\n        await self._end_test()\n', "tests/test_workflow_failsafes.py -k side_run_never_touches"),
+    ("Ein Fehler beim Beenden des Tests hält den echten Alarm auf", "workflow.py",
+     "            except Exception:  # noqa: BLE001 - das Ende des Tests darf den echten Alarm nie verhindern\n",
+     "            except KeyError:  # noqa: BLE001 - das Ende des Tests darf den echten Alarm nie verhindern\n", "tests/test_workflow_failsafes.py -k failing_end_of_the_test"),
+    ("Ein Fehler der Aktionen nach dem Alarm stört das Ende des Alarms", "workflow.py",
+     "        except Exception:  # noqa: BLE001 - das Ende des Alarms selbst ist schon erledigt\n",
+     "        except KeyError:  # noqa: BLE001 - das Ende des Alarms selbst ist schon erledigt\n", "tests/test_workflow_failsafes.py -k failing_actions_after_the_alarm"),
+    ("Aktionen beim Scharfschalten ersetzen einen laufenden Test", "workflow.py",
+     '        if self._run is not None:\n            if not self._run.get("after"):\n                return False  # ein Alarm oder ein Test läuft\n            await self._stop_side_run()\n        run: dict[str, Any] = {"trigger": mode, "index": 0, "test": False, "after": True, "phase": "armed"',
+     '        if self._run is not None:\n            await self._stop_side_run()\n        run: dict[str, Any] = {"trigger": mode, "index": 0, "test": False, "after": True, "phase": "armed"',
+     "tests/test_workflow_failsafes.py -k replace_a_running_test"),
+    ("Ein gescheiterter Start beim Deaktivieren lässt einen halben Lauf stehen", "workflow.py",
+     "        try:\n            self._begin(run)\n        except Exception:\n            if self._run is run:\n                self._run = None  # kein halber Lauf bleibt stehen (er gälte sonst als laufend)\n            raise\n        return True\n\n    @callback\n    def _finish_after",
+     "        try:\n            self._begin(run)\n        except Exception:\n            raise\n        return True\n\n    @callback\n    def _finish_after", "tests/test_workflow_failsafes.py -k no_half_run"),
+    ("Ein Fehler beim Festhalten des Wächter-Eingriffs bricht den Wächter ab", "workflow.py",
+     "        except Exception:  # noqa: BLE001 - der Wächter selbst darf nie scheitern\n", "        except KeyError:  # noqa: BLE001 - der Wächter selbst darf nie scheitern\n", "tests/test_workflow_failsafes.py -k watchdog_note"),
+    ("Scheitert die Suche nach dem zweiten Ablauf, scheitert der Alarm", "workflow.py",
+     "        except Exception:  # noqa: BLE001 - der Hauptablauf läuft in jedem Fall\n", "        except KeyError:  # noqa: BLE001 - der Hauptablauf läuft in jedem Fall\n", "tests/test_workflow_failsafes.py -k second_flow_lookup"),
+    ("Ausnahme einer nicht mehr abgewarteten Aufgabe wird nicht abgeholt", "workflow.py",
+     "    if not task.cancelled():\n        task.exception()\n", "    if not task.cancelled():\n        pass\n", "tests/test_workflow_failsafes.py -k late_task_with_an_error"),
+    ("Ein Ton der Verzögerung spielt weiter, obwohl sie um ist", "workflow.py",
+     '        if left < 1:\n            return None\n', '        if left < 1:\n            return {**step, "duration": 1}\n', "tests/test_workflow_failsafes.py -k tone_that_follows_the_delay"),
 ]
+
+
+# Zeilen, die dieselbe Massnahme an allen Stellen zugleich ausbauen (das Muster steht dann mehrfach im Code); jedes andere Muster
+# muss genau einmal vorkommen, sonst träfe die Probe vielleicht eine andere Stelle als gedacht
+ALL_PLACES = {"Speichern meldet immer ein Neuladen (Panel wartet 25 Sekunden vergeblich)"}
 
 
 def main() -> int:
@@ -324,11 +378,16 @@ def main() -> int:
     for name, file, old, new, tests in MUTATIONS:
         path = BASE / file
         original = path.read_text(encoding="utf-8")
-        if old not in original:
+        count = original.count(old)
+        if count == 0:
             problems += 1
             print(f"FEHLT     {name}: Muster nicht mehr in {file}")
             continue
-        path.write_text(original.replace(old, new, 1), encoding="utf-8")
+        if count > 1 and name not in ALL_PLACES:
+            problems += 1
+            print(f"MEHRDEUTIG {name}: Muster steht {count}-mal in {file}, es muss eindeutig sein")
+            continue
+        path.write_text(original.replace(old, new), encoding="utf-8")
         try:
             run = subprocess.run(f"{sys.executable} -m pytest -q --no-header -p no:cacheprovider -x {tests}", shell=True, capture_output=True, text=True, cwd=ROOT)
         finally:

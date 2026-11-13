@@ -10,6 +10,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_AWAY_ENABLED,
+    CONF_CODE_ARM_REQUIRED,
     CONF_CONFIRM_WINDOW,
     CONF_ALWAYS_ENABLED,
     CONF_HOME_ENABLED,
@@ -65,7 +66,7 @@ NOTIFY_TARGETS = vol.All([vol.All(str, vol.Match(r"^notify\.[a-z0-9_]+$"))], vol
 PLAYER_VOLUMES = {vol.All(str, vol.Match(r"^media_player\.[a-z0-9_]+$")): vol.All(vol.Coerce(float), vol.Range(min=0, max=1))}
 
 STEP_SCHEMAS = {
-    # Eigener Titel und Text der Alarmmeldung (0.19.0); fehlt eine Angabe, gilt der Standardtext. Platzhalter: {name} {sensor} {time} {mode}
+    # Eigener Titel und Text der Alarmmeldung (0.19.0); fehlt eine Angabe, gilt der Standardtext. Platzhalter: {name} {sensor} {type} {area} {time} {mode} {alarm}
     "notify": vol.Schema({
         vol.Required("type"): "notify",
         vol.Optional("title"): vol.All(str, vol.Length(max=100)),
@@ -86,8 +87,9 @@ STEP_SCHEMAS = {
     "action": vol.Schema({
         vol.Required("type"): "action",
         vol.Required("action"): cv.service,
-        vol.Optional("target", default=[]): ENTITY_LIST,
-        vol.Optional("data", default={}): dict,
+        # Standardwerte als Fabrik (default=list/dict): ein Wert wie {} würde sonst von allen geprüften Schritten geteilt
+        vol.Optional("target", default=list): ENTITY_LIST,
+        vol.Optional("data", default=dict): dict,
         vol.Optional("restore", default=False): bool,
         # Auf das Ende warten (1.10.0): Schritte laufen standardmässig weiter, der nächste startet sofort; mit "wait" startet er
         # erst, wenn dieser fertig ist. "detach" ist die ältere Angabe (0.17.0, bis 1.9.0: ohne sie wurde gewartet); beide werden
@@ -288,7 +290,7 @@ SYSTEM_OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_AWAY_ENABLED): bool,
         vol.Optional(CONF_SCHEDULES): SCHEDULES,
         vol.Optional(CONF_OPEN_SENSORS): vol.In(OPEN_SENSOR_MODES),
-        vol.Optional("code_arm_required"): bool,
+        vol.Optional(CONF_CODE_ARM_REQUIRED): bool,
         vol.Optional(CONF_CONFIRM_WINDOW): vol.All(vol.Coerce(int), vol.Range(min=5, max=MAX_CONFIRM_WINDOW)),
         vol.Optional(CONF_SENSOR_OPTIONS): {cv.entity_id: SENSOR_VALUES},
         vol.Optional(CONF_PER_MODE_SENSORS): bool,

@@ -60,6 +60,7 @@ for (const lang of ["de", "en"]) {
     await s.page.keyboard.type("1234");
     await s.page.keyboard.press("Enter");
     check(`${tag}: Richtiger Code schliesst Dialog`, await s.waitFor(`return !r.getElementById("ag-code").open`));
+    check(`${tag}: der Code bleibt nach dem Schliessen nicht im Fenster stehen`, await s.waitFor(`return r.getElementById("ag-code-input").value === ""`));
     check(`${tag}: Haus deaktiviert`, await s.waitFor(`return r.querySelector('[data-system="e_haus"]').innerText.includes(${JSON.stringify(t.disarmed)})`));
     const calls = await s.sim("return window.__calls.filter((c) => c.type === 'alarmageddon/arm')");
     check(`${tag}: Aufrufe`, JSON.stringify(calls.map((c) => [c.entry_id, c.mode, c.code || null])) === JSON.stringify([["e_garage", "away", null], ["e_garage", "home", null], ["e_haus", "off", null], ["e_haus", "off", "9999"], ["e_haus", "off", "1234"]]), JSON.stringify(calls));

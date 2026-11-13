@@ -433,10 +433,11 @@ export class LogUi {
     const incidents = this.incidents().reverse();
     const base = `alarmageddon-log-${this._rangeName()}-${dayStr(new Date())}`;
     // CSV mit Semikolon und BOM: öffnet sich in Excel im deutschsprachigen Raum richtig
-    // Zellen, die wie eine Formel beginnen (= + - @), bekommen ein führendes Hochkomma: Excel führt sie sonst aus (CSV-Injection)
+    // Zellen, die wie eine Formel beginnen (= + - @, auch nach einem Tabulator oder Zeilenumbruch), bekommen ein führendes Hochkomma:
+    // Excel führt sie sonst aus (CSV-Injection, Empfehlung von OWASP)
     const q = (v) => {
       const text = String(v ?? "");
-      return `"${(/^[=+\-@]/.test(text) ? `'${text}` : text).replaceAll('"', '""')}"`;
+      return `"${(/^[=+\-@\t\r]/.test(text) ? `'${text}` : text).replaceAll('"', '""')}"`;
     };
     const rows = [];
     for (const e of events) rows.push([e.t, e.system, this._t("logCsvEvent"), this.host._eventText(e), e.sensor || (e.sensors || []).join(" "), e.by || "", ""]);

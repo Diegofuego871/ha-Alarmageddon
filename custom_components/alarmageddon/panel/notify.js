@@ -180,11 +180,6 @@ export class NotifyUi {
     else delete d.modes[mode];
   }
 
-  // Modi, in denen diese Art eigene Werte hat (Hinweis im Reiter "Alle Modi")
-  _ownModes(kind) {
-    return ALL_MODES.filter((m) => this.draft.modes?.[m]?.[kind]);
-  }
-
   // ----- Eine Meldungsart -----
 
   _type(kind, icon, dirty, sub = false, mode = null) {
@@ -218,7 +213,7 @@ export class NotifyUi {
         <div class="ag-mt-opt"><span class="ag-t2 ag-small">${esc(this._t("ntTestHint"))}</span>
           <button class="ag-btn" data-nt="test" data-kind="${kind}"${md} ${dirty ? "disabled" : ""} title="${esc(dirty ? this._t("wfSaveFirst") : this._t("ntTestType"))}">${ic("play", 16)}${esc(this._t("ntTestType"))}</button></div></div>`;
     }
-    return `<div class="ag-mt ${sub ? "sub" : ""} ${s.enabled ? "" : "off"}"><div class="ag-mt-head">${toggle(`data-nt="enabled" data-kind="${kind}"${md}`, s.enabled, name)}<span class="ag-mini ${kind === "triggered" ? "err" : ""}">${ic(icon, 16)}</span>
+    return `<div class="ag-mt ${sub ? "sub" : ""} ${s.enabled ? "" : "off"}"><div class="ag-mt-head">${toggle(`data-nt="enabled" data-kind="${kind}"${md}`, s.enabled, name)}<span class="ag-mini">${ic(icon, 16)}</span>
         <div class="ag-settx"><b>${esc(name)}</b><small>${esc(hint)}</small>${origin}</div></div>${body}</div>`;
   }
 
