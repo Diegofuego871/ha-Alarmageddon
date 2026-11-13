@@ -17,6 +17,9 @@ for (const lang of ["de", "en"]) {
     await s.waitFor("return !!r.querySelector('.ag-chap')");
     const toEnd = () => s.ev("const c=r.querySelector('.ag-content'); if (c) c.scrollTop = c.scrollHeight; const b=r.querySelector('[data-sys=\"delete\"]'); b?.scrollIntoView({ block: 'center' });");
 
+    // Die Auswahl der Anlage wird beim Auffrischen nicht neu gezeichnet: ein geöffnetes Dropdown klappte sonst zu
+    check(`${tag}: Auswahl der Anlage bleibt beim Auffrischen dasselbe Element`, await s.ev("window.__selNode = r.querySelector('select[data-act=\"system\"]'); return !!window.__selNode") && (await s.frame.evaluate(() => document.querySelector("alarmageddon-panel")._fetch().then(() => true))) && await s.ev("return r.querySelector('select[data-act=\"system\"]') === window.__selNode"));
+
     // ----- Haus ist scharf: Knopf gesperrt, mit Hinweis -----
     await (await s.el('select[data-act="system"]')).selectOption("e_haus");
     await s.page.waitForTimeout(300);
@@ -67,6 +70,16 @@ for (const lang of ["de", "en"]) {
     await s.tap('#ag-delete button[type="submit"]');
     check(`${tag}: Löschen schliesst den Dialog, die Anlage ist weg, das Panel zeigt die übrige`, await s.waitFor("const sel=r.querySelector('select[data-act=\"system\"]'); const h=r.querySelector('.ag-systitle'); return !r.getElementById('ag-delete').open && !sel && !!h && h.innerText.includes('Haus')", 8000));
     check(`${tag}: Server bekam Name und Sicherung "${t.backupName}"`, await s.sim(`const d=window.__deletedSystems || []; return d.length === 1 && d[0].title === 'Garage' && d[0].backup_name === ${JSON.stringify(t.backupName)}`));
+    // Die letzte Anlage löschen: sofort die leere Seite (kein Warten auf eine Anlage, die nicht zurückkehrt)
+    await s.sim(`window.__setState("alarm_control_panel.haus", "disarmed", { arm_mode: null, changed_by: null, deadline: null })`);
+    await s.tap('[data-sub="sensors"]');
+    await s.tap('[data-sub="system"]');
+    await s.waitFor("const b=r.querySelector('[data-sys=\"delete\"]'); return !!b && !b.disabled");
+    await toEnd();
+    await s.tap('[data-sys="delete"]');
+    await (await s.el("#ag-del-input")).fill("Haus");
+    await s.tap('#ag-delete button[type="submit"]');
+    check(`${tag}: letzte Anlage gelöscht: sofort die leere Seite, keine Ladeanzeige`, await s.waitFor("const root=r.querySelector('.ag-root'); return !!r.querySelector('.ag-empty') && !root.classList.contains('ag-ldwrap') && !r.querySelector('[data-sys=\"delete\"]')", 4000));
     check(`${tag}: keine Fehler im Browser`, s.errors.length === 0, s.errors.join(" | "));
     await s.ctx.close();
 

@@ -219,3 +219,14 @@ async def test_a_failed_statistics_load_leaves_nothing_half_built(hass: HomeAssi
     # Der nächste Versuch lädt neu
     assert isinstance(await sensor_history.async_get_stats(hass), sensor_history.SensorStats)
     assert DOMAIN
+
+
+def test_group_recipient_lists_only_keep_valid_notify_names() -> None:
+    """Empfänger der Gruppen (Alarm, Wartung): nur gültige Namen von notify-Diensten, ohne Obergrenze (nie ein Empfänger weniger)."""
+    from custom_components.alarmageddon.settings import valid_notify
+
+    many = [f"notify.mobile_app_p{i}" for i in range(30)]
+    cfg = valid_notify({"alarm_targets": ["notify.a", "notify.A", "notify.a b", "notify.", "notify.x.y", "light.x", 5, "notify.a", *many],
+                        "maintenance_targets": ["notify.wartung", "notify.mit-strich"]})
+    assert cfg["alarm_targets"] == ["notify.a", *many]
+    assert cfg["maintenance_targets"] == ["notify.wartung"]

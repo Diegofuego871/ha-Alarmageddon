@@ -52,11 +52,14 @@ def valid_presets(value: Any) -> dict[str, list[str]]:
     return out
 
 
+NOTIFY_NAME = re.compile(r"notify\.[a-z0-9_]+")
+
+
 def _valid_targets(value: Any) -> list[str]:
     """Eigene Empfänger einer Meldungsart: nur notify-Dienste, ohne Doppelte, höchstens 20; sonst leer (die Gruppe gilt)."""
     if not isinstance(value, list):
         return []
-    return [t for t in dict.fromkeys(value) if isinstance(t, str) and re.fullmatch(r"notify\.[a-z0-9_]+", t)][:20]
+    return [t for t in dict.fromkeys(value) if isinstance(t, str) and NOTIFY_NAME.fullmatch(t)][:20]
 
 
 def valid_notify(value: Any) -> dict[str, Any]:
@@ -70,7 +73,9 @@ def valid_notify(value: Any) -> dict[str, Any]:
         return out
     for key in ("alarm_targets", "maintenance_targets"):
         if isinstance(value.get(key), list):
-            out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str) and t.startswith("notify.")]
+            # Wie die Listen je Art und je Schritt: nur ein gültiger Name eines notify-Dienstes. Ohne Obergrenze: ein Empfänger der
+            # Gruppe darf nie still wegfallen (im Zweifel alarmieren)
+            out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str) and NOTIFY_NAME.fullmatch(t)]
     for key in ("disarm_action", "open_action", "silence_action", "acknowledge_action", "arm_retry_action", "arm_force_action"):
         if isinstance(value.get(key), bool):
             out[key] = value[key]

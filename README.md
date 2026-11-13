@@ -115,7 +115,7 @@ An alarm system has to work when something else does not. These mechanisms are b
 | Watchdog | The alarm actions are supervised as a whole: the first step starts within 8 seconds, no step delays the next one beyond its limit, and a flow that breaks off goes on with the next step. Interventions appear in the timeline of the alarm |
 | You decide how long the siren sounds | There is no fixed duration in the code. You set it in the flow ("wait" between on and off, or a duration for a sound, up to an hour per step). It is kept exactly and counts from the first start, also across a restart |
 | Sensors that fail | A sensor that becomes unreachable while armed is reported at once, or triggers the alarm with the option "failure counts as alarm". Low batteries are reported before they are empty |
-| Tested | More than 880 automated tests against a real Home Assistant, about 3,800 checks of the interface on computer and phone, and a mutation check that removes each of 146 safeguards and requires a test to fail |
+| Tested | More than 880 automated tests against a real Home Assistant, about 3,800 checks of the interface on computer and phone, and a mutation check that removes each of 147 safeguards and requires a test to fail |
 
 ### Limits
 

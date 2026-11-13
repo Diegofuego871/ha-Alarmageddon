@@ -26,6 +26,9 @@ Eine vollständige Code-Prüfung von allem, was zuletzt entstanden ist: eine Sic
 - **Zwei Alarmanlagen, die zusammen starten,** konnten beim Start einige Stundenzähler der Sensoransicht verlieren: die zweite arbeitete mit einer Statistik, die noch nicht geladen war.
 - **Schritte der Alarmaktionen** teilten sich einen leeren Standardwert für "data" und für die Ziele; jetzt hat jeder Schritt seinen eigenen (keine bekannte Wirkung, vorsorglich geändert).
 - **CSV-Export des Protokolls:** Zellen, die mit einem Tabulator oder Zeilenumbruch beginnen, werden wie Zellen mit einem Formelzeichen am Anfang entschärft (Empfehlung von OWASP).
+- **Die letzte Alarmanlage löschen** zeigt sofort die leere Seite. Bisher wartete das Panel bis zu 30 Sekunden mit der Ladeanzeige und der schon gelöschten Alarmanlage, als würde sie neu geladen.
+- **Die Auswahl der Alarmanlage in der Kopfzeile** (bei mehreren Alarmanlagen) wird beim Auffrischen nicht mehr neu gezeichnet; ein geöffnetes Dropdown klappt nicht mehr alle 30 Sekunden zu.
+- **Empfänger für Alarme und Wartung** werden wie die Listen je Meldungsart und je Schritt geprüft: nur gültige Namen von notify-Diensten (`notify.` und Buchstaben, Ziffern, Unterstrich). Ungültige Einträge fallen weg; es gibt keine Obergrenze, damit nie ein Empfänger still verloren geht.
 - **Tests:** neue Tests für die wartenden Zeitgeber (`tests/test_stale_timers.py`), das Mitschreiben, Start und Stopp, beschädigte Codes, das Rennen beim Löschen, die Platzhalter und das Panel; die Mutationsprobe hat für jede dieser Schutzmassnahmen neue Zeilen.
 
 ### Sicherheit

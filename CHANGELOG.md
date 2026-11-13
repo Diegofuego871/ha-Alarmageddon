@@ -26,6 +26,9 @@ A full code review of everything built recently: one safety fix in the state mac
 - **Two alarm systems starting together** could lose a few hourly counters of the sensor view at startup: the second one worked with statistics that were not loaded yet.
 - **Steps of the alarm actions** shared one empty default value for "data" and for the targets; every step now has its own (no known effect, changed as a precaution).
 - **CSV export of the log:** cells that begin with a tab or a line break are quoted like cells that begin with a formula sign (recommendation of OWASP).
+- **Deleting the last alarm system** shows the empty page at once. Before, the panel waited up to 30 seconds with the loading indicator and the already deleted alarm system, as if it were reloading.
+- **The alarm system selection in the header** (with several alarm systems) is no longer redrawn on every refresh, so an open dropdown does not fold shut every 30 seconds.
+- **Recipients for alarms and maintenance** are checked like the lists per kind and per step: only valid names of notify services (`notify.` and letters, digits, underscore). Invalid entries drop out; there is no upper limit, so no recipient is ever lost silently.
 - **Tests:** new tests for the pending timers (`tests/test_stale_timers.py`), the bookkeeping, the start and the stop, damaged codes, the delete race, the placeholders and the panel; the mutation check has new lines for each of these safeguards.
 
 ### Security

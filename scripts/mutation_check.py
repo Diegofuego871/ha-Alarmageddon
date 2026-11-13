@@ -131,7 +131,7 @@ MUTATIONS = [
      '        own = effective_type(self.cfg, kind, mode).get("targets")', '        own = None',
      "tests/test_type_targets.py -k 'own_recipients or mode_value or test_message'"),
     ("Eigene Empfänger je Art: jeder Dienst erlaubt (nicht nur notify)", "settings.py",
-     're.fullmatch(r"notify\\.[a-z0-9_]+", t)', 'True',
+     'NOTIFY_NAME.fullmatch(t)][:20]', 'True][:20]',
      "tests/test_type_targets.py -k backup_and_validation"),
     ("Wartung: Batterie geht an die Gruppe statt an die eigenen Empfänger", "maintenance.py",
      'tuple(cfg["types"][art].get("targets") or cfg["maintenance_targets"])', 'tuple(cfg["maintenance_targets"])',
@@ -264,7 +264,7 @@ MUTATIONS = [
      "if key is None or self._ctl.state != AlarmControlPanelState.TRIGGERED or not self._button_allowed(key):", "if key is None or not self._button_allowed(key):",
      "tests/test_actions.py tests/test_security.py -k 'stale or isolated'"),
     ("Empfänger: jeder Dienst erlaubt", "settings.py",
-     'out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str) and t.startswith("notify.")]', "out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str)]",
+     'out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str) and NOTIFY_NAME.fullmatch(t)]', "out[key] = [t for t in dict.fromkeys(value[key]) if isinstance(t, str)]",
      "tests/test_security.py -k only_notify"),
     ("Codes in der Antwort an das Panel", "websocket_api.py",
      '"codes": [{"id": c.get("id", ""), "name": c.get("name", ""), "user_id": c.get("user_id")} for c in ctl.codes],', '"codes": ctl.codes,', "tests/test_security.py -k never_leave"),
@@ -365,6 +365,8 @@ MUTATIONS = [
      "    if not task.cancelled():\n        task.exception()\n", "    if not task.cancelled():\n        pass\n", "tests/test_workflow_failsafes.py -k late_task_with_an_error"),
     ("Ein Ton der Verzögerung spielt weiter, obwohl sie um ist", "workflow.py",
      '        if left < 1:\n            return None\n', '        if left < 1:\n            return {**step, "duration": 1}\n', "tests/test_workflow_failsafes.py -k tone_that_follows_the_delay"),
+    ("Empfänger der Gruppen werden nicht auf gültige Namen geprüft", "settings.py",
+     "if isinstance(t, str) and NOTIFY_NAME.fullmatch(t)]\n", "if isinstance(t, str) and t.startswith(\"notify.\")]\n", "tests/test_review_fixes.py -k group_recipient"),
 ]
 
 

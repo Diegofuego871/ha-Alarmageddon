@@ -225,12 +225,13 @@ class AlarmageddonPanel extends HTMLElement {
       const old = this._data?.systems || [];
       const missing = this._wait ? old.filter((o) => o.entry_id === this._wait.entryId && !data.systems.some((s) => s.entry_id === o.entry_id)) : [];
       if (missing.length) data.systems = [...data.systems, ...missing].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
-      if (!data.systems.length && old.length && (this._emptyTries = (this._emptyTries || 0) + 1) <= 30) {
+      if (!data.systems.length && old.length && !this._deleted && (this._emptyTries = (this._emptyTries || 0) + 1) <= 30) {
         this._busy(true);
         setTimeout(() => this._fetch(), 1000);
         return;
       }
       this._emptyTries = 0;
+      this._deleted = false;
       if (!this._wait) this._busy(false);
       this._data = data;
       this._connError = false;
@@ -925,7 +926,7 @@ class AlarmageddonPanel extends HTMLElement {
     if (!slot) return;
     const systems = this._systems();
     const cur = this._system();
-    slot.innerHTML = systems.length && cur ? this._sysBar(systems, cur) : "";
+    this._setHtml(slot, systems.length && cur ? this._sysBar(systems, cur) : "");
   }
 
   _sysBar(systems, cur) {
@@ -1089,7 +1090,10 @@ class AlarmageddonPanel extends HTMLElement {
     this._sel = null;
     this._resetConfig();
     this.systemUi.backups = null;
+    // Die Anlage ist weg, nicht im Neuladen: eine leere Liste ist jetzt die richtige Antwort, kein Warten auf ihre Rückkehr
+    this._deleted = true;
     await this._fetch();
+    this._deleted = false;
     this._render();
   }
 
