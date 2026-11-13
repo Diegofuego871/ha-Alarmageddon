@@ -53,6 +53,8 @@ class AlarmageddonCardBase extends HTMLElement {
     const first = !this._hass;
     this._hass = hass;
     this._lang = pickLang(hass);
+    // Das Stylesheet des Panels kennt dunkel nur über das Attribut (Alarmband); Home Assistant meldet es im Thema
+    this.toggleAttribute("dark", Boolean(hass.themes?.darkMode));
     const sig = this._signature(hass);
     if (first || sig !== this._sig) {
       this._sig = sig;
@@ -101,7 +103,7 @@ class AlarmageddonCardBase extends HTMLElement {
     if (!id) return "";
     const rel = ready(hass, id);
     const ids = [id, ...rel.ready.map(([, e]) => e), rel.status].filter(Boolean);
-    return ids.map((e) => `${e}:${hass.states[e]?.last_updated}:${hass.states[e]?.state}`).join("|") + `|${hass.entities?.[id]?.device_id}|${hass.locale?.language}|${hass.user?.is_admin}`;
+    return ids.map((e) => `${e}:${hass.states[e]?.last_updated}:${hass.states[e]?.state}`).join("|") + `|${hass.entities?.[id]?.device_id}|${hass.locale?.language}|${hass.user?.is_admin}|${hass.themes?.darkMode}`;
   }
 
   _fmtTime(iso) {

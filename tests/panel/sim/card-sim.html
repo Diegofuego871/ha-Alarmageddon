@@ -53,7 +53,7 @@
   window.__calls = [];
   const STATE = { alarm_arm_home: "armed_home", alarm_arm_away: "armed_away", alarm_arm_night: "armed_night", alarm_disarm: "disarmed" };
   const hass = () => ({
-    states: { ...states }, entities, language: lang, locale: { language: lang }, user: { name: "Marco", is_admin: params.get("admin") !== "0" },
+    states: { ...states }, entities, language: lang, locale: { language: lang }, themes: { darkMode: params.get("theme") === "dark" }, user: { name: "Marco", is_admin: params.get("admin") !== "0" },
     callService: async (domain, service, data) => {
       window.__calls.push({ domain, service, data: JSON.parse(JSON.stringify(data)) });
       if (window.__fail) { const f = window.__fail; window.__fail = null; throw f; }

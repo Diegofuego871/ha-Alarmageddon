@@ -157,8 +157,9 @@ Aufbau, so wie in Alarmageddon (nicht neu erfinden, sondern den Code dort lesen)
 
 ## Offen (Stand 2026-11-13)
 
-- Die Karte setzt das Attribut `dark` am Element nicht; das Stylesheet des Panels nutzt `:host([dark])` für das Alarmband (Verlauf im
-  dunklen Thema). In einem echten dunklen Dashboard ist das nicht geprüft. Das Panel setzt es in `_syncDark()` aus der gezeichneten
-  Hintergrundfarbe (`getComputedStyle(this).backgroundColor`, Helligkeit unter 128 = dunkel) nach jedem Wechsel von `hass.themes`.
-  Die Karte von Device Panel sollte dasselbe tun, falls ihr Stylesheet `:host([dark])` kennt.
+- Dunkles Thema (seit 1.34.1 gelöst): Das Stylesheet des Panels nutzt `:host([dark])` (Alarmband). Die Karte setzt das Attribut in
+  `set hass` mit `this.toggleAttribute("dark", Boolean(hass.themes?.darkMode))` und nimmt `darkMode` in die Signatur auf, sonst
+  zeichnet sie bei einem Wechsel nicht neu. Das Panel selbst liest die gezeichnete Farbe (`_syncDark`), weil seine Fläche nicht
+  transparent ist. Der Nachbau liefert `themes.darkMode` (`card-sim.html`), der Test steht in `card-e2e.mjs`. Im echten dunklen
+  Dashboard noch nicht angesehen.
 - Ursache des anfangs fehlenden Eintrags im Auswahldialog: nicht bestätigt (siehe "Fallstricke" 1).

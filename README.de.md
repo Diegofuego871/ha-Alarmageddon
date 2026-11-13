@@ -99,6 +99,8 @@ Das Bedienteil und die Info-Kachel des Seitenpanels gibt es auch als Karten für
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/cards-de.png" alt="Die Karten Alarmageddon und Alarmageddon Status auf einem Dashboard" width="100%"></p>
 
+Erscheint die Karte nicht im Auswahldialog: Home Assistant nach dem Update neu starten, die Seite neu laden (Strg+Shift+R; in der App: Einstellungen › Fehlerbehebung › Frontend-Cache zurücksetzen) oder eine Karte von Hand mit `type: custom:alarmageddon-card` und `entity: alarm_control_panel.<name>` einfügen. Die Meldung "Das Custom-Element existiert nicht" heisst, dass die Kartendatei noch nicht geladen wurde.
+
 ### Mehr
 
 - **Zeitplan:** zu festen Zeiten an gewählten Wochentagen scharf schalten oder deaktivieren. Ein laufender Alarm wird vom Zeitplan nie deaktiviert.

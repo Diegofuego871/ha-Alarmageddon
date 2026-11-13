@@ -7,6 +7,18 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.34.1] - 2026-11-13
+
+The dashboard cards look right in a dark theme, and the README says what to do when a card does not show up.
+
+### Fixed
+
+- **Dark theme on the cards:** the cards did not know that the dashboard is dark, so the alarm band was drawn in the light style. They now follow the theme of Home Assistant.
+
+### Changed
+
+- **README:** the section "Dashboard cards" lists what to do when the card does not appear in the card picker (restart Home Assistant, reload the page or reset the frontend cache of the app, test with YAML).
+
 ## [1.34.0] - 2026-11-13
 
 Two dashboard cards: the control tile and the status tile of the side panel, for any dashboard and any user.
@@ -1339,6 +1351,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.34.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.1
 [1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0
 [1.33.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.1
 [1.33.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.0

@@ -99,6 +99,8 @@ The control tile and the status tile of the side panel are also available as car
 
 <p align="center"><img src="https://raw.githubusercontent.com/Diegofuego871/ha-alarmageddon/main/docs/img/cards-en.png" alt="The cards Alarmageddon and Alarmageddon status on a dashboard" width="100%"></p>
 
+If the card does not appear in the card picker: restart Home Assistant after the update, reload the page (Ctrl+Shift+R; in the app: Settings › Troubleshooting › reset the frontend cache), or add a card manually with `type: custom:alarmageddon-card` and `entity: alarm_control_panel.<name>`. The message "Custom element doesn't exist" means the card file was not loaded yet.
+
 ### More
 
 - **Schedule:** arm or disarm at set times on chosen weekdays. A running alarm is never disarmed by the schedule.

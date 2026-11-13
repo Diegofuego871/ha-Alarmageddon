@@ -7,6 +7,18 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.34.1] - 2026-11-13
+
+Die Dashboard-Karten sehen im dunklen Thema richtig aus, und die README sagt, was zu tun ist, wenn eine Karte nicht erscheint.
+
+### Behoben
+
+- **Dunkles Thema bei den Karten:** die Karten wussten nicht, dass das Dashboard dunkel ist, das Alarmband wurde im hellen Stil gezeichnet. Sie folgen jetzt dem Thema von Home Assistant.
+
+### Geändert
+
+- **README:** der Abschnitt "Dashboard-Karten" nennt, was zu tun ist, wenn die Karte im Auswahldialog nicht erscheint (Home Assistant neu starten, Seite neu laden oder den Frontend-Cache der App zurücksetzen, mit YAML testen).
+
 ## [1.34.0] - 2026-11-13
 
 Zwei Dashboard-Karten: das Bedienteil und die Info-Kachel des Seitenpanels, für jedes Dashboard und jede Person.
@@ -1339,6 +1351,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.34.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.1
 [1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0
 [1.33.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.1
 [1.33.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.0

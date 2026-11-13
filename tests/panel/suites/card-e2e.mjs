@@ -30,6 +30,13 @@ for (const lang of ["de", "en"]) {
       return { ctx, page, errors, ev, tap, waitFor };
     };
 
+    // ----- Dunkles Thema: beide Karten tragen das Attribut "dark", sonst bleibt das Alarmband hell gestaltet -----
+    {
+      const s = await open();
+      check(`${tag}: dunkles Thema: beide Karten tragen "dark"`, await s.ev("return [0, 1].every((i) => document.querySelectorAll('#dash > *')[i].hasAttribute('dark'))"));
+      await s.ctx.close();
+    }
+
     // ----- Anmeldung der Karten und Aussehen (deaktiviert, bereit) -----
     {
       const s = await open();
