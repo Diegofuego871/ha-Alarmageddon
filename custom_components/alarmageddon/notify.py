@@ -34,7 +34,7 @@ from .const import (
     PUSH_ACTION_SILENCE,
 )
 from .controller import AlarmController
-from .devices import display_name
+from .devices import display_name, sensor_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +43,38 @@ TEXTS: dict[str, dict[str, str]] = {
         "triggered_title": "🚨 Alarm: {name}",
         "triggered": "{sensor} at {time}.",
         "triggered_manual": "Alarm triggered manually at {time}.",
+        "sensor_type_door": "Door",
+        "sensor_type_window": "Window",
+        "sensor_type_garage_door": "Garage door",
+        "sensor_type_opening": "Opening",
+        "sensor_type_motion": "Motion sensor",
+        "sensor_type_occupancy": "Occupancy sensor",
+        "sensor_type_presence": "Presence sensor",
+        "sensor_type_smoke": "Smoke detector",
+        "sensor_type_gas": "Gas sensor",
+        "sensor_type_carbon_monoxide": "CO detector",
+        "sensor_type_moisture": "Water sensor",
+        "sensor_type_heat": "Heat detector",
+        "sensor_type_vibration": "Vibration sensor",
+        "sensor_type_tamper": "Tamper sensor",
+        "sensor_type_glass_break": "Glass break sensor",
+        "sensor_type_safety": "Safety sensor",
+        "sensor_type_sound": "Sound sensor",
+        "sensor_type_sensor": "Sensor",
+        "alarm_fire": "Fire alarm",
+        "alarm_heat": "Heat alarm",
+        "alarm_water": "Water alarm",
+        "alarm_gas": "Gas alarm",
+        "alarm_intrusion": "Intrusion alarm",
+        "alarm_alarm": "Alarm",
+        "triggered_title_fire": "🔥 Fire alarm: {name}",
+        "triggered_fire": "{sensor} detected smoke at {time}.",
+        "triggered_title_heat": "🌡️ Heat alarm: {name}",
+        "triggered_heat": "{sensor} detected heat at {time}.",
+        "triggered_title_water": "💧 Water alarm: {name}",
+        "triggered_water": "{sensor} detected water at {time}.",
+        "triggered_title_gas": "⚠️ Gas alarm: {name}",
+        "triggered_gas": "{sensor} detected gas at {time}.",
         "pending_title": "⏳ Entry delay: {name}",
         "pending": "{sensor} opened. Alarm in {seconds} s unless disarmed.",
         "armed_title": "🔒 {name}: {mode} armed",
@@ -90,6 +122,38 @@ TEXTS: dict[str, dict[str, str]] = {
         "triggered_title": "🚨 Alarm: {name}",
         "triggered": "{sensor} um {time}.",
         "triggered_manual": "Alarm von Hand ausgelöst um {time}.",
+        "sensor_type_door": "Tür",
+        "sensor_type_window": "Fenster",
+        "sensor_type_garage_door": "Garagentor",
+        "sensor_type_opening": "Öffnung",
+        "sensor_type_motion": "Bewegungsmelder",
+        "sensor_type_occupancy": "Präsenzmelder",
+        "sensor_type_presence": "Präsenzmelder",
+        "sensor_type_smoke": "Rauchmelder",
+        "sensor_type_gas": "Gassensor",
+        "sensor_type_carbon_monoxide": "CO-Melder",
+        "sensor_type_moisture": "Wassersensor",
+        "sensor_type_heat": "Hitzemelder",
+        "sensor_type_vibration": "Erschütterungssensor",
+        "sensor_type_tamper": "Manipulationsmelder",
+        "sensor_type_glass_break": "Glasbruchmelder",
+        "sensor_type_safety": "Sicherheitssensor",
+        "sensor_type_sound": "Geräuschsensor",
+        "sensor_type_sensor": "Sensor",
+        "alarm_fire": "Feueralarm",
+        "alarm_heat": "Hitzealarm",
+        "alarm_water": "Wasseralarm",
+        "alarm_gas": "Gasalarm",
+        "alarm_intrusion": "Einbruchalarm",
+        "alarm_alarm": "Alarm",
+        "triggered_title_fire": "🔥 Feueralarm: {name}",
+        "triggered_fire": "{sensor} meldet Rauch um {time}.",
+        "triggered_title_heat": "🌡️ Hitzealarm: {name}",
+        "triggered_heat": "{sensor} meldet Hitze um {time}.",
+        "triggered_title_water": "💧 Wasseralarm: {name}",
+        "triggered_water": "{sensor} meldet Wasser um {time}.",
+        "triggered_title_gas": "⚠️ Gasalarm: {name}",
+        "triggered_gas": "{sensor} meldet Gas um {time}.",
         "pending_title": "⏳ Eingangsverzögerung: {name}",
         "pending": "{sensor} geöffnet. Alarm in {seconds} s, wenn niemand deaktiviert.",
         "armed_title": "🔒 {name}: {mode} scharf",
@@ -139,6 +203,21 @@ TEXTS: dict[str, dict[str, str]] = {
 def language(hass: HomeAssistant) -> str:
     lang = (hass.config.language or "").lower()
     return "de" if lang == "de" or lang.startswith("de-") else "en"
+
+
+# Alarmart je Geräteklasse des auslösenden Sensors: bestimmt {alarm} und die Standardtexte (Rauch, Wasser, Gas, Hitze);
+# Tür, Fenster, Bewegung und Verwandte behalten den bisherigen Standardtext
+ALARM_KINDS = {
+    "smoke": "fire", "heat": "heat", "moisture": "water", "gas": "gas", "carbon_monoxide": "gas",
+    "door": "intrusion", "window": "intrusion", "garage_door": "intrusion", "opening": "intrusion", "motion": "intrusion",
+    "occupancy": "intrusion", "presence": "intrusion", "vibration": "intrusion", "glass_break": "intrusion",
+}
+# Arten mit eigenem Standardtext
+SPECIAL_KINDS = ("fire", "heat", "water", "gas")
+
+
+def alarm_kind(device_class: str) -> str:
+    return ALARM_KINDS.get(device_class, "alarm")
 
 
 def text(hass: HomeAssistant, key: str, **values: Any) -> str:
@@ -264,6 +343,9 @@ class Notifier:
         self._last_state: str | None = None
         # Auslöser (Modus) des laufenden Alarms: beim Deaktivieren ist der Modus der Anlage schon weg
         self._alarm_trigger: str | None = None
+        # Sensor, der den laufenden Alarm ausgelöst hat: beim Deaktivieren und Quittieren löscht der Automat ihn schon,
+        # "Alarm endet" braucht ihn für {sensor}, {type}, {area} und {alarm}
+        self._alarm_sensor: str | None = None
         self._unsubs: list[Any] = []
         # Ablauf der Anlage: hat er für diesen Auslöser einen eigenen Push-Schritt, meldet der Alarm nicht doppelt
         self.workflow_has_notify = lambda _trigger: False
@@ -289,6 +371,7 @@ class Notifier:
         # Neustart mitten im Alarm: der Auslöser für "Alarm endet" ist der Modus, in dem die Anlage noch steht
         if self._ctl.state == AlarmControlPanelState.TRIGGERED:
             self._alarm_trigger = self._ctl.alarm_plan()[0]
+            self._alarm_sensor = self._ctl.triggered_by
         self._unsubs.append(self._ctl.add_listener(self._on_change))
         self._unsubs.append(self._ctl.add_event_listener(self._on_event))
         self._unsubs.append(self.hass.bus.async_listen("mobile_app_notification_action", self._on_action))
@@ -324,6 +407,7 @@ class Notifier:
             # entfällt die Standardmeldung, sobald einer von ihnen einen Push-Schritt hat
             plan = self._ctl.alarm_plan()
             self._alarm_trigger = plan[0]
+            self._alarm_sensor = self._ctl.triggered_by
             if self._on("triggered") and not any(self.workflow_has_notify(flow) for flow in plan):
                 self.send_alarm()
         elif state == AlarmControlPanelState.PENDING and self._on("pending", self._ctl.mode):
@@ -492,11 +576,25 @@ class Notifier:
         return "/alarmageddon?view=log"
 
     def _fill(self, template: str, sensor: str | None, time: str, mode: str | None = None) -> str:
-        """Platzhalter eines eigenen Texts füllen; nur diese vier, alles andere bleibt wie geschrieben (kein str.format)."""
-        values = {"{name}": self.entry.title, "{sensor}": self._name(sensor) if sensor else "", "{time}": time, "{mode}": self._mode(mode or self._ctl.mode)}
+        """Platzhalter eines eigenen Texts füllen; nur diese sieben, alles andere bleibt wie geschrieben (kein str.format)."""
+        device_class, area = sensor_info(self.hass, sensor)
+        values = {
+            "{name}": self.entry.title,
+            "{sensor}": self._name(sensor) if sensor else "",
+            "{time}": time,
+            "{mode}": self._mode(mode or self._ctl.mode),
+            "{type}": self._type(device_class),
+            "{area}": area,
+            "{alarm}": self._t(f"alarm_{alarm_kind(device_class)}"),
+        }
         for key, value in values.items():
             template = template.replace(key, value)
         return template.strip()
+
+    def _type(self, device_class: str) -> str:
+        """Sensorart in Worten (Rauchmelder, Fenster …); unbekannte Klassen leer, nicht erfunden."""
+        key = f"sensor_type_{device_class}"
+        return self._t(key) if key in TEXTS[language(self.hass)] else ""
 
     @callback
     def send_alarm(self, test: bool = False, step: dict[str, Any] | None = None) -> None:
@@ -504,14 +602,20 @@ class Notifier:
         name = self.entry.title
         sensor = self._ctl.triggered_by
         time = dt_util.as_local(dt_util.utcnow()).strftime("%H:%M")
-        default_message = self._t("triggered", sensor=self._name(sensor), time=time) if sensor else self._t("triggered_manual", time=time)
+        kind = alarm_kind(sensor_info(self.hass, sensor)[0]) if sensor else "alarm"
+        special = kind if kind in SPECIAL_KINDS else None
+        default_title = self._t(f"triggered_title_{special}", name=name) if special else self._t("triggered_title", name=name)
+        if special:
+            default_message = self._t(f"triggered_{special}", sensor=self._name(sensor), time=time)
+        else:
+            default_message = self._t("triggered", sensor=self._name(sensor), time=time) if sensor else self._t("triggered_manual", time=time)
         step = step or {}
         title, message = step.get("title"), step.get("message")
         # Eigener Text aus dem Schritt der Alarmaktionen ersetzt den Standardtext
         if custom_title := (title or "").strip():
-            title = self._fill(custom_title, sensor, time) or self._t("triggered_title", name=name)
+            title = self._fill(custom_title, sensor, time) or default_title
         else:
-            title = self._t("triggered_title", name=name)
+            title = default_title
         if custom_message := (message or "").strip():
             message = self._fill(custom_message, sensor, time) or default_message
         else:
@@ -555,7 +659,7 @@ class Notifier:
             message = self._t("ended", by=by) if by else self._t("ended_noby")
         critical, volume, target = False, None, "/alarmageddon?view=log"
         if own:
-            sensor = self._ctl.triggered_by
+            sensor = self._ctl.triggered_by or self._alarm_sensor
             mode = self._alarm_trigger if self._alarm_trigger in ("home", "away", "night") else None
             title = self._fill((own.get("title") or "").strip(), sensor, time, mode) or title
             message = self._fill((own.get("message") or "").strip(), sensor, time, mode) or message

@@ -66,7 +66,7 @@ What happens on an alarm is a flow you build from steps, per mode if you like. D
 
 | Step | Does |
 | --- | --- |
-| Push notification | Critical alarm notification to the alarm recipients, with your own title and text, optional buttons and, if you like, its own recipients (every title starts with an emoji) |
+| Push notification | Critical alarm notification to the alarm recipients, with your own title and text (placeholders for alarm system, sensor, sensor type, area, time, mode and kind of alarm; smoke, water, gas and heat sensors bring a fitting default text), optional buttons and, if you like, its own recipients (every title starts with an emoji) |
 | Switch device | Lights, sockets, sirens, covers, locks and more: on, off, open, close, with brightness or position |
 | Play alarm sound | One of five sounds on media players (Sonos and others), with volume, for a duration or until disarmed |
 | Wait | Pauses the following steps, for example between "siren on" and "siren off" |

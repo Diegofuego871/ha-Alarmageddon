@@ -169,7 +169,13 @@ export function toStep(f, zone = "main") {
 }
 
 // Leer = Standardtext des Servers (folgt der Sprache); der Editor zeigt den Standard, speichert ihn aber nicht
-export const NOTIFY_TOKENS = ["{name}", "{sensor}", "{time}", "{mode}"];
+export const NOTIFY_TOKENS = ["{name}", "{sensor}", "{type}", "{area}", "{time}", "{mode}", "{alarm}"];
+// Alarmart je Geräteklasse: dieselbe Zuordnung wie ALARM_KINDS in notify.py (ein Test hält beide gleich)
+export const ALARM_KINDS = {
+  smoke: "fire", heat: "heat", moisture: "water", gas: "gas", carbon_monoxide: "gas",
+  door: "intrusion", window: "intrusion", garage_door: "intrusion", opening: "intrusion", motion: "intrusion",
+  occupancy: "intrusion", presence: "intrusion", vibration: "intrusion", glass_break: "intrusion",
+};
 
 function toStepBase(f) {
   if (f.kind === "notify") {
@@ -925,7 +931,7 @@ export class ActionsUi {
     const [dt, dm] = this._ntDefaults(f);
     const chips = NOTIFY_TOKENS.map((tok) => `<button type="button" class="ag-chip" data-wf="ins" data-token="${esc(tok)}">${esc(tok)}<small>${esc(this._t(`ntTok_${tok.slice(1, -1)}`))}</small></button>`).join("");
     return `<div class="ag-t2">${esc(this._t(f.kind === "end" ? "wfEndNotifyHint" : "stepNotifyHint"))}</div>
-      ${this._sec("chapNtContent", `${this._ef("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`)}
+      ${this._sec("chapNtContent", `${this._ef("fldNtTitle", `<input class="ag-input" data-wf="f" data-key="ntTitle" maxlength="100" value="${esc(f.ntTitle || dt)}" aria-label="${esc(this._t("fldNtTitle"))}">`, f.kind === "end" ? "" : "fldNtTitleHint")}
       ${this._ef("fldNtMessage", `<textarea class="ag-input" rows="3" data-wf="f" data-key="ntMessage" maxlength="300" aria-label="${esc(this._t("fldNtMessage"))}">${esc(f.ntMessage || dm)}</textarea>`)}
       ${this._ef("fldNtTokens", `<div class="ag-zline">${chips}</div>`, "fldNtTokensHint")}
       ${this._ef("fldNtPreview", `<div class="ag-ntprev" id="ag-ntprev">${this._ntPreview(f)}</div>
@@ -987,11 +993,18 @@ export class ActionsUi {
   _ntPreview(f) {
     const s = this.system;
     const sensorId = Object.values(s?.zones || {}).flat()[0];
+    // Art und Bereich des ersten Sensors; unbekannte Klassen bleiben leer (wie auf dem Server), die Alarmart fällt auf "Alarm" zurück
+    const info = sensorId ? this.host._sensor(sensorId) || {} : {};
+    const dc = info.device_class || "";
+    const typeKey = `ntType_${dc}`;
     const fill = (text) => text
       .replaceAll("{name}", s?.title || "")
       .replaceAll("{sensor}", sensorId ? this.host._name(sensorId) : "")
+      .replaceAll("{type}", this._t(typeKey) === typeKey ? "" : this._t(typeKey))
+      .replaceAll("{area}", info.area || "")
       .replaceAll("{time}", new Date().toLocaleTimeString(this.host._hass?.locale?.language || this.host._lang, { hour: "2-digit", minute: "2-digit" }))
-      .replaceAll("{mode}", this._t(MODE_KEY[this.trigger] || "modeAway"));
+      .replaceAll("{mode}", this._t(MODE_KEY[this.trigger] || "modeAway"))
+      .replaceAll("{alarm}", this._t(`ntAlarm_${ALARM_KINDS[dc] || "alarm"}`));
     const [dt, dm] = this._ntDefaults(f);
     const title = fill(f.ntTitle || dt).trim();
     const message = fill(f.ntMessage || dm).trim();

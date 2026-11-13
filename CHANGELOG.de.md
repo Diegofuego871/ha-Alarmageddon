@@ -7,6 +7,19 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.28.0] - 2026-11-13
+
+Push-Meldungen, die sagen, was passiert ist: neue Platzhalter und passende Standardtexte.
+
+### Hinzugefügt
+
+- **Drei neue Platzhalter für den eigenen Push-Text:** `{type}` (die Art des Sensors in Worten, zum Beispiel "Rauchmelder" oder "Fenster"), `{area}` (der Raum oder Bereich des Sensors) und `{alarm}` (die Alarmart: "Feueralarm", "Wasseralarm", "Gasalarm", "Hitzealarm", "Einbruchalarm", sonst "Alarm"). Sie gelten in denselben Feldern wie `{name}`, `{sensor}`, `{time}` und `{mode}`: im Push-Schritt der Alarmaktionen und in der eigenen Meldung von "Alarm endet". Das Panel zeigt sie als Knöpfe und füllt die Vorschau mit dem ersten Sensor des Modus. Bei einem Alarm von Hand gibt es keinen Sensor: `{type}` und `{area}` bleiben leer, `{alarm}` lautet "Alarm".
+- **Passender Standardtext für Rauch, Wasser, Gas und Hitze.** Ohne eigenen Text sendet ein Rauchmelder jetzt "🔥 Feueralarm: …" mit "… meldet Rauch um …", ein Wassersensor "💧 Wasseralarm", ein Gas- oder CO-Sensor "⚠️ Gasalarm" und ein Hitzemelder "🌡️ Hitzealarm". Türen, Fenster und Bewegungsmelder behalten den Standardtext wie bisher. Ein eigener Text gilt immer.
+
+### Behoben
+
+- **"Alarm endet" kennt jetzt den Sensor, der den Alarm ausgelöst hat.** Der Platzhalter `{sensor}` in der eigenen Meldung von "Alarm endet" blieb leer, wenn der Alarm durch Deaktivieren oder Quittieren endete, weil die Alarmanlage den Sensor da schon vergessen hatte. Die Meldungsstelle merkt ihn sich jetzt für den laufenden Alarm (auch über einen Neustart von Home Assistant).
+
 ## [1.27.0] - 2026-11-12
 
 Aktionen beim Deaktivieren, mit einem Deaktivierungston.
@@ -1234,6 +1247,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0
 [1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0

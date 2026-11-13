@@ -2,8 +2,8 @@
 import { check, done, launch, open, outDir } from "../lib.mjs";
 
 const T = {
-  de: { wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", waits: "Wartet, bis die Aktion beendet ist", waitOpt: "Warten, bis die Aktion beendet ist", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
-  en: { wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", waits: "Waits until the action has finished", waitOpt: "Wait until the action has finished", coverDesc: "Moves the cover to the chosen position." },
+  de: { alarmKind: "Einbruchalarm", typeWord: "Tür", wait: "Warten", sound: "Alarmton", on: "Einschalten", noChanges: "Keine Änderungen", saved: "Gespeichert", oneChange: "1 Änderung", coverDomain: "Abdeckung", coverService: "Abdeckung auf Position fahren", waits: "Wartet, bis die Aktion beendet ist", waitOpt: "Warten, bis die Aktion beendet ist", coverDesc: "Fährt die Abdeckung auf die gewählte Position." },
+  en: { alarmKind: "Intrusion alarm", typeWord: "Door", wait: "Wait", sound: "Alarm sound", on: "Turn on", noChanges: "No changes", saved: "Saved", oneChange: "1 change", coverDomain: "Cover", coverService: "Move cover to position", waits: "Waits until the action has finished", waitOpt: "Wait until the action has finished", coverDesc: "Moves the cover to the chosen position." },
 };
 
 const browser = await launch();
@@ -149,12 +149,15 @@ for (const lang of ["de", "en"]) {
 
     // Push-Meldung: Standardtext steht im Feld und lässt sich ändern, Platzhalter und Vorschau
     await s.tap('.ag-wf-step[data-index="0"] [data-wf="edit"]');
-    check(`${tag}: Push-Meldung mit Standardtext in den Feldern`, await s.waitFor(`const d=r.getElementById('ag-step'); return d.open && d.querySelector('[data-key="ntTitle"]').value === '🚨 Alarm: {name}' && d.querySelector('[data-key="ntMessage"]').value.startsWith('{sensor}') && d.querySelectorAll('[data-wf="ins"]').length === 4`));
+    check(`${tag}: Push-Meldung mit Standardtext in den Feldern`, await s.waitFor(`const d=r.getElementById('ag-step'); return d.open && d.querySelector('[data-key="ntTitle"]').value === '🚨 Alarm: {name}' && d.querySelector('[data-key="ntMessage"]').value.startsWith('{sensor}') && d.querySelectorAll('[data-wf="ins"]').length === 7`));
     check(`${tag}: Vorschau mit echten Namen`, await s.ev("const p=r.querySelector('#ag-ntprev').innerText; return p.includes('🚨 Alarm: Haus') && !p.includes('{')"));
     const ntField = await s.el('#ag-step [data-key="ntTitle"]');
     await ntField.fill("ALARM im {name}");
     await s.tap('#ag-step [data-wf="ins"][data-token="{mode}"]');
     check(`${tag}: Platzhalter eingefügt, Vorschau folgt`, await s.waitFor("const v=r.querySelector('#ag-step [data-key=\"ntTitle\"]').value; const p=r.querySelector('#ag-ntprev').innerText; return v === 'ALARM im {name}{mode}' && p.includes('ALARM im Haus')"));
+    await ntField.fill("{alarm} / {type} / {area}");
+    check(`${tag}: Vorschau füllt {alarm}, {type} und {area} (Haustür im Flur)`, await s.waitFor(`const p=r.querySelector('#ag-ntprev').innerText; return p.includes('${t.alarmKind} / ${t.typeWord} / Flur') && !p.includes('{')`));
+    await ntField.fill("ALARM im {name}{mode}");
     await (await s.el('#ag-step [data-key="ntMessage"]')).fill("Achtung: {sensor} um {time}");
     check(`${tag}: Zustellung im Schritt: kritisch an mit Lautstärke, Öffnen an, die anderen Knöpfe aus`, await s.ev("const d=r.getElementById('ag-step'); const on=(sel) => d.querySelector(sel).getAttribute('aria-checked'); return on('[data-wf=\"nt-crit\"]') === 'true' && !!d.querySelector('[data-wf=\"nt-vol\"]') && on('[data-wf=\"nt-btn\"][data-key=\"open\"]') === 'true' && on('[data-wf=\"nt-btn\"][data-key=\"silence\"]') === 'false' && on('[data-wf=\"nt-btn\"][data-key=\"disarm\"]') === 'false'"));
     check(`${tag}: Klickziel: Standard Protokoll, drei Möglichkeiten`, await s.ev("const sel=r.querySelector('#ag-step [data-wf=\"nt-click\"]'); return !!sel && sel.value === 'log' && sel.options.length === 3 && !r.querySelector('#ag-step [data-key=\"ntClickPath\"]')"));

@@ -7,6 +7,19 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.28.0] - 2026-11-13
+
+Push messages that name what happened: new placeholders and fitting default texts.
+
+### Added
+
+- **Three new placeholders for your own push text:** `{type}` (the kind of sensor in words, for example "Smoke detector" or "Window"), `{area}` (the room or area of the sensor) and `{alarm}` (the kind of alarm: "Fire alarm", "Water alarm", "Gas alarm", "Heat alarm", "Intrusion alarm", otherwise "Alarm"). They work in the same fields as `{name}`, `{sensor}`, `{time}` and `{mode}`: in the push step of the alarm actions and in the own message of "Alarm ends". The panel shows them as buttons and fills the preview with the first sensor of the mode. For a manual alarm there is no sensor, so `{type}` and `{area}` stay empty and `{alarm}` reads "Alarm".
+- **Fitting default text for smoke, water, gas and heat.** Without your own text, a smoke detector now sends "🔥 Fire alarm: …" with "… detected smoke at …", a water sensor "💧 Water alarm", a gas or CO sensor "⚠️ Gas alarm" and a heat detector "🌡️ Heat alarm". Doors, windows and motion detectors keep the default text as before. A text you write always wins.
+
+### Fixed
+
+- **"Alarm ends" now knows the sensor that triggered the alarm.** The placeholder `{sensor}` in the own message of "Alarm ends" was empty when the alarm was ended by disarming or acknowledging, because the alarm system had already forgotten the sensor. The notifier now remembers it for the running alarm (also across a restart of Home Assistant).
+
 ## [1.27.0] - 2026-11-12
 
 Actions when disarming, with a disarming tone.
@@ -1234,6 +1247,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.28.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.28.0
 [1.27.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.27.0
 [1.25.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.25.0
 [1.23.0]: https://github.com/Diegofuego871/ha-Alarmageddon/releases/tag/v1.23.0

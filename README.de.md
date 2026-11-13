@@ -66,7 +66,7 @@ Was bei einem Alarm passiert, ist ein Ablauf aus Schritten, auf Wunsch je Modus.
 
 | Schritt | Macht |
 | --- | --- |
-| Push-Meldung | Kritische Alarmmeldung an die Alarm-Empfänger, mit eigenem Titel und Text, wählbaren Knöpfen und auf Wunsch eigenen Empfängern (jeder Titel beginnt mit einem Emoji) |
+| Push-Meldung | Kritische Alarmmeldung an die Alarm-Empfänger, mit eigenem Titel und Text (Platzhalter für Anlage, Sensor, Sensorart, Bereich, Uhrzeit, Modus und Alarmart; Rauch-, Wasser-, Gas- und Hitzesensoren bringen einen passenden Standardtext mit), wählbaren Knöpfen und auf Wunsch eigenen Empfängern (jeder Titel beginnt mit einem Emoji) |
 | Gerät schalten | Lichter, Steckdosen, Sirenen, Storen, Schlösser und mehr: ein, aus, öffnen, schliessen, mit Helligkeit oder Position |
 | Alarmton abspielen | Einer von fünf Tönen auf Medienplayern (Sonos und andere), mit Lautstärke, für eine Dauer oder bis zum Deaktivieren |
 | Warten | Hält die folgenden Schritte an, zum Beispiel zwischen "Sirene ein" und "Sirene aus" |

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
@@ -72,3 +73,23 @@ def display_name(hass: HomeAssistant, entity_id: str) -> str:
     if not with_device or not device_name or device_name.casefold() in own.casefold():
         return own
     return f"{device_name}{NAME_SEPARATOR}{own}"
+
+
+def sensor_info(hass: HomeAssistant, entity_id: str | None) -> tuple[str, str]:
+    """
+    (Geräteklasse, Bereich) eines Sensors für die Platzhalter {type} und {area} der Meldungen; leer, wo unbekannt.
+
+    Geräteklasse: erst der Zustand (`device_class`, wie ihn die Integration meldet), sonst die Registry. Bereich: der der
+    Entität, sonst der des Geräts (wie im Panel).
+    """
+    if not entity_id:
+        return "", ""
+    state = hass.states.get(entity_id)
+    reg = er.async_get(hass).async_get(entity_id)
+    device_class = str((state.attributes.get("device_class") if state else None) or (reg.device_class or reg.original_device_class if reg else "") or "")
+    area_id = reg.area_id if reg else None
+    if reg and not area_id and reg.device_id:
+        device = dr.async_get(hass).async_get(reg.device_id)
+        area_id = device.area_id if device else None
+    area = ar.async_get(hass).async_get_area(area_id) if area_id else None
+    return device_class, area.name if area else ""
