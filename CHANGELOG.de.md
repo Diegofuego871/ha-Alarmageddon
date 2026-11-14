@@ -7,6 +7,12 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.34.3] - 2026-11-14
+
+### Behoben
+
+- **"Deaktiviert seit 08:26" springt bei einem Neustart von Home Assistant nicht mehr.** Die Zeit neben dem Zustand ("seit …", auch im Alarmband: "… um …") kam aus `last_changed` der Entität, und Home Assistant setzt sie beim Neustart auf dessen Zeit. Die Alarmanlage merkt sich jetzt die Zeit ihres letzten Zustandswechsels selbst, im gespeicherten Stand, und zeigt sie im Panel und auf den Karten. Neues Attribut `state_since` der Alarm-Entität. Hat sich der Zustand während des Neustarts geändert (eine Eingangsverzögerung ist abgelaufen), gilt die Zeit des Neustarts, wie es sein soll. Gespeicherte Stände von vor dieser Version kennen die Zeit nicht: sie zeigen bis zum nächsten Wechsel die von Home Assistant.
+
 ## [1.34.2] - 2026-11-14
 
 Die Texte gehen nicht mehr davon aus, dass alle Apple Home oder Sonos nutzen.
@@ -1359,6 +1365,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.34.3]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.3
 [1.34.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.2
 [1.34.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.1
 [1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0

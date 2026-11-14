@@ -33,6 +33,11 @@ for (const lang of ["de", "en"]) {
     const pill = await s.ev(`const seg=r.querySelector('[data-system="e_haus"] .ag-seg'); const p=seg.querySelector('.ag-pill').getBoundingClientRect(); const b=seg.querySelector('button.on').getBoundingClientRect(); return Math.abs(p.left-b.left) < 2 && Math.abs(p.width-b.width) < 2`);
     check(`${tag}: Kapsel unter gewähltem Modus`, pill);
 
+    // "seit": die Zeit der Anlage (state_since), nicht last_changed von HA, das bei jedem Neustart von HA springt
+    await s.page.evaluate(() => window.__setState("alarm_control_panel.haus", "disarmed", { state_since: new Date("2026-01-01T03:07:00").toISOString() }));
+    check(`${tag}: "seit" zeigt state_since der Anlage`, await s.waitFor(`const x=r.querySelector('[data-system="e_haus"] .ag-sys-sub')?.textContent || ""; return /\\b1\\b|Jan/.test(x)`), await s.ev(`return r.querySelector('[data-system="e_haus"] .ag-sys-sub')?.textContent`));
+    await s.page.evaluate(() => window.__setState("alarm_control_panel.haus", "armed_away", { arm_mode: "away", state_since: null }));
+
     // Scharfschalten mit offenem Sensor: verständlicher Fehler, Zustand bleibt
     await s.tap('[data-system="e_garage"] [data-mode="away"]');
     const toast = await s.waitFor(`return r.querySelector('.ag-toast')?.textContent === ${JSON.stringify(t.openErr)}`);

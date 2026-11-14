@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.34.3] - 2026-11-14
+
+### Fixed
+
+- **"Deactivated since 08:26" no longer jumps at a restart of Home Assistant.** The time next to the state ("since …", also in the alarm band: "… at …") came from `last_changed` of the entity, and Home Assistant sets that to the time of the restart. The alarm system now keeps the time of its last change of state itself, stored with its state, and shows it in the panel and on the cards. New attribute `state_since` of the alarm entity. If the state changed during the restart (an entry delay ran out), the time of the restart counts, as it should. Stored states from before this version have no time: they show the one from Home Assistant until the next change.
+
 ## [1.34.2] - 2026-11-14
 
 Texts no longer assume that everyone uses Apple Home or Sonos.
@@ -1359,6 +1365,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.34.3]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.3
 [1.34.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.2
 [1.34.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.1
 [1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0

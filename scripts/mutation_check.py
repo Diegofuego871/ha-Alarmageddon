@@ -24,6 +24,12 @@ ROOT = BASE.parents[1]
 
 # (Name, Datei, Text im Code, Ersatz, Tests, die es merken müssen)
 MUTATIONS = [
+    ("Gespeicherte Zeit des Zustands geht beim Neustart verloren (Panel zeigt die Zeit des Neustarts)", "controller.py",
+     "        self.state_since = stored if stored and str(self.state) == str(last_state) else (dt_util.utcnow() if stored else None)\n",
+     "        self.state_since = None\n", "tests/test_state_since.py -k restart"),
+    ("Zeit des Zustands wird bei jeder Meldung neu gesetzt statt beim Wechsel", "controller.py",
+     "            if not self._restoring:\n                self.state_since = dt_util.utcnow()\n",
+     "        if not self._restoring:\n            self.state_since = dt_util.utcnow()\n", "tests/test_state_since.py -k repeated"),
     ("Admin-Prüfung von 'export' entfernt", "websocket_api.py",
      '@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/export"})\n@websocket_api.require_admin\n',
      '@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/export"})\n', "tests/test_security.py -k admin_only"),

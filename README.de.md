@@ -147,7 +147,7 @@ Alarmageddon ist keine zertifizierte Alarmanlage. Bitte beachte:
 
 | Entität | Inhalt |
 | --- | --- |
-| `alarm_control_panel.<name>` | Die Anlage. Attribute: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by` |
+| `alarm_control_panel.<name>` | Die Anlage. Attribute: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by`, `state_since` (seit wann sie in ihrem Zustand ist; übersteht einen Neustart) |
 | `binary_sensor.<name>_zone_<modus>` | An, wenn ein Sensor der Zone dieses Modus offen ist |
 | "Bereit zum Scharfschalten" je Modus | An, wenn kein offener Sensor das Scharfschalten in diesem Modus verhindert. Attribut: `blocking_sensors` |
 | `sensor.<name>_status` | Zahl der offenen Probleme: Alarm, nicht erreichbare Sensoren, schwache Batterien. Attribute: `alarm`, `offline`, `low_battery`, `battery_threshold` |

@@ -89,6 +89,8 @@ class AlarmageddonAlarm(AlarmageddonEntity, AlarmControlPanelEntity, RestoreEnti
             # Seit wann und von wem scharf (bleibt während Eingangsverzögerung und Alarm stehen)
             "armed_at": self._ctl.armed_at.isoformat() if self._ctl.armed_at else None,
             "armed_by": self._ctl.armed_by,
+            # Seit wann die Anlage in diesem Zustand ist (übersteht einen Neustart, anders als `last_changed`)
+            "state_since": self._ctl.state_since.isoformat() if self._ctl.state_since else None,
             # Fragt das Quittieren nach dem Code? Die Dashboard-Karte zeigt dann ihr Fenster (die Prüfung macht der Dienst)
             "code_ack_required": self._ctl.code_ack_required,
         }

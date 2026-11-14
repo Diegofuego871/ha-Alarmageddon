@@ -810,8 +810,9 @@ class AlarmageddonPanel extends HTMLElement {
     const sub = [];
     if ((state === "arming" || state === "pending" || state === "triggered") && attrs.deadline) {
       sub.push(`<span data-countdown="${esc(attrs.deadline)}">${esc(this._t("remaining", { time: this._fmtRemaining(attrs.deadline) }))}</span>`);
-    } else if (st?.last_changed) {
-      sub.push(esc(this._t("since", { time: this._fmtTime(st.last_changed) })));
+    } else if (attrs.state_since || st?.last_changed) {
+      // `last_changed` springt bei jedem Neustart von Home Assistant auf dessen Zeit: die Anlage meldet ihre eigene Zeit
+      sub.push(esc(this._t("since", { time: this._fmtTime(attrs.state_since || st.last_changed) })));
     }
     // Während Eingangsverzögerung und Alarm steht hier, was ausgelöst hat. Wer scharf geschaltet hat, steht in einer eigenen Zeile
     // darunter (1.11.0): vorher stand "Alarm · seit 07:16 · Diego", als hätte Diego den Alarm ausgelöst.
@@ -868,7 +869,7 @@ class AlarmageddonPanel extends HTMLElement {
   _alarmBand(s) {
     const st = this._state(s.entity_id);
     const sensor = st?.attributes?.triggered_by;
-    const text = sensor ? this._t("alarmBy", { sensor: this._name(sensor), time: this._fmtTime(st.last_changed) }) : "";
+    const text = sensor ? this._t("alarmBy", { sensor: this._name(sensor), time: this._fmtTime(st.attributes?.state_since || st.last_changed) }) : "";
     return `<div class="ag-alarm" role="alert">${ic("alert", 30)}<div><b>${esc(this._t("alarmTitle", { name: s.title }))}</b><div style="opacity:.9;font-size:13px;margin-top:2px">${esc(text)}</div></div>
       <div class="ag-alarm-btns"><button class="ag-btn" data-act="ack" data-entry="${esc(s.entry_id)}" title="${esc(this._t("ackHint"))}">${ic("check", 18)}${esc(this._t("ack"))}</button>
       <button class="ag-btn" data-act="mode" data-entry="${esc(s.entry_id)}" data-mode="off">${ic("shieldOff", 18)}${esc(this._t("disarm"))}</button></div></div>`;

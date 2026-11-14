@@ -291,8 +291,9 @@ class AlarmageddonCard extends AlarmageddonCardBase {
     const sub = [];
     if ((state === "arming" || state === "pending" || state === "triggered") && attrs.deadline) {
       sub.push(`<span data-countdown="${esc(attrs.deadline)}">${esc(this._t("remaining", { time: this._fmtRemaining(attrs.deadline) }))}</span>`);
-    } else if (st.last_changed) {
-      sub.push(esc(this._t("since", { time: this._fmtTime(st.last_changed) })));
+    } else if (attrs.state_since || st.last_changed) {
+      // `last_changed` springt bei jedem Neustart von Home Assistant auf dessen Zeit: die Anlage meldet ihre eigene Zeit
+      sub.push(esc(this._t("since", { time: this._fmtTime(attrs.state_since || st.last_changed) })));
     }
     const alarmish = state === "pending" || state === "triggered";
     if (alarmish && attrs.triggered_by) sub.push(esc(this._name(attrs.triggered_by)));
@@ -321,7 +322,7 @@ class AlarmageddonCard extends AlarmageddonCardBase {
     }
     const armedClass = ARMED[state] ? ` ag-armed ag-armed-${ARMED[state]}` : state === "triggered" ? " ag-armed ag-alarmed" : state === "disarmed" ? " ag-disarmed" : "";
     const band = state === "triggered" && this._config.show_alarm_band !== false
-      ? `<div class="ag-alarm" role="alert">${ic("alert", 30)}<div><b>${esc(this._t("alarmTitle", { name: title }))}</b><div style="opacity:.9;font-size:13px;margin-top:2px">${esc(attrs.triggered_by ? this._t("alarmBy", { sensor: this._name(attrs.triggered_by), time: this._fmtTime(st.last_changed) }) : "")}</div></div>
+      ? `<div class="ag-alarm" role="alert">${ic("alert", 30)}<div><b>${esc(this._t("alarmTitle", { name: title }))}</b><div style="opacity:.9;font-size:13px;margin-top:2px">${esc(attrs.triggered_by ? this._t("alarmBy", { sensor: this._name(attrs.triggered_by), time: this._fmtTime(attrs.state_since || st.last_changed) }) : "")}</div></div>
         <div class="ag-alarm-btns"><button class="ag-btn" data-act="ack" title="${esc(this._t("ackHint"))}">${ic("check", 18)}${esc(this._t("ack"))}</button>
         <button class="ag-btn" data-act="mode" data-mode="off">${ic("shieldOff", 18)}${esc(this._t("disarm"))}</button></div></div>`
       : "";

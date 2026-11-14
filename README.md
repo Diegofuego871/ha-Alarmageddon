@@ -147,7 +147,7 @@ Alarmageddon is not a certified alarm system. Please keep in mind:
 
 | Entity | Content |
 | --- | --- |
-| `alarm_control_panel.<name>` | The alarm system. Attributes: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by` |
+| `alarm_control_panel.<name>` | The alarm system. Attributes: `arm_mode`, `triggered_by`, `bypassed_sensors`, `deadline`, `changed_by`, `armed_at`, `armed_by`, `state_since` (since when it is in its state; survives a restart) |
 | `binary_sensor.<name>_zone_<mode>` | On when a sensor of the zone of this mode is open |
 | "Ready to arm" per mode | On when no open sensor blocks arming in this mode. Attribute: `blocking_sensors` |
 | `sensor.<name>_status` | Number of open problems: alarm, unreachable sensors, weak batteries. Attributes: `alarm`, `offline`, `low_battery`, `battery_threshold` |

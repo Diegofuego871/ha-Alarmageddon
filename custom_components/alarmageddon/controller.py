@@ -120,6 +120,8 @@ class AlarmController:
         # Seit wann und von wem die Anlage scharf ist (1.11.0): die Kachel zeigt es während eines Alarms neben "Alarm seit …",
         # sonst sähe es aus, als hätte derjenige den Alarm ausgelöst, der scharf geschaltet hat
         self.armed_at: datetime | None = None
+        # Seit wann die Anlage in ihrem Zustand ist; steht im gespeicherten Stand, weil `last_changed` von HA bei jedem Neustart zurückspringt
+        self.state_since: datetime | None = None
         self.armed_by: str | None = None
         self._restoring = False
         # Welche Abläufe der Alarmaktionen der laufende Alarm startet (siehe _flows_for und alarm_plan): der Modus, "always"
@@ -466,6 +468,9 @@ class AlarmController:
     def _set(self, state: AlarmControlPanelState) -> None:
         if state != self.state:
             _LOGGER.debug("%s: %s -> %s", self.entry.title, self.state, state)
+            # Beim Wiederherstellen gilt die gespeicherte Zeit (siehe async_restore)
+            if not self._restoring:
+                self.state_since = dt_util.utcnow()
         self.state = state
         self._notify()
 
@@ -761,6 +766,7 @@ class AlarmController:
             "changed_by": self.changed_by,
             "armed_at": self.armed_at.isoformat() if self.armed_at else None,
             "armed_by": self.armed_by,
+            "state_since": self.state_since.isoformat() if self.state_since else None,
             "alarm_flows": list(self.alarm_flows),
         }
 
@@ -776,6 +782,10 @@ class AlarmController:
             self._restore(last_state, data)
         finally:
             self._restoring = False
+        # Ältere Stände kennen die Zeit nicht: dann bleibt sie leer und die Oberfläche nimmt `last_changed`. Hat sich der Zustand während
+        # des Neustarts geändert (Eingangsverzögerung abgelaufen), gilt jetzt.
+        stored = dt_util.parse_datetime(str((data or {}).get("state_since"))) if (data or {}).get("state_since") else None
+        self.state_since = stored if stored and str(self.state) == str(last_state) else (dt_util.utcnow() if stored else None)
 
     def _restore(self, last_state: str | None, data: dict[str, Any] | None) -> None:
         data = data or {}

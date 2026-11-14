@@ -30,6 +30,18 @@ for (const lang of ["de", "en"]) {
       return { ctx, page, errors, ev, tap, waitFor };
     };
 
+    // ----- "seit": die Zeit der Anlage, nicht die von HA (last_changed springt bei jedem Neustart von HA) -----
+    {
+      const s = await open();
+      const shown = await s.page.evaluate(() => {
+        const old = new Date("2026-01-01T03:07:00");
+        window.__setState("alarm_control_panel.wohnung", "disarmed", { state_since: old.toISOString() });
+        return old.toLocaleDateString(document.documentElement.lang || "en", { day: "numeric", month: "short" });
+      });
+      check(`${tag}: "seit" zeigt state_since der Anlage und nicht last_changed (Neustart von HA)`, await s.waitFor(`const x=root(0).querySelector('.ag-sys-sub').textContent; return x.includes(${JSON.stringify(shown.split(" ")[0].replace(".", ""))}) && !x.includes('${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}')`));
+      await s.ctx.close();
+    }
+
     // ----- Dunkles Thema: beide Karten tragen das Attribut "dark", sonst bleibt das Alarmband hell gestaltet -----
     {
       const s = await open();
