@@ -283,7 +283,7 @@ export class ListUi {
         <span class="ag-lchips"></span>${sysSel}${areaSel}${typeSel}<span class="ag-grow"></span>
         ${this.host.hasAttribute("narrow") ? "" : `<select class="ag-select" data-list="group" aria-label="${esc(this._t("viewGroup"))}">${GROUPS.map((g) => `<option value="${g}" ${this.view.group === g ? "selected" : ""}>${esc(this._t(GROUP_LABEL[g]))}</option>`).join("")}</select>`}
         ${this.host.hasAttribute("narrow") ? "" : this.host._segHtml("layout", [["list", this._t("layoutList"), "groups"], ["cards", this._t("layoutCards"), "grid"]], this.view.layout, "data-list-layout", "small")}
-        <button class="ag-btn" data-list="view">${ic("columns", 18)}${esc(this._t("view"))}</button></div>`;
+        <button class="ag-btn" data-list="view" title="${esc(this._t("view"))}" aria-label="${esc(this._t("view"))}">${ic("viewOptions", 20)}${esc(this._t("view"))}</button></div>`;
   }
 
   chipsHtml(rows) {

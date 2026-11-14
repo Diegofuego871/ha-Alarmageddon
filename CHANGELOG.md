@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.35.1] - 2026-11-14
+
+### Changed
+
+- **A clearer symbol for "View":** the button next to the search field (on the phone only the symbol is shown) is an eye with a cogwheel instead of three columns, so it is clear that it opens the settings of the view. The button also has a name for screen readers and a tooltip.
+
 ## [1.35.0] - 2026-11-14
 
 ### Changed
@@ -1377,6 +1383,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.35.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.1
 [1.35.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.0
 [1.34.4]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.4
 [1.34.3]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.3

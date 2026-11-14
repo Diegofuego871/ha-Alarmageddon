@@ -52,6 +52,7 @@ for (const lang of ["de", "en"]) {
     // Ansicht: Gruppierung aus, Firmware ausblenden, nach Neuladen gemerkt
     await s.tap('[data-list="view"]');
     await s.tap('[data-list="vset"][data-key="group"][data-value="none"]');
+    check(`${tag}: Knopf "Ansicht": Auge mit Zahnrad (nicht mehr die Spalten), mit Beschriftung für Hilfsmittel`, await s.ev("const b=r.querySelector('[data-list=\"view\"]'); return !!b.querySelector('svg mask') && b.querySelectorAll('svg path').length === 2 && !!b.getAttribute('aria-label') && b.getAttribute('title') === b.getAttribute('aria-label')"));
     check(`${tag}: Hinweis, für welches Gerät die Ansicht gilt`, await s.ev(`return r.querySelector('#ag-view').innerText.includes('${mobile ? (lang === "de" ? "Handy" : "phone") : (lang === "de" ? "Desktop" : "desktop")}')`));
     const hide = mobile ? "signal" : "firmware";
     const hideRe = mobile ? /empfang|signal/i : /firmware/i;
