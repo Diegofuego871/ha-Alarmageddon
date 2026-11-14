@@ -7,6 +7,14 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.34.2] - 2026-11-14
+
+Die Texte gehen nicht mehr davon aus, dass alle Apple Home oder Sonos nutzen.
+
+### Geändert
+
+- **Neutrale Formulierungen:** die Texte des Panels und die README nennen Apple Home nur noch als Beispiel für ein angebundenes System ("auch in angebundenen Systemen, zum Beispiel Apple Home") und erwähnen Sonos nicht mehr: Töne spielen auf "Medienplayern", und Player, die ihre ganze Wiedergabe sichern können (Quelle, Titel, Gruppe), nutzen das. Der Abschnitt "Apple HomeKit" der README bleibt als Anleitung für alle, die es nutzen. Am Verhalten ändert sich nichts.
+
 ## [1.34.1] - 2026-11-13
 
 Die Dashboard-Karten sehen im dunklen Thema richtig aus, und die README sagt, was zu tun ist, wenn eine Karte nicht erscheint.
@@ -1351,6 +1359,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.34.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.2
 [1.34.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.1
 [1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0
 [1.33.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.1

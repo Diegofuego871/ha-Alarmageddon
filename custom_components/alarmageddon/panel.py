@@ -57,7 +57,7 @@ async def _register(hass: HomeAssistant) -> None:
         await hass.http.async_register_static_paths([StaticPathConfig(PANEL_STATIC_URL_PATH, str(panel_dir), True)])
         hass.data[DATA_STATIC] = True
     if not hass.data.get(DATA_SOUNDS):
-        # Alarmtöne ohne Anmeldung: Medienplayer (Sonos & Co.) holen die Datei selbst und haben kein Token
+        # Alarmtöne ohne Anmeldung: Medienplayer holen die Datei selbst und haben kein Token
         sounds_dir = Path(__file__).parent / "sounds"
         await hass.http.async_register_static_paths([StaticPathConfig(SOUNDS_URL_PATH, str(sounds_dir), True)])
         hass.data[DATA_SOUNDS] = True

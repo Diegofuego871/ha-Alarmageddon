@@ -7,6 +7,14 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.34.2] - 2026-11-14
+
+Texts no longer assume that everyone uses Apple Home or Sonos.
+
+### Changed
+
+- **Neutral wording:** the texts of the panel and the README name Apple Home only as an example of a connected system ("also in connected systems, for example Apple Home"), and no longer mention Sonos at all: sounds play on "media players", and players that can save their whole playback (source, title, group) use that. The section "Apple HomeKit" of the README stays, as a how-to for those who use it. Nothing changes in the behaviour.
+
 ## [1.34.1] - 2026-11-13
 
 The dashboard cards look right in a dark theme, and the README says what to do when a card does not show up.
@@ -1351,6 +1359,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.34.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.2
 [1.34.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.1
 [1.34.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.0
 [1.33.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.33.1

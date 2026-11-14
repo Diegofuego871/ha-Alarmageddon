@@ -1104,7 +1104,7 @@ class WorkflowRunner:
         return out
 
     async def _sonos_snapshot(self, entities: list[str]) -> list[str]:
-        """Sonos kann die ganze Wiedergabe (Quelle, Titel, Gruppe) sichern; andere Player nur Lautstärke und Zustand."""
+        """Manche Player (derzeit die der Integration "sonos") können die ganze Wiedergabe (Quelle, Titel, Gruppe) sichern; andere nur Lautstärke und Zustand."""
         if not self.hass.services.has_service("sonos", "snapshot"):
             return []
         registry = er.async_get(self.hass)

@@ -30,6 +30,10 @@ Feste Vorgaben des Nutzers (2026-11-08):
   unterstützte Funktionen und Code-Verhalten so wählen, dass HomeKit sie
   abbildet; Verhalten im HA-Quellcode (`homeassistant/components/homekit`)
   prüfen und mit Tests absichern, nicht annehmen.
+- **Neutrale Texte (Vorgabe des Nutzers, 2026-11-14):** In Texten für Nutzer (Panel, Meldungen, README, Release Notes) nie davon
+  ausgehen, dass jemand Apple Home oder ein bestimmtes Gerät hat. Apple Home nur als Beispiel ("zum Beispiel Apple Home"), der
+  Abschnitt "Apple HomeKit" der README bleibt als Anleitung. Herstellernamen wie Sonos nicht in Texten, sondern "Medienplayer".
+  Im Quelltext (Dienstaufrufe, Tests, Nachbau) sind sie erlaubt.
 - **Modi frei wählbar (geändert 2026-11-08, vorher waren "Anwesend" und
   "Abwesend" immer da):** pro Alarmanlage "Anwesend", "Abwesend" und
   "Nacht" einzeln ein- und ausschaltbar, im Panel unter Konfiguration ›
