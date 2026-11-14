@@ -2,7 +2,7 @@
 // Sortierung; zeigt Zustand, Batterie, Empfang, Firmware und mehr. Ansicht pro Browser gemerkt (localStorage).
 
 const V = new URL(import.meta.url).search;
-const { ic, esc, DC, GONE, TYPES } = await import(`./common.js${V}`);
+const { ic, esc, DC, GONE, TYPES, chapter } = await import(`./common.js${V}`);
 
 const COLUMNS = ["area", "systems", "state", "battery", "forecast", "signal", "firmware", "model", "integration", "changed"];
 // Ansicht je Gerätetyp (wie Device Panel): Desktop und Handy haben eigene Spalten (Liste), Angaben (Karten), Gruppierung und Sortierung.
@@ -428,12 +428,12 @@ export class ListUi {
         <button class="ag-toggle ${on ? "on" : ""}" data-list="col" data-set="${set}" data-key="${k}" role="switch" aria-checked="${on}" aria-label="${esc(this._t(COL_LABEL[k]))}"></button></div>`).join("");
     return `<div class="ag-dlg-body"><h3>${esc(this._t("viewTitle"))}</h3>
       <div class="ag-t2 ag-small">${esc(this._t(this.kind === "mobile" ? "viewForMobile" : "viewForDesktop"))}</div>
-      <div class="ag-label">${esc(this._t("viewLayout"))}</div>${seg("layout", [["list", "layoutList", "groups"], ["cards", "layoutCards", "grid"]])}
-      <div class="ag-label">${esc(this._t("viewGroup"))}</div>${seg("group", [["area", "groupArea", "area"], ["type", "groupType", "sensor"], ["system", "groupSystem", "shield"], ["none", "groupNone", "minus"]])}
-      <div class="ag-label">${esc(this._t("viewSort"))}</div><select class="ag-input" data-list="vsort" aria-label="${esc(this._t("viewSort"))}">${["name", ...COLUMNS].map((k) => `<option value="${k}" ${this.view.sort === k ? "selected" : ""}>${esc(this._t(k === "name" ? "colName" : COL_LABEL[k]))}</option>`).join("")}</select>
-      <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc", "orderUp"], ["desc", "dirDesc", "orderDown"]])}</div>
-      <div class="ag-label">${esc(this._t("viewColumns"))}</div><div class="ag-colist">${rows("cols")}</div>
-      <div class="ag-label">${esc(this._t("viewFields"))}</div><div class="ag-colist">${rows("fields")}</div>
+      ${chapter(this._t("viewLayout"), seg("layout", [["list", "layoutList", "groups"], ["cards", "layoutCards", "grid"]]))}
+      ${chapter(this._t("viewGroup"), seg("group", [["area", "groupArea", "area"], ["type", "groupType", "sensor"], ["system", "groupSystem", "shield"], ["none", "groupNone", "minus"]]))}
+      ${chapter(this._t("viewSort"), `<select class="ag-input" data-list="vsort" aria-label="${esc(this._t("viewSort"))}">${["name", ...COLUMNS].map((k) => `<option value="${k}" ${this.view.sort === k ? "selected" : ""}>${esc(this._t(k === "name" ? "colName" : COL_LABEL[k]))}</option>`).join("")}</select>
+      <div style="margin-top:8px">${seg("dir", [["asc", "dirAsc", "orderUp"], ["desc", "dirDesc", "orderDown"]])}</div>`)}
+      ${chapter(this._t("viewColumns"), `<div class="ag-colist">${rows("cols")}</div>`)}
+      ${chapter(this._t("viewFields"), `<div class="ag-colist">${rows("fields")}</div>`)}
       ${this._namesHtml()}
       <div class="ag-dlg-btns"><button class="ag-btn" data-list="vreset" style="margin-right:auto">${esc(this._t("viewReset"))}</button><button class="ag-btn primary" data-list="vdone">${esc(this._t("done"))}</button></div></div>`;
   }
@@ -446,10 +446,9 @@ export class ListUi {
 
   _namesHtml() {
     const on = this._withDevice();
-    return `<div class="ag-label">${esc(this._t("viewNames"))}</div>
-      <div class="ag-colist"><div class="ag-colrow ag-namesrow"><span class="ag-settx"><b>${esc(this._t("viewNamesDevice"))}</b><small>${esc(this._t(on ? "viewNamesOn" : "viewNamesOff"))}</small></span>
+    return chapter(this._t("viewNames"), `<div class="ag-colist"><div class="ag-colrow ag-namesrow"><span class="ag-settx"><b>${esc(this._t("viewNamesDevice"))}</b><small>${esc(this._t(on ? "viewNamesOn" : "viewNamesOff"))}</small></span>
         <button class="ag-toggle ${on ? "on" : ""}" data-list="names" role="switch" aria-checked="${on}" aria-label="${esc(this._t("viewNamesDevice"))}" ${this.namesBusy ? "disabled" : ""}></button></div></div>
-      <div class="ag-t2 ag-small ag-namesnote">${esc(this._t("viewNamesAll"))}</div>`;
+      <div class="ag-t2 ag-small ag-namesnote">${esc(this._t("viewNamesAll"))}</div>`);
   }
 
   _redrawView() {

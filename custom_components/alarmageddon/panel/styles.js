@@ -205,6 +205,9 @@ dialog.ag-dlg[open] > .ag-dlg-body { overflow: auto; min-height: 0; overscroll-b
 .ag-step-ed { max-height: none; overflow: auto; }
 .ag-dlg-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
 .ag-dlg h3 { margin: 0; font-size: 19px; font-weight: 500; }
+/* Kapitel in Fenstern (Ansicht) sehen aus wie die der Konfiguration: die Regel für Fenstertitel darf sie nicht überstimmen */
+.ag-dlg .ag-chap-t { margin: 0 4px 10px; font-size: 17px; font-weight: 600; }
+.ag-dlg .ag-chap > select.ag-input { width: 100%; }
 .ag-dlg-btns { display: flex; gap: 10px; justify-content: flex-end; }
 .ag-code { height: 52px; border-radius: 14px; border: 1px solid var(--ag-divider); background: var(--ag-bg); color: var(--ag-text); font: inherit; font-size: 24px; letter-spacing: .3em; text-align: center; }
 .ag-dlg-err { color: var(--ag-error); font-size: 13.5px; min-height: 18px; }
@@ -705,7 +708,7 @@ select.ag-select, select.ag-input, .ag-dlg select, .ag-view select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5z' fill='%238a8f98' stroke='%238a8f98' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-position: right 16px center; background-size: 12px 8px; background-repeat: no-repeat; }
 /* Im Fenster "Ansicht" (Spalte mit flex): das Feld darf nicht zusammengedrückt werden und hat die Höhe und Rundung der Auswahlleisten darüber */
-.ag-dlg-body > select.ag-input { flex: none; height: 42px; min-height: 42px; border-radius: 14px; padding-left: 16px; font-size: 14px; }
+.ag-dlg-body > select.ag-input, .ag-dlg-body > .ag-chap > select.ag-input { flex: none; height: 42px; min-height: 42px; border-radius: 14px; padding-left: 16px; font-size: 14px; }
 select.ag-select:focus-visible, select.ag-input:focus-visible { outline: 2px solid var(--ag-primary); outline-offset: 1px; }
 /* Auswahl der Alarmanlage in der Konfiguration: auffällig, damit klar ist, dass sie für alle Reiter gilt */
 select.ag-select[data-act="system"] { height: 52px; padding-left: 22px; font-size: 24px; letter-spacing: -.2px; border: 2px solid var(--ag-primary); background-color: var(--ag-primary-soft); color: var(--ag-primary); font-weight: 600; }
@@ -795,7 +798,7 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 /* Handy: Tippfläche mindestens 44 px; die Leisten füllen die Breite; ab fünf Reitern vier Spalten in Zeilen (schmale Handys drei); Reiter mit Symbol: Symbol über dem Text */
 :host([narrow]) .ag-seg { display: grid; width: 100%; box-sizing: border-box; }
 :host([narrow]) .ag-seg > button { min-height: 44px; padding: 0 4px; }
-:host([narrow]) .ag-dlg-body > select.ag-input { height: 50px; min-height: 50px; }
+:host([narrow]) .ag-dlg-body > select.ag-input, :host([narrow]) .ag-dlg-body > .ag-chap > select.ag-input { height: 50px; min-height: 50px; }
 :host([narrow]) .ag-tabs > button { flex-direction: column; gap: 2px; font-size: 12px; min-height: 52px; }
 #ag-view .ag-seg.small:has(> button:nth-child(4)):not(:has(> button:nth-child(5))),
 :host([narrow]) .ag-seg.small:not(.ag-subs):has(> button:nth-child(4)):not(:has(> button:nth-child(5))) { display: grid; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }

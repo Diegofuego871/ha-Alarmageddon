@@ -27,6 +27,10 @@ for (const lang of ["de", "en"]) {
       if (mobile) check(`${tag}: Handy: kein Umschalter Liste/Karten in der Werkzeugleiste, aber in "Ansicht"`, await s.ev("return !r.querySelector('.ag-tools [data-seg=\"layout\"]')") && (await s.tap('[data-list="view"]'), await s.ev("return !!r.querySelector('#ag-view [data-list=\"vset\"][data-key=\"layout\"]')")) && (await s.tap('[data-list="vdone"]'), true));
       else check(`${tag}: Desktop: Umschalter auch in "Ansicht"`, (await s.tap('[data-list="view"]'), await s.ev("return !!r.querySelector('#ag-view [data-list=\"vset\"][data-key=\"layout\"]')")) && (await s.tap('[data-list="vdone"]'), true));
       if (!mobile) check(`${tag}: Umschalter Liste/Karten mit Kapsel`, await s.ev("const g=r.querySelector('[data-seg=\"layout\"]'); return !!g && !!g.querySelector('.ag-pill') && g.querySelectorAll('button').length === 2 && g.querySelector('button.on').dataset.listLayout === 'list'"));
+      // "Ansicht" sieht aus wie die Konfiguration: Abschnitte als Kapitel (fetter Titel, blauer Strich), keine kleinen grauen Beschriftungen
+      await s.tap('[data-list="view"]');
+      check(`${tag}: "Ansicht": Abschnitte sind Kapitel wie in der Konfiguration (17 px fett, blauer Strich), keine grauen Grossbuchstaben`, await s.ev(`const d=r.getElementById('ag-view'); const t=[...d.querySelectorAll('.ag-chap-t')]; const st=getComputedStyle(t[0]); const bar=getComputedStyle(t[0],'::before'); return t.length >= 6 && t.every((x) => getComputedStyle(x).fontSize === '17px' && getComputedStyle(x).fontWeight >= 600) && bar.width === '4px' && bar.backgroundColor !== 'rgba(0, 0, 0, 0)' && d.querySelectorAll('.ag-label').length === 0`));
+      await s.tap('[data-list="vdone"]');
       check(`${tag}: Standard ist die Liste`, await s.ev("return !!r.querySelector('.ag-ltable') && !r.querySelector('.ag-mcards')"));
       await setLayout("cards");
       check(`${tag}: Karten, eine je Sensor${mobile ? "" : " (Raster)"}`, await s.waitFor(`const g=r.querySelector('.ag-mcards${mobile ? "" : ".grid"}'); return !!g && g.querySelectorAll('.ag-lcard').length === 10 && !r.querySelector('.ag-ltable')`));

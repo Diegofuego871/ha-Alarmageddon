@@ -237,7 +237,9 @@ Klassen und Präfix (`--ag-`) für Alarmageddon neu. Details in
   Angaben stehen als "–" da. Eine neue Zeile oder Angabe auf der Karte bekommt eine feste Höhe; `tests/panel/suites/cardheight-e2e.mjs`
   prüft das mit langen Namen, auf Desktop und Handy.
 - **Kapitel:** Einstellungen stehen in Kapiteln; jedes hat einen Titel mit
-  einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte.
+  einem Strich davor (`chapter()` in `panel/common.js`), darunter die Karte. Das Fenster "Ansicht" folgt dem seit 1.34.4 (Vorgabe
+  des Nutzers 2026-11-14): Abschnitte als Kapitel statt kleiner grauer Grossbuchstaben (`.ag-label`). Andere Fenster mit `.ag-label`
+  als Abschnittstitel sind noch nicht angeglichen.
   Reiter der Konfiguration gleiten beim Wechsel seitlich herein.
 - **Drag and Drop** mit Pointer-Ereignissen am Fenster und Tastatur-Ersatz
   (siehe LEARNINGS); auf Touch zusätzlich Antippen statt Ziehen.
