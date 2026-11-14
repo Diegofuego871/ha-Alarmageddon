@@ -53,6 +53,7 @@ for (const lang of ["de", "en"]) {
     await s.tap('[data-list="view"]');
     await s.tap('[data-list="vset"][data-key="group"][data-value="none"]');
     check(`${tag}: Knopf "Ansicht": Auge mit Zahnrad (nicht mehr die Spalten), mit Beschriftung für Hilfsmittel`, await s.ev("const b=r.querySelector('[data-list=\"view\"]'); return !!b.querySelector('svg mask') && b.querySelectorAll('svg path').length === 2 && !!b.getAttribute('aria-label') && b.getAttribute('title') === b.getAttribute('aria-label')"));
+    check(`${tag}: Fenster "Ansicht": ${mobile ? "Handy: ganze Breite, Gruppierung in zwei Zeilen" : "Desktop: breit (mindestens 600 px), Gruppierung in einer Zeile"}`, await s.ev(`const d=r.getElementById('ag-view'); const w=d.getBoundingClientRect().width; const g=[...d.querySelectorAll('[data-seg="view-group"] button')].map((b) => Math.round(b.getBoundingClientRect().top)); const rows=new Set(g).size; return ${mobile ? "w <= window.innerWidth + 1 && rows === 2" : "w >= 600 && rows === 1"}`));
     check(`${tag}: Hinweis, für welches Gerät die Ansicht gilt`, await s.ev(`return r.querySelector('#ag-view').innerText.includes('${mobile ? (lang === "de" ? "Handy" : "phone") : (lang === "de" ? "Desktop" : "desktop")}')`));
     const hide = mobile ? "signal" : "firmware";
     const hideRe = mobile ? /empfang|signal/i : /firmware/i;

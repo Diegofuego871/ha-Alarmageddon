@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.35.3] - 2026-11-14
+
+### Changed
+
+- **The "View" window is wider on the computer** (680 instead of 420 pixels): the choice "Group by" fits in one row and the columns have room. On the phone the window still fills the screen.
+
 ## [1.35.2] - 2026-11-14
 
 ### Fixed
@@ -1389,6 +1395,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.35.3]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.3
 [1.35.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.2
 [1.35.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.1
 [1.35.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.0

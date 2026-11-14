@@ -193,6 +193,8 @@ button { font: inherit; color: inherit; }
 /* Dialoge (Code, Rückfrage): auf dem Handy als Blatt von unten */
 dialog.ag-dlg:focus, dialog.ag-dlg:focus-visible { outline: none; }
 dialog.ag-dlg { border: 0; padding: 0; border-radius: 22px; background: var(--ag-card); color: var(--ag-text); box-shadow: var(--ag-shadow); width: min(420px, calc(100vw - 32px)); }
+/* Fenster "Ansicht" am Computer breiter: Auswahlleisten stehen in einer Zeile, die Spalten haben Platz */
+:host(:not([narrow])) dialog.ag-dlg#ag-view { width: min(680px, calc(100vw - 48px)); }
 dialog.ag-dlg::backdrop { background: rgba(0,0,0,.45); }
 /* Dialog: Kopf mit rundem X oben rechts (wie Device Panel), Inhalt scrollt, Knöpfe unten bleiben stehen */
 dialog.ag-dlg[open] { display: flex; flex-direction: column; max-height: min(92vh, 900px); overflow: hidden; }
@@ -800,7 +802,6 @@ dialog.ag-sheetdlg > .ag-dlg-btns { margin: 0; bottom: 0; }
 :host([narrow]) .ag-seg > button { min-height: 44px; padding: 0 4px; }
 :host([narrow]) .ag-dlg-body > select.ag-input, :host([narrow]) .ag-dlg-body > .ag-chap > select.ag-input { height: 50px; min-height: 50px; }
 :host([narrow]) .ag-tabs > button { flex-direction: column; gap: 2px; font-size: 12px; min-height: 52px; }
-#ag-view .ag-seg.small:has(> button:nth-child(4)):not(:has(> button:nth-child(5))),
 :host([narrow]) .ag-seg.small:not(.ag-subs):has(> button:nth-child(4)):not(:has(> button:nth-child(5))) { display: grid; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 389px) { :host([narrow]) .ag-seg:has(> button:nth-child(5)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
