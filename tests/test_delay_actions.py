@@ -209,13 +209,42 @@ async def test_a_reload_during_the_exit_delay_resumes_only_the_tone_for_the_rest
     assert entry.runtime_data.workflow.running.get("phase") == "arming"
 
 
-async def test_testing_a_step_plays_its_own_duration(hass: HomeAssistant) -> None:
-    """Ohne laufende Verzögerung (Test eines Schritts) gilt die Dauer des Schritts; die Angabe "delay" hängt an keiner Verzögerung."""
-    entry, played, _stopped, _on = await _setup(hass)
+async def test_testing_a_step_plays_as_long_as_the_delay_that_is_set_for_the_mode(hass: HomeAssistant) -> None:
+    """
+    Der Test eines Schritts "solange die Verzögerung läuft" (Aktivierungston, Voralarm) spielt so lange, wie die Verzögerung des Modus
+    eingestellt ist (Ausgang beim Aktivierungston, Eingang beim Voralarm), nicht nur die Dauer des Schritts (vorher drei Sekunden Piepsen).
+    """
+    entry, played, _stopped, _on = await _setup(hass, exit_delay_home=20, entry_delay_home=25)
     runner = entry.runtime_data.workflow
+    assert await runner.async_run("home", test=True, steps=[tone("chime", duration=3)])
+    await settle(hass)
+    assert len(played) == 1 and seconds(played[0]) == 20
+    await runner.async_stop()
     assert await runner.async_run("home", test=True, steps=[tone("prealarm", duration=7)])
     await settle(hass)
-    assert len(played) == 1 and seconds(played[0]) == 7
+    assert len(played) == 2 and seconds(played[1]) == 25
+    await runner.async_stop()
+
+
+async def test_a_test_of_a_delay_tone_never_plays_longer_than_a_test_lasts(hass: HomeAssistant) -> None:
+    """Ein Test endet nach TEST_SECONDS von selbst: der Ton spielt höchstens so lange, auch bei einer längeren eingestellten Verzögerung."""
+    from custom_components.alarmageddon.const import TEST_SECONDS
+
+    entry, played, _stopped, _on = await _setup(hass, exit_delay_home=300)
+    runner = entry.runtime_data.workflow
+    assert await runner.async_run("home", test=True, steps=[tone("chime", duration=3)])
+    await settle(hass)
+    assert len(played) == 1 and seconds(played[0]) == TEST_SECONDS
+    await runner.async_stop()
+
+
+async def test_a_test_without_a_set_delay_plays_the_duration_of_the_step(hass: HomeAssistant) -> None:
+    """Ist für den Modus keine Ausgangsverzögerung eingestellt (0), gilt die Dauer des Schritts; die Angabe "delay" hängt an keiner Verzögerung."""
+    entry, played, _stopped, _on = await _setup(hass, exit_delay_home=0)
+    runner = entry.runtime_data.workflow
+    assert await runner.async_run("home", test=True, steps=[tone("chime", duration=4)])
+    await settle(hass)
+    assert len(played) == 1 and seconds(played[0]) == 4
     await runner.async_stop()
 
 

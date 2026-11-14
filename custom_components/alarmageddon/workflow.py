@@ -381,18 +381,30 @@ class WorkflowRunner:
     def _timed(self, step: dict[str, Any]) -> dict[str, Any] | None:
         """
         Schritt mit der Dauer, die jetzt gilt. Ein Ton "so lange wie die Verzögerung" (delay) bekommt die Restzeit der laufenden
-        Verzögerung (Wert des Modus oder des Sensors, der sie ausgelöst hat): er endet zusammen mit ihr. Ohne laufende Verzögerung
-        (Test eines Schritts) gilt die Dauer des Schritts. None: nichts mehr zu spielen (die Verzögerung ist um).
+        Verzögerung (Wert des Modus oder des Sensors, der sie ausgelöst hat): er endet zusammen mit ihr. Im Test eines Schritts läuft
+        keine Verzögerung: dann gilt die eingestellte Zeit des Modus (Ausgangs- bzw. Eingangsverzögerung), höchstens so lange wie ein Test
+        dauert (TEST_SECONDS); ist keine eingestellt, die Dauer des Schritts. None: nichts mehr zu spielen (die Verzögerung ist um).
         """
         if not step.get("delay") or step.get("type") not in ("chime", "prealarm"):
             return step
         run = self._run or {}
         left = self._ctl.delay_left() if run.get("phase") in ("arming", "pending") else None
         if left is None:
-            return {key: value for key, value in step.items() if key != "delay"}
+            plain = {key: value for key, value in step.items() if key != "delay"}
+            configured = self._test_delay(step) if run.get("test") else 0
+            return {**plain, "duration": min(configured, TEST_SECONDS)} if configured > 0 else plain
         if left < 1:
             return None
         return {**step, "duration": math.ceil(left)}
+
+    def _test_delay(self, step: dict[str, Any]) -> int:
+        """Die eingestellte Verzögerung des Modus, den der Test gerade prüft: Ausgang beim Aktivierungston, Eingang beim Voralarm."""
+        mode = (self._run or {}).get("trigger")
+        if mode not in self._ctl.modes:
+            return 0
+        if step.get("type") == "chime":
+            return self._ctl.exit_delay(mode)
+        return self._ctl.longest_entry_delay(mode) or self._ctl.entry_delay_for(mode)
 
     def steps_after(self, trigger: str) -> list[dict[str, Any]]:
         return list((self.entry.options.get(CONF_WORKFLOWS_AFTER) or {}).get(trigger) or [])

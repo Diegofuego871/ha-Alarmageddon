@@ -7,6 +7,12 @@ Alle nennenswerten Änderungen an dieser Integration stehen in dieser Datei.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.35.2] - 2026-11-14
+
+### Behoben
+
+- **Der Test eines Tons "solange die Verzögerung läuft" spielt die ganze Verzögerung.** Der Test-Knopf eines Schritts wie dem Aktivierungston (oder dem Voralarm) piepste nur wenige Sekunden, weil während eines Tests keine Verzögerung läuft. Er spielt jetzt so lange, wie die Verzögerung des Modus eingestellt ist (Ausgangsverzögerung beim Aktivierungston, Eingangsverzögerung beim Voralarm), höchstens aber so lange, wie ein Test dauert (60 Sekunden). Stopp beendet ihn früher. Ist für den Modus keine Verzögerung eingestellt, gilt wie bisher die Dauer des Schritts.
+
 ## [1.35.1] - 2026-11-14
 
 ### Geändert
@@ -1383,6 +1389,7 @@ Erste Vorabversion: der Kern der Alarmanlage mit Unterstützung für Apple HomeK
 - **Neustart:** Zustand, Verzögerungen und Alarm laufen nach einem Neustart oder beim Ändern der Optionen weiter. Eine Eingangsverzögerung, die während des Neustarts abgelaufen ist, wird zum Alarm. Ein Sensor, der aus "nicht verfügbar" als offen zurückkommt, löst nicht aus.
 - **Sprachen:** Englisch und Deutsch.
 
+[1.35.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.2
 [1.35.1]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.1
 [1.35.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.0
 [1.34.4]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.4

@@ -24,6 +24,9 @@ ROOT = BASE.parents[1]
 
 # (Name, Datei, Text im Code, Ersatz, Tests, die es merken müssen)
 MUTATIONS = [
+    ("Test eines Tons mit der Verzögerung spielt länger als ein Test dauert (ohne Obergrenze TEST_SECONDS)", "workflow.py",
+     '{**plain, "duration": min(configured, TEST_SECONDS)} if configured > 0 else plain', '{**plain, "duration": configured} if configured > 0 else plain',
+     "tests/test_delay_actions.py -k never_plays_longer"),
     ("Gespeicherte Zeit des Zustands geht beim Neustart verloren (Panel zeigt die Zeit des Neustarts)", "controller.py",
      "        self.state_since = stored if stored and str(self.state) == str(last_state) else (dt_util.utcnow() if stored else None)\n",
      "        self.state_since = None\n", "tests/test_state_since.py -k restart"),
