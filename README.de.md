@@ -109,6 +109,7 @@ Erscheint die Karte nicht im Auswahldialog: Home Assistant nach dem Update neu s
 - **Bestätigung durch zwei Sensoren:** ein Bewegungsmelder kann einen zweiten Sensor verlangen, bevor er auslöst, gegen Fehlalarme.
 - **Sicherung:** alle Einstellungen als Datei oder in der Integration abgelegt, nie mit Codes.
 - **Mehrere Anlagen:** Haus und Garage, jede als eigenes Gerät.
+- **Zurück zur Übersicht:** das Panel merkt sich 30 Minuten lang, wo du warst; danach startet es wieder auf der Übersicht.
 
 ## Sicherheitsmechanismen
 

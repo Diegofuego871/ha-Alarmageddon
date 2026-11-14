@@ -109,6 +109,7 @@ If the card does not appear in the card picker: restart Home Assistant after the
 - **Two-sensor confirmation:** a motion sensor can require a second sensor before it triggers, against false alarms.
 - **Backup:** all settings as a file or stored in the integration, never with codes.
 - **Several alarm systems:** house and garage, each as its own device.
+- **Back to the overview:** the panel remembers where you were for 30 minutes; after that it starts on the overview again.
 
 ## Safety mechanisms
 

@@ -16,6 +16,8 @@ const { NotifyUi } = await import(`./notify.js${V}`);
 const { LogUi } = await import(`./log.js${V}`);
 const { SensorView } = await import(`./sensorview.js${V}`);
 const { loaderHtml, loaderStart } = await import(`./loader.js${V}`);
+/** Nach so langer Abwesenheit startet das Panel wieder auf der Übersicht (Merkzettel für Reiter und Unterreiter) */
+const AWAY_MS = 30 * 60 * 1000;
 const SUBS = ["sensors", "actions", "notify", "system"];
 
 // Knöpfe, die einen Dialog ohne Speichern schliessen (das X löst den ersten gefundenen aus)
@@ -27,6 +29,7 @@ class AlarmageddonPanel extends HTMLElement {
     this._root = this.attachShadow({ mode: "open" });
     this._hass = null;
     this._data = null;
+    this._forgetPlaceIfAway();
     this._tab = this._loadPref("tab", "overview");
     if (!["overview", "log", "config"].includes(this._tab)) this._tab = "overview";
     this._sub = this._loadPref("sub", "sensors");
@@ -131,10 +134,15 @@ class AlarmageddonPanel extends HTMLElement {
     win.addEventListener("pointercancel", end);
     this.ownerDocument.addEventListener("visibilitychange", () => {
       if (this.ownerDocument.visibilityState === "visible") {
+        this._backToOverviewIfAway();
         this._fetch();
         this._applyDeepLink();
+      } else {
+        this._markSeen();
       }
     });
+    // Das iframe wird beim Verlassen des Panels entfernt: dann gilt der letzte Zeitpunkt, an dem es sichtbar war
+    win.addEventListener("pagehide", () => this._markSeen());
     new ResizeObserver(() => {
       this._checkNarrow();
       this._placePills(true);
@@ -142,8 +150,12 @@ class AlarmageddonPanel extends HTMLElement {
     this._checkNarrow(true);
     this._render();
     this._fetch();
+    this._markSeen();
     this._poll = setInterval(() => {
-      if (this.ownerDocument.visibilityState !== "hidden") this._fetch();
+      if (this.ownerDocument.visibilityState !== "hidden") {
+        this._markSeen();
+        this._fetch();
+      }
     }, POLL_MS);
     this._tick = setInterval(() => this._updateCountdowns(), 1000);
     this.list.loadRemote(); // Spalten und Ansicht des Benutzers von Home Assistant
@@ -182,6 +194,37 @@ class AlarmageddonPanel extends HTMLElement {
     } catch {
       return fallback;
     }
+  }
+
+  // Wo der Benutzer zuletzt war (Reiter, Unterreiter, Auslöser der Aktionen) gilt nur eine halbe Stunde: wer danach zurückkommt, sieht die
+  // Übersicht. Gemerkt wird die Zeit, zu der das Panel zuletzt sichtbar war (Eigenschaft des Browsers, nicht des Servers).
+  _awayLong() {
+    const seen = Number(this._loadPref("seen", 0));
+    return seen > 0 && Date.now() - seen > AWAY_MS;
+  }
+
+  _markSeen() {
+    this._savePref("seen", String(Date.now()));
+  }
+
+  // Beim Start: abgelaufene Merkzettel löschen, bevor der Reiter geladen wird
+  _forgetPlaceIfAway() {
+    if (!this._awayLong()) return;
+    for (const key of ["tab", "sub", "trigger"]) this._savePref(key, "");
+  }
+
+  // Panel blieb offen (Handy im Hintergrund) und ist nach über einer halben Stunde wieder da. Ungespeicherte Änderungen gehen vor:
+  // wer mitten in einer Bearbeitung war, bleibt dort.
+  _backToOverviewIfAway() {
+    const away = this._awayLong();
+    this._markSeen();
+    if (!away || [this.sensors, this.systemUi, this.actions, this.notify].some((ui) => ui.dirtyCount() > 0)) return;
+    if (this._tab === "overview" && this._sub === "sensors") return;
+    this._tab = "overview";
+    this._sub = "sensors";
+    this.actions.trigger = "away";
+    for (const key of ["tab", "sub", "trigger"]) this._savePref(key, "");
+    this._render();
   }
 
   _savePref(key, value) {

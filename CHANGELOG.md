@@ -7,6 +7,12 @@ All notable changes to this integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.35.0] - 2026-11-14
+
+### Changed
+
+- **The panel starts on the overview again after 30 minutes away.** Until now it remembered where you were last (a configuration page, a mode of the actions) for ever. Now that only holds for 30 minutes: if you come back later, you land on the overview, with "Sensors" as the page of the configuration. This holds when you open the panel again and when the panel stayed open in the background (phone). Unsaved changes come first: if you were in the middle of editing, the panel stays there. The chosen alarm system, the view of the list and the log filters are kept as before.
+
 ## [1.34.4] - 2026-11-14
 
 ### Changed
@@ -1371,6 +1377,7 @@ First pre-release: the alarm core with Apple HomeKit support. The graphical setu
 - **Restart:** state, delays and alarm continue after a restart or when the options change. An entry delay that ran out during the restart becomes an alarm. A sensor that comes back from "unavailable" as open does not trigger.
 - **Languages:** English and German.
 
+[1.35.0]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.35.0
 [1.34.4]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.4
 [1.34.3]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.3
 [1.34.2]: https://github.com/Diegofuego871/ha-alarmageddon/releases/tag/v1.34.2

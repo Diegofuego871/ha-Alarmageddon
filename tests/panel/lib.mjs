@@ -24,20 +24,22 @@ export function check(name, ok, detail = "") {
 export const done = () => process.exit(failures ? 1 : 0);
 
 // Seite im Nachbau öffnen; tab: gespeicherter Reiter; query: zusätzliche Parameter
-export async function open(browser, { mobile = false, lang = "de", theme = "light", tab = "overview", query = "", size = null } = {}) {
+export async function open(browser, { mobile = false, lang = "de", theme = "light", tab = "overview", query = "", size = null, prefs = {} } = {}) {
   const ctx = await browser.newContext(size ? { viewport: size } : mobile ? MOBILE : DESKTOP);
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.addInitScript((t) => {
+  await page.addInitScript(([t, extra]) => {
     try {
       localStorage.setItem("alarmageddon.tab", t);
+      // Weitere Merkzettel des Panels (zum Beispiel "sub", "seen" in Millisekunden); Werte, die eine Zahl vor "ago:" tragen, sind Minuten vor jetzt
+      for (const [k, v] of Object.entries(extra)) localStorage.setItem(`alarmageddon.${k}`, typeof v === "string" && v.startsWith("ago:") ? String(Date.now() - Number(v.slice(4)) * 60000) : v);
     } catch {}
-  }, tab);
+  }, [tab, prefs]);
   await page.goto(`http://127.0.0.1:${PORT}/ha-sim.html?lang=${lang}&theme=${theme}${query}`);
   const frame = await (await page.waitForSelector("#panel-frame")).contentFrame();
-  await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view") && (r.querySelector(".ag-sys, .ag-gbody .ag-card, .ag-empty, .ag-inc"))`), null, { timeout: 10000 });
+  await frame.waitForFunction(new Function(`const r=${R}; return r && r.querySelector(".ag-view") && (r.querySelector(".ag-sys, .ag-gbody .ag-card, .ag-empty, .ag-inc, .ag-cfg"))`), null, { timeout: 10000 });
   const ev = (code, arg) => frame.evaluate(new Function("arg", `const r=${R};` + code), arg);
   const sim = (code, arg) => page.evaluate(new Function("arg", code), arg);
   const el = (sel) => frame.evaluateHandle(new Function(`return ${R}.querySelector(${JSON.stringify(sel)})`)).then((h) => h.asElement());
